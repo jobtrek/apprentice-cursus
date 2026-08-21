@@ -130,6 +130,16 @@ No new files, no new dependencies — same IIFE, same `localStorage` key (`poc-g
 - Real official competency codes (placeholder only until sourced)
 - Screenshot anonymization tooling (brief mentions "captures anonymisées si nécessaire" as the apprentice's own responsibility — no in-app blurring/redaction tool)
 
+## Decisions (stack grill, 2026-08-21 — apply when this moves off the localStorage POC into the real Laravel/Inertia build)
+
+| # | Question | Decision |
+|---|----------|----------|
+| 17 | Competences storage in the real schema? | **Normalized pivot table** (`dossier_entry_competences`: `dossier_entry_id`, `competence_code` FK to a `competences` catalog table, `marker` enum), not a jsonb column — matches the grade-manager's choice of PostgreSQL for typing/constraints over schemaless flexibility. |
+| 18 | PDF export in the real app? | **`spatie/laravel-pdf`** (Browsershot/headless Chrome), replacing this POC's `window.print()` + `@media print` approach. Requires headless Chrome + Node on the server. |
+| 19 | UI kit in the real app? | **shadcn/ui** on Tailwind, pulled in per-surface (dossier entry form, competence checklist, screenshot upload) as needed. |
+
+This POC's data model (`state.dossierEntries`, flat `competenceCatalog`) stays as-is for the localStorage build — these decisions apply once the feature is rebuilt against the real Postgres schema, not to the POC itself.
+
 ## Risks
 
 | Risk | Mitigation |

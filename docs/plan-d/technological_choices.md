@@ -16,11 +16,18 @@ Reference material for the stack in `spec.md`.
 - Testing — https://laravel.com/docs/12.x/testing
 - Pest PHP (test framework) — https://pestphp.com/docs/installation
 
+## Database
+
+- PostgreSQL — chosen over MySQL/SQLite for native enum types and `CHECK` constraints (see `spec.md` decisions #5–7)
+- Laravel + PostgreSQL — https://laravel.com/docs/12.x/database#postgresql
+- Check constraints in migrations — https://laravel.com/docs/12.x/migrations#check-constraints
+
 ## Frontend
 
 - Inertia.js — https://inertiajs.com/
 - React 19 docs — https://react.dev/
 - Tailwind CSS — https://tailwindcss.com/docs/installation
+- shadcn/ui — https://ui.shadcn.com/ — component source pulled in per-surface (forms, dialogs, tables), not a package dependency
 - Laravel + Inertia + React starter kit — https://laravel.com/docs/12.x/starter-kits#react
 
 ## Email testing
@@ -33,6 +40,11 @@ Reference material for the stack in `spec.md`.
 - `react-pdf` (pdf.js wrapper, recommended for this project — no annotation UI needed) — https://github.com/wojtekmaj/react-pdf
 - `@react-pdf-viewer/core` (fuller-featured viewer, plugin ecosystem — heavier than needed here but worth knowing) — https://react-pdf-viewer.dev/
 - Mozilla pdf.js (underlying engine both wrappers use) — https://mozilla.github.io/pdf.js/
+
+## Dossier PDF export (real app, not the POC)
+
+- `spatie/laravel-pdf` (Browsershot/headless Chrome under the hood) — https://spatie.be/docs/laravel-pdf
+- Requires headless Chrome + Node available on the server — deployment target must support this (see Open Question #6 in `spec.md`)
 
 ## WebSockets in Laravel (for live comment updates — stretch item, not MVP)
 

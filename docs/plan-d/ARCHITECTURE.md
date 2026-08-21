@@ -16,7 +16,7 @@
               ┌───────────────────────────────────┬──────────┴─────────────┐
               ▼                                   ▼                        ▼
     ┌──────────────────┐              ┌──────────────────────┐   ┌──────────────────┐
-    │ Local disk        │              │ MySQL / SQLite       │   │ Mailtrap (SMTP)   │
+    │ Local disk        │              │ PostgreSQL           │   │ Mailtrap (SMTP)   │
     │ storage/app/      │              │ users, apprentices,  │   │ dev only —        │
     │ grades/*.pdf      │              │ grades, modules,     │   │ notify coach +    │
     └──────────────────┘              │ mapping_table        │   │ trainer           │
@@ -78,7 +78,7 @@ erDiagram
         int id PK
         int apprentice_id FK
         int module_id FK
-        float score
+        float score "CHECK 1-6, 0.5 increments"
         date date
         string file_path "nullable"
         enum source "pdf|manual"
@@ -223,7 +223,9 @@ The weights above are the **CFC** scheme. The maturité scheme is unresolved and
 
 ## Deployment shape
 
-Single Laravel app, single DB, local filesystem for uploads. No queue worker, no cron, no spreadsheet dependency, no external API keys except Mailtrap SMTP credentials in dev. Smallest deployable shape that still holds every grade, computes the real average, and enforces a genuine two-role authorization boundary.
+Single Laravel app, single PostgreSQL DB, local filesystem for uploads. No queue worker, no cron, no spreadsheet dependency, no external API keys except Mailtrap SMTP credentials in dev. Smallest deployable shape that still holds every grade, computes the real average, and enforces a genuine two-role authorization boundary.
+
+Where this deploys is still open (see Open Question #6 in `spec.md`) — decided to settle after the app is built rather than upfront.
 
 ## Testability
 

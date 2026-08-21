@@ -36,6 +36,20 @@ Three-level drill-down: **dashboard → apprentice's test list (grouped by subje
 | 3 | Does the app compute the weighted CFC average? | **Yes.** This is now a headline feature, not a dropped Excel side-effect. |
 | 4 | How do roles map to Laravel auth? | **`users` table + role enum + `hasOne` profile** (Apprentice / Coach / Trainer). |
 
+## Decisions taken (stack grill, 2026-08-21)
+
+| # | Question | Decision |
+|---|----------|----------|
+| 5 | DB engine? | **PostgreSQL**, not MySQL/SQLite — chosen for native enum types and `CHECK` constraints, notably on `grades.score`. |
+| 6 | `grades.score` validation rule (Open Question #4)? | **Resolved.** Swiss 1–6, half-point increments only. Enforced as a Postgres `CHECK` constraint: `score BETWEEN 1 AND 6 AND score * 2 = FLOOR(score * 2)`, not just app-layer validation. |
+| 7 | Dossier competences storage: normalized or jsonb? | **Normalized pivot table** (`dossier_entry_competences`: `dossier_entry_id`, `competence_code` FK, `marker` enum) — not a jsonb column. Consistent with why Postgres was picked (typing/constraints over schemaless flexibility). |
+| 8 | UI component library? | **shadcn/ui**, layered on the existing Tailwind setup. No blanket policy — components pulled in per-surface as needed (forms, dialogs, tables), not a wholesale redesign. |
+| 9 | Dossier PDF export (full Laravel product, not the POC)? | **`spatie/laravel-pdf`** (Browsershot/headless Chrome), replacing the POC's `window.print()` + `@media print` approach. Requires headless Chrome + Node on the server — see deployment note below. |
+| 10 | Grade PDF storage? | **Unchanged** — user-uploaded files, local disk (`storage/app/grades/`), per the existing architecture. |
+| 11 | Real-time comments? | **Unchanged** — Inertia polling for MVP; Laravel Reverb stays a stretch item, not committed. |
+
+**Deployment note:** `spatie/laravel-pdf` needs headless Chrome + Puppeteer/Node available on the server. Open Question #6 (deployment target) is still unresolved — once a deployment target is picked, verify it can run Browsershot, or this decision gets revisited.
+
 ## Data model
 
 ```mermaid
@@ -87,7 +101,7 @@ erDiagram
         int id PK
         int apprentice_id FK
         int module_id FK
-        float score
+        float score "CHECK 1-6, 0.5 increments"
         date date
         string file_path "nullable"
         enum source "pdf|manual"
@@ -191,13 +205,15 @@ The `mapping_table` survives in reduced form: filename-substring → module numb
 |---------------|--------------------------------------------------------------|
 | Backend       | Laravel 12                                                   |
 | Frontend      | React 19 via Inertia.js                                      |
-| Styling       | Tailwind CSS                                                 |
+| Styling       | Tailwind CSS + shadcn/ui (pulled in per-component as needed) |
+| Database      | PostgreSQL — native enums, `CHECK` constraints (e.g. `grades.score`) |
 | Auth          | Laravel built-in auth; `users.role` enum + `hasOne` profile; seeded demo users, no register |
 | Authorization | Laravel Policies (`GradePolicy`, `ApprenticePolicy`)         |
 | File storage  | Local (`storage/app/grades/`)                                |
 | Email         | Laravel Mail (Mailable), Mailtrap SMTP driver in dev/test    |
 | Grading       | Plain PHP service, no library                                |
 | PDF viewer    | `react-pdf` (pdf.js wrapper), inline render on grade detail  |
+| Dossier PDF export | `spatie/laravel-pdf` (Browsershot/headless Chrome) — real app only, not the POC |
 | Comment updates | Inertia partial reload (polling) for MVP; Laravel Reverb + Echo is a stretch item, not required |
 
 No `maatwebsite/excel`. No MIME parser. No IMAP client. No queue driver beyond `sync`.
@@ -297,7 +313,7 @@ Unresolved, ordered by how much they block:
 1. **Maturité weighting scheme** — the CFC weights are known; maturité's are not. Blocks `WeightedAverage`. Needs a look at the source docs.
 2. **Does `year` gate module availability**, the way `track` does? A first-year submitting a fourth-year module should presumably fail. `year` is stored and currently unused.
 3. **Retakes / duplicate submissions** — same apprentice, same module, twice. New row, overwrite, or versioned? A system of record needs an answer; the average calculation needs one more.
-4. **Grade validation rule** — Swiss 1–6, and in what increments (0.5? 0.25?). Nothing downstream validates any more, so the app is the only guard.
+4. ~~**Grade validation rule**~~ — **Resolved (stack grill, 2026-08-21):** Swiss 1–6, half-point increments. Enforced as a Postgres `CHECK` constraint on `grades.score`.
 5. **Admin role** — present in Plan A, absent since. Seeder-only user creation means you cannot add an apprentice during the demo. Acceptable?
 6. **Deployment + CI** — is the demo localhost, or hosted? Does CI exist, or are tests run locally? Currently unstated.
 7. **Team's prior Laravel+Inertia experience** — determines whether week 1's shared spike is one week or two.
