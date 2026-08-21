@@ -1,0 +1,1 @@
+we have finished kinda the user stories, the original spec of the idea is inside 
