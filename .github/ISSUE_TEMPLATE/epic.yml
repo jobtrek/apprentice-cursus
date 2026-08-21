@@ -1,0 +1,30 @@
+name: Epic
+description: Create a new Epic.
+type: "Epic"
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please describe this new epic. Add a short description of the features involved in this Epic.
+        Epics are generally formulated using customer vocabulary, they focus on results, not technical details.
+        [Epics tutorial](https://www.atlassian.com/agile/project-management/epics)
+  - type: textarea
+    id: epic
+    attributes:
+      label: Epic description
+      description: What is this epic about.
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance-criterias
+    attributes:
+      label: Acceptance criteria
+      description: How to validate that the Epic is done.
+      placeholder: Short description of the result
+    validations:
+      required: true
+  - type: textarea
+    id: notes
+    attributes:
+      label: Additional notes
+      description: Any additional information or context related to the user story.

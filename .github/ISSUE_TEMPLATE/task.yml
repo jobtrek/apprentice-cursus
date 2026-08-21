@@ -1,0 +1,34 @@
+name: Task
+description: Create a new Task.
+type: "Task"
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please use this form to describe precisely the new task. Don't hesitate
+        to paste links, images or detailed instructions.
+  - type: textarea
+    id: task
+    attributes:
+      label: Task description
+      description: What is this task about.
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance-criterias
+    attributes:
+      label: Acceptance criteria
+      description: How to validate that the task is done.
+      placeholder: List of tests, list of acceptance criteria.
+    validations:
+      required: true
+  - type: textarea
+    id: technical-infos
+    attributes:
+      label: Technical informations
+      description: Any link to technical documents, e.g. Swagger Documentation, Architectural diagram can be added here
+  - type: textarea
+    id: notes
+    attributes:
+      label: Additional notes
+      description: Any additional information or context related to the user story.

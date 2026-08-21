@@ -1,0 +1,40 @@
+name: User Storie
+description: Create a new User Storie.
+type: "Story"
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Explain what kind of action your user will make, and the expected result.
+        [What are Agile user stories](https://www.atlassian.com/agile/project-management/user-stories)
+  - type: textarea
+    id: task
+    attributes:
+      label: Task description
+      description: What is this task about.
+      value: As a [persona], I want [an action] so that [a benefit or goal].
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance-criterias
+    attributes:
+      label: Acceptance criteria
+      description: How to validate that the task is done. Given [precondition] When [action] Then [result]
+      placeholder: List of tests, list of acceptance criteria.
+    validations:
+      required: true
+  - type: textarea
+    id: design
+    attributes:
+      label: Design considerations
+      description: Describe design information, paste wireframes...
+  - type: textarea
+    id: technical-infos
+    attributes:
+      label: Technical informations
+      description: Any link to technical documents, e.g. Swagger Documentation, Architectural diagram can be added here
+  - type: textarea
+    id: notes
+    attributes:
+      label: Additional notes
+      description: Any additional information or context related to the user story.
