@@ -3,6 +3,8 @@
 
 ## Auth (AUTH)
 
+### note from thomas: if we use a starter kit this should already be done, only thing needing to add is whether we decided to add a role column to the users table or we use a library like laravel-permissions
+
 * **[AUTH-01] Login with email and password:** As a user (apprenti, coach, formateur, or admin), I want to log in with my email and password, so that I can access the features relevant to my role.
 * **[AUTH-02] Stay logged in across sessions:** As a logged-in user, I want to remain logged in when I reload or navigate the app, so that I don't have to log in repeatedly.
 * **[AUTH-03] Log out:** As a logged-in user, I want to log out of the app, so that I can end my session securely on shared devices.

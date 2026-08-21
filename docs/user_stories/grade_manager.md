@@ -1,144 +1,94 @@
-# User stories — Grade manager
 
-First pass. Cards only — no acceptance criteria, they come in a later pass.
+# Grade Manager — User Story Backlog
 
-**Source:** `docs/plan-d/spec.md` (MVP > In) and `docs/plan-d/ARCHITECTURE.md`.
+> **Source of truth:** `docs/user_stories/user_story.md`. This file expands its **Grades (GR)** track into buildable stories. Every story below refines a `GR-xx` card or follows directly from one — where they disagree, `user_story.md` wins.
+>
+> **Spec:** `docs/plan-d/spec.md`, realigned against the SoT.
+>
+> Cards only — no acceptance criteria, they come in a later pass.
 
-**Scope of this pass**
-
-- Covers the full MVP "In" list, each story kept small.
-- **CFC track only.** Maturité stories are deliberately absent until the maturité weighting scheme is read off the source docs (spec.md, Open Question #1).
-- Roles: **apprentice** and **coach**. Trainer is notification-only (no UI), admin is unresolved (Open Question #5) — neither gets stories here.
-- Tracks mirror the workstream split in `spec.md`: a shared week-1 spike, then streams A–D, then the shared week-5 coach work.
+**Global dependencies:** AUTH-01 (login), AUTH-06 (role-based access), ADMIN-01 (accounts), ADMIN-03/04 (coach + formateur assignment), ADMIN-05 (year + section), ADMIN-06 (academic calendar), ADMIN-07 (matière list).
 
 ---
 
-## Week 1 — shared spike (CORE)
+## Grade Capture (CAP)
 
-All four devs, together. Every other stream depends on this; nothing below starts until it lands.
+> **Refines:** GR-01, GR-02, GR-03, GR-04.
+> **Dependencies:** ADMIN-06 (calendar — CAP-06 has no semester without it), ADMIN-07 (matière list — CAP-02 has nothing to offer without it).
 
-**CORE-01: Users table and role enum**
-As a developer, I want one `users` table with a role enum, so that authentication has a single boundary and the role can drive redirects and policy checks.
-
-**CORE-02: Role profile tables**
-As a developer, I want `apprentices`, `coaches` and `trainers` profile rows linked one-to-one to `users`, so that `auth()->user()->apprentice` is a real relationship instead of an assumption.
-
-**CORE-03: Apprentice assignment foreign keys**
-As a developer, I want `apprentices.coach_id` and `apprentices.trainer_id`, so that coach scoping and the notification step both have something concrete to query.
-
-**CORE-04: Modules table**
-As a developer, I want a `modules` table carrying track, category and subject, so that the weighted average and the coach's grouped test list each have the field they need.
-
-**CORE-05: Grades table with a score constraint**
-As a developer, I want `grades.score` constrained to 1–6 in half-point steps in the database itself, so that an invalid score cannot be stored even if the app-layer validation is bypassed.
-
-**CORE-06: Comments table**
-As a developer, I want a `comments` table hanging off a grade with an author, so that the coach feedback thread has a home before anyone builds it.
-
-**CORE-07: Demo user seeder**
-As a developer, I want seeded demo apprentices, coaches and a trainer, so that the app can be logged into and demoed without building a registration flow.
-
-**CORE-08: Policy skeleton**
-As a developer, I want `GradePolicy`, `ApprenticePolicy` and `CommentPolicy` registered from the start, so that every stream wires authorization in as it builds rather than retrofitting it in week 5.
-
-**CORE-09: Log in and land on my own page**
-As an apprentice or a coach, I want to log in and arrive on the page for my role, so that I don't have to know which URL belongs to me.
-
-**CORE-10: Canevas weights as test fixtures**
-As a developer, I want the CFC weighting values transcribed from the canevas into test fixtures, so that the weighted average is built against the real numbers instead of remembered ones.
+* **[CAP-01] Upload a scanned test PDF:** As an apprenti, I want to upload the scanned PDF of my graded test, so that the original document is part of my official record.
+* **[CAP-02] Select the matière:** As an apprenti, I want to choose which matière the test belongs to, so that it's filed under the right subject.
+* **[CAP-03] Enter the grade value:** As an apprenti, I want to enter the grade I received, so that it's recorded alongside the scan.
+* **[CAP-04] Enter the date of the test:** As an apprenti, I want to give the date of the test, so that the app can work out which year and semester it belongs to.
+* **[CAP-05] Refuse an impossible grade:** As an apprenti, I want a grade outside 1–6 or off the half-point steps refused when I submit, so that a typo doesn't quietly corrupt my moyenne.
+* **[CAP-06] Derive the semester from the test date:** As an apprenti, I want the app to work out the year and semester from the date I gave, so that I don't have to know which semester a date falls in.
+* **[CAP-07] Rename the file automatically:** As an apprenti, I want my uploaded PDF renamed to `year_semester_matiere_grade_firstname_lastname`, so that coaches and formateurs can identify files consistently outside the app.
+* **[CAP-08] Keep the scan:** As an apprenti, I want the renamed scan stored by the app, so that my coach and formateur can open the original later.
+* **[CAP-09] Protect the stored file:** As an apprenti, I want the file's URL guarded by the same rules as the grade page, so that knowing a filename isn't enough for someone else to read my test.
 
 ---
 
-## Stream A — Grade form and apprentice pages
+## My Record (REC)
 
-Depends on CORE.
+> **Refines:** GR-05, GR-06, GR-07, GR-08, GR-09.
+> **Dependencies:** CAP-01…08 (there is nothing to show until grades exist).
 
-**A-01: Upload a scanned grade PDF**
-As an apprentice, I want to pick my scanned grade PDF on an upload page, so that I can hand the document to the app instead of emailing it around.
-
-**A-02: Fill in the grade form**
-As an apprentice, I want to choose the module, enter my score and the date of the test, so that the grade is recorded against the right module.
-
-**A-03: Only see modules from my own track**
-As an apprentice, I want the module list to offer only modules belonging to my formation, so that I can't accidentally file a grade against a module that isn't mine.
-
-**A-04: Record a grade without a file**
-As an apprentice, I want to submit a grade with no PDF attached, so that a grade I was given verbally still ends up in my record.
-
-**A-05: See all my grades in one list**
-As an apprentice, I want a list of every grade I've submitted, so that I can track my progress without digging through old emails.
-
-**A-06: Open one grade and read the scan**
-As an apprentice, I want to open a grade and see the scanned PDF rendered in the page, so that I can check the original document without downloading a file.
-*Depends on B-06 for the authorized file route.*
+* **[REC-01] See my grades by matière:** As an apprenti, I want all my grades grouped by matière, so that I can follow my progress subject by subject.
+* **[REC-02] Open one grade and read the scan:** As an apprenti, I want to open a grade and see the PDF rendered in the page, so that I can check the original without downloading a file.
+* **[REC-03] See my moyenne per matière:** As an apprenti, I want an automatically calculated moyenne for each matière, so that I know how I'm doing in that subject without working it out myself.
+* **[REC-04] See my overall moyenne:** As an apprenti, I want a single overall moyenne across my matières, so that I have one number for where I stand. *(Blocked: the formula is deliberately undefined — GR-07 and Open Question #1 in `spec.md`. Do not ship a guessed weighting.)*
+* **[REC-05] Correct a grade I submitted:** As an apprenti, I want to edit a grade I already submitted, so that I can fix a mistake without asking an admin.
+* **[REC-06] Keep the filename correct after an edit:** As an apprenti, I want the stored file renamed again when I change the matière or the grade, so that the filename never disagrees with the record. *(Follows from CAP-07 + GR-08.)*
+* **[REC-07] Remove a grade I submitted:** As an apprenti, I want to delete a grade I added by mistake, so that my record and my moyennes aren't skewed by it.
+* **[REC-08] Nobody else reaches my record:** As an apprenti, I want another apprenti's grade to be refused outright rather than merely hidden, so that my record is genuinely private.
 
 ---
 
-## Stream B — Grade service, storage and notification
+## Review (REV)
 
-Depends on CORE.
+> **Refines:** GR-10, GR-11.
+> **Dependencies:** ADMIN-03 (coach assignment), ADMIN-04 (formateur assignment).
 
-**B-01: Persist a submitted grade**
-As an apprentice, I want my submitted grade saved the moment I hit submit, so that my record is updated without anyone re-typing it into a spreadsheet.
-
-**B-02: Reject a wrong-track module server-side**
-As a developer, I want the store step to re-check that the module belongs to the apprentice's track, so that a hand-crafted request can't bypass what the form hides.
-
-**B-03: Store the uploaded PDF**
-As an apprentice, I want my uploaded scan kept by the app, so that my coach can look at the original document later.
-
-**B-04: Rename the file per the JT convention**
-As a developer, I want stored scans renamed to the JT naming convention on save, so that the files stay identifiable outside the app.
-
-**B-05: Notify my coach and trainer**
-As a coach, I want an email the moment one of my apprentices submits a grade, with the scan attached, so that I know there's something to review without checking the app.
-
-**B-06: Serve the stored PDF through an authorized route**
-As a developer, I want the raw file URL gated by the same policy as the grade page, so that knowing a filename isn't enough to read someone else's scan.
+* **[REV-01] See the apprentices I follow:** As a coach, I want a list of the apprentices assigned to me, so that I have a way into each of their records.
+* **[REV-02] Open an apprenti's grades:** As a coach, I want one apprenti's grades grouped by matière with their moyennes, so that I can review their progress the way they see it themselves.
+* **[REV-03] Read the original scan:** As a coach, I want to open a single grade and see the scanned test, so that I can look at the actual paper and not just the number.
+* **[REV-04] Same access as a formateur:** As a formateur, I want the same list, grades and scans for the apprentices assigned to me, so that I can follow their progress without a separate tool.
+* **[REV-05] Stay inside my own group:** As a coach or formateur, I want an apprenti who isn't assigned to me to be refused, so that the assignment boundary is real and not just a link I wasn't shown.
+* **[REV-06] Review without editing:** As a coach or formateur, I want the grade data to be read-only for me, so that the apprenti's record stays theirs and there's no question who entered what.
 
 ---
 
----
+## Feedback (FBK)
 
-## Stream D — Weighted average, catalog and scoping
+> **Refines:** GR-12, GR-13.
+> **Dependencies:** REV-03 (comments live under the scan).
 
-Depends on CORE. D-02 depends on the fixtures from CORE-10.
-
-**D-01: Seed the CFC module catalog**
-As a developer, I want the CFC modules seeded with their category and subject, so that grades can be filed and weighted against real reference data.
-
-**D-02: Compute the weighted CFC average**
-As a developer, I want a service that turns an apprentice's grades into the weighted CFC average, so that the calculation the canevas used to do lives in tested code.
-
-**D-03: See my current average**
-As an apprentice, I want my weighted average shown with my grades, so that I know where I stand without keeping my own spreadsheet.
-
-**D-04: Only my own grades are reachable**
-As an apprentice, I want another apprentice's grade to be refused rather than merely hidden, so that my record is actually private.
-
-**D-05: Only my assigned apprentices are reachable**
-As a coach, I want an apprentice who isn't assigned to me to be refused, so that the assignment boundary is real and not a UI convention.
+* **[FBK-01] Comment on a grade as a coach:** As a coach, I want to leave a comment on a specific grade, so that I can give feedback where it belongs — especially on a low grade.
+* **[FBK-02] Comment on a grade as a formateur:** As a formateur, I want to leave a comment on a specific grade, so that I can give feedback on the work I'm responsible for.
+* **[FBK-03] Read the feedback on my grade:** As an apprenti, I want to see the comments left on my grade, right under the scan, so that I understand the feedback without hunting through email.
+* **[FBK-04] Know who said what:** As an apprenti, I want each comment to show its author and when it was written, so that I know whether it came from my coach or my formateur.
+* **[FBK-05] See new comments without reloading:** As an apprenti, I want the comment thread to pick up new feedback on its own, so that I'm not refreshing the page to check.
 
 ---
 
-## Week 5 — Coach drill-down and comments (COACH)
+## Notifications (NOT)
 
-Shared stream. Depends on D-02 for the averages and B-06 for the scan.
+> **Refines:** GR-14, GR-15.
+> **Dependencies:** CAP-01…08, FBK-01/02, ADMIN-03/04 (there is nobody to notify without assignments).
 
-**COACH-01: See my assigned apprentices**
-As a coach, I want a dashboard of only my own apprentices with their track, current average and last activity, so that I can see at a glance who's active and who needs a check-in.
+* **[NOT-01] Tell my coach about a new grade:** As a coach, I want an email when an apprenti I follow adds a grade, so that I know there's something to review without checking the app.
+* **[NOT-02] Tell my formateur about a new grade:** As a formateur, I want the same email for the apprentices assigned to me, so that I hear about new work as it lands.
+* **[NOT-03] Attach the scan to the notification:** As a coach or formateur, I want the renamed PDF attached to that email, so that I can glance at the test without logging in first.
+* **[NOT-04] Tell me when someone comments:** As an apprenti, I want an email when a coach or formateur comments on one of my grades, so that I don't have to keep opening the app to check for feedback.
 
-**COACH-02: Open one apprentice's tests**
-As a coach, I want an apprentice's tests grouped by subject, so that I can review their progress subject by subject rather than as one long list.
+---
 
-**COACH-03: Open a single test**
-As a coach, I want to open one test and see the scan with its feedback below it, so that I'm reading the document and the discussion in one place.
+## Open questions touching this track
 
-**COACH-04: Leave feedback on a grade**
-As a coach, I want to write a comment under a test, so that I can give feedback without opening a separate email.
+Carried from `docs/plan-d/spec.md`. Each one blocks or reshapes a story above.
 
-**COACH-05: Read my coach's feedback**
-As an apprentice, I want to read the comments my coach left on my grade, so that I know what to improve.
-
-**COACH-06: See new comments without a manual refresh**
-As an apprentice, I want the comment thread to pick up new feedback on its own, so that I'm not reloading the page to check.
+1. **The overall moyenne formula** — blocks REC-04 outright.
+2. **Are matières scoped by year or section?** — CAP-02 currently offers every active matière to every apprenti; the old track-gating that would have prevented that is gone.
+3. **A test dated outside every academic period** — reject it, or store it without a semester? CAP-06 and CAP-07 both need an answer.
+4. **Does an edit re-notify?** — REC-05 lets an apprenti change a grade that NOT-01/02 already emailed out. Re-send, or let the coach's copy go stale?
+5. **"Apprentices in my section" (GR-11)** — read here as "assigned to me" (REV-04). Section-wide access would be a materially wider boundary.

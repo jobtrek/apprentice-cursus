@@ -1,54 +1,62 @@
 # Spec: Gestionnaire de note — Plan D
 
-**Status:** proposal — current working plan, revised after two grill passes.
-**Source:** baseline `.scratch/plan-a/spec.md`, review `.scratch/plan-a/review.md`, superseded alternative `.scratch/plan-c/spec.md`.
+**Status:** realigned against `docs/user_stories/user_story.md`, which is now the **source of truth** for scope. Where this spec previously disagreed with it, this spec has been changed — not the backlog.
+**Source:** `docs/user_stories/user_story.md` (SoT). Prior history: baseline `.scratch/plan-a/spec.md`, review `.scratch/plan-a/review.md`, superseded alternative `.scratch/plan-c/spec.md`.
+**Sibling spec:** the dossier de formation is specced separately in `docs/dossier-formation-part/spec.md` and is only cross-referenced here.
 
 ## Thesis
 
 **The app replaces the Excel workbook as the system of record for grades.**
 
-That is the whole pitch, and it is deliberately different from where Plan D started. Two earlier framings are now dead:
+An apprenti uploads a scanned test, files it under a matière, and enters the grade. The app stores it, renames the file to the firm's convention, shows the apprenti their record and their moyennes, and notifies the coach and formateur. No spreadsheet in the loop at any point.
 
-- Plan C's "the app finds your grade in your inbox" — dead, no mailbox access (see `imap-notes.md`).
-- Plan D's first pass, "confirm, don't fill" via dropped `.eml` — dead, dropped by decision. An apprentice-named PDF filename carries too little signal to build an interaction around.
+Three framings are dead:
 
-What remains is smaller in ambition and larger in usefulness: a database that holds every grade, computes the weighted CFC average the canevas spreadsheet used to compute, shows an apprentice their own record, shows a coach their assigned apprentices' records, and emails coach + trainer when a grade lands. No spreadsheet in the loop at any point.
+- Plan C's "the app finds your grade in your inbox" — no mailbox access (see `imap-notes.md`).
+- Plan D's first pass, "confirm, don't fill" via dropped `.eml` — dropped by decision.
+- Plan D's second pass, "the weighted CFC average is the headline feature" — **retired**. `user_story.md` (GR-06/GR-07) asks for a moyenne per matière and an overall moyenne whose formula is explicitly deferred, and its matière catalog (ADMIN-07) carries no category or weight. See "Moyennes" below.
 
-## User stories
+## Roles
 
-**Apprentice.** I log in, upload my scanned grade PDF, fill the grade form (module, score, date), submit. The system renames the file per the JT convention, stores it, records the grade, and emails my coach and trainer with the renamed PDF attached. I can see my full grade history and my current weighted average.
+Four real roles, all with a UI. This is a change: earlier revisions had formateur as notification-only and admin unresolved.
 
-**rename files -> figure it out**
+| Role | What they do |
+|------|--------------|
+| **Apprenti** | Uploads scanned tests, files them under a matière, enters grades, sees their own record and moyennes, edits/deletes their own grades, reads feedback. |
+| **Coach** | Reads grades and PDFs for their assigned apprentices, comments on them. Read-only on grade data. |
+| **Formateur** | Same read + comment access as a coach, for the apprentices assigned to them. |
+| **Admin** | Creates and deactivates accounts, assigns coach and formateur, sets year and section, defines the academic calendar, manages the matière and compétence catalogs. |
 
-Where the filename happens to encode the score, the form arrives pre-filled with it as a suggestion — see "Filename prefill" below. This is a convenience, not the interaction model.
+Registration is admin-driven (ADMIN-01); there is no self-service signup and no self-service password reset (AUTH-05 — the locked-out user is told to contact their admin).
 
-**Coach.** I log in and see a dashboard listing my assigned apprentices — track, current weighted average, and when their record was last updated (the timestamp of their most recent grade). Clicking an apprentice opens their test list, grouped by subject (French, Math, ...), each test shown with its grade. Clicking a test opens the scanned PDF with a comment thread below it — I can write comments there; the apprentice can read them (not reply). Read-only on grade data itself — no editing, no approval step.
-
-Three-level drill-down: **dashboard → apprentice's test list (grouped by subject) → single test (PDF + comments)**. See "Coach dashboard drill-down" below for the routes and data behind each level.
-
-
-## Decisions taken (grill pass 2)
-
-| # | Question | Decision |
-|---|----------|----------|
-| 1 | `.eml` intake? | **Dropped.** PDF-only upload. `EmlParser` removed; no MIME parsing anywhere. |
-| 2 | Does the filename carry the score? | **Sometimes** — varies by school. Parser attempts it opportunistically; the field is always editable and never assumed correct. |
-| 3 | Does the app compute the weighted CFC average? | **Yes.** This is now a headline feature, not a dropped Excel side-effect. |
-| 4 | How do roles map to Laravel auth? | **`users` table + role enum + `hasOne` profile** (Apprentice / Coach / Trainer). |
-
-## Decisions taken (stack grill, 2026-08-21)
+## Decisions taken (realignment against `user_story.md`)
 
 | # | Question | Decision |
 |---|----------|----------|
-| 5 | DB engine? | **PostgreSQL**, not MySQL/SQLite — chosen for native enum types and `CHECK` constraints, notably on `grades.score`. |
-| 6 | `grades.score` validation rule (Open Question #4)? | **Resolved.** Swiss 1–6, half-point increments only. Enforced as a Postgres `CHECK` constraint: `score BETWEEN 1 AND 6 AND score * 2 = FLOOR(score * 2)`, not just app-layer validation. |
-| 7 | Dossier competences storage: normalized or jsonb? | **Normalized pivot table** (`dossier_entry_competences`: `dossier_entry_id`, `competence_code` FK, `marker` enum) — not a jsonb column. Consistent with why Postgres was picked (typing/constraints over schemaless flexibility). |
-| 8 | UI component library? | **shadcn/ui**, layered on the existing Tailwind setup. No blanket policy — components pulled in per-surface as needed (forms, dialogs, tables), not a wholesale redesign. |
-| 9 | Dossier PDF export (full Laravel product, not the POC)? | **`spatie/laravel-pdf`** (Browsershot/headless Chrome), replacing the POC's `window.print()` + `@media print` approach. Requires headless Chrome + Node on the server — see deployment note below. |
-| 10 | Grade PDF storage? | **Unchanged** — user-uploaded files, local disk (`storage/app/grades/`), per the existing architecture. |
-| 11 | Real-time comments? | **Unchanged** — Inertia polling for MVP; Laravel Reverb stays a stretch item, not committed. |
+| 12 | `apprentices.track` (cfc\|maturite)? | **Dropped.** Replaced by `year` + `section` per ADMIN-05. The cfc/maturité split, the track-scoped module catalog, and track-gating on module selection all go with it. |
+| 13 | Weighted CFC average? | **Retired as the thesis.** Per-matière moyenne (GR-06) plus an overall moyenne whose formula is deferred (GR-07). `modules.category`, `weight_group`, the CFC weight table and the canevas fixtures are all cut. |
+| 14 | `modules` table? | **Replaced by `matieres`**, admin-managed (ADMIN-07). No `number`, `type` (CIE/EPSIC), `track`, `category`, `weight_group`. |
+| 15 | Admin role (was Open Question #5)? | **Resolved — in.** A full ADMIN track exists in the SoT. Accounts can be created during a demo. |
+| 16 | Formateur UI? | **In.** GR-11 gives the formateur the same grade/PDF read access as a coach; GR-12 lets them comment. No longer notification-only. |
+| 17 | Editing grades? | **In.** GR-08/GR-09 let an apprenti edit and delete their own grades. This reverses the earlier "Out" decision. |
+| 18 | Filename prefill (`FilenameParser`, `MappingTable`)? | **Cut.** Absent from the SoT entirely. `Services/Prefill/` and the `mapping_table` are removed. |
+| 19 | Rename convention? | **Known and named:** `year_semester_matiere_grade_firstname_lastname` (GR-04). The semester component is what makes the academic calendar (ADMIN-06) a dependency, not a nice-to-have. |
+| 20 | Data-only grades (no PDF)? | **Out.** GR-01 makes the scanned PDF the point of the upload; no SoT story records a grade without one. Reverses the earlier "file optional" decision. |
+| 21 | Comment direction? | **Two authors, one reader.** Coach *and* formateur may comment (GR-12); the apprenti reads (GR-13) and is emailed (GR-15). Still not a reply thread. |
 
-**Deployment note:** `spatie/laravel-pdf` needs headless Chrome + Puppeteer/Node available on the server. Open Question #6 (deployment target) is still unresolved — once a deployment target is picked, verify it can run Browsershot, or this decision gets revisited.
+### Decisions retained from the stack grill (2026-08-21)
+
+Unaffected by the realignment:
+
+| # | Question | Decision |
+|---|----------|----------|
+| 5 | DB engine? | **PostgreSQL** — native enum types and `CHECK` constraints. |
+| 6 | `grades.score` validation? | Swiss 1–6, half-point increments, as a Postgres `CHECK`: `score BETWEEN 1 AND 6 AND score * 2 = FLOOR(score * 2)`. |
+| 8 | UI component library? | **shadcn/ui** on the existing Tailwind setup, pulled in per-surface. |
+| 10 | Grade PDF storage? | Local disk (`storage/app/grades/`), served through an authorized route. |
+| 11 | Real-time comments? | Inertia polling for MVP; Laravel Reverb stays a stretch item. |
+
+Decision #7 (dossier compétences as a normalized pivot) now belongs to `docs/dossier-formation-part/spec.md`. Decision #9 (`spatie/laravel-pdf`) serves the dossier export only.
 
 ## Data model
 
@@ -56,11 +64,12 @@ Three-level drill-down: **dashboard → apprentice's test list (grouped by subje
 erDiagram
     USERS ||--o| APPRENTICES : "hasOne"
     USERS ||--o| COACHES : "hasOne"
-    USERS ||--o| TRAINERS : "hasOne"
+    USERS ||--o| FORMATEURS : "hasOne"
     COACHES ||--o{ APPRENTICES : "coach_id"
-    TRAINERS ||--o{ APPRENTICES : "trainer_id"
+    FORMATEURS ||--o{ APPRENTICES : "formateur_id"
     APPRENTICES ||--o{ GRADES : "apprentice_id"
-    MODULES ||--o{ GRADES : "module_id"
+    MATIERES ||--o{ GRADES : "matiere_id"
+    ACADEMIC_PERIODS ||--o{ GRADES : "academic_period_id"
     GRADES ||--o{ COMMENTS : "grade_id"
     USERS ||--o{ COMMENTS : "user_id (author)"
 
@@ -69,43 +78,46 @@ erDiagram
         string name
         string email
         string password
-        enum role "apprentice|coach|trainer|admin"
+        enum role "apprenti|coach|formateur|admin"
+        bool is_active "ADMIN-02 deactivation"
     }
     APPRENTICES {
         int id PK
         int user_id FK
         int coach_id FK
-        int trainer_id FK
-        enum track "cfc|maturite"
+        int formateur_id FK
         int year
+        enum section
     }
     COACHES {
         int id PK
         int user_id FK
     }
-    TRAINERS {
+    FORMATEURS {
         int id PK
         int user_id FK
+        enum section "drives ADMIN-04 assignment"
     }
-    MODULES {
+    MATIERES {
         int id PK
-        string number
-        enum type "CIE|EPSIC"
         string name
-        enum track "cfc|maturite|shared"
-        enum category "tpi|base_elargie|informatique|culture_generale"
-        string weight_group
-        string subject "display grouping, e.g. French, Math"
+        bool is_active
+    }
+    ACADEMIC_PERIODS {
+        int id PK
+        int year
+        int semester
+        date starts_on
+        date ends_on
     }
     GRADES {
         int id PK
         int apprentice_id FK
-        int module_id FK
+        int matiere_id FK
+        int academic_period_id FK "derived from date"
         float score "CHECK 1-6, 0.5 increments"
         date date
-        string file_path "nullable"
-        enum source "pdf|manual"
-        string status
+        string file_path
     }
     COMMENTS {
         int id PK
@@ -116,88 +128,60 @@ erDiagram
     }
 ```
 
-Notes on the additions:
+Notes:
 
-- **`users.role` + profile** — authentication is always against `users`; the role enum drives the redirect and the policy checks; the profile row (`apprentices` / `coaches` / `trainers`) holds the domain data. `auth()->user()->apprentice` is a real `hasOne`, not hand-waving.
-- **`apprentices.track`** — `cfc` | `maturite`. Gates which modules are valid for that apprentice.
-- **`apprentices.trainer_id`** — added because the notify step has always said "coach + trainer" while no plan ever gave trainer a foreign key. Without this the notification cannot be implemented.
-- **`modules.track`** — `cfc` | `maturite` | `shared`.
-- **`modules.category`** — required by the weighted average (see below). Was implicit in the canevas sheet structure, now explicit.
-- **`modules.subject`** — a display grouping (French, Math, ...) for the coach's per-apprentice test list. Deliberately a separate field from `category`: `category` drives the weighted-average calculation (4 canevas buckets), `subject` drives how tests are grouped on screen. Conflating them would force the weighting scheme to also be the UI taxonomy, which the canevas doesn't guarantee.
-- **`grades.source`** — `pdf` | `manual` only (`eml` removed).
+- **`users.role` + profile** — authentication is always against `users`; the role enum drives the redirect and the policy checks (AUTH-06); the profile row holds the domain data. `auth()->user()->apprentice` is a real `hasOne`.
+- **`users.is_active`** — ADMIN-02 asks for deactivation, not deletion, so access is revoked without orphaning grades.
+- **`apprentices.year` + `section`** — replace `track`. `year` is no longer an unused column: it feeds the rename convention and the academic-period lookup.
+- **`formateurs.section`** — the field the admin filters on when picking a formateur (ADMIN-04). **Scoping is on `apprentices.formateur_id`, not on section** — GR-11's "apprentices in my section" resolves to "apprentices assigned to me", because ADMIN-04 makes the assignment explicit. See Open Questions #10.
+- **`academic_periods`** — ADMIN-06's calendar. A grade's semester is derived by looking its `date` up against these ranges; it is stored on the row so a later calendar edit doesn't silently rewrite history.
+- **`matieres`** — flat and admin-managed. No category, no weight, no section scoping (see Open Questions #8).
+- **`grades.file_path`** — no longer nullable; see decision #20.
+- **`grades.status` and `grades.source`** — cut. With `.eml` gone and prefill gone there is one intake path and one state.
 
-### Grade status
+Multiple grades per apprenti per matière are the normal case — that is what makes a per-matière moyenne meaningful. This retires the old "retakes" open question: a retake is simply another row.
 
-One persisted state in the MVP: a grade row is created on submit, notification fires in the same request, and the row is `notified`. The four-state machine inherited from Plan C (`incoming → prefilled → confirmed → notified`) described states that never persisted — prefill returned a draft without saving. Keep a `status` column for future use, seed it `notified`, and don't pretend there's a workflow.
+## Moyennes
 
-## Weighted average
+Two numbers, per GR-06 and GR-07:
 
-The feature that replaces the canevas `Totaux` sheet. Per the canevas structure:
+- **Moyenne per matière** — the mean of that apprenti's grades in that matière. Plain, unweighted, computed on read.
+- **Overall moyenne** — computed from the per-matière moyennes. **The formula is deliberately undefined.** GR-07 defers it to a later pass, and the matière catalog carries no weights to compute one from.
 
-| Category                          | Weight |
-|-----------------------------------|--------|
-| TPI                               | 0.4    |
-| Compétences de base élargies      | 0.1    |
-| Compétences en informatique       | 0.3    |
-| Culture générale                  | 0.2    |
+Implemented as `Services/Grading/Moyenne.php`. Until the overall formula is settled, implement the per-matière moyenne and leave the overall one behind a single, obvious seam rather than guessing a weighting.
 
-Within *Compétences en informatique*: modules école pro 80% / CIE 20%.
+The CFC weight table (TPI 0.4 / base élargie 0.1 / informatique 0.3 / culture générale 0.2) that earlier revisions of this spec carried is **not** deleted knowledge — it is a candidate answer for GR-07, and it is recorded in this repository's git history. It is not implemented, because nothing in the current data model can distinguish those four buckets.
 
-Implemented as `Services/Grading/WeightedAverage.php` — a pure function over an apprentice's grades plus their modules' categories. No spreadsheet, no formula strings, plain PHP, unit-tested against values read off the real canevas.
-
-**Open:** the maturité track almost certainly weights differently from CFC (maturité professionnelle has its own scheme). The table above is the CFC scheme. The maturité scheme must be read off the source docs before this is built — see Open Questions #1.
-
-## Coach comments (proposed addition)
-
-Dropped the click-to-annotate idea (positional markers anchored to PDF coordinates) — too much surface for what it's worth. Replaced with a plain comment thread below the rendered PDF: no coordinates, no per-page state, just a `Grade hasMany Comment`.
-
-**Data model.** `comments` table: `grade_id`, `user_id` (author), `body`, `created_at`. `CommentPolicy@create` scoped the same way as `GradePolicy` — a coach may only comment on grades belonging to their assigned apprentices. `CommentPolicy@view` is wider: the apprentice may view (not create) comments on their own grades. One-directional by decision — coach writes, apprentice reads; not a two-way thread. This reverses the earlier "Out" decision on coach comments — see updated MVP scope below.
-
-## Coach dashboard drill-down
-
-Three levels, each gated by the existing policies:
+## Request flow: submitting a grade
 
 ```
-1. GET /coach/apprentices
-   → CoachController@index
-   → Apprentice::where('coach_id', $coach->id), each with:
-       track, weighted average (WeightedAverage service), last_activity (MAX(grades.created_at))
-   → Coach/Dashboard.jsx: one row per apprentice
-
-2. GET /coach/apprentices/{apprentice}
-   → CoachController@show  (ApprenticePolicy::view — 403 if not this coach's apprentice)
-   → Grade::where('apprentice_id', $apprentice->id)->with('module')->get()->groupBy('module.subject')
-   → Coach/ApprenticeGrades.jsx: tests grouped by subject, grade shown next to each
-
-3. GET /coach/apprentices/{apprentice}/grades/{grade}
-   → GradeController@show  (GradePolicy::view — same 403 rule as level 2)
-   → Grade + its comments, eager-loaded
-   → Grades/Show.jsx: rendered PDF (react-pdf) + comment thread below
-       - coach: comment form visible (CommentPolicy::create)
-       - apprentice, viewing the same page for their own grade: comment thread visible, no form (CommentPolicy::create denies)
+1. Apprenti opens Grades/Upload
+2. Selects the scanned PDF, picks the matière, enters the score and the date
+3. POST /grades  (GradeController@store)
+     ├─ validate: score in range, matière active, file present
+     ├─ resolve academic_period from the date (ADMIN-06 calendar)
+     ├─ GradeService::store()   — persist the Grade row
+     ├─ GradeService::rename()  — year_semester_matiere_grade_firstname_lastname
+     └─ GradeService::notify()  — Mail to coach + formateur, renamed PDF attached
+4. Redirect to Grades/List — the grade appears, moyennes recomputed on read
 ```
 
-`Grades/Show.jsx` is shared between roles — same component, the comment form's visibility is driven by an Inertia prop (`can.comment`) computed server-side from `CommentPolicy`, not a client-side role check. This is the same "enforce at the query/policy layer, don't UI-hide" rule the rest of the spec already applies to grade visibility.
+Posting a comment (GR-12) follows the same shape and fires a notification to the apprenti (GR-15).
 
-"Last updated" on the dashboard (level 1) is not a new column — it's `MAX(grades.created_at)` per apprentice, computed on read like the weighted average already is. No change to file storage; `storage/app/grades/` stays flat.
+Every step is synchronous inside one Laravel request. No queue worker, no background job.
 
-**Displaying the PDF.** The scanned grade PDF needs to render inline on the grade detail page (not just a download link) so the comment thread sits directly under it. Use a PDF.js-based React component:
-- `react-pdf` (`npm i react-pdf`) — thin wrapper around Mozilla's pdf.js. `<Document file={...}><Page pageNumber={1} /></Document>`. Straightforward, no extra chrome — good fit here since there's no annotation/highlight need anymore.
-- Feed it the grade's stored file URL (`storage/app/grades/...` via a signed/authorized route, not a public disk path — the policy check that gates the grade page must also gate the raw file).
+## Review flow: coach and formateur
 
-**Live updates — decision needed.** Two options, different cost:
-- **Polling (default, no new infra).** After posting, or every few seconds, `router.reload({ only: ['comments'] })` (Inertia partial reload). Zero new dependencies, fits the existing `sync`-everything stack.
-- **WebSockets (real-time, adds infra).** Laravel Reverb (first-party WebSocket server, ships with Laravel 12) + Laravel Echo on the frontend. A `CommentPosted` event broadcasts on a private channel scoped to the grade (`private-grade.{id}`), authorized in `routes/channels.php` the same way the policy gates the page. Only worth it if the demo wants to show two browsers updating live without a manual refresh — otherwise it's infrastructure (a running Reverb process, `laravel-echo` + `pusher-js` on the frontend, channel auth) for a cosmetic gain in a single-demo-session app.
+Both roles read through the same pages, scoped identically:
 
-Recommendation: ship polling for MVP, keep Reverb as a stretch item if a workstream finishes early. See `technological_choices.md` for the reading list on both.
+```
+1. GET /apprentices                       — those assigned to me
+2. GET /apprentices/{apprentice}          — their grades grouped by matière
+3. GET /apprentices/{apprentice}/grades/{grade}
+                                          — rendered PDF + comment thread + comment form
+```
 
-## Filename prefill (reduced scope)
-
-`FilenameParser` runs on the uploaded PDF's original filename and attempts to extract module reference, date, and — where the school encodes it — the score. Results arrive as *suggestions* in the form, all fields editable.
-
-What this is not: a confirmation screen, a confidence score, or a mapping table of sender patterns. Those existed to serve the `.eml` interaction and go with it. `prefill_confidence` is cut — a heuristic score over a handful of regex rules is theater the demo audience cannot evaluate.
-
-The `mapping_table` survives in reduced form: filename-substring → module number, seeded from the naming-convention doc. It is a lookup, not a scoring system.
+Level 3 is the same component the apprenti reaches for their own grade; the comment form's visibility comes from an Inertia prop computed server-side from `CommentPolicy`, not a client-side role check. Enforce at the query/policy layer, never by UI-hiding — a hand-crafted URL must 403, not render.
 
 ## Tech stack
 
@@ -205,122 +189,140 @@ The `mapping_table` survives in reduced form: filename-substring → module numb
 |---------------|--------------------------------------------------------------|
 | Backend       | Laravel 12                                                   |
 | Frontend      | React 19 via Inertia.js                                      |
-| Styling       | Tailwind CSS + shadcn/ui (pulled in per-component as needed) |
-| Database      | PostgreSQL — native enums, `CHECK` constraints (e.g. `grades.score`) |
-| Auth          | Laravel built-in auth; `users.role` enum + `hasOne` profile; seeded demo users, no register |
-| Authorization | Laravel Policies (`GradePolicy`, `ApprenticePolicy`)         |
-| File storage  | Local (`storage/app/grades/`)                                |
+| Styling       | Tailwind CSS + shadcn/ui (per-component as needed)           |
+| Database      | PostgreSQL — native enums, `CHECK` constraints               |
+| Auth          | Laravel built-in auth; `users.role` enum + `hasOne` profile; admin-created accounts, no register, no self-service reset |
+| Authorization | Laravel Policies (`GradePolicy`, `ApprenticePolicy`, `CommentPolicy`) |
+| File storage  | Local (`storage/app/grades/`), served through an authorized route |
 | Email         | Laravel Mail (Mailable), Mailtrap SMTP driver in dev/test    |
-| Grading       | Plain PHP service, no library                                |
+| Moyennes      | Plain PHP service, no library                                |
 | PDF viewer    | `react-pdf` (pdf.js wrapper), inline render on grade detail  |
-| Dossier PDF export | `spatie/laravel-pdf` (Browsershot/headless Chrome) — real app only, not the POC |
-| Comment updates | Inertia partial reload (polling) for MVP; Laravel Reverb + Echo is a stretch item, not required |
+| Comment updates | Inertia partial reload (polling); Laravel Reverb + Echo is a stretch item |
 
-No `maatwebsite/excel`. No MIME parser. No IMAP client. No queue driver beyond `sync`.
+No `maatwebsite/excel`. No MIME parser. No IMAP client. No queue driver beyond `sync`. No filename parser.
 
 ## Architecture
 
 ```
-second-group-project/
-├── app/
-│   ├── Http/Controllers/        # GradeController, CoachController, CommentController
-│   ├── Models/                  # User, Apprentice, Coach, Trainer, Grade, Module, Comment
-│   ├── Policies/                # GradePolicy, ApprenticePolicy, CommentPolicy
-│   ├── Mail/                    # GradeNotification
-│   └── Services/
-│       ├── GradeService.php     # store, rename, notify
-│       ├── Grading/             # WeightedAverage
-│       └── Prefill/             # FilenameParser, MappingTable
-├── database/migrations/
-├── database/seeders/            # DemoUsersSeeder, ModuleCatalogSeeder (per track), MappingTableSeeder
-├── resources/js/Pages/
-│   ├── Auth/
-│   ├── Grades/                  # Upload.jsx, List.jsx, Show.jsx (PDF + comments, shared coach/apprentice)
-│   └── Coach/                   # Dashboard.jsx (apprentice list), ApprenticeGrades.jsx (subject-grouped tests)
-└── storage/app/grades/
+app/
+├── Http/Controllers/
+│   ├── GradeController.php        # store, index, show, update, destroy
+│   ├── ReviewController.php       # coach + formateur: apprentice list, one apprentice
+│   ├── CommentController.php      # store
+│   └── Admin/
+│       ├── UserController.php     # create, edit, deactivate, assign coach/formateur, year/section
+│       ├── MatiereController.php  # ADMIN-07
+│       ├── AcademicPeriodController.php  # ADMIN-06
+│       └── CompetenceController.php      # ADMIN-08 — serves the dossier spec
+├── Models/                        # User, Apprentice, Coach, Formateur, Matiere,
+│                                  # AcademicPeriod, Grade, Comment
+├── Policies/                      # GradePolicy, ApprenticePolicy, CommentPolicy, AdminPolicy
+├── Mail/
+│   ├── GradeSubmitted.php         # GR-14 — renamed PDF attached
+│   └── CommentPosted.php          # GR-15
+└── Services/
+    ├── GradeService.php           # store(), rename(), notify()
+    ├── AcademicCalendar.php       # date -> academic period
+    └── Grading/
+        └── Moyenne.php            # per-matière; overall left as a seam (GR-07)
+database/
+├── migrations/
+└── seeders/                       # AdminSeeder (bootstrap admin), DemoDataSeeder
+resources/js/Pages/
+├── Auth/                          # Login, ChangePassword
+├── Grades/                        # Upload, List, Show
+├── Review/                        # Apprentices, ApprenticeGrades
+└── Admin/                         # Users, Matieres, AcademicPeriods, Competences
 ```
 
-No `Jobs/`, no `Exports/`, no `Services/Inbox/`.
+Absent by decision: `Jobs/`, `Exports/`, `Services/Inbox/`, `Services/Prefill/`, any MIME parser, any spreadsheet library.
 
 ## MVP scope
 
 ### In
-- Seeded demo users (apprentice ×2 tracks, coach ×2, trainer, admin), simple auth, no register
-- `users.role` + profile model, wired to policies
-- Two tracks (`cfc`, `maturite`) with track-scoped module catalogs
-- PDF upload + grade form, file optional (data-only grades allowed)
-- Opportunistic filename prefill as form suggestions
-- Rename per JT convention on store
-- Coach + trainer email notification, renamed PDF attached, via Mailtrap
-- Apprentice grade list + weighted average
-- Coach dashboard: assigned apprentices only, their grades + averages, read-only
-- Weighted CFC average calculation, unit-tested against the canevas
-- Coach comments on a grade (one-directional: coach writes, apprentice reads; no real-time infra)
-- Coach drill-down: dashboard (per-apprentice average + last-activity) → subject-grouped test list → single test with PDF + comments
+- Login, persistent session, logout, password change, locked-out guidance (AUTH-01…05)
+- Role-based access enforced at the policy/query layer (AUTH-06)
+- Admin: create/edit/deactivate accounts, assign coach and formateur, set year and section, view all assignments (ADMIN-01…05, 09)
+- Admin: academic calendar, matière catalog, compétence catalog (ADMIN-06…08)
+- Apprenti: upload a scanned test, file it under a matière, enter the grade (GR-01…03)
+- Automatic rename to `year_semester_matiere_grade_firstname_lastname` (GR-04)
+- Apprenti: own grades grouped by matière, moyenne per matière (GR-05, GR-06)
+- Apprenti: edit and delete own grades (GR-08, GR-09)
+- Coach and formateur: read assigned apprentices' grades and PDFs (GR-10, GR-11)
+- Coach and formateur: comment on a grade; apprenti reads comments (GR-12, GR-13)
+- Email on new grade to coach + formateur; email on new comment to apprenti (GR-14, GR-15)
 
 ### Out
+- **Overall moyenne formula** — GR-07 is in the backlog, the formula is deferred; ship the seam, not a guess
 - `.eml` / IMAP / any email intake — decided against, not deferred
-- Confidence scoring on prefill — cut
-- PDF click-to-annotate (positional comments anchored to a coordinate on the scanned document) — considered and dropped in favor of a plain comment thread, see "Coach comments" above
+- Filename prefill and the mapping table — cut, absent from the SoT
+- Data-only grades with no PDF — cut, see decision #20
+- cfc/maturité tracks and any track-gated module catalog — cut, see decision #12
+- Self-service registration and password reset — admin-driven by design (AUTH-05)
+- Apprenti replying to a comment — one direction, coach/formateur write, apprenti reads
 - Real-time comment updates via WebSockets (Reverb) — stretch item; polling covers the MVP
-- Coach approval workflow, editing grades
-- Trainer dashboard (notification-only)
+- Coach/formateur approval workflow, or editing an apprenti's grade
 - Excel export in any form
 - OneDrive / SharePoint / Microsoft Graph
-- Training document management
+- Dossier de formation — separate spec, `docs/dossier-formation-part/spec.md`
 
-This is a demo-quality school project, not a production deployment. Seeded fake apprentice data, so no Swiss data-protection work belongs in the 6-week budget.
+This is a demo-quality school project, not a production deployment. Seeded fake apprenti data, so no Swiss data-protection work belongs in the budget.
 
 ## Risks
 
 | Risk | Mitigation |
 |------|------------|
-| **Weighted average formula wrong** — now the headline feature, and it's the risk Plan A's review originally flagged as the biggest | Read the values off the canevas first, encode as unit-test fixtures *before* writing the service. Do this in week 1, not week 4. |
-| Maturité weighting scheme unknown | Blocking question — resolve before building `WeightedAverage` (Open Questions #1) |
-| Track/module assignment wrong | Validate the split against the canevas before seeding; treat as source data, not a guess |
-| Coach sees another coach's apprentice | Policies enforced at the query layer, not UI-hidden; explicitly feature-tested |
-| Schema blocks all four devs in week 1 | Accept it: week 1 is a shared schema+auth spike, not four parallel streams (see below) |
-| Team learning curve (Laravel 12 + Inertia + React 19 + policies + testing) | If the team hasn't shipped Laravel+Inertia before, weeks 1–2 are partly tutorial time. Budgeted below. |
+| **The academic calendar is load-bearing and easy to under-build** — GR-04's rename and every semester grouping depend on ADMIN-06 existing first | Build the calendar and `AcademicCalendar` resolution in week 1, not alongside the upload form. Decide up front what happens to a grade dated outside every defined period. |
+| **GR-07's undefined formula spreads** — an overall moyenne shown wrong is worse than one not shown | Do not ship a guessed weighting. Render the per-matière moyennes and leave the overall one absent or explicitly "not yet defined" until the formula is settled. |
+| Admin track is larger than it looks — 9 stories, mostly CRUD, all blocking | Give it a dedicated stream from week 1; treat ADMIN-06/07 as prerequisites for the grades stream, not parallel to it. |
+| Coach or formateur sees an unassigned apprenti | Policies enforced at the query layer, not UI-hidden; explicitly feature-tested including the 403 case. |
+| Team learning curve (Laravel 12 + Inertia + React 19 + policies + testing) | If the team hasn't shipped Laravel+Inertia before, weeks 1–2 are partly tutorial time. |
 
 ## Workstream split (4 devs, 6 weeks)
 
-Week 1 is **not** parallel. Every stream depends on the schema and the auth/role model, so those get built once, together, first.
+Week 1 is **not** parallel. Every stream depends on the schema and the auth/role model, so those get built once, together, first. The realignment also moved work: the two streams that used to be `FilenameParser` and `WeightedAverage` no longer exist, and admin CRUD is now the biggest single block.
 
 | Week | Plan |
 |------|------|
-| 1 | **All four, together:** migrations, `users`+role+profile, policies skeleton, seeders, canevas values transcribed into test fixtures. Ends with a schema nobody needs to change. |
-| 2–4 | **A:** grade form + upload + list pages · **B:** `GradeService` store/rename/notify + Mailtrap · **C:** `FilenameParser` + mapping table on fixtures · **D:** `WeightedAverage` + module catalog seeder + policies |
-| 5 | Coach dashboard, integration, authorization + track feature tests |
+| 1 | **All four, together:** migrations (users + profiles + matieres + academic_periods + grades + comments), auth, policies skeleton, bootstrap admin seeder. Ends with a schema nobody needs to change. |
+| 2–4 | **A:** grade upload + form + own-record pages · **B:** `GradeService` store/rename/notify + both Mailables + Mailtrap · **C:** admin account management + assignments (ADMIN-01…05, 09) · **D:** admin catalogs + calendar (ADMIN-06…08) + `AcademicCalendar` + `Moyenne` |
+| 5 | Coach/formateur review pages, comments, integration, authorization feature tests |
 | 6 | Polish, demo script, buffer |
 
-Fallback floor if a stream slips: cut the coach dashboard to a plain list without averages. Cut prefill entirely before cutting the average — the average is the thesis.
+Fallback floor if a stream slips: cut the admin UI to seeders for the catalogs (ADMIN-07/08) — they are reference data, and a seeder demos the same behaviour. Cut the overall moyenne before anything else; it has no formula anyway.
 
 ## Test strategy
 
-- Unit: `WeightedAverage` against real canevas values, both tracks — the highest-value test in the suite
-- Unit: `FilenameParser` (incl. filenames with and without an encoded score), mapping table lookups
-- Unit: rename logic against JT convention fixtures
+- Unit: `AcademicCalendar` — a date resolves to the right year+semester, including the out-of-range case
+- Unit: rename logic against `year_semester_matiere_grade_firstname_lastname` fixtures
+- Unit: `Moyenne` per matière, including an apprenti with a single grade and one with none
 - Feature: grade submission end to end (store → rename → notify)
+- Feature: an apprenti edits and deletes their own grade; another apprenti's grade returns 403
 - Feature: notification content, using Laravel's `Mail::fake()` — **not** the Mailtrap API. Mailtrap is for eyeballing real mail in dev; the test suite stays offline.
-- Feature: apprentice sees only their own grades
-- Feature: coach sees only assigned apprentices; another coach's apprentice returns 403
-- Feature: `maturite` apprentice cannot submit against a `cfc`-only module, and vice versa
+- Feature: apprenti sees only their own grades
+- Feature: coach sees only assigned apprentices; an unassigned apprenti returns 403
+- Feature: formateur sees only assigned apprentices; same 403 rule
+- Feature: a non-admin hitting an admin route returns 403 (AUTH-06)
+
+The whole suite runs with no live external service.
 
 ## Open questions
 
 Unresolved, ordered by how much they block:
 
-1. **Maturité weighting scheme** — the CFC weights are known; maturité's are not. Blocks `WeightedAverage`. Needs a look at the source docs.
-2. **Does `year` gate module availability**, the way `track` does? A first-year submitting a fourth-year module should presumably fail. `year` is stored and currently unused.
-3. **Retakes / duplicate submissions** — same apprentice, same module, twice. New row, overwrite, or versioned? A system of record needs an answer; the average calculation needs one more.
-4. ~~**Grade validation rule**~~ — **Resolved (stack grill, 2026-08-21):** Swiss 1–6, half-point increments. Enforced as a Postgres `CHECK` constraint on `grades.score`.
-5. **Admin role** — present in Plan A, absent since. Seeder-only user creation means you cannot add an apprentice during the demo. Acceptable?
-6. **Deployment + CI** — is the demo localhost, or hosted? Does CI exist, or are tests run locally? Currently unstated.
+1. **Overall moyenne formula (GR-07)** — explicitly deferred by the SoT. Blocks GR-07 only; everything else ships without it. Needs a decision about whether matières carry weights at all.
+2. **Are matières scoped?** ADMIN-07 describes one flat, admin-managed list. Nothing says a first-year apprenti shouldn't be offered a fourth-year matière, and the old track-gating that would have prevented it is gone. If scoping is wanted, `matieres` needs a section and/or year and GR-02 needs a rule.
+3. **What are the valid `section` values?** ADMIN-05 introduces section; no story enumerates it. The dossier spec's v1 scope names "Informatique développement d'applications", which suggests at least one more exists.
+4. **A grade dated outside every academic period** — reject, or store with a null period? GR-04's rename needs a semester, so this is not a cosmetic edge case.
+5. **Deactivation semantics (ADMIN-02)** — a deactivated apprenti's grades stay, but do they still appear on their coach's list? Does a deactivated coach's apprentices become unassigned?
+6. **Deployment + CI** — is the demo localhost, or hosted? Does CI exist, or are tests run locally? Still unstated.
 7. **Team's prior Laravel+Inertia experience** — determines whether week 1's shared spike is one week or two.
+8. **Editable grades vs. the notification** — GR-08 lets an apprenti edit a grade after GR-14 already emailed it. Does an edit re-notify, or silently diverge from the mail the coach already has?
+9. **GR-11's wording** — "apprentices in my section" is read here as "assigned to me" (see the data-model note). Confirm, because section-wide access is a materially wider boundary.
 
 ## Next steps
 
-1. Read the maturité weighting off the source docs (Open Questions #1) — blocks the thesis feature
-2. Transcribe CFC + maturité weights and JT naming examples into test fixtures
-3. Week 1 group spike: schema, `users`+role+profile, policies skeleton, seeders
-4. Split per the table above
+1. Settle Open Questions #2, #3 and #4 — they shape the schema, and week 1 is the schema
+2. Week 1 group spike: migrations, auth + roles, policies skeleton, bootstrap admin
+3. Split per the table above
+4. Revisit GR-07's formula once there is real grade data to sanity-check it against
