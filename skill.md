@@ -1,18 +1,22 @@
 ---
 name: user-story-writer
 description: >
-  Turns a raw project description, meeting notes, or feature idea into a clean, organized backlog of Agile user stories — Cards only, no acceptance criteria, no code, no diagrams, no schemas. Always use this skill whenever the user asks to "write user stories," "break this down into stories/tasks," "create a backlog," "turn this into an Agile backlog," mentions splitting a project across multiple teammates without merge conflicts, or shares a project/feature description and asks for a task breakdown for a team. Also trigger on mentions of INVEST, the 3 C's, Card/Conversation/Confirmation, product backlog, or organizing sprint work for several people. This skill's defining rule — it NEVER writes a single story from a guess. It interviews the user with clarifying questions, as many rounds as needed, until it has zero significant unknowns about the project, and only then produces the backlog.
+  Turns a project description into an organized backlog of Agile user stories (Cards only — no acceptance criteria, code, or diagrams). Trigger on "write user stories," "break this into stories/tasks," "create a backlog," splitting work across a team, or mentions of INVEST, the 3 C's, Card/Conversation/Confirmation. Never guesses — interviews the user until no unknowns remain, then writes the backlog.
 ---
 
 # User Story Writer
 
-A skill for turning a rough project description into a well-organized backlog of Agile user stories, written for a small team (default: 5 people) who want to work in parallel without stepping on each other's code.
+A skill for turning a rough project description into a well-organized backlog of Agile user stories, 
+written for a small team (default: 4 people) who want to work in parallel without stepping on each other's code.
 
-This skill produces **Cards only** — the first of the 3 C's (Card, Conversation, Confirmation). Acceptance criteria ("Confirmation") are explicitly out of scope and handled in a later pass by the user — never generate them here, even if it would be easy to.
+This skill produces **Cards only** — the first of the 3 C's (Card, Conversation, Confirmation). 
+Acceptance criteria ("Confirmation") are explicitly out of scope and handled in a later pass by the user — never generate them here, even if it would be easy to.
 
 ## The one rule that overrides everything else
 
-**Never guess.** If any part of the project is unclear — scope, user roles, features, tech boundaries, what's in vs. out, how the team is split, priorities — do not write a single story. Ask instead. Guessing and quietly hedging with a "reasonable assumption" is exactly the failure mode this skill exists to prevent. It is always better to ask one more question than to invent scope.
+**Never guess.** If any part of the project is unclear — scope, user roles, features, tech boundaries, what's in vs. out, how the team is split, priorities — do not write a single story. 
+Ask instead. Guessing and quietly hedging with a "reasonable assumption" is exactly the failure mode this skill exists to prevent. It is always better to ask one more question than to invent scope.
+you may use the skill grill-me, to interview the user about the unclear scope.
 
 ---
 
@@ -28,12 +32,14 @@ Read the whole description carefully. Before asking anything, mentally map out w
 - **User roles/personas** — who are the actual users (e.g. "guest," "admin," "member")? Don't invent role names that weren't implied.
 - **Feature completeness** — are there obvious pieces of a working system that weren't mentioned (auth, data persistence, error states, notifications, deployment) that the user actually wants covered, or are those out of scope?
 - **Technical shape** — enough about the architecture/stack to know how to split work into independent tracks (e.g. is there a separate frontend/backend, a mobile app, a specific framework that implies natural module boundaries)?
-- **Team structure** — do all 5 people have the same skills, or are some frontend-leaning and others backend-leaning? This changes how tracks should be drawn.
+- **Team structure** — do all 4 people have the same skills, or are some frontend-leaning and others backend-leaning? This changes how tracks should be drawn, however one person in the team has vision problems, so he is unable to do frontend tasks
 - **Priorities** — is there a must-have core vs. nice-to-have, or is everything equally important for this pass?
 
 ## Step 3: Ask — in rounds, until 100% clear
 
-Ask clarifying questions in reasonably sized batches (don't dump 25 questions at once — group by theme, a handful at a time). After each round, re-check: is there anything left that would force you to guess when writing stories? If yes, ask another round. Only stop when you'd be comfortable defending every story to the user as something they actually asked for, not something you inferred.
+Ask clarifying questions in reasonably sized batches (don't dump 25 questions at once — group by theme, a handful at a time). 
+After each round, re-check: is there anything left that would force you to guess when writing stories? 
+If yes, ask another round. Only stop when you'd be comfortable defending every story to the user as something they actually asked for, not something you inferred.
 
 Do not narrate this process ("I am now checking for gaps") — just ask the questions naturally, the way a sharp business analyst would in a kickoff meeting.
 
@@ -43,7 +49,9 @@ Once — and only once — everything is clear, produce the backlog directly in 
 
 ### Organize into independent tracks, not a flat list
 
-Group stories into tracks/epics based on natural technical or feature boundaries (e.g. `Frontend`, `API/Backend`, `Auth`, `Data/Database`, `Infra/DevOps`, or whatever boundaries actually fit this project — don't force a fixed set of categories). The goal is that each of the team's people can pick up one track and work in their own area of the codebase without their changes colliding with a teammate's. This is more important than making exactly 4 tracks — draw the lines where the real seams in the system are.
+Group stories into tracks/epics based on natural technical or feature boundaries (e.g. `Frontend`, `API/Backend`, `Auth`, `Data/Database`, `Infra/DevOps`, or whatever boundaries actually fit this project — don't force a fixed set of categories). 
+The goal is that each of the team's people can pick up one track and work in their own area of the codebase without their changes colliding with a teammate's. 
+This is more important than making exactly 4 tracks — draw the lines where the real seams in the system are.
 
 - If the natural breakdown doesn't produce enough independent, substantial tracks for everyone to have real work, say so plainly instead of padding a track with filler stories.
 - If two tracks have a hard dependency (Track B genuinely cannot start until a story in Track A is done), call that out explicitly next to the relevant story so the team can sequence around it. Don't hide dependencies to make tracks look cleaner than they are.
@@ -75,7 +83,7 @@ Every story should be, silently, checked against:
 
 Don't display INVEST labels or explain the checks in the output — this is a quality bar you apply while writing, not something to show the user.
 
-### What NOT to include
+### What NOT to includeE
 
 - No acceptance criteria (explicitly deferred by the user to a later pass).
 - No code, pseudocode, code snippets, or file/folder structures.
