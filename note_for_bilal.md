@@ -6,16 +6,6 @@ Start with [`README.md`](README.md) — it covers what the app does, who uses it
 
 ## Where the documentation is
 
-| What | Where |
-|------|-------|
-| User story backlog — **source of truth** | `docs/user_stories/user_story.md` |
-| Grades spec — decisions, data model, MVP, risks | `docs/spec-d/spec.md` |
-| How it's assembled, and where each rule is enforced | `docs/spec-d/architecture.md` |
-| Dossier de formation spec | `docs/dossier-formation-part/spec.md` |
-| React vs Vue — the decision brief for you | `docs/frontend-decision.md` |
-| Reference links for the stack | `docs/spec-d/technological_choices.md` |
-
-## What we'd like from you
 
 **1. React or Vue.** We originally planned Inertia.js with React, then thought that was a bit boring since we already
 know React, so we looked at Vue. Thomas, Igor and Nikyta voted Vue. The case for each is in
