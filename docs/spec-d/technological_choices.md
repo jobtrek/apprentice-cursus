@@ -1,10 +1,10 @@
-# Technological choices — links to learn
+# Technological choices — reference links
 
-Reference material for the stack in `spec.md`.
+Reference material for the stack in `docs/spec-d/spec.md`.
 
 ## Backend
 
-- Laravel 12 docs — https://laravel.com/docs/13.x
+- Laravel 12 docs — https://laravel.com/docs/12.x
 - Eloquent relationships (`hasOne`, `belongsTo`) — https://laravel.com/docs/12.x/eloquent-relationships
 - Migrations — https://laravel.com/docs/12.x/migrations
 - Seeding — https://laravel.com/docs/12.x/seeding
@@ -18,7 +18,7 @@ Reference material for the stack in `spec.md`.
 
 ## Database
 
-- PostgreSQL — chosen over MySQL/SQLite for native enum types and `CHECK` constraints (see `spec.md` decisions #5–7)
+- PostgreSQL — chosen over MySQL/SQLite for native enum types and `CHECK` constraints (see `docs/spec-d/spec.md` decisions #5 and #6 — decision #7 moved to the dossier spec)
 - Laravel + PostgreSQL — https://laravel.com/docs/12.x/database#postgresql
 - Check constraints in migrations — https://laravel.com/docs/12.x/migrations#check-constraints
 
@@ -44,7 +44,7 @@ Reference material for the stack in `spec.md`.
 ## Dossier PDF export (real app, not the POC)
 
 - `spatie/laravel-pdf` (Browsershot/headless Chrome under the hood) — https://spatie.be/docs/laravel-pdf
-- Requires headless Chrome + Node available on the server — deployment target must support this (see Open Question #6 in `spec.md`)
+- Requires headless Chrome + Node available on the server — deployment target must support this (see Open Question #6 in `docs/spec-d/spec.md`)
 
 ## WebSockets in Laravel (for live comment updates — stretch item, not MVP)
 
@@ -53,6 +53,9 @@ Reference material for the stack in `spec.md`.
 - Laravel Echo (frontend client for broadcast events) — https://laravel.com/docs/12.x/broadcasting#client-side-installation
 - Private/presence channel authorization (`routes/channels.php`) — https://laravel.com/docs/12.x/broadcasting#defining-authorization-callbacks
 
-## Excel (reference only — not used per spec, `maatwebsite/excel` is explicitly out of scope)
+## Rejected — reference only
 
-- Laravel Excel — https://laravel-excel.com/
+Kept so nobody re-researches a decision that was already made. Both are out of scope per `docs/spec-d/spec.md`.
+
+- **Excel** — `maatwebsite/excel` is explicitly out; the app replaces the workbook rather than reading it. https://laravel-excel.com/
+- **OCR of the scanned test** — the apprenti types the grade (GR-03), so nothing reads the paper. Tesseract in Laravel, if that is ever revisited: https://medium.com/@peterochieng008/text-extraction-from-images-in-laravel-using-tesseract-ocr-a2449031a25c

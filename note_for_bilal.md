@@ -1,20 +1,45 @@
-We have kinda finished the user stories, the original spec of the idea is inside `docs/plan-d`, and also we have started creating the simple "user stories" inside of `docs/user_stories`, there are 2 versions, Nikyta made one for the dossier de formation and, me and igor the other 2. You can analyse both of them, then refine and show to bastien which ones.
+# Note for Bilal
 
-Also for the spec for the dossier de formation it's inside of `docs/dossier-formation-part`.
+Where things stand, and the three things we'd like your opinion on.
 
-We have also started considered of the technical stack. We original thought about inertia.js with react. However we thought that was a bit "boring" since we already know react. So we thought about using vue.js. You may see `docs/technical_details.md` for the react version and `docs/technical_details_vue.md`, for the vue version. Me and igor and Nikyta voted for vue.js but we would also like to hear your opinion.
+Start with [`README.md`](README.md) — it covers what the app does, who uses it, the stack and the timeline in one page.
 
-We have also made a proof of concept in HTML CSS and JS, which is inside of this repo called https://github.com/FrstF4ll/second-group-project inside of `pov-grade-manager`. You just need to launch a live server to see.
+## Where the documentation is
 
-we have also made a proof of concept in HTML CSS and JS, which is inside of this repo called https://github.com/FrstF4ll/second-group-project
-inside of pov-grade-manager. you just need to launch a live server to see.
+| What | Where |
+|------|-------|
+| User story backlog — **source of truth** | `docs/user_stories/user_story.md` |
+| Grades spec — decisions, data model, MVP, risks | `docs/spec-d/spec.md` |
+| How it's assembled, and where each rule is enforced | `docs/spec-d/architecture.md` |
+| Dossier de formation spec | `docs/dossier-formation-part/spec.md` |
+| React vs Vue — the decision brief for you | `docs/frontend-decision.md` |
+| Reference links for the stack | `docs/spec-d/technological_choices.md` |
 
+## What we'd like from you
 
-another thing this is a question from me personally (thomas). what agentic harness do you use?, because I use mainly claude code
-and Nikyta uses opencode sometimes, and igor uses opencode too. If you use claude, I'm curious on what skills you use. you may tell me
-either on teams or just write it directly on this file.
+**1. React or Vue.** We originally planned Inertia.js with React, then thought that was a bit boring since we already
+know React, so we looked at Vue. Thomas, Igor and Nikyta voted Vue. The case for each is in
+`docs/frontend-decision.md` — about 80 lines, with the honest costs of switching. The backend is identical either way,
+so it's a cheap decision *right now* and stops being cheap once week 1 ships. We'd like your read before it's settled.
 
+**2. The backlog.** `docs/user_stories/user_story.md` is now the single list — 56 stories across auth, admin, grades
+and the dossier. Nikyta wrote the dossier stories; Thomas and Igor wrote the rest. Tell us what's missing or wrong
+before we take it to Bastien.
 
+**3. The proof of concept.** Plain HTML/CSS/JS, in the `poc-grade-manager` directory of
+https://github.com/FrstF4ll/second-group-project. Launch a live server against it to see it run.
 
+## Things that are still open
 
- 
+The ones that shape the database, so we'd like them settled before week 1:
+
+- Are matières scoped by year or section, or does every apprenti see every subject?
+- What are the valid sections? We only know "Informatique développement d'applications".
+- A test dated outside every academic period — reject it, or store it without a semester?
+
+Full list at the end of `docs/spec-d/spec.md`.
+
+## From Thomas, unrelated
+
+What agentic harness do you use? I'm mainly on Claude Code; Nikyta and Igor both use opencode. If you're on Claude, I'm
+curious which skills you run. Answer on Teams or just write it into this file.
