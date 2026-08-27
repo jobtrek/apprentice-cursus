@@ -12,7 +12,7 @@ Story IDs below refer to `docs/user_stories/grade_manager.md`.
 | Concern | Choice |
 |---|---|
 | Backend | Laravel 12 |
-| Frontend | React 19 |
+| Frontend | Vue 3 |
 | Server ↔ client | Inertia.js (`@inertiajs/react`) |
 | Build | Vite + `@vitejs/plugin-react` |
 | Starter | `laravel/react-starter-kit` |
