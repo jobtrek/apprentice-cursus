@@ -96,7 +96,7 @@ As an administrator,
 I want to see a list of all apprentices with their assigned coach, trainer, year, and section,
 so that I can verify assignments and identify missing ones.
 
-**SHOULD BE ACCEPTANCE CRITERIA**
+**SHOULD BE UP TO DISCUSSION**
 As an administrator,
 I want to have a dashboard with an overview (number of apprentices, coaches, trainers, recent grades),
 so that I can monitor the overall activity of the application.
@@ -355,10 +355,6 @@ As an apprentice,
 I want each comment to display its author and the date it was written,
 so that I know whether it came from my coach or trainer.
 
-**OPEN QUESTION** — Nikita proposes cutting this feature entirely as unnecessary; unresolved, needs a follow-up decision.
-As an apprentice,
-I want the comment thread to update automatically when new comments are added,
-so that I do not have to reload the page to check for new feedback.
 
 __VALID__
 As a coach or trainer,
@@ -398,14 +394,14 @@ so that I am notified of new grades as soon as they are submitted.
 __VALID__
 As a coach or trainer,
 I want the renamed PDF to be attached to the notification email,
-so that I can take a quick look at the test without having to log in.
+so that I can take a quick look at the telist without having to log in.
 
 __VALID__
 As an apprentice,
 I want to automatically receive an email when a coach or trainer comments on one of my grades,
 so that I am notified without having to constantly open the application.
 
-**OPEN QUESTION** — Nikita proposes cutting this feature entirely as unnecessary; unresolved, needs a follow-up decision.
+__VALID__
 As a coach or trainer,
 I want to be able to disable email notifications,
 so that I am not flooded with emails if I prefer to check the application manually.
