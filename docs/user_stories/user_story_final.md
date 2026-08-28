@@ -394,7 +394,7 @@ so that I am notified of new grades as soon as they are submitted.
 __VALID__
 As a coach or trainer,
 I want the renamed PDF to be attached to the notification email,
-so that I can take a quick look at the telist without having to log in.
+so that I can take a quick look at the list without having to log in.
 
 __VALID__
 As an apprentice,
