@@ -36,7 +36,7 @@ Apprentices will be able to drag and drop their test PDF in the app. A notificat
 
 #### Grade dashboard
 
-The grades will be accessible in a dashboard, giving apprentice an overview of their own grades and trainers / coaches an overview of the grades of apprentice they're responsible of.
+The grades will be accessible in dashboard, giving apprentices an overview of their own grades, and trainers / coaches an overview of the grades of apprentice they're responsible of.
 
 #### Grades comment
 
