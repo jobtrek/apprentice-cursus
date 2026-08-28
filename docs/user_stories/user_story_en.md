@@ -1,7 +1,5 @@
 ## Authentication
 
-*the authentication should already be done by the starterkit, and the roles and permissions. WE DO LAST OKAY???*
-
 As a user (apprentice, coach, trainer, or admin),
 I want to log in with my email and password,
 so that I can access the features available to my role.
@@ -35,7 +33,7 @@ As an administrator,
 I want passwords to follow security rules (minimum 8 characters, 1 uppercase letter, 1 number),
 so that accounts are properly protected.
 
-**TOO DETAILED**
+**SHOULD BE ACCEPTANCE CRITERIA**
 As an administrator,
 I want an account to be temporarily locked after 5 failed login attempts for 15 minutes,
 so that accounts are protected against brute-force attacks.
@@ -55,8 +53,7 @@ so that the temporary password does not remain in place indefinitely.
 
 ## Administration
 
-__VALID__
-**TOO DETAILED**
+**SHOULD BE ACCEPTANCE CRITERIA**
 As an administrator,
 I want to create accounts (email + initial password) for apprentices, coaches, and trainers,
 so that they can log in without registering themselves.
@@ -73,7 +70,7 @@ so that the appropriate coach can track their progress.
 
 __VALID__
 As an administrator,
-I want to assign a trainer to each apprentice based on their section, **so we are including formateur inside the app?**
+I want to assign a trainer to each apprentice based on their section,
 so that the appropriate trainer can review their work.
 
 __VALID__
@@ -81,12 +78,10 @@ As an administrator,
 I want to define the year and section for each apprentice,
 so that the system applies the correct rules and content to their profile.
 
-**an admin doesn't need to do this, this will be built in the application.**
-As an administrator,
-I want to define date ranges for each year and semester,
-so that the application can automatically determine which semester an apprentice belongs to when they upload a grade.
+__RESOLVED — REMOVED__
+Semester boundaries are fixed in the application (August–December = semester 1, January–July = semester 2) and are not admin-configurable. No date-range management or academic-calendar overlap validation is needed; see Grade Submission: "automatically derive the year and semester from the test date."
 
-# __VALID__, however I am not sure if we need to implement this and make it really modular or we should keep it simple.
+# __VALID__ (kept simple — plain CRUD, no per-section modularity)
 As an administrator,
 I want to add, edit, or delete the subjects available for grades,
 so that the grades section reflects the subjects that are actually taught.
@@ -101,8 +96,7 @@ As an administrator,
 I want to see a list of all apprentices with their assigned coach, trainer, year, and section,
 so that I can verify assignments and identify missing ones.
 
-# __VALID__
-**TOO DETAILED**
+**SHOULD BE ACCEPTANCE CRITERIA**
 As an administrator,
 I want to have a dashboard with an overview (number of apprentices, coaches, trainers, recent grades),
 so that I can monitor the overall activity of the application.
@@ -117,23 +111,22 @@ As an administrator,
 I want a subject linked to grades to be impossible to delete and only possible to deactivate,
 so that the history of existing grades is not lost.
 
-**this seems to be very hard to implement, especially a custom calendar, and also why is this required.**
-__TO CLARIFY__
-As an administrator,
-I want the academic calendar to validate that there are no overlaps or gaps between periods,
-so that every date falls within exactly one period.
+__REMOVED__ — superseded by fixed semester windows (see note above under "define date ranges").
+
+# __VALID__ (revised: two-tier admin hierarchy)
+As a super-administrator,
+I want to create both regular administrators and other super-administrators,
+so that administration and its highest level of control can be shared when needed.
 
 # __VALID__
-As an administrator,
-I want to be able to create another administrator,
-so that administration can be shared when needed.
+As a regular administrator,
+I want to be restricted from creating or deactivating other administrator accounts,
+so that only super-administrators control the administrative hierarchy.
 
-**this is kinda like a chicken and the egg problem, if an admin is allowed to deactivate other admins accs? what stops from other admins doing it?. head admin?**
-__TO CLARIFY__
-**TOO DETAILED**
-As an administrator,
-I want to be able to deactivate another administrator with mandatory confirmation,
-so that accidental deactivations are avoided.
+# __VALID__
+As a super-administrator,
+I want to be able to deactivate a regular administrator or another super-administrator with mandatory confirmation,
+so that accidental deactivations are avoided while oversight of the admin hierarchy is preserved.
 
 
 ## Grade Submission
@@ -148,8 +141,7 @@ As an apprentice,
 I want to choose which subject my test belongs to,
 so that it is classified under the correct subject.
 
-# __VALID__
-**TOO DETAILED**
+**SHOULD BE ACCEPTANCE CRITERIA**
 As an apprentice,
 I want to enter the grade I received (between 1 and 6, in 0.5 increments),
 so that it is recorded alongside the scanned PDF.
@@ -169,8 +161,9 @@ so that a typing error does not silently corrupt my average.
 As an apprentice,
 I want the application to automatically derive the year and semester from the test date,
 so that I do not have to know which semester a date belongs to.
+(Semester boundaries are fixed: August–December = semester 1, January–July = semester 2.)
 
-# __VALID__
+**SHOULD BE ACCEPTANCE CRITERIA**
 As an apprentice,
 I want my uploaded PDF to be automatically renamed according to the company's naming convention,
 so that coaches and trainers can identify files consistently outside the application.
@@ -335,6 +328,7 @@ so that I have a complete view of the feedback given to the apprentice.
 As a coach or trainer,
 I want a deactivated apprentice to disappear from my active list while their grades remain archived and accessible,
 so that my active view stays clean while preserving the history.
+(Deactivation is the same generic account state as any other role — see Administration: "edit or deactivate an existing account.")
 
 
 ---
@@ -361,7 +355,7 @@ As an apprentice,
 I want each comment to display its author and the date it was written,
 so that I know whether it came from my coach or trainer.
 
-__VALID__
+**OPEN QUESTION** — Nikita proposes cutting this feature entirely as unnecessary; unresolved, needs a follow-up decision.
 As an apprentice,
 I want the comment thread to update automatically when new comments are added,
 so that I do not have to reload the page to check for new feedback.
@@ -411,7 +405,7 @@ As an apprentice,
 I want to automatically receive an email when a coach or trainer comments on one of my grades,
 so that I am notified without having to constantly open the application.
 
-__VALID__
+**OPEN QUESTION** — Nikita proposes cutting this feature entirely as unnecessary; unresolved, needs a follow-up decision.
 As a coach or trainer,
 I want to be able to disable email notifications,
 so that I am not flooded with emails if I prefer to check the application manually.
@@ -426,7 +420,7 @@ As a coach or trainer,
 I want a grade edited by the apprentice not to trigger a new email notification,
 so that I do not receive a second email for the same grade.
 
-**TOO DETAILED**
+**SHOULD BE ACCEPTANCE CRITERIA**
 As a coach or trainer,
 I want the notification email to contain the apprentice's name, subject, grade, date, and a direct link to the grade page,
 so that I have all the relevant information at a glance.
@@ -507,7 +501,7 @@ As an IT apprentice,
 I want to see comments left on the projects in my portfolio,
 so that I can understand the feedback I have received.
 
-**TOO DETAILED**
+**SHOULD BE ACCEPTANCE CRITERIA**
 As an IT apprentice,
 I want each project to contain a title, organization, start and end dates, description, technologies used, role, demo link, source code link, and screenshots,
 so that my portfolio is complete and detailed.
@@ -522,10 +516,11 @@ As an IT apprentice,
 I want existing projects referencing a skill to keep that skill if it is removed from the catalog,
 so that historical data is not altered.
 
-__VALID__ **why would we deactivate an apprentice?, you mean graduating**
+__VALID__
 As a deactivated apprentice,
 I want my portfolio to remain accessible to my coach and trainer,
 so that their follow-up is not interrupted.
+(Deactivation here is the same generic account state that applies to any role in the organization — see Administration: "edit or deactivate an existing account." Not apprentice-specific, and not the same as graduating.)
 
 __VALID__
 As an IT apprentice,
