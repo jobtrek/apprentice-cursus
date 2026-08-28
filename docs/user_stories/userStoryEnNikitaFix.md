@@ -7,6 +7,10 @@ so that I can access the features available to my role.
 As a logged-in user,
 I want to remain logged in when I reload the page or navigate through the application,
 so that I do not have to log in repeatedly.
+"""bash 
+does it need put into user story
+"""
+
 
 As a logged-in user,
 I want to log out,
@@ -28,9 +32,18 @@ As a user,
 I want to be able to stay logged in on multiple tabs or devices at the same time,
 so that I am not logged out when I use the application elsewhere.
 
+:::bash 
+i sinc it's logic and not need in user story
+"""
+
 As an administrator,
 I want passwords to follow security rules (minimum 8 characters, 1 uppercase letter, 1 number),
 so that accounts are properly protected.
+
+"""bash
+I believe this is fairly obvious
+"""
+
 
 As an administrator,
 I want an account to be temporarily locked after 5 failed login attempts for 15 minutes,
@@ -111,6 +124,9 @@ As an administrator,
 I want to be able to deactivate another administrator with mandatory confirmation,
 so that accidental deactivations are avoided.
 
+"""bash
+I propose creating two levels of admins: two and three super admins: who will be able to add both regular admins and super admins. And the admins will handle the usual routine, for example, adding new accounts.
+"""
 
 ## Grade Submission
 
@@ -130,9 +146,13 @@ As an apprentice,
 I want to enter the test date,
 so that the application can determine which semester it belongs to.
 
+
 As an apprentice,
 I want a grade outside the allowed range to be rejected when submitted,
 so that a typing error does not silently corrupt my average.
+"""bash
+it is not user story
+"""
 
 As an apprentice,
 I want the application to automatically derive the year and semester from the test date,
@@ -141,6 +161,9 @@ so that I do not have to know which semester a date belongs to.
 As an apprentice,
 I want my uploaded PDF to be automatically renamed according to the company's naming convention,
 so that coaches and trainers can identify files consistently outside the application.
+"""bash
+it is not user story
+"""
 
 As an apprentice,
 I want the renamed scan to be stored by the application,
@@ -149,26 +172,44 @@ so that my coach and trainer can open the original file later.
 As an apprentice,
 I want the URL of the stored file to be protected by the same access rules as the grade page,
 so that knowing the file name is not enough for someone else to access my test.
+"""bash
+it is not user story
+"""
 
 As an apprentice,
 I want a file that is not a PDF to be rejected on both the client and server sides,
 so that only valid scans are stored.
+"""bash
+it is not user story
+"""
 
 As an apprentice,
 I want the file size to be limited to 10 MB,
 so that excessively large files cannot be uploaded.
+"""bash
+it is not user story
+"""
 
 As an apprentice,
 I want a future date to be rejected,
 so that I cannot submit a test that has not taken place yet.
+"""bash
+it is not user story
+"""
 
 As an apprentice,
 I want a subject deactivated by the administrator to no longer be selectable when submitting a grade,
 so that I cannot submit a grade under an obsolete subject.
+"""bash
+it is not user story
+"""
 
 As an apprentice,
 I want to see a clear error message if the upload fails,
 so that I understand what happened and can try again.
+"""bash
+it is not user story
+"""
 
 As an apprentice,
 I want to see comments left by my coach or trainer on my grades,
@@ -297,6 +338,9 @@ so that I know whether it came from my coach or trainer.
 As an apprentice,
 I want the comment thread to update automatically when new comments are added,
 so that I do not have to reload the page to check for new feedback.
+""bash
+i sinc it is not need 
+""
 
 As a coach or trainer,
 I want to be able to edit a comment I have left,
@@ -309,6 +353,8 @@ so that I can maintain the quality of interactions.
 As a coach or trainer,
 I want the comment body to be limited to 2,000 characters,
 so that excessively long comments are avoided.
+
+
 
 As an apprentice,
 I want comments to remain attached to a grade even if the grade is edited,
@@ -327,17 +373,25 @@ As a trainer,
 I want to receive the same email for the apprentices assigned to me,
 so that I am notified of new grades as soon as they are submitted.
 
+
 As an apprentice,
 I want to automatically receive an email when a coach or trainer comments on one of my grades,
 so that I am notified without having to constantly open the application.
 
+
 As a coach or trainer,
 I want to be able to disable email notifications,
 so that I am not flooded with emails if I prefer to check the application manually.
+"""bash 
+i sinc it is not necessary 
+"""
 
 As a coach or trainer,
 I want to receive an email when a grade I was notified about is deleted by the apprentice,
 so that I know the test is no longer in the system.
+"""bash
+i don't know it is need to do 
+"""
 
 As a coach or trainer,
 I want a grade edited by the apprentice not to trigger a new email notification,
@@ -427,3 +481,6 @@ so that their follow-up is not interrupted.
 As an IT apprentice,
 I want to be able to reorder my projects,
 so that I can present them in the order I prefer.
+"""bash
+i sinc better make filtr 
+"""
