@@ -1,0 +1,65 @@
+erDiagram
+    
+    USERS {
+        int id PK
+        string email
+        string password
+    }
+
+    COACHES {
+        user_id int PK, FK
+
+    }
+
+    TRAINERS {
+        user_id int PK, FK
+    }
+
+    APPRENTICE {
+        user_id int PK, FK
+        trainer_id int FK
+        coach_id int FK
+    }
+
+    USERS ||--o| COACHES : being
+    USERS ||--o| TRAINERS : being
+    USERS ||--o| APPRENTICE : being
+
+    COACHES ||--|{ APPRENTICE : coach
+    TRAINERS ||--|{ APPRENTICE : teach
+
+    FINAL_GRADES {
+        int id PK
+        type string
+        result float
+    }
+
+    IT_GRADES {
+        int id PK
+        type int FK
+        weight numeric        
+    }
+
+    EPSIC_GRADES {
+        int id PK
+        type int FK
+        weight numeric
+    }
+
+    CIE_GRADES {
+        int id PK
+        type int FK
+        weight numeric
+    }
+
+    FINAL_GRADES ||--o{ IT_GRADES : calculate
+    IT_GRADES ||--o{ EPSIC_GRADES : calculate
+    IT_GRADES ||--o{ CIE_GRADES : calculate
+    ECG_GRADES {
+        int id pk
+        type int FK
+        weight numeric
+    }
+
+    FINAL_GRADES ||--o{ ECG_GRADES : calculate
+    APPRENTICE ||--o{ FINAL_GRADES : has
