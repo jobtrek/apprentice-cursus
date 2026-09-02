@@ -15,55 +15,65 @@ Source-workflow is detailed in the [workflows](docs/workflows) directory
 - PHP 8.3+
 - Composer
 - Docker & Docker Compose (for Sail)
-- Node.js & pnpm
 
 ### Installation
 
-1. Install PHP dependencies
+1. Move inside repository directory and install PHP dependencies
 
-    ```bash
-    composer install
-    ```
+Install PHP dependencies using composer. We ignore platform requirement because dependencies are managed through sail.
 
-2. Copy the environment file and generate the app key
+```bash
+cd apprentice-cursus
+composer install --ignore-platform-reqs
+```
 
-    ```bash
-    cp .env.example .env
-    php artisan key:generate
-    ```
+2. Copy the environment file and run containers
 
-3. Start the containers with Sail
+```bash
+cp .env.example .env
+./vendor/bin/sail up -d
+```
 
-    ```bash
-    ./vendor/bin/sail up -d
-    ```
+3. Generate a key
+
+```bash
+./vendor/bin/sail artisan key:generate
+```
 
 4. Run database migrations
 
-    ```bash
-    ./vendor/bin/sail artisan migrate
-    ```
+```bash
+./vendor/bin/sail artisan migrate
+```
 
 5. Install JS dependencies and start Vite
 
-    ```bash
-    pnpm install
-    pnpm dev
-    ```
+```bash
+./vendor/bin/sail pnpm install
+```
 
-The app should now be available at `http://localhost`.
+You can safely ignore the build script for vue-demi, it's not needed in this version of the project.
+
+6. Run the app in your web browser
+Launch the local server using
+
+```bash
+./vendor/bin/sail pnpm dev
+```
+
+The app should now be available at http://localhost
 
 ## Stack
 
-| Tool       | Version   |
-| ---------- | --------- |
-| Vue        | 3.x       |
-| Laravel    | 13.x      |
-| Inertia    | latest    |
-| Vite       | 5.x / 6.x |
-| Tailwind   | 4.x       |
-| shadcn     | latest    |
-| PostgreSQL | latest    |
+| Tool       | Version |
+| ---------- | ------- |
+| Vue        | 3.x     |
+| Laravel    | 13.x    |
+| Inertia    | latest  |
+| Vite       | 8.x     |
+| Tailwind   | 4.x     |
+| shadcn-vue | latest  |
+| PostgreSQL | latest  |
 
 ## Features
 
