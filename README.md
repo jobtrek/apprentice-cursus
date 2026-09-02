@@ -21,46 +21,35 @@ Source-workflow is detailed in the [workflows](docs/workflows) directory
 
 1. Install PHP dependencies
 
-   ```bash
-   composer install
-   ```
+    ```bash
+    composer install
+    ```
 
 2. Copy the environment file and generate the app key
 
-   ```bash
-   cp .env.example .env
-   php artisan key:generate
-   ```
+    ```bash
+    cp .env.example .env
+    php artisan key:generate
+    ```
 
-3. Set the database connection to PostgreSQL in `.env`
+3. Start the containers with Sail
 
-   ```
-   DB_CONNECTION=pgsql
-   DB_HOST=pgsql
-   DB_PORT=5432
-   DB_DATABASE=apprentice_cursus
-   DB_USERNAME=sail
-   DB_PASSWORD=password
-   ```
+    ```bash
+    ./vendor/bin/sail up -d
+    ```
 
-4. Start the containers with Sail
+4. Run database migrations
 
-   ```bash
-   ./vendor/bin/sail up -d
-   ```
+    ```bash
+    ./vendor/bin/sail artisan migrate
+    ```
 
-5. Run database migrations
+5. Install JS dependencies and start Vite
 
-   ```bash
-   ./vendor/bin/sail artisan migrate
-   ```
-
-6. Install JS dependencies and start Vite
-
-   ```bash
-   pnpm install
-   pnpm dev
-   ```
+    ```bash
+    pnpm install
+    pnpm dev
+    ```
 
 The app should now be available at `http://localhost`.
 
