@@ -3,7 +3,6 @@ import { Form, Head, usePage } from '@inertiajs/vue3';
 import { computed } from 'vue';
 import PasswordController from '@/actions/App/Http/Controllers/PasswordController';
 import ProfileController from '@/actions/App/Http/Controllers/ProfileController';
-import Heading from '@/components/Heading.vue';
 import InputError from '@/components/InputError.vue';
 import PasswordInput from '@/components/PasswordInput.vue';
 import { Button } from '@/components/ui/button';
