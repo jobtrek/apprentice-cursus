@@ -1,0 +1,75 @@
+{
+  "name": "@laravel/multiplex",
+  "version": "0.4.3",
+  "description": "A tabbed TUI for running multiple commands simultaneously with searchable, scrollable output",
+  "keywords": [
+    "tui",
+    "terminal",
+    "cli",
+    "multiplexer",
+    "process-manager",
+    "ink",
+    "laravel"
+  ],
+  "homepage": "https://github.com/laravel/multiplex#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/laravel/multiplex.git"
+  },
+  "bugs": {
+    "url": "https://github.com/laravel/multiplex/issues"
+  },
+  "license": "MIT",
+  "author": {
+    "name": "Taylor Otwell"
+  },
+  "engines": {
+    "node": ">=22.13.0"
+  },
+  "type": "module",
+  "bin": {
+    "multiplex": "dist/cli.js"
+  },
+  "main": "dist/multiplex.js",
+  "types": "dist/multiplex.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/multiplex.d.ts",
+      "default": "./dist/multiplex.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist"
+  ],
+  "dependencies": {
+    "ansi-styles": "^6.2.3",
+    "commander": "^15.0.0",
+    "ink": "^7.1.0",
+    "react": "^19.2.7",
+    "string-width": "^8.2.2",
+    "wrap-ansi": "^10.0.0"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.5.6",
+    "@types/node": "^26.1.1",
+    "@types/react": "^19.2.17",
+    "tsx": "^4.23.5",
+    "typescript": "^7.0.2"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "os": [
+    "darwin",
+    "linux"
+  ],
+  "scripts": {
+    "dev": "tsx src/cli.tsx",
+    "build": "tsc",
+    "test": "tsx --test src/*.test.ts",
+    "check": "biome check --write",
+    "lint": "biome lint",
+    "format": "biome format --write"
+  }
+}

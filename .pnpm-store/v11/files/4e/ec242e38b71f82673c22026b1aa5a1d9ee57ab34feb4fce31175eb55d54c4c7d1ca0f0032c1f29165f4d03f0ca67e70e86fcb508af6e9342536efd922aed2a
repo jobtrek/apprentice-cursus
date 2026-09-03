@@ -1,0 +1,74 @@
+import { InvalidArgumentError } from "commander";
+import { DEFAULT_COLORS, normalizeColor } from "./color.js";
+const FORMAT = "Expected label,command or label@color,command";
+const badColor = (value, label) => `"${value}" is not a valid color${label ? ` for "${label}"` : ""}. Expected a 6-digit hex value such as #93c5fd, or a name such as red or blueBright.`;
+/**
+ * One CLI positional onto a CommandInput. The color attaches to the label rather
+ * than sitting in a slot of its own, so only the first comma is structural:
+ * everything after it is the command, whether it holds commas, colons or a word
+ * that happens to name a color.
+ */
+export function parseCommandDef(value, previous) {
+    const split = value.indexOf(",");
+    if (split < 1) {
+        throw new InvalidArgumentError(FORMAT);
+    }
+    const head = value.slice(0, split);
+    const command = value.slice(split + 1);
+    if (!command) {
+        throw new InvalidArgumentError(`"${head}" has no command after it. ${FORMAT}`);
+    }
+    // The last @, and never the first character: a label is free to contain one
+    // — a scoped package name is all label — as long as it isn't the final
+    // segment, which is the color.
+    const at = head.lastIndexOf("@");
+    if (at < 1) {
+        return [...previous, { label: head, command }];
+    }
+    const label = head.slice(0, at);
+    const color = normalizeColor(head.slice(at + 1));
+    if (!color) {
+        throw new InvalidArgumentError(`${badColor(head.slice(at + 1))} Everything after the last @ is the color.`);
+    }
+    return [...previous, { label, color, command }];
+}
+export function normalizeCommands(commands) {
+    if (commands.length === 0) {
+        throw new Error("commands must contain at least one command.");
+    }
+    const used = new Set(commands
+        .map((c) => (c.color ? normalizeColor(c.color) : undefined))
+        .filter((c) => Boolean(c)));
+    let reused = 0;
+    return commands.map((cmd, i) => {
+        if (!cmd.label) {
+            throw new Error(`commands[${i}] is missing a label.`);
+        }
+        if (!cmd.command) {
+            throw new Error(`commands[${i}] ("${cmd.label}") is missing a command.`);
+        }
+        if (cmd.color !== undefined) {
+            const explicit = normalizeColor(cmd.color);
+            if (!explicit) {
+                throw new Error(badColor(cmd.color, cmd.label));
+            }
+            return { label: cmd.label, color: explicit, command: cmd.command };
+        }
+        const available = DEFAULT_COLORS.filter((c) => !used.has(c));
+        const color = available.length > 0
+            ? available[0]
+            : DEFAULT_COLORS[reused++ % DEFAULT_COLORS.length];
+        used.add(color);
+        return { label: cmd.label, color, command: cmd.command };
+    });
+}
+// Number(), not parseInt(): parseInt stops at the first character it cannot use,
+// so "10abc" became 10 and "1e6" became 1 — a plausible way to ask for a big
+// buffer that silently produced a buffer of one line.
+export function parsePositiveInt(value) {
+    const n = Number(value);
+    if (!Number.isSafeInteger(n) || n <= 0) {
+        throw new InvalidArgumentError(`"${value}" is not a positive integer.`);
+    }
+    return n;
+}

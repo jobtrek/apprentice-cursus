@@ -1,0 +1,1 @@
+{"version":3,"file":"useForwardPropsEmits.cjs","names":["props: MaybeRefOrGetter<T>","emit?: Emit<Name, Fn>"],"sources":["../../src/shared/useForwardPropsEmits.ts"],"sourcesContent":[],"mappings":";;;;;;AA4BA,SAAgB,qBAIdA,OAA4BC,MAAuB;CACnD,MAAM,cAAc,+CAAgB,MAAM;CAC1C,MAAM,eAAe,OAAO,6CAAe,KAAK,GAAG,CAAE;AAErD,QAAO,kBAAS,OAAO;EACrB,GAAG,YAAY;EACf,GAAG;CACJ,GAAE;AACJ"}

@@ -1,0 +1,11 @@
+import * as _nuxt_schema from '@nuxt/schema';
+import { Components } from 'reka-ui/constant';
+
+interface ModuleOptions {
+    components: Partial<Record<keyof Components, boolean>> | boolean;
+    prefix: string;
+}
+declare const _default: _nuxt_schema.NuxtModule<ModuleOptions, ModuleOptions, false>;
+
+export { _default as default };
+export type { ModuleOptions };
