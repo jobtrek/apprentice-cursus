@@ -1,0 +1,46 @@
+%%{init: {'theme': 'base', 'themeVariables': {'fontSize': '14px'}}}%%
+graph TD
+    classDef finale fill:#1a1a2e,stroke:#e94560,stroke-width:3px,color:#fff,font-weight:bold
+    classDef pilier fill:#16213e,stroke:#0f3460,stroke-width:2px,color:#fff
+
+    NOTE_FINALE["<b>NOTE FINALE DU CFC</b><br/>100%"]:::finale
+
+    TPI["<b>TPI</b><br/>Travail Pratique Individuel<br/><i>40%</i>"]:::pilier
+    COB["<b>Compétences de base élargie</b><br/><i>10%</i>"]:::pilier
+    COMP_INF["<b>Compétence informatique</b><br/><i>30%</i>"]:::pilier
+    CULT_GEN["<b>Culture Générale</b><br/><i>20%</i>"]:::pilier
+
+    ECOLE_PRO["<b>École Professionnelle</b><br/><i>poids: 80%</i>"]:::pilier
+    CIE["<b>Cours Interentreprises</b><br/><i>poids: 20%</i>"]:::pilier
+
+    MATH["<b>Mathématiques</b><br/><i>poids: 50%</i>"]:::pilier
+    ANGLAIS["<b>Anglais</b><br/><i>poids: 50%</i>"]:::pilier
+
+    TPA["<b>TPA</b><br/><i>poids: 33%</i>"]:::pilier
+    EXAMEN_FINAL["<b>Examen final de culture générale</b><br/><i>poids: 33%</i>"]:::pilier
+    NOTE_EXPERIENCE["<b>Note d'expérience</b><br/><i>poids: 33%</i>"]:::pilier
+    TOUTES_LES_NOTES["<b>Toutes les notes</b></br><i>Les notes pour tous les domaines</i>"]:::pilier
+
+    NOTE_FINALE --> TPI
+    NOTE_FINALE --> COB
+    NOTE_FINALE --> COMP_INF
+    NOTE_FINALE --> CULT_GEN
+
+    COMP_INF --> ECOLE_PRO
+    COMP_INF --> CIE
+
+    COB --> ANGLAIS
+    COB --> MATH
+
+    CULT_GEN --> TPA
+    CULT_GEN --> EXAMEN_FINAL
+    CULT_GEN --> NOTE_EXPERIENCE
+
+ANGLAIS --> TOUTES_LES_NOTES
+NOTE_EXPERIENCE --> TOUTES_LES_NOTES
+EXAMEN_FINAL --> TOUTES_LES_NOTES
+TPA --> TOUTES_LES_NOTES
+MATH --> TOUTES_LES_NOTES
+ECOLE_PRO --> TOUTES_LES_NOTES
+CIE --> TOUTES_LES_NOTES
+TPI --> TOUTES_LES_NOTES
