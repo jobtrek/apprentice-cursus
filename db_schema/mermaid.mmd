@@ -1,0 +1,126 @@
+erDiagram
+
+
+    evaluation_nodes {
+        bigint id PK
+        bigint subject_id FK "nullable, -> subjects (leaves)"
+        varchar name "e.g. Final grade, DCO B, French..."
+        enum aggregation "see Aggregation note"
+        decimal rounding_step "nullable, 0.5 or NULL"
+        enum period_scope "semester or cursus"
+        enum variant "nullable, standard | mp -> which track this node belongs to; NULL = shared by both"
+        timestamp created_at
+    }
+
+    evaluation_node_edges {
+        bigint id PK
+        bigint parent_id FK "-> evaluation_nodes"
+        bigint child_id FK "-> evaluation_nodes, self-ref (DAG, not strict tree)"
+        decimal weight "weight of child WITHIN this parent"
+        smallint position "display order within this parent"
+        timestamp created_at
+    }
+
+    subjects {
+        bigint id PK
+        varchar category "CIE, competence elargie, Modules. Used for grouping in the UI"
+        bigint subject_category_id FK "-> subject_category"
+        timestamp created_at
+    }
+
+    subject_category {
+        bigint id PK
+        varchar Name "CIE, competence elargie, Modules. Used for grouping in the UI"
+    }
+
+    users {
+        bigint id PK
+        varchar azure_id UK "nullable, for SSO, varchar since it's UUID"
+        varchar tenant_id "nullable, for SSO, varchat since it's UUID"
+        varchar name
+        varchar email UK
+        boolean is_mp "nullable, doing the maturité professionnelle variant"
+        enum role "apprentice, coach, trainer, admin, super_admin"
+        enum apprenticeship_name "nullable, IT | EC"
+        bigint apprenticeship_id FK "nullable, -> apprenticeships (track)"
+        bigint coach_id FK "nullable, self-ref"
+        bigint trainer_id FK "nullable, self-ref"
+    }
+
+    grades {
+        bigint id PK
+        bigint user_id FK "-> users (apprentice)"
+        bigint evaluation_node_id FK "-> evaluation_nodes (leaf)"
+        decimal value "CHECK 1.0-6.0, no half steps"
+        date test_date "CHECK <= today"
+        smallint semester "1..8, derived from test_date"
+        varchar file_path "nullable, required if not oral"
+        varchar original_filename "nullable"
+        timestamp notified_at "nullable, anti-duplicate email"
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    evaluation_results {
+        bigint id PK
+        bigint user_id FK "-> users (apprentice)"
+        bigint evaluation_node_id FK "-> evaluation_nodes"
+        decimal rounded_value "displayed value"
+        timestamp created_at
+        timestamp updated_at
+    }
+    %% evaluation_results: UNIQUE (user_id, evaluation_node_id, semester) — upsert target on recompute
+
+    comments {
+        bigint id PK
+        bigint author_id FK "-> users"
+        varchar commentable_type "Grade | Project"
+        bigint commentable_id
+        text body "max 2000 chars"
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    projects {
+        bigint id PK
+        bigint user_id FK "-> users (IT apprentice)"
+        varchar title
+        varchar organization "nullable"
+        text description
+        varchar responsibilities "nullable"
+        varchar technologies "nullable"
+        varchar repository_url "nullable"
+        varchar demo_path "nullable"
+        date date_start
+        date date_end "nullable"
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    skills {
+        bigint id PK
+        varchar name UK
+        timestamp created_at
+    }
+
+    project_skill {
+        bigint project_id FK
+        bigint skill_id FK
+    }
+
+    evaluation_nodes ||--o{ evaluation_node_edges : "parent"
+    evaluation_nodes ||--o{ evaluation_node_edges : "child"
+    subjects ||--o{ evaluation_nodes : "label"
+    users ||--o{ users : "coach"
+    users ||--o{ users : "trainer"
+    users ||--o{ grades : "apprentice"
+    evaluation_nodes ||--o{ grades : "leaf"
+    evaluation_nodes ||--o{ evaluation_results : ""
+    users ||--o{ evaluation_results : "apprentice"
+    users ||--o{ comments : "author"
+    grades ||--o{ comments : "commentable"
+    projects ||--o{ comments : "commentable"
+    users ||--o{ projects : "apprentice"
+    projects ||--o{ project_skill : ""
+    skills ||--o{ project_skill : ""
+    subjects ||--o{ subject_category: "ca"
