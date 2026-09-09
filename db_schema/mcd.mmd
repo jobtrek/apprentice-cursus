@@ -5,25 +5,24 @@ erDiagram
         bigint id PK
         bigint subject_id FK "nullable, -> subjects (leaves)"
         varchar name "e.g. Final grade, DCO B, French..."
-        enum aggregation "see Aggregation note"
+        enum aggregation "meant to tell how to combine nodes children into a nodes value; NULL = leaf node, no children"
         decimal rounding_step "nullable, 0.5 or NULL"
         enum period_scope "semester or cursus"
         enum variant "nullable, standard | mp -> which track this node belongs to; NULL = shared by both"
         timestamp created_at
     }
 
-    evaluation_node_edges {
+    evaluation_node_connections {
         bigint id PK
         bigint parent_id FK "-> evaluation_nodes"
         bigint child_id FK "-> evaluation_nodes, self-ref (DAG, not strict tree)"
         decimal weight "weight of child WITHIN this parent"
-        smallint position "display order within this parent"
         timestamp created_at
     }
+    %% evaluation_node_connections: UNIQUE (parent_id, child_id) — prevents duplicate edges double-counting weight
 
     subjects {
         bigint id PK
-        varchar category "CIE, competence elargie, Modules. Used for grouping in the UI"
         bigint subject_category_id FK "-> subject_category"
         timestamp created_at
     }
@@ -65,6 +64,7 @@ erDiagram
         bigint id PK
         bigint user_id FK "-> users (apprentice)"
         bigint evaluation_node_id FK "-> evaluation_nodes"
+        smallint semester "nullable, NULL when node.period_scope = cursus"
         decimal rounded_value "displayed value"
         timestamp created_at
         timestamp updated_at
@@ -108,8 +108,8 @@ erDiagram
         bigint skill_id FK
     }
 
-    evaluation_nodes ||--o{ evaluation_node_edges : "parent"
-    evaluation_nodes ||--o{ evaluation_node_edges : "child"
+    evaluation_nodes ||--o{ evaluation_node_connections : "parent"
+    evaluation_nodes ||--o{ evaluation_node_connections : "child"
     subjects ||--o{ evaluation_nodes : "label"
     users ||--o{ users : "coach"
     users ||--o{ users : "trainer"
@@ -123,4 +123,4 @@ erDiagram
     users ||--o{ projects : "apprentice"
     projects ||--o{ project_skill : ""
     skills ||--o{ project_skill : ""
-    subjects ||--o{ subject_category: "ca"
+    subjects ||--o{ subject_category: "category"
