@@ -28,6 +28,11 @@ use Illuminate\Support\Carbon;
 ])]
 class Project extends Model
 {
+    protected static function booted(): void
+    {
+        static::deleting(fn (self $project) => $project->comments()->delete());
+    }
+
     protected function casts(): array
     {
         return [

@@ -22,6 +22,11 @@ use Illuminate\Support\Carbon;
 #[Fillable(['user_id', 'evaluation_node_id', 'value', 'test_date', 'semester', 'file_path', 'original_filename'])]
 class Grade extends Model
 {
+    protected static function booted(): void
+    {
+        static::deleting(fn (self $grade) => $grade->comments()->delete());
+    }
+
     protected function casts(): array
     {
         return [

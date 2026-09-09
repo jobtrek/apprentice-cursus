@@ -22,6 +22,7 @@ use Illuminate\Support\Carbon;
  * @property string $name
  * @property string $email
  * @property bool|null $is_mp
+ * @property bool $is_active
  * @property UserRole $role
  * @property ApprenticeshipName|null $apprenticeship_name
  * @property int|null $apprenticeship_id
@@ -37,7 +38,7 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $updated_at
  */
 #[Fillable([
-    'name', 'email', 'password', 'azure_id', 'tenant_id', 'is_mp',
+    'name', 'email', 'password', 'azure_id', 'tenant_id', 'is_mp', 'is_active',
     'role', 'apprenticeship_name', 'apprenticeship_id', 'coach_id', 'trainer_id',
 ])]
 #[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
@@ -57,6 +58,7 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'is_mp' => 'boolean',
+            'is_active' => 'boolean',
             'role' => UserRole::class,
             'apprenticeship_name' => ApprenticeshipName::class,
         ];

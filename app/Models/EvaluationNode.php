@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use LogicException;
 
 /**
  * Composite pattern component: an evaluation node is either a leaf
@@ -79,6 +80,26 @@ class EvaluationNode extends Model
      */
     public function isLeaf(): bool
     {
-        return $this->aggregation === null;
+        if ($this->aggregation !== null) {
+            return false;
+        }
+
+        return $this->relationLoaded('children')
+            ? $this->children->isEmpty()
+            : $this->children()->doesntExist();
+    }
+
+    /**
+     * Attach a child under this node. A leaf (aggregation === null) can never gain
+     * children — mirrors a Composite pattern's Leaf rejecting add(), keeping isLeaf()
+     * and "has children" from ever contradicting each other.
+     */
+    public function addChild(self $child, float $weight): void
+    {
+        if ($this->aggregation === null) {
+            throw new LogicException("Cannot attach a child to leaf node [{$this->id}]: set an aggregation strategy first.");
+        }
+
+        $this->children()->attach($child->id, ['weight' => $weight, 'created_at' => now()]);
     }
 }

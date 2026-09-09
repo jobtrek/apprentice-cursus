@@ -13,8 +13,8 @@ return new class extends Migration
     {
         Schema::create('grades', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->constrained('users')->cascadeOnDelete();
-            $table->foreignId('evaluation_node_id')->constrained('evaluation_nodes')->cascadeOnDelete();
+            $table->foreignId('user_id')->constrained('users')->restrictOnDelete();
+            $table->foreignId('evaluation_node_id')->constrained('evaluation_nodes')->restrictOnDelete();
             $table->decimal('value', 2, 1);
             $table->date('test_date');
             $table->smallInteger('semester');
