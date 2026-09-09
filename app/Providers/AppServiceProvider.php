@@ -2,7 +2,10 @@
 
 namespace App\Providers;
 
+use App\Models\Grade;
+use App\Models\Project;
 use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\ServiceProvider;
@@ -31,6 +34,11 @@ class AppServiceProvider extends ServiceProvider
      */
     protected function configureDefaults(): void
     {
+        Relation::enforceMorphMap([
+            'grade' => Grade::class,
+            'project' => Project::class,
+        ]);
+
         Date::use(CarbonImmutable::class);
 
         DB::prohibitDestructiveCommands(
