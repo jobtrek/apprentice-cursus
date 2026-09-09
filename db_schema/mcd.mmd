@@ -64,12 +64,14 @@ erDiagram
         bigint id PK
         bigint user_id FK "-> users (apprentice)"
         bigint evaluation_node_id FK "-> evaluation_nodes"
-        smallint semester "nullable, NULL when node.period_scope = cursus"
+        smallint semester "NOT NULL, sentinel 0 when node.period_scope = cursus"
         decimal rounded_value "displayed value"
         timestamp created_at
         timestamp updated_at
     }
     %% evaluation_results: UNIQUE (user_id, evaluation_node_id, semester) — upsert target on recompute
+    %% semester uses sentinel 0 (never a real semester) instead of NULL for cursus-scoped rows,
+    %% so the UNIQUE constraint is null-safe and recompute upserts update in place instead of duplicating
 
     comments {
         bigint id PK
