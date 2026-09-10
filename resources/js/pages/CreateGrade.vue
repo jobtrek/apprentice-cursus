@@ -31,6 +31,7 @@ import {
 import { Separator } from '@/components/ui/separator';
 import { GRADE_MAX, GRADE_MIN, GRADE_STEP } from '@/constants/constants';
 import { useGradeForm } from '@/composables/useGradeForm';
+import { Link } from '@inertiajs/vue3';
 import { MinusIcon, PlusIcon, UploadIcon } from '@lucide/vue';
 
 const {
@@ -185,7 +186,9 @@ const {
 
             <CardFooter class="justify-start gap-2">
                 <Button type="submit">Enregistrer la note</Button>
-                <Button type="button" variant="outline">Annuler</Button>
+                <Button as-child type="button" variant="outline">
+                    <Link href="/">Annuler</Link>
+                </Button>
             </CardFooter>
         </Card>
     </div>

@@ -2,7 +2,7 @@ import modulesData from '@/data/modules.json';
 import mpSubjects from '@/data/mp.json';
 import normalSubjects from '@/data/normal.json';
 import { computed, ref } from 'vue';
-import { GRADE_MAX, GRADE_MIN, GRADE_STEP } from '@/constants/constants';
+import { ALLOWED_FILE_MIME_TYPE, GRADE_MAX, GRADE_MIN, GRADE_STEP, MAX_FILE_SIZE_BYTES } from '@/constants/constants';
 
 export function useGradeForm() {
     const subjects = normalSubjects;
@@ -23,6 +23,20 @@ export function useGradeForm() {
 
     const selectedFile = ref<File | null>(null);
     const fileInput = ref<HTMLInputElement | null>(null);
+    const fileError = ref('');
+
+    const validateFile = (file: File): boolean => {
+        if (file.type !== ALLOWED_FILE_MIME_TYPE) {
+            fileError.value = 'Le fichier doit être un PDF.';
+            return false;
+        }
+        if (file.size > MAX_FILE_SIZE_BYTES) {
+            fileError.value = 'Le fichier ne doit pas dépasser 10 Mo.';
+            return false;
+        }
+        fileError.value = '';
+        return true;
+    };
 
     const decrementGrade = () => {
         grade.value = Math.max(GRADE_MIN, Math.round((grade.value - GRADE_STEP) * 10) / 10);
@@ -34,7 +48,7 @@ export function useGradeForm() {
     const handleDrop = (event: DragEvent) => {
         event.preventDefault();
         const file = event.dataTransfer?.files?.[0];
-        if (file) {
+        if (file && validateFile(file)) {
             selectedFile.value = file;
         }
     };
@@ -48,7 +62,8 @@ export function useGradeForm() {
 
     const onFileChange = (event: Event) => {
         const target = event.target as HTMLInputElement;
-        selectedFile.value = target.files?.[0] ?? null;
+        const file = target.files?.[0] ?? null;
+        selectedFile.value = file && validateFile(file) ? file : null;
     };
 
     return {
@@ -66,6 +81,7 @@ export function useGradeForm() {
         selectedModule,
         selectedFile,
         fileInput,
+        fileError,
         decrementGrade,
         incrementGrade,
         handleDrop,
