@@ -1,0 +1,8 @@
+[
+    { "name": "Francais", "active": true },
+    { "name": "Mathématique", "active": true },
+    { "name": "Allemand", "active": true },
+    { "name": "Histoire", "active": true },
+    { "name": "Anglais", "active": true },
+    { "name": "Economie & droit", "active": true }
+]
