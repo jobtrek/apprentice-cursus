@@ -7,7 +7,15 @@ const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
 
 void createInertiaApp({
     title: (title) => (title ? `${title} - ${appName}` : appName),
-    layout: (name) => (name.startsWith('auth/') ? AuthLayout : AppLayout),
+    // L'aperçu du portfolio se rend sans mise en page applicative : il doit
+    // correspondre exactement à ce qui sera imprimé.
+    layout: (name) => {
+        if (name === 'PortfolioPreview') {
+            return undefined;
+        }
+
+        return name.startsWith('auth/') ? AuthLayout : AppLayout;
+    },
     progress: {
         color: '#4B5563',
     },

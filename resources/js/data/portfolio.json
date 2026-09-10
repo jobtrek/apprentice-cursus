@@ -1,0 +1,60 @@
+{
+    "owner": {
+        "name": "Léa Bertrand",
+        "track": "Filière Informatique",
+        "promotion": "Volée 2024–2027"
+    },
+    "skills": [
+        { "id": 1, "name": "Développement web" },
+        { "id": 2, "name": "Bases de données" },
+        { "id": 3, "name": "Gestion de projet" },
+        { "id": 4, "name": "Sécurité informatique" },
+        { "id": 5, "name": "Cloud & infrastructure" },
+        { "id": 6, "name": "Travail en équipe" },
+        { "id": 7, "name": "Assurance qualité" }
+    ],
+    "projects": [
+        {
+            "id": 1,
+            "title": "Application de gestion de stock",
+            "organization": "Meier Logistique SA",
+            "description": "Conception et développement d'une application interne de suivi des stocks pour trois entrepôts, avec alertes de réapprovisionnement et export comptable mensuel.",
+            "responsibilities": "Développeuse full-stack",
+            "technologies": "Vue.js, Laravel, MySQL",
+            "repository_url": "https://github.com/lea-b/gestion-stock",
+            "demo_path": "https://demo.meier-stock.ch",
+            "date_start": "2025-03-01",
+            "date_end": "2025-06-30",
+            "screenshots": [],
+            "skill_ids": [1, 2, 3]
+        },
+        {
+            "id": 2,
+            "title": "Portail interne de suivi des absences",
+            "organization": "Cursus — projet d'école",
+            "description": "Portail permettant aux responsables d'équipe de déclarer et suivre les absences, avec tableau récapitulatif mensuel exportable.",
+            "responsibilities": "Développeuse",
+            "technologies": "PHP, JavaScript, SQLite",
+            "repository_url": "https://github.com/lea-b/suivi-absences",
+            "demo_path": null,
+            "date_start": "2024-09-01",
+            "date_end": "2024-12-31",
+            "screenshots": [],
+            "skill_ids": [1, 6]
+        },
+        {
+            "id": 3,
+            "title": "Automatisation des rapports mensuels",
+            "organization": "Meier Logistique SA",
+            "description": "Script d'agrégation des données de production générant automatiquement les rapports mensuels distribués à la direction.",
+            "responsibilities": "Développeuse",
+            "technologies": "Python, Pandas",
+            "repository_url": null,
+            "demo_path": null,
+            "date_start": "2026-01-01",
+            "date_end": null,
+            "screenshots": [],
+            "skill_ids": [1, 7]
+        }
+    ]
+}
