@@ -1,0 +1,5 @@
+[
+    { "name": "ECG", "active": true },
+    { "name": "Mathématique", "active": true },
+    { "name": "Anglais", "active": true }
+]

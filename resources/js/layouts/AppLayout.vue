@@ -8,7 +8,7 @@ const page = usePage();
 </script>
 
 <template>
-    <div class="bg-background min-h-svh">
+    <div class="bg-background min-h-svh flex flex-col">
         <header
             class="flex items-center justify-between border-b px-6 py-4"
         >
@@ -31,7 +31,7 @@ const page = usePage();
             </Form>
         </header>
 
-        <main class="mx-auto max-w-sm px-6 py-10">
+        <main class="flex flex-1 flex-col justify-center items-center">
             <slot />
         </main>
     </div>
