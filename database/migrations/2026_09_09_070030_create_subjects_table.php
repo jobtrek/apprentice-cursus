@@ -14,7 +14,10 @@ return new class extends Migration
         Schema::create('subjects', function (Blueprint $table) {
             $table->id();
             $table->foreignId('subject_category_id')->constrained('subject_category')->cascadeOnDelete();
-            $table->timestamp('created_at')->nullable();
+            $table->timestamp('created_at')->useCurrent();
+
+            // Postgres does not index foreign keys automatically.
+            $table->index('subject_category_id');
         });
     }
 

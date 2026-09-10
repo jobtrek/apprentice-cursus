@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -20,7 +21,12 @@ return new class extends Migration
             $table->timestamps();
 
             $table->index(['commentable_type', 'commentable_id']);
+            // Postgres does not index foreign keys automatically; the restrictOnDelete
+            // check on author_id would otherwise seq scan the whole table.
+            $table->index('author_id');
         });
+
+        DB::statement('ALTER TABLE comments ADD CONSTRAINT comments_body_length_check CHECK (char_length(body) <= 2000)');
     }
 
     /**

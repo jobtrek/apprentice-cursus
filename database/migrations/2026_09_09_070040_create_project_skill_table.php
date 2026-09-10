@@ -16,6 +16,8 @@ return new class extends Migration
             $table->foreignId('skill_id')->constrained('skills')->cascadeOnDelete();
 
             $table->primary(['project_id', 'skill_id']);
+            // project_id is covered by the leading column of the primary key; skill_id is not.
+            $table->index('skill_id');
         });
     }
 

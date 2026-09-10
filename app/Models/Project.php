@@ -2,12 +2,13 @@
 
 namespace App\Models;
 
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
-use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 
 /**
  * @property int $id
@@ -19,8 +20,8 @@ use Illuminate\Support\Carbon;
  * @property string|null $technologies
  * @property string|null $repository_url
  * @property string|null $demo_path
- * @property Carbon $date_start
- * @property Carbon|null $date_end
+ * @property CarbonImmutable $date_start
+ * @property CarbonImmutable|null $date_end
  */
 #[Fillable([
     'user_id', 'title', 'organization', 'description', 'responsibilities',
@@ -31,6 +32,15 @@ class Project extends Model
     protected static function booted(): void
     {
         static::deleting(fn (self $project) => $project->comments()->delete());
+    }
+
+    /**
+     * Same reasoning as Grade::delete(): the polymorphic comments are removed by the
+     * booted() hook, and the transaction is what keeps the two deletes atomic.
+     */
+    public function delete(): ?bool
+    {
+        return DB::transaction(fn (): ?bool => parent::delete());
     }
 
     protected function casts(): array

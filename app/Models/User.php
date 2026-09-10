@@ -3,7 +3,6 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
-use App\Enums\ApprenticeshipName;
 use App\Enums\UserRole;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -21,10 +20,9 @@ use Illuminate\Support\Carbon;
  * @property string|null $tenant_id
  * @property string $name
  * @property string $email
- * @property bool|null $is_mp
- * @property bool $is_active
+ * @property bool|null $is_mp Maturité professionnelle track. NULL = not applicable (non-apprentice roles).
+ * @property bool $is_active Deactivation flag. Users are never deleted, only deactivated.
  * @property UserRole $role
- * @property ApprenticeshipName|null $apprenticeship_name
  * @property int|null $apprenticeship_id
  * @property int|null $coach_id
  * @property int|null $trainer_id
@@ -37,10 +35,13 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
-#[Fillable([
-    'name', 'email', 'password', 'azure_id', 'tenant_id', 'is_mp', 'is_active',
-    'role', 'apprenticeship_name', 'apprenticeship_id', 'coach_id', 'trainer_id',
-])]
+/*
+ * Only self-service profile fields are mass-assignable. Everything that decides what a
+ * user is allowed to do or who they are attached to — role, is_active, is_mp,
+ * apprenticeship_id, coach_id, trainer_id — must be assigned explicitly by the
+ * administration flow that owns it, never filled from a request payload.
+ */
+#[Fillable(['name', 'email', 'password', 'azure_id', 'tenant_id'])]
 #[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
 class User extends Authenticatable
 {
@@ -60,7 +61,6 @@ class User extends Authenticatable
             'is_mp' => 'boolean',
             'is_active' => 'boolean',
             'role' => UserRole::class,
-            'apprenticeship_name' => ApprenticeshipName::class,
         ];
     }
 

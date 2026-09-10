@@ -21,7 +21,7 @@ use LogicException;
  * @property int|null $subject_id
  * @property string $name
  * @property AggregationType|null $aggregation
- * @property float|null $rounding_step
+ * @property string|null $rounding_step decimal cast: string at runtime, not float
  * @property PeriodScope $period_scope
  * @property EvaluationVariant|null $variant
  */
@@ -52,7 +52,7 @@ class EvaluationNode extends Model
     {
         return $this->belongsToMany(self::class, 'evaluation_node_connections', 'parent_id', 'child_id')
             ->using(EvaluationNodeConnection::class)
-            ->withPivot(['weight', 'created_at']);
+            ->withPivot(['id', 'weight', 'created_at']);
     }
 
     /**
@@ -62,7 +62,7 @@ class EvaluationNode extends Model
     {
         return $this->belongsToMany(self::class, 'evaluation_node_connections', 'child_id', 'parent_id')
             ->using(EvaluationNodeConnection::class)
-            ->withPivot(['weight', 'created_at']);
+            ->withPivot(['id', 'weight', 'created_at']);
     }
 
     public function grades(): HasMany
@@ -76,23 +76,27 @@ class EvaluationNode extends Model
     }
 
     /**
-     * A leaf node has no aggregation strategy and no children; it carries grades directly.
+     * A leaf node has no aggregation strategy; it carries grades directly.
+     *
+     * addChild() guarantees a node without an aggregation strategy can never gain
+     * children, so the absence of an aggregation is enough — no query needed.
      */
     public function isLeaf(): bool
     {
-        if ($this->aggregation !== null) {
-            return false;
-        }
-
-        return $this->relationLoaded('children')
-            ? $this->children->isEmpty()
-            : $this->children()->doesntExist();
+        return $this->aggregation === null;
     }
 
     /**
-     * Attach a child under this node. A leaf (aggregation === null) can never gain
-     * children — mirrors a Composite pattern's Leaf rejecting add(), keeping isLeaf()
-     * and "has children" from ever contradicting each other.
+     * Attach a child under this node.
+     *
+     * Three invariants are enforced here, because the schema cannot enforce any of them:
+     * - a leaf (aggregation === null) never gains children, so isLeaf() and "has children"
+     *   can never contradict each other;
+     * - a node is never its own child;
+     * - the edge never closes a cycle. The graph is a DAG, and any recursive aggregation
+     *   walk would loop forever on a cycle.
+     *
+     * @throws LogicException when the edge would break one of them.
      */
     public function addChild(self $child, float $weight): void
     {
@@ -100,6 +104,46 @@ class EvaluationNode extends Model
             throw new LogicException("Cannot attach a child to leaf node [{$this->id}]: set an aggregation strategy first.");
         }
 
-        $this->children()->attach($child->id, ['weight' => $weight, 'created_at' => now()]);
+        if ($child->id === $this->id) {
+            throw new LogicException("Cannot attach node [{$this->id}] to itself.");
+        }
+
+        if ($child->hasDescendant($this)) {
+            throw new LogicException("Cannot attach node [{$child->id}] under [{$this->id}]: it would create a cycle.");
+        }
+
+        $this->children()->attach($child->id, ['weight' => $weight]);
+    }
+
+    /**
+     * Whether $node is reachable by walking down from this node.
+     *
+     * Breadth-first over evaluation_node_connections, with a visited set so an already
+     * corrupted graph makes this return instead of looping.
+     */
+    public function hasDescendant(self $node): bool
+    {
+        $frontier = [$this->id];
+        $visited = [];
+
+        while ($frontier !== []) {
+            $visited = array_merge($visited, $frontier);
+
+            /** @var list<int> $frontier */
+            $frontier = EvaluationNodeConnection::query()
+                ->whereIn('parent_id', $frontier)
+                ->pluck('child_id')
+                ->map(fn (int|string $id): int => (int) $id)
+                ->reject(fn (int $id): bool => in_array($id, $visited, true))
+                ->unique()
+                ->values()
+                ->all();
+
+            if (in_array($node->id, $frontier, true)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

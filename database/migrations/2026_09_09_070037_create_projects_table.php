@@ -24,6 +24,10 @@ return new class extends Migration
             $table->date('date_start');
             $table->date('date_end')->nullable();
             $table->timestamps();
+
+            // Postgres does not index foreign keys automatically; the restrictOnDelete
+            // check on user_id would otherwise seq scan the whole table.
+            $table->index('user_id');
         });
     }
 
