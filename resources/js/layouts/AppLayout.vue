@@ -7,7 +7,7 @@ import MainNavbar from "@/layouts/MainNavbar.vue";
     <div class="bg-background min-h-svh flex flex-col">
         <MainNavbar />
 
-        <main class="flex flex-1 flex-col justify-center items-center">
+        <main class="flex flex-1 flex-col">
             <slot />
         </main>
     </div>

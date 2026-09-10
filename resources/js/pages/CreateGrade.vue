@@ -73,7 +73,7 @@ const {
 </script>
 
 <template>
-    <div class="flex flex-col items-center justify-center gap-4">
+    <div class="flex flex-1 flex-col w-full justify-center items-center gap-4">
         <div>
             <h2 class="text-2xl font-semibold self-start">Ajouter une note</h2>
         </div>
