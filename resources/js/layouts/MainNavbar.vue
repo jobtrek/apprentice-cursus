@@ -13,6 +13,8 @@ const page = usePage();
             class="flex items-center justify-between border-b px-6 py-4"
         >
             <Link :href="home()" class="font-medium">Jobtrek</Link>
+            <Link :href="dashboard()">Dashboard</Link>
+
             <Form
                 v-bind="AuthenticatedSessionController.destroy.form()"
                 v-slot="{ processing }"
