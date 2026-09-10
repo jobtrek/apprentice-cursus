@@ -2,14 +2,12 @@
 import { Form, Link } from '@inertiajs/vue3'
 import AuthenticatedSessionController from '@/actions/Laravel/Fortify/Http/Controllers/AuthenticatedSessionController';
 import { Button } from '@/components/ui/button';
-import { home, dashboard } from '@/routes';
-import {usePage} from "@inertiajs/vue3";
-const page = usePage();
+import { home } from '@/routes';
 
 </script>
 <template>
 
-        <main
+        <nav
             class="flex items-center justify-between border-b px-6 py-4"
         >
             <Link :href="home()" class="font-medium">Jobtrek</Link>
@@ -26,5 +24,5 @@ const page = usePage();
                     Log out
                 </Button>
                 </Form>
-            </main>
+            </nav>
         </template>
