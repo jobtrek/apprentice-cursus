@@ -45,7 +45,6 @@ import { GRADE_MAX, GRADE_MIN, GRADE_STEP } from '@/constants/constants';
 import { MONTHS, useGradeForm } from '@/composables/useGradeForm';
 import { Link } from '@inertiajs/vue3';
 import { CheckIcon, ChevronsUpDownIcon, MinusIcon, PlusIcon, UploadIcon } from '@lucide/vue';
-import { computed } from 'vue';
 
 const {
     subjects,
@@ -69,21 +68,8 @@ const {
     handleDrop,
     switchToOral,
     onFileChange,
+    gradeMode,
 } = useGradeForm();
-
-type GradeMode = 'notes' | 'modules-cie' | 'modules-epsic';
-
-const gradeMode = computed<GradeMode>({
-    get() {
-        if (!isModuleTest.value) return 'notes';
-        return isEpsic.value ? 'modules-epsic' : 'modules-cie';
-    },
-    set(value) {
-        if (!value) return;
-        isModuleTest.value = value !== 'notes';
-        isEpsic.value = value === 'modules-epsic';
-    },
-});
 </script>
 
 <template>
