@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Head, Link, router } from '@inertiajs/vue3';
-import { ImageIcon, PlusIcon, Trash2Icon, XIcon } from '@lucide/vue';
-import { computed } from 'vue';
+import { PlusIcon, Trash2Icon, XIcon } from '@lucide/vue';
+import { computed, ref } from 'vue';
 import InputError from '@/components/InputError.vue';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -34,7 +34,7 @@ const {
     removeLastTechnology,
     toggleSkill,
     hasSkill,
-    addScreenshot,
+    addScreenshots,
     removeScreenshot,
     submit,
 } = usePortfolioForm(existing.value);
@@ -42,6 +42,19 @@ const {
 const heading = computed(() =>
     isEditing.value ? form.value.title : 'Nouveau projet',
 );
+
+const screenshotInput = ref<HTMLInputElement | null>(null);
+
+function pickScreenshots(): void {
+    screenshotInput.value?.click();
+}
+
+async function onScreenshotsPicked(event: Event): Promise<void> {
+    const input = event.target as HTMLInputElement;
+    await addScreenshots(input.files);
+    // Remis à zéro pour que réimporter le même fichier redéclenche l'événement.
+    input.value = '';
+}
 
 function onSubmit(): void {
     if (submit() === null) {
@@ -253,14 +266,11 @@ function onDelete(): void {
                                 :key="index"
                                 class="relative"
                             >
-                                <div
-                                    class="bg-muted text-muted-foreground flex size-24 items-center justify-center rounded"
-                                >
-                                    <ImageIcon
-                                        class="size-5"
-                                        aria-hidden="true"
-                                    />
-                                </div>
+                                <img
+                                    :src="screenshot"
+                                    :alt="`Capture d'écran ${index + 1}`"
+                                    class="bg-muted size-24 rounded object-cover"
+                                />
                                 <button
                                     type="button"
                                     class="bg-foreground text-background absolute -top-2 -right-2 flex size-5 items-center justify-center rounded-full"
@@ -275,14 +285,25 @@ function onDelete(): void {
                                 type="button"
                                 class="border-input text-muted-foreground hover:bg-accent flex size-24 items-center justify-center rounded border border-dashed"
                                 aria-label="Ajouter une capture d'écran"
-                                @click="addScreenshot"
+                                data-test="add-screenshot-button"
+                                @click="pickScreenshots"
                             >
                                 <PlusIcon class="size-5" aria-hidden="true" />
                             </button>
+
+                            <input
+                                ref="screenshotInput"
+                                type="file"
+                                accept="image/*"
+                                multiple
+                                class="hidden"
+                                data-test="screenshot-input"
+                                @change="onScreenshotsPicked"
+                            />
                         </div>
+                        <InputError :message="errors.screenshots" />
                         <p class="text-muted-foreground text-xs">
-                            L'envoi de fichiers sera branché quand la route de
-                            stockage sera disponible.
+                            Images uniquement, 5 Mo maximum par fichier.
                         </p>
                     </fieldset>
 

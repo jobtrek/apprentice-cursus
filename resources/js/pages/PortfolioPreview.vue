@@ -1,11 +1,6 @@
 <script setup lang="ts">
 import { Head, Link } from '@inertiajs/vue3';
-import {
-    ChevronLeftIcon,
-    ExternalLinkIcon,
-    FileTextIcon,
-    ImageIcon,
-} from '@lucide/vue';
+import { ChevronLeftIcon, ExternalLinkIcon, FileTextIcon } from '@lucide/vue';
 import {
     formatPeriod,
     parseTechnologies,
@@ -129,13 +124,13 @@ function exportToPdf(): void {
                     v-if="project.screenshots.length > 0"
                     class="mt-4 flex flex-wrap gap-3"
                 >
-                    <div
+                    <img
                         v-for="(screenshot, index) in project.screenshots"
                         :key="index"
-                        class="flex h-20 w-32 items-center justify-center rounded bg-neutral-100 text-neutral-400"
-                    >
-                        <ImageIcon class="size-4" aria-hidden="true" />
-                    </div>
+                        :src="screenshot"
+                        :alt="`${project.title} — capture ${index + 1}`"
+                        class="h-20 w-32 rounded bg-neutral-100 object-cover"
+                    />
                 </div>
 
                 <ul class="mt-4 flex flex-wrap gap-1.5">
