@@ -48,8 +48,8 @@ export function useGradeForm() {
     const handleDrop = (event: DragEvent) => {
         event.preventDefault();
         const file = event.dataTransfer?.files?.[0];
-        if (file && validateFile(file)) {
-            selectedFile.value = file;
+        if (file) {
+            selectedFile.value = validateFile(file) ? file : null;
         }
     };
 

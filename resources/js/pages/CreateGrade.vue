@@ -49,6 +49,7 @@ const {
     selectedModule,
     selectedFile,
     fileInput,
+    fileError,
     decrementGrade,
     incrementGrade,
     handleDrop,
@@ -176,6 +177,7 @@ const {
                         </p>
                         <p class="text-xs text-muted-foreground">PDF uniquement, 10 Mo maximum</p>
                         <p v-if="selectedFile" class="text-xs text-foreground">{{ selectedFile.name }}</p>
+                        <p v-if="fileError" class="text-xs text-destructive">{{ fileError }}</p>
                         <input ref="fileInput" type="file" accept="application/pdf" class="hidden"
                             @change="onFileChange" />
                     </div>
