@@ -20,6 +20,8 @@ type ProjectForm = Omit<
     date_end: string;
 };
 
+const MAX_SCREENSHOT_BYTES = 5 * 1024 * 1024;
+
 function blankForm(): ProjectForm {
     return {
         id: 0,
@@ -112,8 +114,61 @@ export function usePortfolioForm(existing?: PortfolioProject) {
         return form.value.skill_ids.includes(id);
     }
 
-    function addScreenshot(): void {
-        form.value.screenshots.push('');
+    /**
+     * Les images sont lues en data URL et gardées en mémoire : elles sont
+     * donc directement affichables dans l'aperçu. À remplacer par un envoi
+     * vers la route de stockage quand le backend l'exposera.
+     */
+    function readScreenshot(file: File): Promise<string> {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => {
+                // readAsDataURL donne toujours une chaîne, mais le type de
+                // FileReader couvre aussi ArrayBuffer.
+                if (typeof reader.result === 'string') {
+                    resolve(reader.result);
+
+                    return;
+                }
+
+                reject(new Error('Lecture du fichier impossible.'));
+            };
+            reader.onerror = () => reject(reader.error);
+            reader.readAsDataURL(file);
+        });
+    }
+
+    async function addScreenshots(files: FileList | null): Promise<void> {
+        if (!files || files.length === 0) {
+            return;
+        }
+
+        const rejected: string[] = [];
+
+        for (const file of Array.from(files)) {
+            if (!file.type.startsWith('image/')) {
+                rejected.push(`${file.name} n'est pas une image.`);
+
+                continue;
+            }
+
+            if (file.size > MAX_SCREENSHOT_BYTES) {
+                rejected.push(`${file.name} dépasse 5 Mo.`);
+
+                continue;
+            }
+
+            form.value.screenshots.push(await readScreenshot(file));
+        }
+
+        if (rejected.length > 0) {
+            errors.value = { ...errors.value, screenshots: rejected.join(' ') };
+
+            return;
+        }
+
+        const { screenshots: _removed, ...rest } = errors.value;
+        errors.value = rest;
     }
 
     function removeScreenshot(index: number): void {
@@ -186,7 +241,7 @@ export function usePortfolioForm(existing?: PortfolioProject) {
         removeLastTechnology,
         toggleSkill,
         hasSkill,
-        addScreenshot,
+        addScreenshots,
         removeScreenshot,
         submit,
     };
