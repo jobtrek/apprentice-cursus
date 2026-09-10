@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import {
     InputGroup,
     InputGroupAddon,
@@ -44,6 +45,7 @@ import { GRADE_MAX, GRADE_MIN, GRADE_STEP } from '@/constants/constants';
 import { MONTHS, useGradeForm } from '@/composables/useGradeForm';
 import { Link } from '@inertiajs/vue3';
 import { CheckIcon, ChevronsUpDownIcon, MinusIcon, PlusIcon, UploadIcon } from '@lucide/vue';
+import { computed } from 'vue';
 
 const {
     subjects,
@@ -68,6 +70,20 @@ const {
     switchToOral,
     onFileChange,
 } = useGradeForm();
+
+type GradeMode = 'notes' | 'modules-cie' | 'modules-epsic';
+
+const gradeMode = computed<GradeMode>({
+    get() {
+        if (!isModuleTest.value) return 'notes';
+        return isEpsic.value ? 'modules-epsic' : 'modules-cie';
+    },
+    set(value) {
+        if (!value) return;
+        isModuleTest.value = value !== 'notes';
+        isEpsic.value = value === 'modules-epsic';
+    },
+});
 </script>
 
 <template>
@@ -75,23 +91,23 @@ const {
         <div>
             <h2 class="text-2xl font-semibold self-start">Ajouter une note</h2>
         </div>
-        <form class="w-160">
+        <form class="w-175">
         <Card>
             <CardHeader>
                 <FieldGroup>
                     <div class="flex justify-end">
-                        <Button type="button" variant="outline" size="sm" @click="isModuleTest = !isModuleTest">
-                            <span v-if="isModuleTest">Noter une épreuve ECG</span>
-                            <span v-else>Noter un module</span>
-                        </Button>
+                        <ToggleGroup v-model="gradeMode" type="single" variant="outline">
+                            <ToggleGroupItem value="notes">Notes</ToggleGroupItem>
+                            <ToggleGroupItem value="modules-cie">Modules CIE</ToggleGroupItem>
+                            <ToggleGroupItem value="modules-epsic">Modules EPSIC</ToggleGroupItem>
+                        </ToggleGroup>
                     </div>
 
                     <Field v-if="!isModuleTest">
-                        <FieldLabel for="matiere">Matière</FieldLabel>
-                        <div class="flex items-center justify-between gap-2 mb-2">
-                            <span class="text-sm text-muted-foreground">Matières</span>
+                        <div class="flex items-center justify-between gap-2">
+                            <FieldLabel for="matiere">Matière</FieldLabel>
                             <Button type="button" variant="outline" size="sm" @click="isMp = !isMp">
-                                <span v-if="isMp">Voir les matières de MP</span>
+                                <span v-if="isMp">Voir les matières du CFC Normale</span>
                                 <span v-else>Voir les matières de maturité</span>
                             </Button>
                         </div>
@@ -122,13 +138,6 @@ const {
 
                     <Field v-else>
                         <FieldLabel for="module">Module</FieldLabel>
-                        <div class="flex items-center justify-between gap-2 mb-2">
-                            <span class="text-sm text-muted-foreground">Modules</span>
-                            <Button type="button" variant="outline" size="sm" @click="isEpsic = !isEpsic">
-                                <span v-if="isEpsic">Voir les modules de CIE</span>
-                                <span v-else>Voir les modules d'EPSIC</span>
-                            </Button>
-                        </div>
                         <Combobox v-model="selectedModule" by="id">
                             <ComboboxAnchor as-child>
                                 <ComboboxTrigger as-child>
@@ -209,7 +218,7 @@ const {
                     </div>
 
                     <FieldDescription v-if="isOral">
-                        Épreuve orale — aucun document requis pour une épreuve orale.
+                        Épreuve orale aucun document requis pour une épreuve orale.
                     </FieldDescription>
 
                     <div v-else
