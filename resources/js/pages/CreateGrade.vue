@@ -44,6 +44,8 @@ const {
     is_oral,
     grade,
     testDate,
+    selectedSubject,
+    selectedModule,
     selectedFile,
     fileInput,
     decrementGrade,
@@ -78,7 +80,7 @@ const {
                                 <span v-else>Voir les matières de maturité</span>
                             </Button>
                         </div>
-                        <Select>
+                        <Select v-model="selectedSubject">
                             <SelectTrigger id="matiere" class="w-full">
                                 <SelectValue placeholder="Sélectionner une matière" />
                             </SelectTrigger>
@@ -103,7 +105,7 @@ const {
                                 <span v-else>Voir les modules d'EPSIC</span>
                             </Button>
                         </div>
-                        <Select>
+                        <Select v-model="selectedModule">
                             <SelectTrigger id="module" class="w-full">
                                 <SelectValue placeholder="Sélectionner un module" />
                             </SelectTrigger>

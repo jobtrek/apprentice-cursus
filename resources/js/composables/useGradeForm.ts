@@ -18,6 +18,8 @@ export function useGradeForm() {
     const is_oral = ref(false);
     const grade = ref(4.5);
     const testDate = ref('');
+    const selectedSubject = ref('');
+    const selectedModule = ref('');
 
     const selectedFile = ref<File | null>(null);
     const fileInput = ref<HTMLInputElement | null>(null);
@@ -60,6 +62,8 @@ export function useGradeForm() {
         is_oral,
         grade,
         testDate,
+        selectedSubject,
+        selectedModule,
         selectedFile,
         fileInput,
         decrementGrade,
