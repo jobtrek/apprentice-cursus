@@ -13,6 +13,7 @@ import {
     FieldLabel,
 } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
+import { Switch } from '@/components/ui/switch';
 import {
     InputGroup,
     InputGroupAddon,
@@ -35,32 +36,32 @@ import {
     SelectContent,
     SelectGroup,
     SelectItem,
-    SelectLabel,
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { GRADE_MAX, GRADE_MIN, GRADE_STEP } from '@/constants/constants';
-import { useGradeForm } from '@/composables/useGradeForm';
+import { MONTHS, useGradeForm } from '@/composables/useGradeForm';
 import { Link } from '@inertiajs/vue3';
 import { CheckIcon, ChevronsUpDownIcon, MinusIcon, PlusIcon, UploadIcon } from '@lucide/vue';
 
 const {
     subjects,
     MatureSubjects,
-    is_mp,
-    is_epsic,
-    is_module_test,
+    isMp,
+    isEpsic,
+    isModuleTest,
     cieModules,
     epsicModules,
-    is_oral,
+    isOral,
     grade,
-    testDate,
+    dateDay,
+    dateMonth,
+    dateYear,
     selectedSubject,
     selectedModule,
     selectedFile,
     fileInput,
-    fileError,
     decrementGrade,
     incrementGrade,
     handleDrop,
@@ -74,22 +75,23 @@ const {
         <div>
             <h2 class="text-2xl font-semibold self-start">Ajouter une note</h2>
         </div>
-        <Card class="w-160">
+        <form class="w-160">
+        <Card>
             <CardHeader>
                 <FieldGroup>
                     <div class="flex justify-end">
-                        <Button type="button" variant="outline" size="sm" @click="is_module_test = !is_module_test">
-                            <span v-if="is_module_test">Noter une épreuve ECG</span>
+                        <Button type="button" variant="outline" size="sm" @click="isModuleTest = !isModuleTest">
+                            <span v-if="isModuleTest">Noter une épreuve ECG</span>
                             <span v-else>Noter un module</span>
                         </Button>
                     </div>
 
-                    <Field v-if="!is_module_test">
+                    <Field v-if="!isModuleTest">
                         <FieldLabel for="matiere">Matière</FieldLabel>
                         <div class="flex items-center justify-between gap-2 mb-2">
                             <span class="text-sm text-muted-foreground">Matières</span>
-                            <Button type="button" variant="outline" size="sm" @click="is_mp = !is_mp">
-                                <span v-if="is_mp">Voir les matières de MP</span>
+                            <Button type="button" variant="outline" size="sm" @click="isMp = !isMp">
+                                <span v-if="isMp">Voir les matières de MP</span>
                                 <span v-else>Voir les matières de maturité</span>
                             </Button>
                         </div>
@@ -106,7 +108,7 @@ const {
                                 <ComboboxInput placeholder="Rechercher une matière..." />
                                 <ComboboxEmpty>Aucune matière trouvée.</ComboboxEmpty>
                                 <ComboboxGroup>
-                                    <ComboboxItem v-for="subject in is_mp ? MatureSubjects : subjects" :key="subject.name"
+                                    <ComboboxItem v-for="subject in isMp ? MatureSubjects : subjects" :key="subject.name"
                                         :value="subject">
                                         {{ subject.name }}
                                         <ComboboxItemIndicator>
@@ -122,25 +124,34 @@ const {
                         <FieldLabel for="module">Module</FieldLabel>
                         <div class="flex items-center justify-between gap-2 mb-2">
                             <span class="text-sm text-muted-foreground">Modules</span>
-                            <Button type="button" variant="outline" size="sm" @click="is_epsic = !is_epsic">
-                                <span v-if="is_epsic">Voir les modules de CIE</span>
+                            <Button type="button" variant="outline" size="sm" @click="isEpsic = !isEpsic">
+                                <span v-if="isEpsic">Voir les modules de CIE</span>
                                 <span v-else>Voir les modules d'EPSIC</span>
                             </Button>
                         </div>
-                        <Select v-model="selectedModule">
-                            <SelectTrigger id="module" class="w-full">
-                                <SelectValue placeholder="Sélectionner un module" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectGroup>
-                                    <SelectLabel>Modules</SelectLabel>
-                                    <SelectItem v-for="module in is_epsic ? epsicModules : cieModules"
-                                        :key="module.id" :value="String(module.id)">
+                        <Combobox v-model="selectedModule" by="id">
+                            <ComboboxAnchor as-child>
+                                <ComboboxTrigger as-child>
+                                    <Button id="module" type="button" variant="outline" class="w-full justify-between font-normal">
+                                        {{ selectedModule ? `${selectedModule.code} — ${selectedModule.name}` : 'Sélectionner un module' }}
+                                        <ChevronsUpDownIcon class="opacity-50" />
+                                    </Button>
+                                </ComboboxTrigger>
+                            </ComboboxAnchor>
+                            <ComboboxList>
+                                <ComboboxInput placeholder="Rechercher un module..." />
+                                <ComboboxEmpty>Aucun module trouvé.</ComboboxEmpty>
+                                <ComboboxGroup>
+                                    <ComboboxItem v-for="module in isEpsic ? epsicModules : cieModules"
+                                        :key="module.id" :value="module">
                                         {{ module.code }} — {{ module.name }}
-                                    </SelectItem>
-                                </SelectGroup>
-                            </SelectContent>
-                        </Select>
+                                        <ComboboxItemIndicator>
+                                            <CheckIcon />
+                                        </ComboboxItemIndicator>
+                                    </ComboboxItem>
+                                </ComboboxGroup>
+                            </ComboboxList>
+                        </Combobox>
                     </Field>
                 </FieldGroup>
             </CardHeader>
@@ -163,24 +174,41 @@ const {
                                 </InputGroupButton>
                             </InputGroupAddon>
                         </InputGroup>
-                        <FieldDescription>De {{ GRADE_MIN.toFixed(1) }} à {{ GRADE_MAX.toFixed(1) }}, par pas de {{
-                            GRADE_STEP.toFixed(1) }}</FieldDescription>
+                        <FieldDescription>De {{ GRADE_MIN.toFixed(1) }} à {{ GRADE_MAX.toFixed(1) }}, par pas
+                            de {{ GRADE_STEP.toFixed(1) }}</FieldDescription>
                     </Field>
 
                     <Field class="flex-1">
-                        <FieldLabel for="date">Date du test</FieldLabel>
-                        <Input id="date" v-model="testDate" type="date" />
+                        <FieldLabel for="date-day">Date du test</FieldLabel>
+                        <div class="flex gap-2">
+                            <Select v-model="dateMonth">
+                                <SelectTrigger id="date-month" class="flex-1">
+                                    <SelectValue placeholder="Mois" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectGroup>
+                                        <SelectItem v-for="month in MONTHS" :key="month.value" :value="month.value">
+                                            {{ month.label }}
+                                        </SelectItem>
+                                    </SelectGroup>
+                                </SelectContent>
+                            </Select>
+                            <Input id="date-day" v-model="dateDay" type="number" :min="1" :max="31"
+                                placeholder="Jour" class="w-20" />
+                            <Input id="date-year" v-model="dateYear" type="number" :min="1900" :max="2100"
+                                placeholder="Année" class="w-24" />
+                        </div>
                     </Field>
                 </div>
 
-                <Field v-if="!is_module_test">
+                <Field v-if="!isModuleTest">
                     <FieldLabel>Justificatif</FieldLabel>
-                    <Button type="button" variant="outline" class="mb-2" @click="switchToOral">
-                        <span v-if="is_oral">Marquer comme épreuve écrite</span>
-                        <span v-else>Marquer comme épreuve orale</span>
-                    </Button>
+                    <div class="flex items-center gap-2 mb-2">
+                        <Switch id="is-oral" :model-value="isOral" @update:model-value="switchToOral" />
+                        <FieldLabel for="is-oral" class="font-normal">Épreuve orale</FieldLabel>
+                    </div>
 
-                    <FieldDescription v-if="is_oral">
+                    <FieldDescription v-if="isOral">
                         Épreuve orale — aucun document requis pour une épreuve orale.
                     </FieldDescription>
 
@@ -197,7 +225,6 @@ const {
                         </p>
                         <p class="text-xs text-muted-foreground">PDF uniquement, 10 Mo maximum</p>
                         <p v-if="selectedFile" class="text-xs text-foreground">{{ selectedFile.name }}</p>
-                        <p v-if="fileError" class="text-xs text-destructive">{{ fileError }}</p>
                         <input ref="fileInput" type="file" accept="application/pdf" class="hidden"
                             @change="onFileChange" />
                     </div>
@@ -213,5 +240,6 @@ const {
                 </Button>
             </CardFooter>
         </Card>
+        </form>
     </div>
 </template>
