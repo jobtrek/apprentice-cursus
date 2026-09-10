@@ -20,6 +20,17 @@ import {
     InputGroupInput,
 } from '@/components/ui/input-group';
 import {
+    Combobox,
+    ComboboxAnchor,
+    ComboboxEmpty,
+    ComboboxGroup,
+    ComboboxInput,
+    ComboboxItem,
+    ComboboxItemIndicator,
+    ComboboxList,
+    ComboboxTrigger,
+} from '@/components/ui/combobox';
+import {
     Select,
     SelectContent,
     SelectGroup,
@@ -32,7 +43,7 @@ import { Separator } from '@/components/ui/separator';
 import { GRADE_MAX, GRADE_MIN, GRADE_STEP } from '@/constants/constants';
 import { useGradeForm } from '@/composables/useGradeForm';
 import { Link } from '@inertiajs/vue3';
-import { MinusIcon, PlusIcon, UploadIcon } from '@lucide/vue';
+import { CheckIcon, ChevronsUpDownIcon, MinusIcon, PlusIcon, UploadIcon } from '@lucide/vue';
 
 const {
     subjects,
@@ -82,20 +93,29 @@ const {
                                 <span v-else>Voir les matières de maturité</span>
                             </Button>
                         </div>
-                        <Select v-model="selectedSubject">
-                            <SelectTrigger id="matiere" class="w-full">
-                                <SelectValue placeholder="Sélectionner une matière" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectGroup>
-                                    <SelectLabel>Matières</SelectLabel>
-                                    <SelectItem v-for="subject in is_mp ? MatureSubjects : subjects" :key="subject"
+                        <Combobox v-model="selectedSubject" by="name">
+                            <ComboboxAnchor as-child>
+                                <ComboboxTrigger as-child>
+                                    <Button id="matiere" type="button" variant="outline" class="w-full justify-between font-normal">
+                                        {{ selectedSubject?.name ?? 'Sélectionner une matière' }}
+                                        <ChevronsUpDownIcon class="opacity-50" />
+                                    </Button>
+                                </ComboboxTrigger>
+                            </ComboboxAnchor>
+                            <ComboboxList>
+                                <ComboboxInput placeholder="Rechercher une matière..." />
+                                <ComboboxEmpty>Aucune matière trouvée.</ComboboxEmpty>
+                                <ComboboxGroup>
+                                    <ComboboxItem v-for="subject in is_mp ? MatureSubjects : subjects" :key="subject.name"
                                         :value="subject">
-                                        {{ subject }}
-                                    </SelectItem>
-                                </SelectGroup>
-                            </SelectContent>
-                        </Select>
+                                        {{ subject.name }}
+                                        <ComboboxItemIndicator>
+                                            <CheckIcon />
+                                        </ComboboxItemIndicator>
+                                    </ComboboxItem>
+                                </ComboboxGroup>
+                            </ComboboxList>
+                        </Combobox>
                     </Field>
 
                     <Field v-else>

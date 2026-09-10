@@ -5,8 +5,8 @@ import { computed, ref } from 'vue';
 import { ALLOWED_FILE_MIME_TYPE, GRADE_MAX, GRADE_MIN, GRADE_STEP, MAX_FILE_SIZE_BYTES } from '@/constants/constants';
 
 export function useGradeForm() {
-    const subjects = normalSubjects;
-    const MatureSubjects = mpSubjects;
+    const subjects = computed(() => normalSubjects.filter((subject) => subject.active));
+    const MatureSubjects = computed(() => mpSubjects.filter((subject) => subject.active));
 
     const is_mp = ref(false);
     const is_epsic = ref(false);
@@ -18,7 +18,7 @@ export function useGradeForm() {
     const is_oral = ref(false);
     const grade = ref(4.5);
     const testDate = ref('');
-    const selectedSubject = ref('');
+    const selectedSubject = ref<{ name: string; active: boolean } | undefined>();
     const selectedModule = ref('');
 
     const selectedFile = ref<File | null>(null);
