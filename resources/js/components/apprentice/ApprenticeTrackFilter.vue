@@ -5,9 +5,9 @@ const track = defineModel<"All" | "IT" | "EC">({ required: true });
 </script>
 
 <template>
-    <Tabs v-model="track" class="w-full mb-6">
+    <Tabs v-model="track" class="mb-6 w-full">
         <TabsList
-            class="w-full grid grid-cols-3 h-12 rounded-xl bg-muted border"
+            class="grid h-12 w-full grid-cols-3 rounded-xl border bg-muted"
         >
             <TabsTrigger value="All" class="rounded-lg text-base"
                 >All</TabsTrigger

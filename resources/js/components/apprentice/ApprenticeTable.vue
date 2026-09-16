@@ -19,7 +19,7 @@ defineEmits<{
 </script>
 
 <template>
-    <div class="rounded-xl border bg-card overflow-hidden">
+    <div class="overflow-hidden rounded-xl border bg-card">
         <Table>
             <TableHeader>
                 <TableRow>

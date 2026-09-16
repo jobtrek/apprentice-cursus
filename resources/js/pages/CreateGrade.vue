@@ -71,9 +71,13 @@ const {
 </script>
 
 <template>
-    <div class="flex flex-col items-center justify-center gap-4">
-        <div>
-            <h2 class="text-2xl font-semibold self-start">Ajouter une note</h2>
+    <div class="flex flex-col items-center gap-4">
+        <div class="w-175 space-y-1">
+            <h1 class="text-2xl font-semibold">Ajouter une note</h1>
+            <p class="text-sm text-muted-foreground">
+                Renseignez les informations de la note pour l'ajouter au
+                dossier de l'apprenti·e.
+            </p>
         </div>
         <form class="w-175">
         <Card>
@@ -97,7 +101,9 @@ const {
                         <Combobox v-model="selectedSubject" by="name">
                             <ComboboxAnchor as-child>
                                 <ComboboxTrigger as-child>
-                                    <Button id="matiere" type="button" variant="outline" class="w-full justify-between font-normal">
+                                    <Button id="matiere" type="button" variant="outline" class="
+                                      w-full justify-between font-normal
+                                    ">
                                         {{ selectedSubject?.name ?? 'Sélectionner une matière' }}
                                         <ChevronsUpDownIcon class="opacity-50" />
                                     </Button>
@@ -124,7 +130,9 @@ const {
                         <Combobox v-model="selectedModule" by="id">
                             <ComboboxAnchor as-child>
                                 <ComboboxTrigger as-child>
-                                    <Button id="module" type="button" variant="outline" class="w-full justify-between font-normal">
+                                    <Button id="module" type="button" variant="outline" class="
+                                      w-full justify-between font-normal
+                                    ">
                                         {{ selectedModule ? `${selectedModule.code} — ${selectedModule.name} (${selectedModule.school})` : 'Sélectionner un module' }}
                                         <ChevronsUpDownIcon class="opacity-50" />
                                     </Button>
@@ -195,7 +203,7 @@ const {
 
                 <Field v-if="!isModuleTest">
                     <FieldLabel>Justificatif</FieldLabel>
-                    <div class="flex items-center gap-2 mb-2">
+                    <div class="mb-2 flex items-center gap-2">
                         <Switch id="is-oral" :model-value="isOral" @update:model-value="switchToOral" />
                         <FieldLabel for="is-oral" class="font-normal">Épreuve orale</FieldLabel>
                     </div>
@@ -205,19 +213,26 @@ const {
                     </FieldDescription>
 
                     <div v-else
-                        class="flex flex-col items-center justify-center gap-1 rounded-md border border-dashed p-8 text-center"
+                        class="
+                          flex flex-col items-center justify-center gap-1
+                          rounded-md border border-dashed p-8 text-center
+                        "
                         @dragover.prevent @drop="handleDrop">
                         <UploadIcon class="size-5 text-muted-foreground" />
                         <p class="text-sm">
                             Glisser le scan du test ici, ou
-                            <button type="button" class="text-primary underline underline-offset-2"
+                            <button type="button" class="
+                              text-primary underline underline-offset-2
+                            "
                                 @click="fileInput?.click()">
                                 parcourir
                             </button>
                         </p>
                         <p class="text-xs text-muted-foreground">PDF uniquement, 10 Mo maximum</p>
                         <p v-if="selectedFile" class="text-xs text-foreground">{{ selectedFile.name }}</p>
-                        <input ref="fileInput" type="file" accept="application/pdf" class="hidden"
+                        <input ref="fileInput" type="file" accept="application/pdf" class="
+                          hidden
+                        "
                             @change="onFileChange" />
                     </div>
                 </Field>
