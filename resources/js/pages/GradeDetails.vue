@@ -61,7 +61,10 @@ const submitComment = () => {
         <div class="flex flex-col gap-1">
             <Link
                 href="/"
-                class="text-muted-foreground text-sm hover:underline"
+                class="
+                  text-sm text-muted-foreground
+                  hover:underline
+                "
             >
                 {{
                     breadcrumb ??
@@ -94,7 +97,10 @@ const submitComment = () => {
             <CardContent class="grid grid-cols-4 gap-6">
                 <div>
                     <p
-                        class="text-muted-foreground text-xs font-medium tracking-wide uppercase"
+                        class="
+                          text-xs font-medium tracking-wide
+                          text-muted-foreground uppercase
+                        "
                     >
                         Note
                     </p>
@@ -104,7 +110,10 @@ const submitComment = () => {
                 </div>
                 <div>
                     <p
-                        class="text-muted-foreground text-xs font-medium tracking-wide uppercase"
+                        class="
+                          text-xs font-medium tracking-wide
+                          text-muted-foreground uppercase
+                        "
                     >
                         Date du test
                     </p>
@@ -112,7 +121,10 @@ const submitComment = () => {
                 </div>
                 <div>
                     <p
-                        class="text-muted-foreground text-xs font-medium tracking-wide uppercase"
+                        class="
+                          text-xs font-medium tracking-wide
+                          text-muted-foreground uppercase
+                        "
                     >
                         Matière
                     </p>
@@ -120,7 +132,10 @@ const submitComment = () => {
                 </div>
                 <div>
                     <p
-                        class="text-muted-foreground text-xs font-medium tracking-wide uppercase"
+                        class="
+                          text-xs font-medium tracking-wide
+                          text-muted-foreground uppercase
+                        "
                     >
                         Déposé le
                     </p>
@@ -130,15 +145,15 @@ const submitComment = () => {
         </Card>
 
         <Card class="overflow-hidden py-0">
-            <div class="bg-muted flex h-[70vh] justify-center overflow-auto">
-                <p v-if="!pdfUrl" class="text-muted-foreground m-auto text-sm">
+            <div class="flex h-[70vh] justify-center overflow-auto bg-muted">
+                <p v-if="!pdfUrl" class="m-auto text-sm text-muted-foreground">
                     Aucun document déposé.
                 </p>
                 <embed
                     v-else
                     :src="pdfUrl"
                     type="application/pdf"
-                    class="h-full w-full"
+                    class="size-full"
                 />
             </div>
         </Card>
@@ -148,13 +163,17 @@ const submitComment = () => {
 
             <div v-if="comments.length" class="relative flex flex-col">
                 <div
-                    class="bg-border absolute top-2 bottom-2 left-[5px] w-px"
+                    class="absolute inset-y-2 left-[5px] w-px bg-border"
                 />
 
                 <div
                     v-for="(comment, index) in comments"
                     :key="index"
-                    class="relative flex flex-col gap-1 py-4 pl-6 first:pt-0 last:pb-0"
+                    class="
+                      relative flex flex-col gap-1 py-4 pl-6
+                      first:pt-0
+                      last:pb-0
+                    "
                 >
                     <span
                         :class="roleStyle(comment.role).split(' ')[0]"
@@ -162,7 +181,7 @@ const submitComment = () => {
                     />
                     <div class="flex items-center justify-between gap-2">
                         <p class="font-medium">{{ comment.author }}</p>
-                        <p class="text-muted-foreground text-xs">
+                        <p class="text-xs text-muted-foreground">
                             {{ comment.date }}
                         </p>
                     </div>
@@ -175,7 +194,7 @@ const submitComment = () => {
                     <p class="text-sm">{{ comment.text }}</p>
                 </div>
             </div>
-            <p v-else class="text-muted-foreground text-sm">
+            <p v-else class="text-sm text-muted-foreground">
                 Aucun commentaire pour le moment.
             </p>
 
@@ -198,7 +217,7 @@ const submitComment = () => {
                     </Button>
                 </div>
             </div>
-            <p v-else class="text-muted-foreground text-xs">
+            <p v-else class="text-xs text-muted-foreground">
                 Les apprentis ne peuvent pas commenter cette évaluation.
             </p>
         </div>

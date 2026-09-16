@@ -16,8 +16,8 @@ const options: Array<"All" | Apprentice["year"]> = [
 </script>
 
 <template>
-    <Tabs v-model="year" class="w-full mb-8">
-        <TabsList class="flex justify-start gap-6 bg-transparent p-0 h-auto">
+    <Tabs v-model="year" class="mb-8 w-full">
+        <TabsList class="flex h-auto justify-start gap-6 bg-transparent p-0">
             <TabsTrigger
                 v-for="option in options"
                 :key="option"

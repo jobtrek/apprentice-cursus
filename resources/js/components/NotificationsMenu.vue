@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import { BellIcon } from '@lucide/vue';
-import { computed } from 'vue';
 import {
     Popover,
     PopoverContent,
@@ -12,6 +10,8 @@ import {
     useNotifications,
 } from '@/composables/useNotifications';
 import { cn } from '@/lib/utils';
+import { BellIcon } from '@lucide/vue';
+import { computed } from 'vue';
 
 const { notifications, unreadCount, markAsRead, markAllAsRead } =
     useNotifications();
@@ -27,13 +27,23 @@ const triggerLabel = computed(() =>
     <Popover>
         <PopoverTrigger
             :aria-label="triggerLabel"
-            class="text-muted-foreground hover:bg-accent hover:text-foreground focus-visible:ring-ring/50 relative inline-flex size-9 items-center justify-center rounded-md transition-colors focus-visible:ring-[3px] focus-visible:outline-none"
+            class="
+              relative inline-flex size-9 items-center justify-center rounded-md
+              text-muted-foreground transition-colors
+              hover:bg-accent hover:text-foreground
+              focus-visible:ring-[3px] focus-visible:ring-ring/50
+              focus-visible:outline-none
+            "
         >
             <BellIcon class="size-5" />
 
             <span
                 v-if="unreadCount > 0"
-                class="bg-primary text-primary-foreground absolute top-1 right-1 flex size-4 items-center justify-center rounded-full text-[10px] leading-none font-medium"
+                class="
+                  absolute top-1 right-1 flex size-4 items-center justify-center
+                  rounded-full bg-primary text-[10px] leading-none font-medium
+                  text-primary-foreground
+                "
             >
                 {{ unreadCount }}
             </span>
@@ -42,14 +52,18 @@ const triggerLabel = computed(() =>
         <PopoverContent
             align="end"
             :side-offset="8"
-            class="w-[22rem] overflow-hidden p-0"
+            class="w-88 overflow-hidden p-0"
         >
             <div class="flex items-center justify-between border-b px-4 py-3">
                 <p class="text-sm font-semibold">Notifications</p>
 
                 <button
                     type="button"
-                    class="text-muted-foreground hover:text-foreground text-xs transition-colors disabled:pointer-events-none disabled:opacity-50"
+                    class="
+                      text-xs text-muted-foreground transition-colors
+                      hover:text-foreground
+                      disabled:pointer-events-none disabled:opacity-50
+                    "
                     :disabled="unreadCount === 0"
                     @click="markAllAsRead"
                 >
@@ -59,7 +73,7 @@ const triggerLabel = computed(() =>
 
             <p
                 v-if="notifications.length === 0"
-                class="text-muted-foreground px-4 py-6 text-center text-sm"
+                class="px-4 py-6 text-center text-sm text-muted-foreground"
             >
                 Aucune notification pour le moment.
             </p>
@@ -71,7 +85,11 @@ const triggerLabel = computed(() =>
                 >
                     <button
                         type="button"
-                        class="hover:bg-accent/60 flex w-full items-start gap-3 px-4 py-3 text-left transition-colors"
+                        class="
+                          flex w-full items-start gap-3 px-4 py-3 text-left
+                          transition-colors
+                          hover:bg-accent/60
+                        "
                         :class="cn(!notification.read && 'bg-accent/40')"
                         @click="markAsRead(notification.id)"
                     >
@@ -85,7 +103,11 @@ const triggerLabel = computed(() =>
                         />
 
                         <span
-                            class="bg-muted text-muted-foreground flex size-8 shrink-0 items-center justify-center rounded-full text-xs font-medium"
+                            class="
+                              flex size-8 shrink-0 items-center justify-center
+                              rounded-full bg-muted text-xs font-medium
+                              text-muted-foreground
+                            "
                         >
                             {{ getInitials(notification.author.name) }}
                         </span>
@@ -104,13 +126,16 @@ const triggerLabel = computed(() =>
                             </span>
 
                             <span
-                                class="text-muted-foreground mt-0.5 block truncate text-sm"
+                                class="
+                                  mt-0.5 block truncate text-sm
+                                  text-muted-foreground
+                                "
                             >
                                 {{ notification.target }}
                             </span>
 
                             <span
-                                class="text-muted-foreground mt-1 block text-xs"
+                                class="mt-1 block text-xs text-muted-foreground"
                             >
                                 {{
                                     formatNotificationDate(

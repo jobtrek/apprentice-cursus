@@ -9,7 +9,7 @@ defineProps<{
 
 <template>
     <div>
-        <p class="text-sm text-muted-foreground mb-2">Moyennes par branche</p>
+        <p class="mb-2 text-sm text-muted-foreground">Moyennes par branche</p>
         <div class="divide-y divide-border">
             <BranchScoreRow
                 v-for="branch in branches"
