@@ -2,6 +2,7 @@
 import { Form, Link, usePage } from '@inertiajs/vue3';
 import { computed } from 'vue';
 import AuthenticatedSessionController from '@/actions/Laravel/Fortify/Http/Controllers/AuthenticatedSessionController';
+import AppearanceToggle from '@/components/AppearanceToggle.vue';
 import AppLogo from '@/components/AppLogo.vue';
 import NotificationsMenu from '@/components/NotificationsMenu.vue';
 import { Button } from '@/components/ui/button';
@@ -58,6 +59,8 @@ const isActive = (href: { url: string }) =>
             </div>
 
             <div class="flex shrink-0 items-center gap-2 sm:gap-3">
+                <AppearanceToggle />
+
                 <NotificationsMenu />
 
                 <div v-if="user" class="flex items-center gap-2">
