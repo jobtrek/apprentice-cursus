@@ -15,7 +15,7 @@ const domainInformations = [tpi, computerScienceSkills, expandedBasicSkills, gen
 </script>
 
 <template>
-    <section class="grid grid-cols-4 grid-rows-3 w-full">
+    <section class="grid grid-cols-4 grid-rows-3 w-full max-w-7xl mx-auto py-6 gap-3">
         <Card class="col-span-4">
             <CardHeader class="flex flex-row">
                 <CardTitle>Note finale CFC</CardTitle>
