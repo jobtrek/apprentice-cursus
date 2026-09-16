@@ -1,12 +1,7 @@
 <script setup lang="ts">
 import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/components/ui/card";
 import DomainCards from "@/components/DomainCards.vue";
-import GradeListContainer from "@/components/gradeList/GradeListContainer.vue";
-import ApprenticeSearchBar from "@/components/apprentice/ApprenticeSearchBar.vue";
-import {ref} from "vue";
-import GradeListElement from "@/components/gradeList/GradeListElement.vue";
-
-const search = ref<string>('')
+import GradeListLayout from "@/components/gradeList/GradeListLayout.vue";
 
 class DomainAverage {
     constructor(public title: string, public weight: string, public grade: number ){
@@ -26,7 +21,12 @@ const GRADE_VALUE = "Note"
 const MODULE = "Module"
 const SUBJECT = "Matière"
 
-const computerScienceSkillsColumns = [MODULE, SUBJECT, GRADE_VALUE, SEMESTER, DATE]
+const columns = [MODULE, SUBJECT, GRADE_VALUE, SEMESTER, DATE]
+
+const gradeTables = [
+    { title: "Compétence en informatique", columns },
+    { title: "Culture générale", columns },
+]
 </script>
 
 <template>
@@ -38,17 +38,9 @@ const computerScienceSkillsColumns = [MODULE, SUBJECT, GRADE_VALUE, SEMESTER, DA
             </CardHeader>
             <CardContent>5</CardContent>
         </Card>
-      <div v-for="domain in domainInformations" class="flex flex-row row-2">
+      <div v-for="domain in domainInformations" class="flex flex-row">
             <DomainCards :title="domain.title" :grade="domain.grade" :weight="domain.weight" />
       </div>
-        <section class="grid grid-rows-2 h-fit row-start-3 col-span-4 mt-5">
-            <div class="row-1 flex flex-row self-start items-center justify-between px-2">
-                <h2 class="m-0 flex items-center text-lg font-semibold leading-none">Notes</h2>
-                <ApprenticeSearchBar v-model="search" class="row-start-3 col-4 w-fit mb-0" />
-            </div>
-            <GradeListContainer class="row-2 bg-white" :columns='computerScienceSkillsColumns'>
-                <GradeListElement />
-            </GradeListContainer>
-        </section>
+        <GradeListLayout class="row-start-3 col-span-4" :tables="gradeTables" />
     </article>
 </template>
