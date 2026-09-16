@@ -30,7 +30,7 @@ const gradeTables = [
 </script>
 
 <template>
-    <article class="grid grid-cols-4 grid-rows-3 w-full max-w-7xl mx-auto py-6 gap-3">
+    <article class="grid grid-cols-4 grid-rows-[auto_auto_1fr] w-full max-w-7xl mx-auto py-6 gap-3">
         <Card class="col-span-4">
             <CardHeader class="flex flex-row">
                 <CardTitle>Note finale CFC</CardTitle>
