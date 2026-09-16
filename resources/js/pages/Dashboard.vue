@@ -25,7 +25,7 @@ const domainInformations = [tpi, computerScienceSkills, expandedBasicSkills, gen
             <CardContent>5</CardContent>
         </Card>
       <div v-for="domain in domainInformations" class="flex flex-row">
-            <DomainCards title={{domain.title}} grade={{domain.grade}} weight={{domain.weight}} />
+            <DomainCards :title="domain.title" :grade="domain.grade" :weight="domain.weight" />
         </div>
     </section>
 </template>

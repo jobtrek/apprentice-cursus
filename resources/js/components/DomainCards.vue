@@ -2,7 +2,7 @@
 import {Card, CardHeader, CardTitle} from "@/components/ui/card";
 defineProps({
     title: String,
-    grade: String,
+    grade: Number,
     weight: String
 })
 </script>
