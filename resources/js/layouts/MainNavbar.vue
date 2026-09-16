@@ -20,8 +20,8 @@ const isActive = (href) =>
     currentUrl.value.startsWith(`${href.url}/`);
 </script>
 <template>
-    <nav class="bg-muted/30 flex items-center justify-between border-b px-3">
-        <div class="flex items-end gap-1 pt-2">
+    <nav class="bg-muted/30 flex flex-wrap items-center justify-between gap-2 border-b px-3">
+        <div class="flex flex-wrap items-end gap-1 pt-2">
             <Link :href="home()" class="mr-2 mb-2 self-center font-medium"
                 >Jobtrek</Link
             >
