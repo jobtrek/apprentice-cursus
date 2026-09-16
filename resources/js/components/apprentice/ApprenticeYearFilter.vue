@@ -22,7 +22,6 @@ const options: Array<"All" | Apprentice["year"]> = [
                 v-for="option in options"
                 :key="option"
                 :value="option"
-                :class="tabClass"
             >
                 {{ option }}
             </TabsTrigger>
