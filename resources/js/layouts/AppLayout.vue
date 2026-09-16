@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { usePage } from "@inertiajs/vue3";
 import MainNavbar from "@/layouts/MainNavbar.vue";
-import MainNavbar from '@/layouts/MainNavbar.vue';
 </script>
 
 <template>
