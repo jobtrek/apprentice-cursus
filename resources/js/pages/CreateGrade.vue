@@ -50,10 +50,8 @@ const {
     subjects,
     MatureSubjects,
     isMp,
-    isEpsic,
     isModuleTest,
-    cieModules,
-    epsicModules,
+    modules,
     isOral,
     grade,
     dateDay,
@@ -84,8 +82,7 @@ const {
                     <div class="flex justify-end">
                         <ToggleGroup v-model="gradeMode" type="single" variant="outline">
                             <ToggleGroupItem value="notes">Notes</ToggleGroupItem>
-                            <ToggleGroupItem value="modules-cie">Modules CIE</ToggleGroupItem>
-                            <ToggleGroupItem value="modules-epsic">Modules EPSIC</ToggleGroupItem>
+                            <ToggleGroupItem value="modules">Modules</ToggleGroupItem>
                         </ToggleGroup>
                     </div>
 
@@ -128,7 +125,7 @@ const {
                             <ComboboxAnchor as-child>
                                 <ComboboxTrigger as-child>
                                     <Button id="module" type="button" variant="outline" class="w-full justify-between font-normal">
-                                        {{ selectedModule ? `${selectedModule.code} — ${selectedModule.name}` : 'Sélectionner un module' }}
+                                        {{ selectedModule ? `${selectedModule.code} — ${selectedModule.name} (${selectedModule.school})` : 'Sélectionner un module' }}
                                         <ChevronsUpDownIcon class="opacity-50" />
                                     </Button>
                                 </ComboboxTrigger>
@@ -137,9 +134,9 @@ const {
                                 <ComboboxInput placeholder="Rechercher un module..." />
                                 <ComboboxEmpty>Aucun module trouvé.</ComboboxEmpty>
                                 <ComboboxGroup>
-                                    <ComboboxItem v-for="module in isEpsic ? epsicModules : cieModules"
+                                    <ComboboxItem v-for="module in modules"
                                         :key="module.id" :value="module">
-                                        {{ module.code }} — {{ module.name }}
+                                        {{ module.code }} — {{ module.name }} ({{ module.school }})
                                         <ComboboxItemIndicator>
                                             <CheckIcon />
                                         </ComboboxItemIndicator>
