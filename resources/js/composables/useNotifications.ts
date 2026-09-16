@@ -1,3 +1,4 @@
+import { Temporal } from 'temporal-polyfill';
 import { computed, ref } from 'vue';
 import notificationsData from '@/data/notifications.json';
 import type { AppNotification } from '@/types/notification';
@@ -12,26 +13,33 @@ const notifications = ref<AppNotification[]>(
     structuredClone(notificationsData.notifications) as AppNotification[],
 );
 
-function isSameDay(a: Date, b: Date): boolean {
-    return (
-        a.getFullYear() === b.getFullYear() &&
-        a.getMonth() === b.getMonth() &&
-        a.getDate() === b.getDate()
-    );
-}
+const pad = (value: number): string => String(value).padStart(2, '0');
 
-function pad(value: number): string {
-    return String(value).padStart(2, '0');
-}
+const HAS_TIME_ZONE = /(?:[Zz]|[+-]\d{2}:?\d{2})$/;
+
+/**
+ * `created_at` arrive sans fuseau dans le JSON de démo, mais Eloquent
+ * sérialise en UTC (`2026-09-16T08:15:00.000000Z`). `PlainDateTime.from`
+ * refuse le `Z` : on passe alors par un `Instant` qu'on ramène dans le fuseau
+ * du navigateur, seule façon de comparer « aujourd'hui » et « hier » du point
+ * de vue de la personne qui lit.
+ */
+const toLocalDateTime = (date: string): Temporal.PlainDateTime =>
+    HAS_TIME_ZONE.test(date)
+        ? Temporal.Instant.from(date)
+              .toZonedDateTimeISO(Temporal.Now.timeZoneId())
+              .toPlainDateTime()
+        : Temporal.PlainDateTime.from(date);
 
 /**
  * Libellé relatif façon maquette : « Il y a 2 heures » le jour même,
  * « Hier à 16:40 » la veille, puis la date « 26.08.2026 ».
  */
-export function formatNotificationDate(date: string): string {
-    const created = new Date(date);
-    const now = new Date();
-    const minutes = Math.floor((now.getTime() - created.getTime()) / 60_000);
+export const formatNotificationDate = (date: string): string => {
+    const created = toLocalDateTime(date);
+    const now = Temporal.Now.plainDateTimeISO();
+
+    const { minutes } = created.until(now, { largestUnit: 'minute' });
 
     if (minutes < 1) {
         return "À l'instant";
@@ -41,40 +49,40 @@ export function formatNotificationDate(date: string): string {
         return `Il y a ${minutes} minute${minutes > 1 ? 's' : ''}`;
     }
 
-    if (isSameDay(created, now)) {
+    const createdDay = created.toPlainDate();
+    const today = now.toPlainDate();
+
+    if (createdDay.equals(today)) {
         const hours = Math.floor(minutes / 60);
 
         return `Il y a ${hours} heure${hours > 1 ? 's' : ''}`;
     }
 
-    const yesterday = new Date(now);
-    yesterday.setDate(yesterday.getDate() - 1);
-
-    if (isSameDay(created, yesterday)) {
-        return `Hier à ${pad(created.getHours())}:${pad(created.getMinutes())}`;
+    if (createdDay.equals(today.subtract({ days: 1 }))) {
+        return `Hier à ${created.toPlainTime().toString({ smallestUnit: 'minute' })}`;
     }
 
-    return `${pad(created.getDate())}.${pad(created.getMonth() + 1)}.${created.getFullYear()}`;
-}
+    return `${pad(createdDay.day)}.${pad(createdDay.month)}.${createdDay.year}`;
+};
 
-export function useNotifications() {
+export const useNotifications = () => {
     const unreadCount = computed(
         () => notifications.value.filter((item) => !item.read).length,
     );
 
-    function markAsRead(id: number): void {
+    const markAsRead = (id: number): void => {
         const notification = notifications.value.find((item) => item.id === id);
 
         if (notification) {
             notification.read = true;
         }
-    }
+    };
 
-    function markAllAsRead(): void {
+    const markAllAsRead = (): void => {
         notifications.value.forEach((item) => {
             item.read = true;
         });
-    }
+    };
 
     return {
         notifications,
@@ -82,4 +90,4 @@ export function useNotifications() {
         markAsRead,
         markAllAsRead,
     };
-}
+};
