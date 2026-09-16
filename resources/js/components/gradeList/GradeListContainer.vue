@@ -3,7 +3,10 @@ import {Table, TableHeader, TableHead, TableRow, TableBody} from "@/components/u
 import {Card} from "@/components/ui/card";
 import type {HTMLAttributes} from "vue";
 import { cn } from "@/lib/utils";
-const props = defineProps<{ class?: HTMLAttributes["class"] }>()
+const props = defineProps<{ class?: HTMLAttributes["class"],
+columns: String[]
+}>()
+
 </script>
 
 <template>
@@ -11,11 +14,7 @@ const props = defineProps<{ class?: HTMLAttributes["class"] }>()
         <Table>
             <TableHeader>
                 <tr class="text-base font-bold">
-                        <TableHead>Module</TableHead>
-                        <TableHead>Matière</TableHead>
-                        <TableHead>Note</TableHead>
-                        <TableHead>Semestre</TableHead>
-                        <TableHead>Date</TableHead>
+                        <TableHead v-for="column in columns">{{ column }}</TableHead>
                 </tr>
             </TableHeader>
             <TableBody>

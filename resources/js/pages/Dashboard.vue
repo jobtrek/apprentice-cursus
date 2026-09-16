@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/components/ui/card";
 import DomainCards from "@/components/DomainCards.vue";
-import GradeListContainer from "@/components/GradeListContainer.vue";
+import GradeListContainer from "@/components/gradeList/GradeListContainer.vue";
 import ApprenticeSearchBar from "@/components/apprentice/ApprenticeSearchBar.vue";
 import {ref} from "vue";
-import GradeListElement from "@/components/GradeListElement.vue";
+import GradeListElement from "@/components/gradeList/GradeListElement.vue";
 
 const search = ref<string>('')
 
@@ -19,6 +19,14 @@ const expandedBasicSkills = new DomainAverage("Compétence de base élargies", "
 const generalEducation = new DomainAverage("Culture générale", "30%", 5.5)
 
 const domainInformations = [tpi, computerScienceSkills, expandedBasicSkills, generalEducation]
+
+const DATE = "Date"
+const SEMESTER = "Semestre"
+const GRADE_VALUE = "Note"
+const MODULE = "Module"
+const SUBJECT = "Matière"
+
+const computerScienceSkillsColumns = [MODULE, SUBJECT, GRADE_VALUE, SEMESTER, DATE]
 </script>
 
 <template>
@@ -38,7 +46,7 @@ const domainInformations = [tpi, computerScienceSkills, expandedBasicSkills, gen
                 <h2 class="m-0 flex items-center text-lg font-semibold leading-none">Notes</h2>
                 <ApprenticeSearchBar v-model="search" class="row-start-3 col-4 w-fit mb-0" />
             </div>
-            <GradeListContainer class="row-2 bg-white">
+            <GradeListContainer class="row-2 bg-white" :columns='computerScienceSkillsColumns'>
                 <GradeListElement />
             </GradeListContainer>
         </section>
