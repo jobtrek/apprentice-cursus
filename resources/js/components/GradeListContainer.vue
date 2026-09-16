@@ -1,11 +1,26 @@
 <script setup lang="ts">
-
+import {Table, TableHeader, TableHead, TableRow, TableBody} from "@/components/ui/table";
+import {Card} from "@/components/ui/card";
+import type {HTMLAttributes} from "vue";
+import { cn } from "@/lib/utils";
+const props = defineProps<{ class?: HTMLAttributes["class"] }>()
 </script>
 
 <template>
-<Table>
-    <TableHeader></TableHeader>
-</Table>
+    <div :class="cn('relative w-full overflow-auto', props.class)">
+        <Table>
+            <TableHeader>
+                <tr class="text-base font-bold">
+                        <TableHead>Matière</TableHead>
+                        <TableHead>Catégorie</TableHead>
+                        <TableHead>Note</TableHead>
+                </tr>
+            </TableHeader>
+            <TableBody>
+                    <slot />
+            </TableBody>
+        </Table>
+    </div>
 </template>
 
 <style scoped>
