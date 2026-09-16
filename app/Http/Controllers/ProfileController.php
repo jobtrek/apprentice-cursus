@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Http\Requests\ProfileUpdateRequest;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rules\Password;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -18,7 +17,6 @@ class ProfileController extends Controller
     {
         return Inertia::render('Profile', [
             'status' => $request->session()->get('status'),
-            'passwordRules' => Password::defaults()->toPasswordRulesString(),
         ]);
     }
 
