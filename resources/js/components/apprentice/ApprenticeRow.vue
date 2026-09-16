@@ -15,7 +15,11 @@ defineEmits<{
 
 <template>
     <TableRow
-        class="cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        class="
+          cursor-pointer
+          focus-visible:ring-2 focus-visible:ring-ring
+          focus-visible:outline-none
+        "
         tabindex="0"
         @click="$emit('select', apprentice)"
         @keydown.enter.prevent="$emit('select', apprentice)"

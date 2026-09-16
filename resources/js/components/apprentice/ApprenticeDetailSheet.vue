@@ -44,21 +44,21 @@ const open = defineModel<boolean>("open", { required: true });
             </SheetHeader>
 
             <div v-if="apprentice" class="mt-2">
-                <div class="border-t pt-4 ml-4">
+                <div class="ml-4 border-t pt-4">
                     <ApprenticeMetaRow
                         :coach="apprentice.coach"
                         :formateur="apprentice.trainer"
                     />
                 </div>
 
-                <div class="border-t mt-4 pt-6">
+                <div class="mt-4 border-t pt-6">
                     <ApprenticeScoreSummary
                         :average="AVERAGE_SCORE"
                         :max="MAX_SCORE"
                     />
                 </div>
 
-                <div class="border-t mt-6 pt-4 px-4">
+                <div class="mt-6 border-t px-4 pt-4">
                     <ApprenticeScoreTable :branches="BRANCH_SCORES" />
                 </div>
             </div>

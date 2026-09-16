@@ -12,7 +12,10 @@ defineProps<{
     <div class="flex items-center gap-10">
         <div>
             <p
-                class="text-[11px] uppercase tracking-wide text-muted-foreground mb-1.5"
+                class="
+                  mb-1.5 text-[11px] tracking-wide text-muted-foreground
+                  uppercase
+                "
             >
                 Coach
             </p>
@@ -28,7 +31,10 @@ defineProps<{
 
         <div>
             <p
-                class="text-[11px] uppercase tracking-wide text-muted-foreground mb-1.5"
+                class="
+                  mb-1.5 text-[11px] tracking-wide text-muted-foreground
+                  uppercase
+                "
             >
                 Formateur
             </p>

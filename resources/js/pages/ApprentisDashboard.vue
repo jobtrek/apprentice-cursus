@@ -20,8 +20,8 @@ const openDetail = (apprentice: Apprentice) => {
 
 <template>
     <div class="w-full max-w-4xl font-sans">
-        <h1 class="text-2xl font-semibold mb-1">Apprentis</h1>
-        <p class="text-muted-foreground mb-6">
+        <h1 class="mb-1 text-2xl font-semibold">Apprentis</h1>
+        <p class="mb-6 text-muted-foreground">
             {{ filtered.length }} apprenti·e{{ filtered.length > 1 ? "s" : "" }}
             au total
         </p>

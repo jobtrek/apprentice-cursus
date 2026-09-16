@@ -3,7 +3,7 @@ import MainNavbar from "@/layouts/MainNavbar.vue";
 </script>
 
 <template>
-    <div class="bg-background flex min-h-svh flex-col">
+    <div class="flex min-h-svh flex-col bg-background">
         <MainNavbar />
 
         <main class="flex flex-1 flex-col items-center justify-center">

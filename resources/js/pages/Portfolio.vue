@@ -66,7 +66,7 @@ function onHandleKeydown(event: KeyboardEvent, index: number): void {
         <div class="flex flex-wrap items-start justify-between gap-4">
             <div class="space-y-1">
                 <h1 class="text-2xl font-semibold">Portfolio</h1>
-                <p class="text-muted-foreground text-sm">
+                <p class="text-sm text-muted-foreground">
                     Glissez un projet pour changer son ordre d'affichage dans
                     l'aperçu exportable.
                 </p>
@@ -93,7 +93,10 @@ function onHandleKeydown(event: KeyboardEvent, index: number): void {
                 <li
                     v-for="(project, index) in projects"
                     :key="project.id"
-                    class="flex items-center gap-4 border-b p-4 last:border-b-0"
+                    class="
+                      flex items-center gap-4 border-b p-4
+                      last:border-b-0
+                    "
                     :class="{
                         'opacity-50': draggedIndex === index,
                         'bg-accent/60':
@@ -107,7 +110,12 @@ function onHandleKeydown(event: KeyboardEvent, index: number): void {
                 >
                     <button
                         type="button"
-                        class="text-muted-foreground hover:text-foreground focus-visible:ring-ring cursor-grab rounded focus-visible:ring-2 focus-visible:outline-none"
+                        class="
+                          cursor-grab rounded-sm text-muted-foreground
+                          hover:text-foreground
+                          focus-visible:ring-2 focus-visible:ring-ring
+                          focus-visible:outline-none
+                        "
                         :aria-label="`Déplacer ${project.title}. Utilisez les flèches haut et bas.`"
                         @keydown="onHandleKeydown($event, index)"
                     >
@@ -115,14 +123,17 @@ function onHandleKeydown(event: KeyboardEvent, index: number): void {
                     </button>
 
                     <div
-                        class="bg-muted text-muted-foreground flex size-12 shrink-0 items-center justify-center rounded"
+                        class="
+                          flex size-12 shrink-0 items-center justify-center
+                          rounded-sm bg-muted text-muted-foreground
+                        "
                     >
                         <ImageIcon class="size-4" aria-hidden="true" />
                     </div>
 
                     <div class="min-w-0 flex-1 space-y-1">
                         <p class="truncate font-medium">{{ project.title }}</p>
-                        <p class="text-muted-foreground truncate text-sm">
+                        <p class="truncate text-sm text-muted-foreground">
                             <template v-if="project.organization">
                                 {{ project.organization }} ·
                             </template>
@@ -160,7 +171,7 @@ function onHandleKeydown(event: KeyboardEvent, index: number): void {
 
         <Card v-else class="items-center gap-3 p-10 text-center">
             <p class="font-medium">Aucun projet pour l'instant</p>
-            <p class="text-muted-foreground max-w-sm text-sm">
+            <p class="max-w-sm text-sm text-muted-foreground">
                 Ajoutez votre premier projet pour commencer à constituer votre
                 portfolio de formation.
             </p>
