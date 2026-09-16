@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import MainNavbar from '@/layouts/MainNavbar.vue';
+import { usePage } from "@inertiajs/vue3";
+import MainNavbar from "@/layouts/MainNavbar.vue";
 </script>
 
 <template>
