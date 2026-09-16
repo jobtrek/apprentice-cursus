@@ -14,7 +14,13 @@ defineEmits<{
 </script>
 
 <template>
-    <TableRow class="cursor-pointer" @click="$emit('select', apprentice)">
+    <TableRow
+        class="cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        tabindex="0"
+        @click="$emit('select', apprentice)"
+        @keydown.enter.prevent="$emit('select', apprentice)"
+        @keydown.space.prevent="$emit('select', apprentice)"
+    >
         <TableCell class="py-4">
             <div class="flex items-center gap-3">
                 <Avatar>

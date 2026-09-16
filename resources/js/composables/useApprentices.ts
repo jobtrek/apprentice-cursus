@@ -13,7 +13,7 @@ export interface Apprentice {
 
 const apprentices = ref<Apprentice[]>(rawApprentices as Apprentice[]);
 
-export function useApprentices() {
+export const useApprentices = () => {
     const search = ref("");
     const trackFilter = ref<"All" | "IT" | "EC">("All");
     const yearFilter = ref<"All" | Apprentice["year"]>("All");
@@ -32,4 +32,4 @@ export function useApprentices() {
     );
 
     return { apprentices, filtered, search, trackFilter, yearFilter };
-}
+};

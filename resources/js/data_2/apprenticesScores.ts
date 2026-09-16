@@ -20,7 +20,7 @@ export const BRANCH_SCORES: BranchScore[] = [
 export const AVERAGE_SCORE =
     BRANCH_SCORES.reduce((sum, branch) => sum + branch.score, 0) / BRANCH_SCORES.length;
 
-export function getBranchStatus(score: number, max: number) {
+export const getBranchStatus = (score: number, max: number) => {
     const ratio = max > 0 ? score / max : 0;
     if (ratio >= 0.75) {
         return { label: "Validé", class: "text-emerald-400", color: "#34d399" } as const;
@@ -29,4 +29,4 @@ export function getBranchStatus(score: number, max: number) {
         return { label: "Suffisant", class: "text-amber-400", color: "#fbbf24" } as const;
     }
     return { label: "À risque", class: "text-red-400", color: "#f87171" } as const;
-}
+};

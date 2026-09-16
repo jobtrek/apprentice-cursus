@@ -12,10 +12,10 @@ const { filtered, search, trackFilter, yearFilter } = useApprentices();
 const selected = ref<Apprentice | null>(null);
 const sheetOpen = ref(false);
 
-function openDetail(apprentice: Apprentice) {
+const openDetail = (apprentice: Apprentice) => {
     selected.value = apprentice;
     sheetOpen.value = true;
-}
+};
 </script>
 
 <template>
