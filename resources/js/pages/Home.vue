@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { Head, Link } from '@inertiajs/vue3';
-import { Button } from '@/components/ui/button';
-import { edit as editProfile } from '@/routes/profile';
+import { Head, Link } from "@inertiajs/vue3";
+import { Button } from "@/components/ui/button";
+import { edit as editProfile } from "@/routes/profile";
 </script>
 
 <template>
@@ -12,6 +12,10 @@ import { edit as editProfile } from '@/routes/profile';
 
         <Button as-child data-test="profile-link">
             <Link :href="editProfile()">Go to your profile</Link>
+        </Button>
+
+        <Button as-child variant="outline" data-test="apprentis-link">
+            <Link href="/apprentisdashboard">Voir mes apprentis</Link>
         </Button>
     </div>
 </template>
