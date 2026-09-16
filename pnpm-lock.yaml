@@ -15,8 +15,8 @@ importers:
         specifier: ^3.0.0
         version: 3.7.0(vue@3.5.42(typescript@5.9.3))
       '@lucide/vue':
-        specifier: ^1.44.0
-        version: 1.44.0(vue@3.5.42(typescript@5.9.3))
+        specifier: ^1.46.0
+        version: 1.46.0(vue@3.5.42(typescript@5.9.3))
       '@vueuse/core':
         specifier: ^12.8.2
         version: 12.8.2(typescript@5.9.3)
@@ -190,8 +190,8 @@ packages:
   '@laravel/vite-plugin-wayfinder@0.1.10':
     resolution: {integrity: sha512-59ZCMCEeC1UcZkqbvn+G06C4D0C/jCm525gTft7T7RPAo+0ZaHtoKl9r86OFVFd/BwuJiOYky4zJUrAPRKyRaA==}
 
-  '@lucide/vue@1.44.0':
-    resolution: {integrity: sha512-zPCTWyJnlhLPBqBSQ2EUQH03nmsJ/CVXb5Ht6k4Jk0Jn4+ojCqeRau86hGJt2Wv4FQmeoRHpIl1nadNGj7D6eA==}
+  '@lucide/vue@1.46.0':
+    resolution: {integrity: sha512-xp4mUamXKM/jYCve8TOcEcuikidFh3Jn9gs0THCeEKn/fAdeU0mKhPqk0fmIwn42fI4CwGLRWrLneLA69h8Nqw==}
     peerDependencies:
       vue: '>=3.0.1'
 
@@ -2010,7 +2010,7 @@ snapshots:
 
   '@laravel/vite-plugin-wayfinder@0.1.10': {}
 
-  '@lucide/vue@1.44.0(vue@3.5.42(typescript@5.9.3))':
+  '@lucide/vue@1.46.0(vue@3.5.42(typescript@5.9.3))':
     dependencies:
       vue: 3.5.42(typescript@5.9.3)
 
