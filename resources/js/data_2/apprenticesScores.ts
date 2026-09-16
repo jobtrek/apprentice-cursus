@@ -25,7 +25,7 @@ export const getBranchStatus = (score: number, max: number) => {
     if (ratio >= 0.75) {
         return { label: "Validé", class: "text-emerald-400", color: "#34d399" } as const;
     }
-    if (ratio >= 0.5) {
+    if (ratio >= 4 / 6) {   
         return { label: "Suffisant", class: "text-amber-400", color: "#fbbf24" } as const;
     }
     return { label: "À risque", class: "text-red-400", color: "#f87171" } as const;
