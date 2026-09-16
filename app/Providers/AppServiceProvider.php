@@ -10,6 +10,8 @@ use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
+use Illuminate\Support\Facades\Event;
+
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -27,6 +29,12 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->configureDefaults();
+        Event::listen(function (\SocialiteProviders\Manager\SocialiteWasCalled $event) {
+            $event->extendSocialite(
+                'azure',
+                \SocialiteProviders\Azure\Provider::class
+            );
+        });
     }
 
     /**
@@ -49,14 +57,15 @@ class AppServiceProvider extends ServiceProvider
             app()->isProduction(),
         );
 
-        Password::defaults(fn (): ?Password => app()->isProduction()
-            ? Password::min(12)
+        Password::defaults(
+            fn(): ?Password => app()->isProduction()
+                ? Password::min(12)
                 ->mixedCase()
                 ->letters()
                 ->numbers()
                 ->symbols()
                 ->uncompromised()
-            : null,
+                : null,
         );
     }
 }
