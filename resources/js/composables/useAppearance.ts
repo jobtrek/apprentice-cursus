@@ -23,7 +23,7 @@ const getStoredAppearance = (): Appearance | null => {
 
 const systemIsDark = ref(mediaQuery()?.matches ?? false);
 
-const appearance = ref<Appearance>(getStoredAppearance() ?? 'light');
+const appearance = ref<Appearance>(getStoredAppearance() ?? 'system');
 
 export const updateTheme = (value: Appearance): void => {
     if (typeof window === 'undefined') {
@@ -49,7 +49,7 @@ export const initializeTheme = (): void => {
 
     // Initialize theme from saved preference or default to system...
     const savedAppearance = getStoredAppearance();
-    appearance.value = savedAppearance ?? 'light';
+    appearance.value = savedAppearance ?? 'system';
     updateTheme(appearance.value);
 
     // Set up system theme change listener...
