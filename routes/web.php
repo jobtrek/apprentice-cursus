@@ -38,4 +38,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     ])->name('grades.show');
 });
 
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::inertia('/apprentisdashboard', 'ApprentisDashboard')->name('apprentisdashboard');
+});
+
 require __DIR__.'/profile.php';
