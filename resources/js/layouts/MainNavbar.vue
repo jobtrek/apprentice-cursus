@@ -3,7 +3,7 @@ import { Form, Link, usePage } from '@inertiajs/vue3';
 import { computed } from 'vue';
 import AuthenticatedSessionController from '@/actions/Laravel/Fortify/Http/Controllers/AuthenticatedSessionController';
 import { Button } from '@/components/ui/button';
-import { home } from '@/routes';
+import { apprentisdashboard, home } from '@/routes';
 import grades from '@/routes/grades';
 import portfolio from '@/routes/portfolio';
 
@@ -13,6 +13,7 @@ const tabs = [
     { label: 'Accueil', href: home() },
     { label: 'Ajouter une note', href: grades.create() },
     { label: 'Portfolio', href: portfolio.index() },
+    { label: 'Voir mes apprentis', href: apprentisdashboard() },
 ];
 
 const isActive = (href) =>
