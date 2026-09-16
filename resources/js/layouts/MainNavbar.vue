@@ -7,7 +7,6 @@ import NotificationsMenu from '@/components/NotificationsMenu.vue';
 import { Button } from '@/components/ui/button';
 import { apprentisdashboard, home } from '@/routes';
 import { getInitials } from '@/composables/useInitials';
-import { home } from '@/routes';
 import grades from '@/routes/grades';
 import portfolio from '@/routes/portfolio';
 
