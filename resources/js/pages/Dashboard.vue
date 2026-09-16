@@ -4,6 +4,7 @@ import DomainCards from "@/components/DomainCards.vue";
 import GradeListContainer from "@/components/GradeListContainer.vue";
 import ApprenticeSearchBar from "@/components/apprentice/ApprenticeSearchBar.vue";
 import {ref} from "vue";
+import GradeListElement from "@/components/GradeListElement.vue";
 
 const search = ref<string>('')
 
@@ -37,7 +38,9 @@ const domainInformations = [tpi, computerScienceSkills, expandedBasicSkills, gen
                 <h2 class="m-0 flex items-center text-lg font-semibold leading-none">Notes</h2>
                 <ApprenticeSearchBar v-model="search" class="row-start-3 col-4 w-fit mb-0" />
             </div>
-            <GradeListContainer class="row-2 bg-white"/>
+            <GradeListContainer class="row-2 bg-white">
+                <GradeListElement />
+            </GradeListContainer>
         </section>
     </article>
 </template>

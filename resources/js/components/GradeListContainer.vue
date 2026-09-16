@@ -11,9 +11,11 @@ const props = defineProps<{ class?: HTMLAttributes["class"] }>()
         <Table>
             <TableHeader>
                 <tr class="text-base font-bold">
+                        <TableHead>Module</TableHead>
                         <TableHead>Matière</TableHead>
-                        <TableHead>Catégorie</TableHead>
                         <TableHead>Note</TableHead>
+                        <TableHead>Semestre</TableHead>
+                        <TableHead>Date</TableHead>
                 </tr>
             </TableHeader>
             <TableBody>
