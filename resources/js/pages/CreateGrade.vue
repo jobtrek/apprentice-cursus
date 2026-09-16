@@ -71,9 +71,13 @@ const {
 </script>
 
 <template>
-    <div class="flex flex-col items-center justify-center gap-4">
-        <div>
-            <h2 class="text-2xl font-semibold self-start">Ajouter une note</h2>
+    <div class="flex flex-col items-center gap-4">
+        <div class="w-175 space-y-1">
+            <h1 class="text-2xl font-semibold">Ajouter une note</h1>
+            <p class="text-muted-foreground text-sm">
+                Renseignez les informations de la note pour l'ajouter au
+                dossier de l'apprenti·e.
+            </p>
         </div>
         <form class="w-175">
         <Card>

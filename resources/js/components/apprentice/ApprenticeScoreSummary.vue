@@ -1,10 +1,14 @@
 <script setup lang="ts">
+import { computed } from "vue";
 import ScoreGauge from "./ScoreGauge.vue";
+import { getBranchStatus } from "@/data_2/apprenticesScores";
 
-defineProps<{
+const props = defineProps<{
     average: number;
     max: number;
 }>();
+
+const status = computed(() => getBranchStatus(props.average, props.max));
 </script>
 
 <template>
@@ -18,6 +22,7 @@ defineProps<{
             :max="max"
             :size="170"
             :stroke-width="14"
+            :color="status.color"
             class="my-2"
         >
             <span class="text-5xl font-semibold text-card-foreground">

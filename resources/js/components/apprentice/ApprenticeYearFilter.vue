@@ -12,8 +12,7 @@ const options: Array<"All" | Apprentice["year"]> = [
     "4ème",
 ];
 
-const tabClass =
-    "data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-foreground data-[state=active]:text-foreground rounded-none px-0 py-2 text-base text-muted-foreground font-medium";
+
 </script>
 
 <template>
@@ -23,7 +22,6 @@ const tabClass =
                 v-for="option in options"
                 :key="option"
                 :value="option"
-                :class="tabClass"
             >
                 {{ option }}
             </TabsTrigger>

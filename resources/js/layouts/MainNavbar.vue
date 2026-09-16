@@ -5,8 +5,8 @@ import AuthenticatedSessionController from '@/actions/Laravel/Fortify/Http/Contr
 import AppLogo from '@/components/AppLogo.vue';
 import NotificationsMenu from '@/components/NotificationsMenu.vue';
 import { Button } from '@/components/ui/button';
+import { apprentisdashboard, home } from '@/routes';
 import { getInitials } from '@/composables/useInitials';
-import { home } from '@/routes';
 import grades from '@/routes/grades';
 import portfolio from '@/routes/portfolio';
 
@@ -19,6 +19,7 @@ const tabs = [
     { label: 'Accueil', href: home() },
     { label: 'Ajouter une note', href: grades.create() },
     { label: 'Portfolio', href: portfolio.index() },
+    { label: 'Voir mes apprentis', href: apprentisdashboard() },
 ];
 
 const isActive = (href: { url: string }) =>
