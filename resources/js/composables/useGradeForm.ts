@@ -7,7 +7,7 @@ import { GRADE_MAX, GRADE_MIN, GRADE_STEP } from '@/constants/constants';
 
 export { MONTHS };
 
-export type GradeMode = 'notes' | 'modules-cie' | 'modules-epsic';
+export type GradeMode = 'notes' | 'modules';
 
 type Subject = (typeof normalSubjects)[number];
 type ModuleEntry = (typeof modulesData)[number];
@@ -48,11 +48,9 @@ export const useGradeForm = () => {
     const MatureSubjects = computed(() => mpSubjects.filter((subject) => subject.active));
 
     const isMp = ref(false);
-    const isEpsic = ref(false);
     const isModuleTest = ref(false);
 
-    const cieModules = computed(() => modulesData.filter((module) => module.school === 'CIE'));
-    const epsicModules = computed(() => modulesData.filter((module) => module.school === 'EPSIC'));
+    const modules = computed(() => modulesData);
 
     const isOral = ref(false);
     const grade = ref<number | string>(4.5);
@@ -81,16 +79,14 @@ export const useGradeForm = () => {
         if (isOral.value) selectedFile.value = null;
     };
 
-    // Derives/updates isModuleTest + isEpsic from a single 3-way mode
+    // Derives/updates isModuleTest from a single 2-way mode
     const gradeMode = computed<GradeMode>({
         get() {
-            if (!isModuleTest.value) return 'notes';
-            return isEpsic.value ? 'modules-epsic' : 'modules-cie';
+            return isModuleTest.value ? 'modules' : 'notes';
         },
         set(value) {
             if (!value) return;
-            isModuleTest.value = value !== 'notes';
-            isEpsic.value = value === 'modules-epsic';
+            isModuleTest.value = value === 'modules';
         },
     });
 
@@ -98,10 +94,8 @@ export const useGradeForm = () => {
         subjects,
         MatureSubjects,
         isMp,
-        isEpsic,
         isModuleTest,
-        cieModules,
-        epsicModules,
+        modules,
         isOral,
         grade,
         dateDay,
