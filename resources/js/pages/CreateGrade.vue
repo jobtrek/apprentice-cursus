@@ -138,7 +138,7 @@ const {
                                     </Button>
                                 </ComboboxTrigger>
                             </ComboboxAnchor>
-                            <ComboboxList>
+                            <ComboboxList side="bottom" :avoid-collisions="false">
                                 <ComboboxInput placeholder="Rechercher un module..." />
                                 <ComboboxEmpty>Aucun module trouvé.</ComboboxEmpty>
                                 <ComboboxGroup>

@@ -28,6 +28,7 @@ const forwarded = useForwardPropsEmits(delegatedProps, emits)
       :class="cn(`
         z-50 w-(--reka-combobox-trigger-width)
         min-w-(--reka-combobox-trigger-width)
+        max-h-(--reka-combobox-content-available-height)
         origin-(--reka-combobox-content-transform-origin) overflow-hidden
         rounded-md border bg-popover text-popover-foreground shadow-md
         outline-none
