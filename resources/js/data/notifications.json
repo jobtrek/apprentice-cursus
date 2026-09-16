@@ -1,0 +1,36 @@
+{
+    "notifications": [
+        {
+            "id": 1,
+            "author": { "name": "Marc Dubois", "role": "Coach" },
+            "action": "a commenté votre note",
+            "target": "M117 — Épreuve pratique, base de données",
+            "created_at": "2026-09-16T08:15:00",
+            "read": false
+        },
+        {
+            "id": 2,
+            "author": { "name": "Sylvie Meier", "role": "Formateur" },
+            "action": "a commenté votre note",
+            "target": "M117 — Épreuve pratique, base de données",
+            "created_at": "2026-09-15T16:40:00",
+            "read": false
+        },
+        {
+            "id": 3,
+            "author": { "name": "Marc Dubois", "role": "Coach" },
+            "action": "a commenté votre projet",
+            "target": "Application de gestion de stock",
+            "created_at": "2026-08-26T09:12:00",
+            "read": true
+        },
+        {
+            "id": 4,
+            "author": { "name": "Sylvie Meier", "role": "Formateur" },
+            "action": "a commenté votre note",
+            "target": "TPA — Travail Personnel d'Approfondissement",
+            "created_at": "2026-08-15T14:05:00",
+            "read": true
+        }
+    ]
+}
