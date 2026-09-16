@@ -63,6 +63,20 @@ Launch the local server using
 
 The app should now be available at http://localhost
 
+### Linting
+
+Lint the frontend code with pnpm
+
+```bash
+./vendor/bin/sail pnpm check
+```
+
+Automatically fix lint issues
+
+```bash
+./vendor/bin/sail pnpm check:fix
+```
+
 ## Stack
 
 | Tool       | Version |
