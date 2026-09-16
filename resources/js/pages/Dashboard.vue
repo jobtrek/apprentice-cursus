@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/components/ui/card";
+import DomainCards from "@/components/DomainCards.vue";
 
 class DomainAverage {
     constructor(public title: string, public weight: string, public grade: number ){
@@ -24,13 +25,7 @@ const domainInformations = [tpi, computerScienceSkills, expandedBasicSkills, gen
             <CardContent>5</CardContent>
         </Card>
       <div v-for="domain in domainInformations" class="flex flex-row">
-            <Card class="p-5 w-full h-full">
-                <CardHeader class="flex flex-row justify-between p-0">
-                    <CardTitle>{{domain.title}}</CardTitle>
-                    <Card class="flex-row items-center rounded-md px-2.5 py-0.5 text-xs font-medium shadow-none">{{domain.weight}}</Card>
-                </CardHeader>
-                <CardTitle>{{domain.grade}}</CardTitle>
-            </Card>
+            <DomainCards title={{domain.title}} grade={{domain.grade}} weight={{domain.weight}} />
         </div>
     </section>
 </template>
