@@ -186,6 +186,7 @@ const submitComment = () => {
                     class="min-h-20 resize-none"
                     @keydown.meta.enter="submitComment"
                     @keydown.ctrl.enter="submitComment"
+                    @keydown.enter.exact.prevent="submitComment"
                 />
                 <div class="flex justify-end">
                     <Button
