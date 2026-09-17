@@ -62,13 +62,22 @@ class MicrosoftAuthController extends Controller
             }
         }
 
+        // No matching local account: this person was never provisioned, so deny access
+        // instead of auto-creating an account for them.
         if (! $user) {
-            $user = User::create([
-                'azure_id' => $azureUser->getId(),
-                'tenant_id' => $tenantId,
-                'name' => $azureUser->getName(),
+            Log::warning('Microsoft SSO login attempted for an unprovisioned account.', [
                 'email' => $azureUser->getEmail(),
             ]);
+
+            return $this->loginError('Your account has not been set up. Please contact an administrator.');
+        }
+
+        if (! $user->is_active) {
+            Log::warning('Microsoft SSO login attempted for a deactivated account.', [
+                'user_id' => $user->id,
+            ]);
+
+            return $this->loginError('Your account has been deactivated. Please contact an administrator.');
         }
 
         Auth::login($user);
