@@ -29,7 +29,13 @@ class StoreGradeRequest extends FormRequest
             'date-day' => ['required', 'integer', 'between:1,31'],
             'date-year' => ['required', 'integer', 'digits:4'],
 
-            'note' => ['number', 'between:1,6', 'step:0.5', 'required'],
+            'note' => [
+                'required',
+                'numeric',
+                'between:1,6',
+                'multiple_of:0.5',
+            ],
+
             'file' => [
                 'nullable',
                 'file',
