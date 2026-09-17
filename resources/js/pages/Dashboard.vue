@@ -1,11 +1,10 @@
 <script setup lang="ts">
 import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/components/ui/card";
-import {Accordion, AccordionItem, AccordionTrigger, AccordionContent} from "@/components/ui/accordion";
+import {Accordion} from "@/components/ui/accordion";
 import DomainCards from "@/components/DomainCards.vue";
 import GradeListLayout from "@/components/gradeList/GradeListLayout.vue";
+import GradeAccordionItem from "@/components/gradeList/GradeAccordionItem.vue";
 import type { Grade } from "@/types/grade";
-import GradeListContainer from "@/components/gradeList/GradeListContainer.vue";
-import GradeListElement from "@/components/gradeList/GradeListElement.vue";
 
 const apprenticeName = "Léa Bertrand"
 const filiere = "Filière Informatique"
@@ -59,18 +58,13 @@ const gradeTables = [
           </div>
             <GradeListLayout class="row-start-3 col-span-4">
                 <Accordion type="multiple">
-                    <AccordionItem v-for="table in gradeTables" :key="table.title" :value="table.title">
-                        <AccordionTrigger>{{ table.title }}</AccordionTrigger>
-                        <AccordionContent>
-                            <GradeListContainer class="p-2 bg-white" :columns="table.columns">
-                                <GradeListElement
-                                    v-for="(grade, id) in table.grades"
-                                    :key="id"
-                                    v-bind="grade"
-                                />
-                            </GradeListContainer>
-                        </AccordionContent>
-                    </AccordionItem>
+                    <GradeAccordionItem
+                        v-for="table in gradeTables"
+                        :key="table.title"
+                        :title="table.title"
+                        :columns="table.columns"
+                        :grades="table.grades"
+                    />
                 </Accordion>
             </GradeListLayout>
         </article>
