@@ -1,13 +1,12 @@
 <script setup lang="ts">
 import { Form, Link, usePage } from "@inertiajs/vue3";
 import { computed } from "vue";
-import AuthenticatedSessionController from "@/actions/Laravel/Fortify/Http/Controllers/AuthenticatedSessionController";
 import AppearanceToggle from "@/components/AppearanceToggle.vue";
 import AppLogo from "@/components/AppLogo.vue";
 import NotificationsMenu from "@/components/NotificationsMenu.vue";
 import { Button } from "@/components/ui/button";
 import { getInitials } from "@/composables/useInitials";
-import { administration, apprentisdashboard, home } from "@/routes";
+import { administration, apprentisdashboard, home, logout } from "@/routes";
 import grades from "@/routes/grades";
 import portfolio from "@/routes/portfolio";
 
@@ -82,7 +81,7 @@ const isActive = (href: { url: string }) =>
                 </div>
 
                 <Form
-                    v-bind="AuthenticatedSessionController.destroy.form()"
+                    v-bind="logout.form()"
                     v-slot="{ processing }"
                 >
                     <Button
