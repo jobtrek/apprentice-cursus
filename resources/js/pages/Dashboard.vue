@@ -53,15 +53,15 @@ const pages = [
 </script>
 
 <template>
-    <div class="w-full max-w-7xl mx-auto py-6">
+    <article class="w-full max-w-7xl mx-auto py-6">
         <GradeHeader :page-title="pageTitle">
             <BreadcrumbNavbar :current-page="currentPage" :past-pages="pages" />
         </GradeHeader>
-        <article class="grid grid-cols-4 grid-rows-[auto_auto_1fr] gap-3">
+        <section class="grid grid-cols-4 grid-rows-[auto_auto_1fr] gap-3">
             <DomainCards class="col-span-4" title="Note finale CFC" :grade="5" weight="100%" />
             <div v-for="domain in domainInformations" class="flex flex-row">
                 <DomainCards :title="domain.title" :grade="domain.grade" :weight="domain.weight" />
-          </div>
+            </div>
             <GradeListLayout class="row-start-3 col-span-4">
                 <Accordion type="multiple">
                     <GradeAccordionItem
@@ -71,6 +71,6 @@ const pages = [
                     />
                 </Accordion>
             </GradeListLayout>
-        </article>
-    </div>
+        </section>
+    </article>
 </template>
