@@ -34,7 +34,9 @@ const status = computed(() =>
                 class="shrink-0"
             />
             <span
-                class="text-sm font-semibold text-card-foreground w-8 text-right"
+                class="
+                  w-8 text-right text-sm font-semibold text-card-foreground
+                "
             >
                 {{ branch.score.toFixed(1) }}
             </span>

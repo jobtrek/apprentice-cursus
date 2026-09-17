@@ -23,6 +23,7 @@ use Illuminate\Support\Carbon;
  * @property bool|null $is_mp Maturité professionnelle track. NULL = not applicable (non-apprentice roles).
  * @property bool $is_active Deactivation flag. Users are never deleted, only deactivated.
  * @property UserRole $role
+ * @property string|null $apprenticeship_name
  * @property int|null $apprenticeship_id
  * @property int|null $coach_id
  * @property int|null $trainer_id
@@ -47,6 +48,13 @@ class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
+
+    /**
+     * Timestamps were dropped from the users table (see
+     * 2026_09_17_083508_drop_default_columns_from_users_table); Azure SSO is
+     * the sole write path and doesn't need them.
+     */
+    public $timestamps = false;
 
     /**
      * Get the attributes that should be cast.

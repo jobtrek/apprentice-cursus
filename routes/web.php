@@ -36,10 +36,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
             ],
         ],
     ])->name('grades.show');
-});
 
-Route::middleware(['auth', 'verified'])->group(function () {
     Route::inertia('/apprentisdashboard', 'ApprentisDashboard')->name('apprentisdashboard');
+
+    Route::inertia('/administration', 'Administration')->name('administration');
+
 });
 
 require __DIR__.'/profile.php';
+
+require __DIR__.'/auth.php';
