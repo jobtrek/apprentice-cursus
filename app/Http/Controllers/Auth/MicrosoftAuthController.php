@@ -49,19 +49,26 @@ class MicrosoftAuthController extends Controller
 
         $tenantId = config('services.azure.tenant');
 
-        $user = User::firstOrCreate(
-            ['azure_id' => $azureUser->getId()], // unique, stable — search by this
-            [
+        $user = User::where('azure_id', $azureUser->getId())->first();
+
+        if (! $user) {
+            $user = User::where('email', $azureUser->getEmail())->first();
+
+            if ($user) {
+                $user->forceFill([
+                    'azure_id' => $azureUser->getId(),
+                    'tenant_id' => $tenantId,
+                ])->save();
+            }
+        }
+
+        if (! $user) {
+            $user = User::create([
+                'azure_id' => $azureUser->getId(),
                 'tenant_id' => $tenantId,
                 'name' => $azureUser->getName(),
                 'email' => $azureUser->getEmail(),
-            ]
-        );
-
-        $user = User::where('name', $azureUser->getName())->first();
-
-        if (! $user) {
-            return $this->loginError('No account was found for this Microsoft login. Contact an administrator.');
+            ]);
         }
 
         Auth::login($user);

@@ -2,6 +2,7 @@
 
 namespace App\Services\Microsoft;
 
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -29,11 +30,19 @@ class MicrosoftGraphService
             return null;
         }
 
-        $response = Http::withToken($token)
-            ->acceptJson()
-            ->get("https://graph.microsoft.com/v1.0/users/{$azureId}", [
-                '$select' => 'accountEnabled',
+        try {
+            $response = Http::withToken($token)
+                ->acceptJson()
+                ->get("https://graph.microsoft.com/v1.0/users/{$azureId}", [
+                    '$select' => 'accountEnabled',
+                ]);
+        } catch (ConnectionException $e) {
+            Log::error('Microsoft Graph user lookup connection failed.', [
+                'message' => $e->getMessage(),
             ]);
+
+            return null;
+        }
 
         if ($response->status() === 404) {
             return false;
@@ -56,12 +65,20 @@ class MicrosoftGraphService
         return Cache::remember(self::TOKEN_CACHE_KEY, 300, function (): ?string {
             $tenant = config('services.azure.tenant');
 
-            $response = Http::asForm()->post("https://login.microsoftonline.com/{$tenant}/oauth2/v2.0/token", [
-                'client_id' => config('services.azure.client_id'),
-                'client_secret' => config('services.azure.client_secret'),
-                'scope' => 'https://graph.microsoft.com/.default',
-                'grant_type' => 'client_credentials',
-            ]);
+            try {
+                $response = Http::asForm()->post("https://login.microsoftonline.com/{$tenant}/oauth2/v2.0/token", [
+                    'client_id' => config('services.azure.client_id'),
+                    'client_secret' => config('services.azure.client_secret'),
+                    'scope' => 'https://graph.microsoft.com/.default',
+                    'grant_type' => 'client_credentials',
+                ]);
+            } catch (ConnectionException $e) {
+                Log::error('Failed to reach Microsoft token endpoint.', [
+                    'message' => $e->getMessage(),
+                ]);
+
+                return null;
+            }
 
             if (! $response->successful()) {
                 Log::error('Failed to acquire Microsoft Graph app-only token.', [

@@ -27,7 +27,7 @@ return [
         'client_secret' => env('MICROSOFT_CLIENT_SECRET'),
         'redirect' => env('MICROSOFT_REDIRECT_URI'),
         'tenant' => env('MICROSOFT_TENANT_ID'),
-        'account_check_interval' => env('MICROSOFT_ACCOUNT_INTERVAL')
+        'account_check_interval' => env('MICROSOFT_ACCOUNT_CHECK_INTERVAL', 900),
     ],
 
     'ses' => [

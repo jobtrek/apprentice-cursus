@@ -23,6 +23,7 @@ use Illuminate\Support\Carbon;
  * @property bool|null $is_mp Maturité professionnelle track. NULL = not applicable (non-apprentice roles).
  * @property bool $is_active Deactivation flag. Users are never deleted, only deactivated.
  * @property UserRole $role
+ * @property string|null $apprenticeship_name
  * @property int|null $apprenticeship_id
  * @property int|null $coach_id
  * @property int|null $trainer_id
