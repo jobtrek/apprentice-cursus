@@ -16,7 +16,7 @@ const currentUrl = computed(() => page.url);
 const user = computed(() => page.props.auth?.user ?? null);
 
 const tabs = [
-    { label: "Accueil", href: home() },
+    { label: "Accueil", href: grades.dashboard() },
     { label: "Ajouter une note", href: grades.create() },
     { label: "Portfolio", href: portfolio.index() },
     { label: "Voir mes apprentis", href: apprentisdashboard() },
