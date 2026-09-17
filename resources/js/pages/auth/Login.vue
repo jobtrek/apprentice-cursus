@@ -10,9 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
 import { register } from '@/routes';
 import { store } from '@/routes/login';
-import microsoft from '@/routes/microsoft';
 import { request } from '@/routes/password';
-import microsoftLogo from '../../../assets/microsoft (1).svg';
 
 defineOptions({
     layout: {
@@ -106,14 +104,4 @@ defineProps<{
             <TextLink :href="register()" :tabindex="5">Sign up</TextLink>
         </div>
     </Form>
-
-    <Button
-        as="a"
-        :href="microsoft.redirect().url"
-        variant="outline"
-        class="mt-4 w-full gap-2"
-    >
-        <img :src="microsoftLogo" alt="" class="size-4" />
-        Sign in with Microsoft
-    </Button>
 </template>
