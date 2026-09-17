@@ -21,7 +21,7 @@ const props = withDefaults(defineProps<{
 
 <template>
     <AccordionItem :value="menu.title">
-        <AccordionTrigger :class="depth === 0 ? 'text-lg font-semibold' : 'text-sm font-medium'">
+        <AccordionTrigger :class="(depth === 0 ? 'text-lg font-semibold' : 'text-sm font-medium') + ' flex-row-reverse justify-end gap-2'">
             {{ menu.title }}
         </AccordionTrigger>
         <AccordionContent>

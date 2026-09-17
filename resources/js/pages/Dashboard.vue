@@ -4,6 +4,7 @@ import {Accordion} from "@/components/ui/accordion";
 import DomainCards from "@/components/DomainCards.vue";
 import GradeListLayout from "@/components/gradeList/GradeListLayout.vue";
 import GradeAccordionItem from "@/components/gradeList/GradeAccordionItem.vue";
+import GradeHeader from "@/components/gradeList/GradeHeader.vue";
 import type { Grade } from "@/types/grade";
 
 const apprenticeName = "Léa Bertrand"
@@ -52,6 +53,12 @@ const gradeTables = [
 <template>
     <div class="w-full max-w-7xl mx-auto py-6">
 
+        <GradeHeader
+            :apprentice-name="apprenticeName"
+            :filiere="filiere"
+            :cohort="cohort"
+            :page-title="pageTitle"
+        />
 
         <article class="grid grid-cols-4 grid-rows-[auto_auto_1fr] gap-3">
             <Card class="col-span-4">
