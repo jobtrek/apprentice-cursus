@@ -8,15 +8,15 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Laravel\Socialite\Facades\Socialite;
+use Laravel\Socialite\Two\AbstractProvider;
 use Laravel\Socialite\Two\InvalidStateException;
 use Laravel\Socialite\Two\User as AzureUser;
-use Laravel\Socialite\Two\AbstractProvider;
+use Illuminate\Support\Facades\App;
+use Illuminate\Support\Str;
+
 use Throwable;
 
-
-
 /** @var AbstractProvider $driver */
-
 class MicrosoftAuthController extends Controller
 {
     public function redirectToProvider()
@@ -62,14 +62,18 @@ class MicrosoftAuthController extends Controller
             }
         }
 
-        // No matching local account: this person was never provisioned, so deny access
-        // instead of auto-creating an account for them.
         if (! $user) {
-            Log::warning('Microsoft SSO login attempted for an unprovisioned account.', [
+            $user = User::create([
+                'name' => $azureUser->getName() ?: $azureUser->getNickname() ?: $azureUser->getEmail(),
                 'email' => $azureUser->getEmail(),
+                'azure_id' => $azureUser->getId(),
+                'tenant_id' => $tenantId,
             ]);
 
-            return $this->loginError('Your account has not been set up. Please contact an administrator.');
+            Log::info('Microsoft SSO auto-provisioned a new account.', [
+                'user_id' => $user->id,
+                'email' => $user->email,
+            ]);
         }
 
         if (! $user->is_active) {
