@@ -1,15 +1,15 @@
 <script setup lang="ts">
-import { Form, Link, usePage } from '@inertiajs/vue3';
-import { computed } from 'vue';
-import AuthenticatedSessionController from '@/actions/Laravel/Fortify/Http/Controllers/AuthenticatedSessionController';
-import AppearanceToggle from '@/components/AppearanceToggle.vue';
-import AppLogo from '@/components/AppLogo.vue';
-import NotificationsMenu from '@/components/NotificationsMenu.vue';
-import { Button } from '@/components/ui/button';
-import { apprentisdashboard, home } from '@/routes';
-import { getInitials } from '@/composables/useInitials';
-import grades from '@/routes/grades';
-import portfolio from '@/routes/portfolio';
+import { Form, Link, usePage } from "@inertiajs/vue3";
+import { computed } from "vue";
+import AuthenticatedSessionController from "@/actions/Laravel/Fortify/Http/Controllers/AuthenticatedSessionController";
+import AppearanceToggle from "@/components/AppearanceToggle.vue";
+import AppLogo from "@/components/AppLogo.vue";
+import NotificationsMenu from "@/components/NotificationsMenu.vue";
+import { Button } from "@/components/ui/button";
+import { getInitials } from "@/composables/useInitials";
+import { administration, apprentisdashboard, home } from "@/routes";
+import grades from "@/routes/grades";
+import portfolio from "@/routes/portfolio";
 
 const page = usePage();
 
@@ -17,10 +17,11 @@ const currentUrl = computed(() => page.url);
 const user = computed(() => page.props.auth?.user ?? null);
 
 const tabs = [
-    { label: 'Accueil', href: home() },
-    { label: 'Ajouter une note', href: grades.create() },
-    { label: 'Portfolio', href: portfolio.index() },
-    { label: 'Voir mes apprentis', href: apprentisdashboard() },
+    { label: "Accueil", href: home() },
+    { label: "Ajouter une note", href: grades.create() },
+    { label: "Portfolio", href: portfolio.index() },
+    { label: "Voir mes apprentis", href: apprentisdashboard() },
+    { label: "Administration", href: administration() },
 ];
 
 const isActive = (href: { url: string }) =>
