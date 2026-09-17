@@ -20,6 +20,7 @@ const search = defineModel<string>({ required: true });
             <circle cx="11" cy="11" r="8" />
             <line x1="21" y1="21" x2="16.65" y2="16.65" />
         </svg>
+        <!-- Remplacer par placeholder dynamique avec un props plus tard. -->
         <InputGroupInput
             v-model="search"
             placeholder="Rechercher un·e apprenti·e"
