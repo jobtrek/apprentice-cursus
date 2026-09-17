@@ -23,7 +23,3 @@ const props = defineProps<{ class?: HTMLAttributes["class"],
         </Table>
     </div>
 </template>
-
-<style scoped>
-
-</style>

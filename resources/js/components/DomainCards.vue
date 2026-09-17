@@ -16,7 +16,3 @@ defineProps({
         <CardTitle>{{grade}}</CardTitle>
     </Card>
 </template>
-
-<style scoped>
-
-</style>

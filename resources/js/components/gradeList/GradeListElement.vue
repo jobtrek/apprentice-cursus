@@ -15,7 +15,3 @@ defineProps<Grade>()
         <TableCell>{{ date }}</TableCell>
     </TableRow>
 </template>
-
-<style scoped>
-
-</style>

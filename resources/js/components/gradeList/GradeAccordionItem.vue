@@ -47,7 +47,3 @@ const props = withDefaults(defineProps<{
         </AccordionContent>
     </AccordionItem>
 </template>
-
-<style scoped>
-
-</style>

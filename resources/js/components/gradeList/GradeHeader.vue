@@ -16,7 +16,3 @@ const props = defineProps<{
         </div>
     </header>
 </template>
-
-<style scoped>
-
-</style>
