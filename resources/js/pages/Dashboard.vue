@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/components/ui/card";
-import {Badge} from "@/components/ui/badge";
+import {Accordion, AccordionItem, AccordionTrigger, AccordionContent} from "@/components/ui/accordion";
 import DomainCards from "@/components/DomainCards.vue";
 import GradeListLayout from "@/components/gradeList/GradeListLayout.vue";
 import type { Grade } from "@/types/grade";
@@ -58,15 +58,20 @@ const gradeTables = [
                 <DomainCards :title="domain.title" :grade="domain.grade" :weight="domain.weight" />
           </div>
             <GradeListLayout class="row-start-3 col-span-4">
-                <section v-for="table in gradeTables" :key="table.title" class="flex flex-col">
-                    <GradeListContainer class="p-2 bg-white" :columns="table.columns" :tableTitle="table.title">
-                        <GradeListElement
-                            v-for="(grade, id) in table.grades"
-                            :key="id"
-                            v-bind="grade"
-                        />
-                    </GradeListContainer>
-                </section>
+                <Accordion type="multiple">
+                    <AccordionItem v-for="table in gradeTables" :key="table.title" :value="table.title">
+                        <AccordionTrigger>{{ table.title }}</AccordionTrigger>
+                        <AccordionContent>
+                            <GradeListContainer class="p-2 bg-white" :columns="table.columns">
+                                <GradeListElement
+                                    v-for="(grade, id) in table.grades"
+                                    :key="id"
+                                    v-bind="grade"
+                                />
+                            </GradeListContainer>
+                        </AccordionContent>
+                    </AccordionItem>
+                </Accordion>
             </GradeListLayout>
         </article>
     </div>
