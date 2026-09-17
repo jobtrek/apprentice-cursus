@@ -80,7 +80,9 @@ const trackLabel =
                     @deactivate="emit('deactivate', $event)"
                 />
 
-                <AlertDialog v-if="subject.status === 'Active'">
+                <AlertDialog
+                    v-if="subject.status === 'Active' && !subject.hasGrades"
+                >
                     <AlertDialogTrigger as-child>
                         <Button
                             variant="ghost"

@@ -6,7 +6,7 @@ import AppearanceToggle from "@/components/AppearanceToggle.vue";
 import AppLogo from "@/components/AppLogo.vue";
 import NotificationsMenu from "@/components/NotificationsMenu.vue";
 import { Button } from "@/components/ui/button";
-import { apprentisdashboard, home } from "@/routes";
+import { administration, apprentisdashboard, home } from "@/routes";
 import { getInitials } from "@/composables/useInitials";
 import grades from "@/routes/grades";
 import portfolio from "@/routes/portfolio";
@@ -21,7 +21,7 @@ const tabs = [
     { label: "Ajouter une note", href: grades.create() },
     { label: "Portfolio", href: portfolio.index() },
     { label: "Voir mes apprentis", href: apprentisdashboard() },
-    { label: "Administration", href: "/administration" },
+    { label: "Administration", href: administration() },
 ];
 
 const isActive = (href: { url: string }) =>
