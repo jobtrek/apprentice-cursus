@@ -6,7 +6,7 @@ use Inertia\Inertia;
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::inertia('/', 'Home')->name('home');
     Route::inertia('/grades/create', 'CreateGrade')->name('grades.create');
-    Route::inertia('/dashboard', 'Dashboard')->name('dashboard');
+    Route::inertia('/grades/dashboard', 'GradesDashboard')->name('grades.dashboard');
     Route::inertia('/portfolio', 'Portfolio')->name('portfolio.index');
     Route::inertia('/portfolio/preview', 'PortfolioPreview')
         ->name('portfolio.preview');
