@@ -34,7 +34,15 @@ const gradeRows: Grade[] = [
 
 ]
 const gradeTables = [
-    { title: "Compétences en informatiques", columns, grades: gradeRows },
+    {
+        title: "Compétences en informatiques",
+        columns,
+        grades: gradeRows,
+        subMenu: [
+            { title: "Modules école pro", columns, grades: gradeRows },
+            { title: "Modules CIE", columns, grades: gradeRows },
+        ],
+    },
     { title: "Compétence de base élargies", columns, grades: gradeRows },
     { title: "Culture générale", columns, grades: gradeRows },
     { title: "TPI", columns, grades: gradeRows },
@@ -61,9 +69,7 @@ const gradeTables = [
                     <GradeAccordionItem
                         v-for="table in gradeTables"
                         :key="table.title"
-                        :title="table.title"
-                        :columns="table.columns"
-                        :grades="table.grades"
+                        :menu="table"
                     />
                 </Accordion>
             </GradeListLayout>
