@@ -48,16 +48,20 @@ const gradeTables = [
     { title: "Culture générale", columns, grades: gradeRows },
     { title: "TPI", columns, grades: gradeRows },
 ]
+
+const currentPage = "Carnet de notes"
+const pages = [
+    "Accueil"
+]
 </script>
 
 <template>
     <div class="w-full max-w-7xl mx-auto py-6">
 
         <GradeHeader
-            :apprentice-name="apprenticeName"
-            :filiere="filiere"
-            :cohort="cohort"
             :page-title="pageTitle"
+            :currentPage="currentPage"
+            :pastPages="pages"
         />
 
         <article class="grid grid-cols-4 grid-rows-[auto_auto_1fr] gap-3">
