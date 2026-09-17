@@ -1,0 +1,82 @@
+[
+  {
+    "id": 1,
+    "name": "M117 — Développer une application avec accès aux données",
+    "domain": "Module école pro",
+    "track": "Informatique",
+    "status": "Active",
+    "hasGrades": true
+  },
+  {
+    "id": 2,
+    "name": "Ateliers d'initiation Python",
+    "domain": "Module CIE",
+    "track": "Informatique",
+    "status": "Active",
+    "hasGrades": false
+  },
+  {
+    "id": 3,
+    "name": "Comptabilité analytique (ancien plan d'études)",
+    "domain": "DCO B",
+    "track": "Employé-e de commerce",
+    "status": "Désactivée",
+    "hasGrades": true
+  },
+  {
+    "id": 4,
+    "name": "M162 — Analyser et modéliser des données",
+    "domain": "Module école pro",
+    "track": "Informatique",
+    "status": "Active",
+    "hasGrades": true
+  },
+  {
+    "id": 5,
+    "name": "M319 — Concevoir et implémenter des applications",
+    "domain": "Module CIE",
+    "track": "Informatique",
+    "status": "Active",
+    "hasGrades": false
+  },
+  {
+    "id": 6,
+    "name": "Anglais Business - Niveau B2",
+    "domain": "Langues",
+    "track": "Employé-e de commerce",
+    "status": "Active",
+    "hasGrades": true
+  },
+  {
+    "id": 7,
+    "name": "ICA - Information, Communication, Administration",
+    "domain": "Compétences de base",
+    "track": "Employé-e de commerce",
+    "status": "Active",
+    "hasGrades": true
+  },
+  {
+    "id": 8,
+    "name": "M114 — Systèmes de codage et de compression",
+    "domain": "Module école pro",
+    "track": "Informatique",
+    "status": "Désactivée",
+    "hasGrades": true
+  },
+  {
+    "id": 9,
+    "name": "Économie d'entreprise (W&G)",
+    "domain": "DCO B",
+    "track": "Employé-e de commerce",
+    "status": "Active",
+    "hasGrades": true
+  },
+  {
+    "id": 10,
+    "name": "M122 — Automatiser des procédures par des scripts",
+    "domain": "Module école pro",
+    "track": "Informatique",
+    "status": "Active",
+    "hasGrades": false
+  }
+]

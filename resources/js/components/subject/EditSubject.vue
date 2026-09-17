@@ -1,0 +1,208 @@
+<script lang="ts" setup>
+import { ref, watch } from "vue";
+import { Button } from "@/components/ui/button";
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+    DialogClose,
+} from "@/components/ui/dialog";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import {
+    Field,
+    FieldDescription,
+    FieldGroup,
+    FieldLabel,
+} from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { Separator } from "@/components/ui/separator";
+
+export type EditableSubject = {
+    id: number;
+    name: string;
+    domain: string;
+    track: "IT" | "EC";
+    status: "Active" | "Désactivée";
+    hasGrades: boolean;
+};
+
+const props = defineProps<{
+    subject: EditableSubject;
+}>();
+
+const emit = defineEmits<{
+    (
+        e: "save",
+        payload: {
+            id: number;
+            name: string;
+            domain: string;
+            track: "IT" | "EC";
+        },
+    ): void;
+    (e: "deactivate", id: number): void;
+}>();
+
+const open = ref(false);
+
+const name = ref(props.subject.name);
+const domain = ref(props.subject.domain);
+const track = ref<"IT" | "EC">(props.subject.track);
+
+watch(open, (isOpen) => {
+    if (isOpen) {
+        name.value = props.subject.name;
+        domain.value = props.subject.domain;
+        track.value = props.subject.track;
+    }
+});
+
+const isValid = () => name.value.trim() !== "" && domain.value.trim() !== "";
+
+function handleSubmit() {
+    if (!isValid()) return;
+
+    emit("save", {
+        id: props.subject.id,
+        name: name.value.trim(),
+        domain: domain.value.trim(),
+        track: track.value,
+    });
+
+    open.value = false;
+}
+
+function handleDeactivate() {
+    emit("deactivate", props.subject.id);
+    open.value = false;
+}
+</script>
+
+<template>
+    <Dialog v-model:open="open">
+        <DialogTrigger as-child>
+            <Button
+                variant="outline"
+                size="sm"
+                class="hover:border-primary hover:bg-primary/10 hover:text-primary transition-colors"
+            >
+                Modifier
+            </Button>
+        </DialogTrigger>
+
+        <DialogContent class="sm:max-w-md">
+            <form @submit.prevent="handleSubmit">
+                <DialogHeader>
+                    <DialogTitle>Modifier la matière</DialogTitle>
+                    <DialogDescription>
+                        Modifiez les informations de la matière ou désactivez-la
+                        si elle n'est plus utilisée.
+                    </DialogDescription>
+                </DialogHeader>
+
+                <FieldGroup class="py-4">
+                    <Field>
+                        <FieldLabel for="edit-subject-name">
+                            Nom de la matière
+                        </FieldLabel>
+                        <Input id="edit-subject-name" v-model="name" required />
+                    </Field>
+
+                    <Field>
+                        <FieldLabel for="edit-subject-domain">
+                            Domaine / Module
+                        </FieldLabel>
+                        <Input
+                            id="edit-subject-domain"
+                            v-model="domain"
+                            required
+                        />
+                    </Field>
+
+                    <Field>
+                        <FieldLabel>Filière</FieldLabel>
+                        <ToggleGroup
+                            v-model="track"
+                            type="single"
+                            variant="outline"
+                            class="justify-start"
+                        >
+                            <ToggleGroupItem value="IT">IT</ToggleGroupItem>
+                            <ToggleGroupItem value="EC">EC</ToggleGroupItem>
+                        </ToggleGroup>
+                    </Field>
+
+                    <FieldDescription v-if="subject.hasGrades">
+                        Cette matière est déjà utilisée dans au moins une note.
+                        Elle ne peut pas être supprimée, mais elle peut être
+                        désactivée ci-dessous.
+                    </FieldDescription>
+                </FieldGroup>
+
+                <Separator class="mb-4" />
+
+                <DialogFooter class="justify-between sm:justify-between">
+                    <AlertDialog>
+                        <AlertDialogTrigger as-child>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                class="border-amber-600 text-amber-600 hover:bg-amber-600/10 hover:text-amber-600"
+                            >
+                                Désactiver
+                            </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                            <AlertDialogHeader>
+                                <AlertDialogTitle>
+                                    Désactiver « {{ subject.name }} » ?
+                                </AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    La matière ne sera plus proposée pour de
+                                    nouvelles notes, mais restera visible dans
+                                    les carnets existants. Vous pourrez la
+                                    réactiver à tout moment.
+                                </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel>Annuler</AlertDialogCancel>
+                                <AlertDialogAction
+                                    class="bg-amber-600 hover:bg-amber-500 text-white"
+                                    @click="handleDeactivate"
+                                >
+                                    Désactiver
+                                </AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
+
+                    <div class="flex gap-2">
+                        <DialogClose as-child>
+                            <Button type="button" variant="outline">
+                                Annuler
+                            </Button>
+                        </DialogClose>
+                        <Button type="submit" :disabled="!isValid()">
+                            Enregistrer
+                        </Button>
+                    </div>
+                </DialogFooter>
+            </form>
+        </DialogContent>
+    </Dialog>
+</template>
