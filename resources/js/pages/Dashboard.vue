@@ -2,16 +2,12 @@
 import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/components/ui/card";
 import DomainCards from "@/components/DomainCards.vue";
 import GradeListLayout from "@/components/gradeList/GradeListLayout.vue";
+import type { Grade } from "@/types/grade";
 
-class DomainAverage {
-    constructor(public title: string, public weight: string, public grade: number ){
-    }
-}
-
-const tpi = new DomainAverage("TPI", "40%", 5.0)
-const computerScienceSkills = new DomainAverage("Compétences en informatiques", "30%", 5.0)
-const expandedBasicSkills = new DomainAverage("Compétence de base élargies", "10%", 4.5)
-const generalEducation = new DomainAverage("Culture générale", "30%", 5.5)
+const tpi = { title: "TPI", weight: "40%", grade: 5.0 }
+const computerScienceSkills = { title: "Compétences en informatiques", weight: "30%", grade: 5.0 }
+const expandedBasicSkills = { title: "Compétence de base élargies", weight: "10%", grade: 4.5 }
+const generalEducation = { title: "Culture générale", weight: "30%", grade: 5.5 }
 
 const domainInformations = [tpi, computerScienceSkills, expandedBasicSkills, generalEducation]
 
@@ -23,9 +19,14 @@ const SUBJECT = "Matière"
 
 const columns = [MODULE, SUBJECT, GRADE_VALUE, SEMESTER, DATE]
 
+const gradeRows: Grade[] = [
+    { title: "Test 1", subject: "Mathématique", value: 6, semester: 1, date: "12.03.2026" },
+]
 const gradeTables = [
-    { title: "Compétence en informatique", columns },
-    { title: "Culture générale", columns },
+    { title: "Compétences en informatiques", columns, grades: gradeRows },
+    { title: "Compétence de base élargies", columns, grades: gradeRows },
+    { title: "Culture générale", columns, grades: gradeRows },
+    { title: "TPI", columns, grades: gradeRows },
 ]
 </script>
 

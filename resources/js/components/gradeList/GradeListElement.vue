@@ -1,15 +1,18 @@
 <script setup lang="ts">
 
 import {TableCell, TableRow} from "@/components/ui/table";
+import type { Grade } from "@/types/grade";
+
+defineProps<Grade>()
 </script>
 
 <template>
     <TableRow>
-        <TableCell>Test 1</TableCell>
-        <TableCell>Mathématique</TableCell>
-        <TableCell>6</TableCell>
-        <TableCell>1</TableCell>
-        <TableCell>12.03.2026</TableCell>
+        <TableCell>{{ title }}</TableCell>
+        <TableCell>{{ subject }}</TableCell>
+        <TableCell>{{ value }}</TableCell>
+        <TableCell>{{ semester }}</TableCell>
+        <TableCell>{{ date }}</TableCell>
     </TableRow>
 </template>
 

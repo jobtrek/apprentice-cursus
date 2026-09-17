@@ -5,10 +5,11 @@ import { cn } from "@/lib/utils";
 import GradeListContainer from "@/components/gradeList/GradeListContainer.vue";
 import GradeListElement from "@/components/gradeList/GradeListElement.vue";
 import ApprenticeSearchBar from "@/components/apprentice/ApprenticeSearchBar.vue";
+import type { Grade } from "@/types/grade";
 
 const props = defineProps<{
     class?: HTMLAttributes["class"],
-    tables: { title: string, columns: string[] }[]
+    tables: { title: string, columns: string[], grades: Grade[] }[]
 }>()
 
 const search = ref<string>('')
@@ -24,7 +25,11 @@ const search = ref<string>('')
             <section v-for="table in tables" :key="table.title" class="flex flex-col">
                 <h2>{{ table.title }}</h2>
                 <GradeListContainer class="bg-white" :columns="table.columns">
-                    <GradeListElement />
+                    <GradeListElement
+                        v-for="(grade, id) in table.grades"
+                        :key="id"
+                        v-bind="grade"
+                    />
                 </GradeListContainer>
             </section>
         </div>
