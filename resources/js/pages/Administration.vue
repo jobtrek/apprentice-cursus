@@ -4,10 +4,10 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import ApprenticeSearchBar from "@/components/apprentice/ApprenticeSearchBar.vue";
 import TabFilter from "@/components/TabFilter.vue";
 import DataTable from "@/components/DataTable.vue";
-import SubjectTableRow from "@/components/SubjectTableRow.vue";
+import SubjectTableRow from "@/components/subject/SubjectTableRow.vue";
 import NewSubjectDialog, {
     type NewSubjectPayload,
-} from "@/components/NewSubjectDialog.vue";
+} from "@/components/subject/NewSubjectDialog.vue";
 import rawSubjects from "@/data_2/subjects.json";
 
 type Subject = {

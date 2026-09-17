@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { TableCell, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import EditSubject from "@/components/EditSubject.vue";
+import EditSubject from "@/components/subject/EditSubject.vue";
 import {
     AlertDialog,
     AlertDialogAction,
