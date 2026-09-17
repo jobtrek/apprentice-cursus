@@ -29,18 +29,11 @@ const isActive = (href: { url: string }) =>
 </script>
 
 <template>
-    <nav class="sticky top-0 z-40 border-b bg-background">
-        <div class="
-          flex h-14 items-center gap-2 px-4
-          sm:gap-6 sm:px-6
-        ">
+    <nav class="bg-background sticky top-0 z-40 border-b">
+        <div class="flex h-14 items-center gap-2 px-4 sm:gap-6 sm:px-6">
             <Link
                 :href="home()"
-                class="
-                  shrink-0 rounded-md
-                  focus-visible:ring-[3px] focus-visible:ring-ring/50
-                  focus-visible:outline-none
-                "
+                class="focus-visible:ring-ring/50 shrink-0 rounded-md focus-visible:ring-[3px] focus-visible:outline-none"
             >
                 <AppLogo class="h-7 w-auto" />
             </Link>
@@ -50,27 +43,18 @@ const isActive = (href: { url: string }) =>
                     v-for="tab in tabs"
                     :key="tab.href.url"
                     :href="tab.href"
-                    class="
-                      relative flex h-full items-center px-3 text-sm
-                      whitespace-nowrap transition-colors
-                    "
+                    class="relative flex h-full items-center px-3 text-sm whitespace-nowrap transition-colors"
                     :class="
                         isActive(tab.href)
-                            ? 'font-medium text-foreground'
-                            : `
-                              text-muted-foreground
-                              hover:text-foreground
-                            `
+                            ? 'text-foreground font-medium'
+                            : `text-muted-foreground hover:text-foreground`
                     "
                 >
                     {{ tab.label }}
 
                     <span
                         v-if="isActive(tab.href)"
-                        class="
-                          absolute inset-x-2 bottom-0 h-0.5 rounded-full
-                          bg-primary
-                        "
+                        class="bg-primary absolute inset-x-2 bottom-0 h-0.5 rounded-full"
                     />
                 </Link>
             </div>
@@ -81,19 +65,12 @@ const isActive = (href: { url: string }) =>
                 <NotificationsMenu />
 
                 <div v-if="user" class="flex items-center gap-2">
-                    <span class="
-                      hidden text-sm font-medium
-                      sm:inline
-                    ">
+                    <span class="hidden text-sm font-medium sm:inline">
                         {{ user.name }}
                     </span>
 
                     <span
-                        class="
-                          flex size-8 shrink-0 items-center justify-center
-                          rounded-full bg-muted text-xs font-medium
-                          text-muted-foreground
-                        "
+                        class="bg-muted text-muted-foreground flex size-8 shrink-0 items-center justify-center rounded-full text-xs font-medium"
                         :title="user.name"
                     >
                         {{ getInitials(user.name) }}
