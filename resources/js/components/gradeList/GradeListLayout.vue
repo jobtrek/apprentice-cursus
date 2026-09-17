@@ -2,15 +2,10 @@
 import { ref } from "vue";
 import type { HTMLAttributes } from "vue";
 import { cn } from "@/lib/utils";
-import GradeListContainer from "@/components/gradeList/GradeListContainer.vue";
-import GradeListElement from "@/components/gradeList/GradeListElement.vue";
 import ApprenticeSearchBar from "@/components/apprentice/ApprenticeSearchBar.vue";
 import type { Grade } from "@/types/grade";
 
-const props = defineProps<{
-    class?: HTMLAttributes["class"],
-    tables: { title: string, columns: string[], grades: Grade[] }[]
-}>()
+const props = defineProps<{ class?: HTMLAttributes["class"], }>()
 
 const search = ref<string>('')
 </script>
@@ -21,17 +16,8 @@ const search = ref<string>('')
             <h2 class="m-0 flex items-center text-lg font-semibold">Notes</h2>
             <ApprenticeSearchBar v-model="search" class="w-fit mb-0" />
         </div>
-        <div class="flex flex-col">
-            <section v-for="table in tables" :key="table.title" class="flex flex-col">
-                <h2>{{ table.title }}</h2>
-                <GradeListContainer class="bg-white" :columns="table.columns">
-                    <GradeListElement
-                        v-for="(grade, id) in table.grades"
-                        :key="id"
-                        v-bind="grade"
-                    />
-                </GradeListContainer>
-            </section>
+        <div class="flex flex-col gap-4">
+            <slot />
         </div>
     </section>
 </template>

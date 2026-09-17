@@ -4,12 +4,14 @@ import {Card} from "@/components/ui/card";
 import type {HTMLAttributes} from "vue";
 import { cn } from "@/lib/utils";
 const props = defineProps<{ class?: HTMLAttributes["class"],
-columns: String[]
+    columns: string[],
+    tableTitle: string
 }>()
 
 </script>
 
 <template>
+    <h2 class="px-4 pt-2  bg-white font-bold">{{ tableTitle }}</h2>
     <div :class="cn('relative w-full overflow-auto', props.class)">
         <Table>
             <TableHeader>
