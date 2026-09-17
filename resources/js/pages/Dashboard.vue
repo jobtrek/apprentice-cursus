@@ -1,15 +1,12 @@
 <script setup lang="ts">
-import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/components/ui/card";
 import {Accordion} from "@/components/ui/accordion";
 import DomainCards from "@/components/DomainCards.vue";
 import GradeListLayout from "@/components/gradeList/GradeListLayout.vue";
 import GradeAccordionItem from "@/components/gradeList/GradeAccordionItem.vue";
 import GradeHeader from "@/components/gradeList/GradeHeader.vue";
 import type { Grade } from "@/types/grade";
+import BreadcrumbNavbar from "@/components/BreadcrumbNavbar.vue";
 
-const apprenticeName = "Léa Bertrand"
-const filiere = "Filière Informatique"
-const cohort = "Volée 2024–2027"
 const pageTitle = "Carnet de notes"
 
 const tpi = { title: "TPI", weight: "40%", grade: 5.0 }
@@ -57,13 +54,9 @@ const pages = [
 
 <template>
     <div class="w-full max-w-7xl mx-auto py-6">
-
-        <GradeHeader
-            :page-title="pageTitle"
-            :currentPage="currentPage"
-            :pastPages="pages"
-        />
-
+        <GradeHeader :page-title="pageTitle">
+            <BreadcrumbNavbar :current-page="currentPage" :past-pages="pages" />
+        </GradeHeader>
         <article class="grid grid-cols-4 grid-rows-[auto_auto_1fr] gap-3">
             <DomainCards class="col-span-4" title="Note finale CFC" :grade="5" weight="100%" />
             <div v-for="domain in domainInformations" class="flex flex-row">
