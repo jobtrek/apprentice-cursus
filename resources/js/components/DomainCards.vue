@@ -11,8 +11,8 @@ defineProps({
     <Card class="p-5 w-full h-full">
         <CardHeader class="flex flex-row justify-between p-0">
             <CardTitle>{{title}}</CardTitle>
-            <Card class="flex-row items-center rounded-md px-2.5 py-0.5 text-xs font-medium shadow-none">{{weight}}</Card>
+            <Card class="flex-row items-center rounded-md px-2.5 py-0.5 text-xs font-medium">{{weight}}</Card>
         </CardHeader>
-        <CardTitle>{{grade}}</CardTitle>
+        <CardTitle class="text-3xl font-bold">{{grade}}</CardTitle>
     </Card>
 </template>

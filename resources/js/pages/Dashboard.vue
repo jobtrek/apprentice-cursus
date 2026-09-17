@@ -61,14 +61,8 @@ const gradeTables = [
         />
 
         <article class="grid grid-cols-4 grid-rows-[auto_auto_1fr] gap-3">
-            <Card class="col-span-4">
-                <CardHeader class="flex flex-row">
-                    <CardTitle>Note finale CFC</CardTitle>
-                    <CardDescription>100%</CardDescription>
-                </CardHeader>
-                <CardContent>5</CardContent>
-            </Card>
-          <div v-for="domain in domainInformations" class="flex flex-row">
+            <DomainCards class="col-span-4" title="Note finale CFC" :grade="5" weight="100%" />
+            <div v-for="domain in domainInformations" class="flex flex-row">
                 <DomainCards :title="domain.title" :grade="domain.grade" :weight="domain.weight" />
           </div>
             <GradeListLayout class="row-start-3 col-span-4">
