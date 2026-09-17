@@ -3,26 +3,74 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
+use App\Models\User;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Laravel\Socialite\Facades\Socialite;
+use Laravel\Socialite\Two\InvalidStateException;
+use Laravel\Socialite\Two\User as AzureUser;
+use Laravel\Socialite\Two\AbstractProvider;
+use Throwable;
+
+
+
+/** @var AbstractProvider $driver */
 
 class MicrosoftAuthController extends Controller
 {
     public function redirectToProvider()
     {
-        return Socialite::driver('azure')->redirect();
+        $driver = Socialite::driver('azure');
+
+        return $driver->with(['prompt' => 'login'])->redirect();
     }
 
-    public function callback()
+    public function callback(): RedirectResponse
     {
-        $user = Socialite::driver('azure')->user();
+        try {
+            $azureUser = Socialite::driver('azure')->user();
 
-        if ($user->user->tenantId !== config('services.azure.tenant')) {
-            abort(403, 'Unauthorized tenant.');
+        } catch (InvalidStateException) {
+            return $this->loginError('Your Microsoft sign-in session expired. Please try again.');
+        } catch (Throwable $e) {
+            Log::error('Microsoft SSO callback failed.', ['exception' => $e]);
+
+            return $this->loginError('Could not sign in with Microsoft. Please try again.');
+        }
+        // this will invalidate and block anyone trying to connect with a non existing account.
+        if (! $azureUser instanceof AzureUser || ! $azureUser->getId()) {
+            Log::error('Microsoft SSO did not return a usable azure id.', [
+                'class' => $azureUser::class,
+            ]);
+
+            return $this->loginError('Could not sign in with Microsoft. Please try again.');
         }
 
+        $tenantId = config('services.azure.tenant');
 
+        $user = User::firstOrCreate(
+            ['azure_id' => $azureUser->getId()], // unique, stable — search by this
+            [
+                'tenant_id' => $tenantId,
+                'name' => $azureUser->getName(),
+                'email' => $azureUser->getEmail(),
+            ]
+        );
+
+        $user = User::where('name', $azureUser->getName())->first();
+
+        if (! $user) {
+            return $this->loginError('No account was found for this Microsoft login. Contact an administrator.');
+        }
+
+        Auth::login($user);
 
         return redirect()->route('home');
+    }
+
+    private function loginError(string $message): RedirectResponse
+    {
+        return redirect()->route('login')->with('error', $message);
     }
 }

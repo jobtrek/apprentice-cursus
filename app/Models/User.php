@@ -49,6 +49,13 @@ class User extends Authenticatable
     use HasFactory, Notifiable;
 
     /**
+     * Timestamps were dropped from the users table (see
+     * 2026_09_17_083508_drop_default_columns_from_users_table); Azure SSO is
+     * the sole write path and doesn't need them.
+     */
+    public $timestamps = false;
+
+    /**
      * Get the attributes that should be cast.
      *
      * @return array<string, string>

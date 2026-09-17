@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import { Form, Link, usePage } from '@inertiajs/vue3';
 import { computed } from 'vue';
-import AuthenticatedSessionController from '@/actions/Laravel/Fortify/Http/Controllers/AuthenticatedSessionController';
+import AuthenticatedSessionController from '@/actions/App/Http/Controllers/Auth/AuthenticatedSessionController';
 import AppearanceToggle from '@/components/AppearanceToggle.vue';
 import AppLogo from '@/components/AppLogo.vue';
 import NotificationsMenu from '@/components/NotificationsMenu.vue';
 import { Button } from '@/components/ui/button';
-import { apprentisdashboard, home } from '@/routes';
 import { getInitials } from '@/composables/useInitials';
+import { apprentisdashboard, home } from '@/routes';
 import grades from '@/routes/grades';
 import portfolio from '@/routes/portfolio';
 

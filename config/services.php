@@ -22,14 +22,12 @@ return [
         'key' => env('RESEND_API_KEY'),
     ],
 
-
     'azure' => [
         'client_id' => env('MICROSOFT_CLIENT_ID'),
         'client_secret' => env('MICROSOFT_CLIENT_SECRET'),
         'redirect' => env('MICROSOFT_REDIRECT_URI'),
         'tenant' => env('MICROSOFT_TENANT_ID'),
     ],
-
 
     'ses' => [
         'key' => env('AWS_ACCESS_KEY_ID'),

@@ -43,7 +43,7 @@ return new class extends Migration
             $table->dropConstrainedForeignId('trainer_id');
             $table->dropConstrainedForeignId('coach_id');
             $table->dropConstrainedForeignId('apprenticeship_id');
-            $table->dropColumn(['azure_id', 'tenant_id', 'is_mp', 'is_active', 'role']);
+            $table->dropColumn(['name', 'email', 'azure_id', 'tenant_id', 'is_mp', 'is_active', 'role']);
         });
     }
 };
