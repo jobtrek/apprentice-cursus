@@ -53,9 +53,13 @@ const currentTab = ref("matieres");
 const searchQuery = ref("");
 const selectedTrack = ref<"All" | "IT" | "EC">("All");
 const createdSubjects = ref<Subject[]>([]);
+const overriddenSubjects = ref<Record<number, Subject>>({});
+const deletedSubjectIds = ref<number[]>([]);
 
 const allSubjects = computed<Subject[]>(() => [
-    ...(rawSubjects as Subject[]),
+    ...(rawSubjects as Subject[])
+        .filter((subject) => !deletedSubjectIds.value.includes(subject.id))
+        .map((subject) => overriddenSubjects.value[subject.id] ?? subject),
     ...createdSubjects.value,
 ]);
 
@@ -71,6 +75,54 @@ function handleCreateSubject(payload: NewSubjectPayload) {
         status: "Active",
         hasGrades: false,
     });
+}
+
+function applyUpdate(id: number, changes: Partial<Subject>) {
+    const created = createdSubjects.value.find((subject) => subject.id === id);
+    if (created) {
+        Object.assign(created, changes);
+        return;
+    }
+
+    const original = (rawSubjects as Subject[]).find(
+        (subject) => subject.id === id,
+    );
+    if (original) {
+        overriddenSubjects.value[id] = { ...original, ...changes };
+    }
+}
+
+function handleSaveSubject(payload: {
+    id: number;
+    name: string;
+    domain: string;
+    track: "IT" | "EC";
+}) {
+    applyUpdate(payload.id, {
+        name: payload.name,
+        domain: payload.domain,
+        track: trackMap[payload.track],
+    });
+}
+
+function handleDeactivateSubject(id: number) {
+    applyUpdate(id, { status: "Désactivée" });
+}
+
+function handleReactivateSubject(id: number) {
+    applyUpdate(id, { status: "Active" });
+}
+
+function handleDeleteSubject(id: number) {
+    const createdIndex = createdSubjects.value.findIndex(
+        (subject) => subject.id === id,
+    );
+    if (createdIndex !== -1) {
+        createdSubjects.value.splice(createdIndex, 1);
+        return;
+    }
+
+    deletedSubjectIds.value.push(id);
 }
 
 const filteredSubjects = computed(() => {
@@ -93,17 +145,17 @@ const filteredSubjects = computed(() => {
 
         <Tabs v-model="currentTab" class="w-full">
             <TabsList
-                class="flex justify-start gap-6 bg-transparent p-0 h-auto border-b rounded-none mb-6"
+                class="flex justify-start bg-transparent p-0 h-auto border-b rounded-none mb-6"
             >
                 <TabsTrigger
                     value="comptes"
-                    class="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-0 py-2"
+                    class="grid h-12 w-full rounded-xl border ""
                 >
                     Comptes
                 </TabsTrigger>
                 <TabsTrigger
                     value="matieres"
-                    class="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-0 py-2"
+                    class="grid h-12 w-full rounded-xl border ""
                 >
                     Matières
                 </TabsTrigger>
@@ -133,7 +185,13 @@ const filteredSubjects = computed(() => {
                     empty-message="Aucune matière trouvée."
                 >
                     <template #row="{ item }">
-                        <SubjectTableRow :subject="item" />
+                        <SubjectTableRow
+                            :subject="item"
+                            @save="handleSaveSubject"
+                            @deactivate="handleDeactivateSubject"
+                            @reactivate="handleReactivateSubject"
+                            @delete="handleDeleteSubject"
+                        />
                     </template>
                 </DataTable>
 
