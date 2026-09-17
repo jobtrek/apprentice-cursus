@@ -6,8 +6,8 @@ import AppearanceToggle from "@/components/AppearanceToggle.vue";
 import AppLogo from "@/components/AppLogo.vue";
 import NotificationsMenu from "@/components/NotificationsMenu.vue";
 import { Button } from "@/components/ui/button";
-import { administration, apprentisdashboard, home } from "@/routes";
 import { getInitials } from "@/composables/useInitials";
+import { administration, apprentisdashboard, home } from "@/routes";
 import grades from "@/routes/grades";
 import portfolio from "@/routes/portfolio";
 
