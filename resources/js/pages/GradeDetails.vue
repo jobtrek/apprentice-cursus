@@ -3,8 +3,14 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
-import { PageContainer, PageHeader } from '@/components/page';
-import { Head, Link } from '@inertiajs/vue3';
+import {
+    PageContainer,
+    PageHeader,
+    SectionHeader,
+    StatItem,
+} from '@/components/page';
+import grades from '@/routes/grades';
+import { Head } from '@inertiajs/vue3';
 import { ref } from 'vue';
 
 type Comment = {
@@ -31,14 +37,19 @@ const newComment = ref('');
 const perspective = ref<'apprentice' | 'coach'>('coach');
 const canComment = () => perspective.value === 'coach';
 
-const roleStyles: Record<string, string> = {
-    Coach: 'bg-blue-500 text-blue-500',
-    Formateur: 'bg-emerald-500 text-emerald-500',
-    Apprenti: 'bg-amber-500 text-amber-500',
+const roleStyles: Record<string, { dot: string; text: string }> = {
+    Coach: { dot: 'bg-info', text: 'text-info' },
+    Formateur: { dot: 'bg-success', text: 'text-success' },
+    Apprenti: { dot: 'bg-warning', text: 'text-warning' },
 };
 
 const roleStyle = (role: string) =>
-    roleStyles[role] ?? 'bg-muted-foreground text-muted-foreground';
+    roleStyles[role] ?? {
+        dot: 'bg-muted-foreground',
+        text: 'text-muted-foreground',
+    };
+
+const breadcrumbs = [{ label: 'Carnet de notes', href: grades.dashboard() }];
 
 const submitComment = () => {
     if (!newComment.value.trim()) return;
@@ -61,75 +72,44 @@ const submitComment = () => {
     <Head :title="title ?? 'Détail de la note'" />
 
     <PageContainer>
-        <div class="flex flex-col gap-1">
-            <Link
-                href="/"
-                class="text-muted-foreground text-sm hover:underline"
-            >
-                {{
-                    breadcrumb ??
-                    'Carnet de notes · Année 1 · Modules école pro'
-                }}
-            </Link>
-
-            <PageHeader
-                :title="title ?? 'M117 — Épreuve pratique, base de données'"
-            >
-                <template #actions>
-                    <ToggleGroup
-                        v-model="perspective"
-                        type="single"
-                        variant="outline"
-                        size="sm"
-                        class="shrink-0"
+        <PageHeader
+            :title="title ?? 'M117 — Épreuve pratique, base de données'"
+            :description="breadcrumb ?? 'Année 1 · Modules école pro'"
+            :breadcrumbs="breadcrumbs"
+        >
+            <template #actions>
+                <ToggleGroup
+                    v-model="perspective"
+                    type="single"
+                    variant="outline"
+                    size="sm"
+                >
+                    <ToggleGroupItem value="apprentice"
+                        >Apprenti</ToggleGroupItem
                     >
-                        <ToggleGroupItem value="apprentice">
-                            Apprenti
-                        </ToggleGroupItem>
-                        <ToggleGroupItem value="coach">
-                            Coach / Formateur
-                        </ToggleGroupItem>
-                    </ToggleGroup>
-                </template>
-            </PageHeader>
-        </div>
+                    <ToggleGroupItem value="coach">
+                        Coach / Formateur
+                    </ToggleGroupItem>
+                </ToggleGroup>
+            </template>
+        </PageHeader>
 
         <Card>
-            <CardContent class="grid grid-cols-4 gap-6">
-                <div>
-                    <p
-                        class="text-muted-foreground text-xs font-medium tracking-wide uppercase"
-                    >
-                        Note
-                    </p>
-                    <p class="text-2xl font-semibold">
+            <CardContent class="grid grid-cols-2 gap-6 sm:grid-cols-4">
+                <StatItem label="Note">
+                    <p class="text-2xl font-semibold tabular-nums">
                         {{ (note ?? 5).toFixed(1) }}
                     </p>
-                </div>
-                <div>
-                    <p
-                        class="text-muted-foreground text-xs font-medium tracking-wide uppercase"
-                    >
-                        Date du test
-                    </p>
-                    <p>{{ testDate ?? '22.10.2025' }}</p>
-                </div>
-                <div>
-                    <p
-                        class="text-muted-foreground text-xs font-medium tracking-wide uppercase"
-                    >
-                        Matière
-                    </p>
-                    <p>{{ matiere ?? 'M117 — Base de données' }}</p>
-                </div>
-                <div>
-                    <p
-                        class="text-muted-foreground text-xs font-medium tracking-wide uppercase"
-                    >
-                        Déposé le
-                    </p>
-                    <p>{{ depositedAt ?? '23.10.2025' }}</p>
-                </div>
+                </StatItem>
+                <StatItem label="Date du test">
+                    {{ testDate ?? '22.10.2025' }}
+                </StatItem>
+                <StatItem label="Matière">
+                    {{ matiere ?? 'M117 — Base de données' }}
+                </StatItem>
+                <StatItem label="Déposé le">
+                    {{ depositedAt ?? '23.10.2025' }}
+                </StatItem>
             </CardContent>
         </Card>
 
@@ -147,8 +127,8 @@ const submitComment = () => {
             </div>
         </Card>
 
-        <div class="flex flex-col gap-4">
-            <h2 class="text-lg font-semibold">Commentaires</h2>
+        <section class="flex flex-col gap-4">
+            <SectionHeader title="Commentaires" />
 
             <div v-if="comments.length" class="relative flex flex-col">
                 <div class="bg-border absolute inset-y-2 left-[5px] w-px" />
@@ -159,7 +139,7 @@ const submitComment = () => {
                     class="relative flex flex-col gap-1 py-4 pl-6 first:pt-0 last:pb-0"
                 >
                     <span
-                        :class="roleStyle(comment.role).split(' ')[0]"
+                        :class="roleStyle(comment.role).dot"
                         class="absolute top-1.5 left-0 size-2.5 rounded-full"
                     />
                     <div class="flex items-center justify-between gap-2">
@@ -169,7 +149,7 @@ const submitComment = () => {
                         </p>
                     </div>
                     <p
-                        :class="roleStyle(comment.role).split(' ')[1]"
+                        :class="roleStyle(comment.role).text"
                         class="text-sm font-medium"
                     >
                         {{ comment.role }}
@@ -200,9 +180,9 @@ const submitComment = () => {
                     </Button>
                 </div>
             </div>
-            <p v-else class="text-muted-foreground text-xs">
+            <p v-else class="text-muted-foreground text-sm">
                 Les apprentis ne peuvent pas commenter cette évaluation.
             </p>
-        </div>
+        </section>
     </PageContainer>
 </template>

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { MoonIcon, SunIcon } from '@lucide/vue';
 import { computed } from 'vue';
+import { Button } from '@/components/ui/button';
 import { useAppearance } from '@/composables/useAppearance';
 
 const { resolvedAppearance, toggleAppearance } = useAppearance();
@@ -13,15 +14,16 @@ const label = computed(() =>
 </script>
 
 <template>
-    <button
-        type="button"
+    <Button
+        variant="ghost"
+        size="icon"
         :aria-label="label"
         :title="label"
         :aria-pressed="isDark"
-        class="text-muted-foreground hover:bg-accent hover:text-foreground focus-visible:ring-ring/50 inline-flex size-9 items-center justify-center rounded-md transition-colors focus-visible:ring-[3px] focus-visible:outline-none"
+        class="text-muted-foreground"
         @click="toggleAppearance"
     >
         <SunIcon v-if="isDark" class="size-5" />
         <MoonIcon v-else class="size-5" />
-    </button>
+    </Button>
 </template>

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed } from 'vue';
 
 const props = withDefaults(
     defineProps<{
@@ -14,8 +14,8 @@ const props = withDefaults(
         max: 6,
         size: 120,
         strokeWidth: 10,
-        color: "#22c55e",
-        trackColor: "rgba(255, 255, 255, 0.08)",
+        color: 'var(--success)',
+        trackColor: 'var(--muted)',
     },
 );
 
@@ -44,7 +44,7 @@ const progressLength = computed(() => progress.value * trackLength.value);
                 :cy="size / 2"
                 :r="radius"
                 fill="none"
-                :stroke="trackColor"
+                :style="{ stroke: trackColor }"
                 :stroke-width="strokeWidth"
                 stroke-linecap="round"
                 :stroke-dasharray="`${trackLength} ${circumference}`"
@@ -55,7 +55,7 @@ const progressLength = computed(() => progress.value * trackLength.value);
                 :cy="size / 2"
                 :r="radius"
                 fill="none"
-                :stroke="color"
+                :style="{ stroke: color }"
                 :stroke-width="strokeWidth"
                 stroke-linecap="round"
                 :stroke-dasharray="`${progressLength} ${circumference}`"

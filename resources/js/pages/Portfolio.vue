@@ -2,6 +2,7 @@
 import { Head, Link } from '@inertiajs/vue3';
 import {
     EyeIcon,
+    FolderOpenIcon,
     GripVerticalIcon,
     ImageIcon,
     PencilIcon,
@@ -16,6 +17,14 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import {
+    Empty,
+    EmptyContent,
+    EmptyDescription,
+    EmptyHeader,
+    EmptyMedia,
+    EmptyTitle,
+} from '@/components/ui/empty';
 import portfolio from '@/routes/portfolio';
 import { PageContainer, PageHeader } from '@/components/page';
 
@@ -103,7 +112,7 @@ function onHandleKeydown(event: KeyboardEvent, index: number): void {
                 >
                     <button
                         type="button"
-                        class="text-muted-foreground hover:text-foreground focus-visible:ring-ring cursor-grab rounded-sm focus-visible:ring-2 focus-visible:outline-none"
+                        class="text-muted-foreground hover:text-foreground focus-visible:ring-ring/50 cursor-grab rounded-sm focus-visible:ring-[3px] focus-visible:outline-none"
                         :aria-label="`Déplacer ${project.title}. Utilisez les flèches haut et bas.`"
                         @keydown="onHandleKeydown($event, index)"
                     >
@@ -111,7 +120,7 @@ function onHandleKeydown(event: KeyboardEvent, index: number): void {
                     </button>
 
                     <div
-                        class="bg-muted text-muted-foreground flex size-12 shrink-0 items-center justify-center rounded-sm"
+                        class="bg-muted text-muted-foreground flex size-12 shrink-0 items-center justify-center rounded-md"
                     >
                         <ImageIcon class="size-4" aria-hidden="true" />
                     </div>
@@ -154,18 +163,25 @@ function onHandleKeydown(event: KeyboardEvent, index: number): void {
             </ul>
         </Card>
 
-        <Card v-else class="items-center gap-3 p-10 text-center">
-            <p class="font-medium">Aucun projet pour l'instant</p>
-            <p class="text-muted-foreground max-w-sm text-sm">
-                Ajoutez votre premier projet pour commencer à constituer votre
-                portfolio de formation.
-            </p>
-            <Button as-child class="mt-2">
-                <Link :href="portfolio.projects.create()">
-                    <PlusIcon aria-hidden="true" />
-                    Nouveau projet
-                </Link>
-            </Button>
-        </Card>
+        <Empty v-else class="border">
+            <EmptyHeader>
+                <EmptyMedia variant="icon">
+                    <FolderOpenIcon />
+                </EmptyMedia>
+                <EmptyTitle>Aucun projet pour l'instant</EmptyTitle>
+                <EmptyDescription>
+                    Ajoutez votre premier projet pour commencer à constituer
+                    votre portfolio de formation.
+                </EmptyDescription>
+            </EmptyHeader>
+            <EmptyContent>
+                <Button as-child>
+                    <Link :href="portfolio.projects.create()">
+                        <PlusIcon aria-hidden="true" />
+                        Nouveau projet
+                    </Link>
+                </Button>
+            </EmptyContent>
+        </Empty>
     </PageContainer>
 </template>

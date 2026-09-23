@@ -1,49 +1,35 @@
 <script setup lang="ts">
-import { Accordion } from '@/components/ui/accordion';
-import DomainCards from '@/components/DomainCards.vue';
-import GradeListLayout from '@/components/gradeList/GradeListLayout.vue';
-import GradeAccordionItem from '@/components/gradeList/GradeAccordionItem.vue';
-import type { Grade } from '@/types/grade';
-import BreadcrumbNavbar from '@/components/BreadcrumbNavbar.vue';
 import { Head } from '@inertiajs/vue3';
-import { PageContainer, PageHeader } from '@/components/page';
+import { computed, ref } from 'vue';
+import DomainCards from '@/components/DomainCards.vue';
+import GradeAccordionItem from '@/components/gradeList/GradeAccordionItem.vue';
+import { PageContainer, PageHeader, SectionHeader } from '@/components/page';
+import SearchInput from '@/components/SearchInput.vue';
+import { Accordion } from '@/components/ui/accordion';
+import type { Grade, GradeMenu } from '@/types/grade';
 
 const pageTitle = 'Carnet de notes';
 
-const tpi = { title: 'TPI', weight: '40%', grade: 5.0 };
-const computerScienceSkills = {
-    title: 'Compétences en informatiques',
-    weight: '30%',
-    grade: 5.0,
-};
-const expandedBasicSkills = {
-    title: 'Compétence de base élargies',
-    weight: '10%',
-    grade: 4.5,
-};
-const generalEducation = {
-    title: 'Culture générale',
-    weight: '30%',
-    grade: 5.5,
-};
+const finalGrade = { title: 'Note finale CFC', weight: '100%', grade: 5.0 };
 
 const domainInformations = [
-    tpi,
-    computerScienceSkills,
-    expandedBasicSkills,
-    generalEducation,
+    { title: 'TPI', weight: '40%', grade: 5.0 },
+    { title: 'Compétences en informatique', weight: '30%', grade: 5.0 },
+    { title: 'Compétences de base élargies', weight: '10%', grade: 4.5 },
+    { title: 'Culture générale', weight: '30%', grade: 5.5 },
 ];
 
-const DATE = 'Date';
-const SEMESTER = 'Semestre';
-const GRADE_VALUE = 'Note';
-const MODULE = 'Module';
-const SUBJECT = 'Matière';
-
-const columns = [MODULE, SUBJECT, GRADE_VALUE, SEMESTER, DATE];
+const columns = [
+    { key: 'module', label: 'Module', class: 'w-[30%]' },
+    { key: 'subject', label: 'Matière', class: 'w-[30%]' },
+    { key: 'value', label: 'Note', class: 'w-[12%]' },
+    { key: 'semester', label: 'Semestre', class: 'w-[12%]' },
+    { key: 'date', label: 'Date' },
+];
 
 const gradeRows: Grade[] = [
     {
+        id: 1,
         title: 'Test 1',
         subject: 'Mathématique',
         value: 6,
@@ -51,23 +37,26 @@ const gradeRows: Grade[] = [
         date: '12.03.2026',
     },
     {
-        title: 'Test 1',
+        id: 2,
+        title: 'Test 2',
         subject: 'Mathématique',
-        value: 6,
+        value: 5.5,
         semester: 1,
-        date: '12.03.2026',
+        date: '02.04.2026',
     },
     {
-        title: 'Test 1',
+        id: 3,
+        title: 'Test 3',
         subject: 'Mathématique',
-        value: 6,
-        semester: 1,
-        date: '12.03.2026',
+        value: 4.5,
+        semester: 2,
+        date: '14.05.2026',
     },
 ];
-const gradeTables = [
+
+const gradeTables: GradeMenu[] = [
     {
-        title: 'Compétences en informatiques',
+        title: 'Compétences en informatique',
         columns,
         grades: gradeRows,
         subMenu: [
@@ -75,45 +64,73 @@ const gradeTables = [
             { title: 'Modules CIE', columns, grades: gradeRows },
         ],
     },
-    { title: 'Compétence de base élargies', columns, grades: gradeRows },
+    { title: 'Compétences de base élargies', columns, grades: gradeRows },
     { title: 'Culture générale', columns, grades: gradeRows },
     { title: 'TPI', columns, grades: gradeRows },
 ];
 
-const currentPage = 'Carnet de notes';
-const pages = ['Accueil'];
+const search = ref('');
+
+/** Filtre les notes de chaque nœud sans masquer les domaines eux-mêmes. */
+function filterMenu(menu: GradeMenu, query: string): GradeMenu {
+    return {
+        ...menu,
+        grades: menu.grades.filter((grade) =>
+            `${grade.title} ${grade.subject}`.toLowerCase().includes(query),
+        ),
+        subMenu: menu.subMenu?.map((sub) => filterMenu(sub, query)),
+    };
+}
+
+const filteredTables = computed(() => {
+    const query = search.value.trim().toLowerCase();
+
+    return query
+        ? gradeTables.map((menu) => filterMenu(menu, query))
+        : gradeTables;
+});
 </script>
 
 <template>
     <Head :title="pageTitle" />
 
     <PageContainer size="lg">
-        <PageHeader :title="pageTitle">
-            <BreadcrumbNavbar :current-page="currentPage" :past-pages="pages" />
-        </PageHeader>
-        <section class="grid grid-cols-4 grid-rows-[auto_auto_1fr] gap-3">
+        <PageHeader :title="pageTitle" />
+
+        <section class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <DomainCards
-                class="col-span-4"
-                title="Note finale CFC"
-                :grade="5"
-                weight="100%"
+                class="sm:col-span-2 lg:col-span-4"
+                :title="finalGrade.title"
+                :grade="finalGrade.grade"
+                :weight="finalGrade.weight"
             />
-            <div v-for="domain in domainInformations" class="flex flex-row">
-                <DomainCards
-                    :title="domain.title"
-                    :grade="domain.grade"
-                    :weight="domain.weight"
-                />
-            </div>
-            <GradeListLayout class="col-span-4 row-start-3">
-                <Accordion type="multiple">
-                    <GradeAccordionItem
-                        v-for="table in gradeTables"
-                        :key="table.title"
-                        :menu="table"
+            <DomainCards
+                v-for="domain in domainInformations"
+                :key="domain.title"
+                :title="domain.title"
+                :grade="domain.grade"
+                :weight="domain.weight"
+            />
+        </section>
+
+        <section class="flex flex-col gap-4">
+            <SectionHeader title="Notes">
+                <template #actions>
+                    <SearchInput
+                        v-model="search"
+                        placeholder="Rechercher une note"
+                        class="w-full sm:w-64"
                     />
-                </Accordion>
-            </GradeListLayout>
+                </template>
+            </SectionHeader>
+
+            <Accordion type="multiple">
+                <GradeAccordionItem
+                    v-for="table in filteredTables"
+                    :key="table.title"
+                    :menu="table"
+                />
+            </Accordion>
         </section>
     </PageContainer>
 </template>
