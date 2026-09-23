@@ -34,12 +34,21 @@ const filteredTables = computed(() => {
         ? GRADE_TABLES.map((menu) => filterMenu(menu, query))
         : GRADE_TABLES;
 });
+
+const gridCols = computed(() => {
+    const cols: Record<number, string> = {
+        1: 'lg:grid-cols-1',
+        2: 'lg:grid-cols-2',
+        3: 'lg:grid-cols-3',
+    };
+    return cols[DOMAIN_GRADES.length] ?? 'lg:grid-cols-4';
+});
 </script>
 
 <template>
-    <section class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+    <section class="grid gap-4 sm:grid-cols-2" :class="gridCols">
         <DomainCards
-            class="sm:col-span-2 lg:col-span-4"
+            class="sm:col-span-2 lg:col-span-full"
             :title="FINAL_GRADE.title"
             :grade="FINAL_GRADE.grade"
             :weight="FINAL_GRADE.weight"
