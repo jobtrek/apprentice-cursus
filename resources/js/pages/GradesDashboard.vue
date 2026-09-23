@@ -89,6 +89,19 @@ const filteredTables = computed(() => {
         ? gradeTables.map((menu) => filterMenu(menu, query))
         : gradeTables;
 });
+
+/**
+ * Colonnes `lg` dérivées du nombre de domaines (classes littérales requises
+ * pour la détection Tailwind — pas d'interpolation dynamique).
+ */
+const gridCols = computed(() => {
+    const cols: Record<number, string> = {
+        1: 'lg:grid-cols-1',
+        2: 'lg:grid-cols-2',
+        3: 'lg:grid-cols-3',
+    };
+    return cols[domainInformations.length] ?? 'lg:grid-cols-4';
+});
 </script>
 
 <template>
@@ -97,9 +110,9 @@ const filteredTables = computed(() => {
     <PageContainer size="lg">
         <PageHeader :title="pageTitle" />
 
-        <section class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <section class="grid gap-4 sm:grid-cols-2" :class="gridCols">
             <DomainCards
-                class="sm:col-span-2 lg:col-span-4"
+                class="sm:col-span-2 lg:col-span-full"
                 :title="finalGrade.title"
                 :grade="finalGrade.grade"
                 :weight="finalGrade.weight"
@@ -113,7 +126,7 @@ const filteredTables = computed(() => {
             />
         </section>
 
-        <section class="flex flex-col gap-4">
+        <section class="flex flex-col gap-4 lg:grid">
             <SectionHeader title="Notes">
                 <template #actions>
                     <SearchInput
