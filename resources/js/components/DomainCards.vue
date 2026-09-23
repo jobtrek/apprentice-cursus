@@ -18,7 +18,9 @@ defineProps<{
 <template>
     <Card class="gap-2">
         <CardHeader>
-            <CardDescription>{{ title }}</CardDescription>
+            <CardDescription class="line-clamp-2 min-h-10">{{
+                title
+            }}</CardDescription>
             <CardAction>
                 <Badge variant="secondary">{{ weight }}</Badge>
             </CardAction>
