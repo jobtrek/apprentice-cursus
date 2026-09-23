@@ -37,7 +37,7 @@ const mobileMenuOpen = ref(false);
                         variant="ghost"
                         size="icon"
                         class="text-muted-foreground -ml-2 md:hidden"
-                        aria-label="Ouvrir le menu"
+                        aria-label="Ouvrirc le menu"
                     >
                         <MenuIcon class="size-5" aria-hidden="true" />
                     </Button>

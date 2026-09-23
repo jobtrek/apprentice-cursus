@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import { PencilIcon } from '@lucide/vue';
 import { ref, watch } from 'vue';
 import { Button } from '@/components/ui/button';
 import {
@@ -84,8 +85,14 @@ function handleDeactivate() {
 <template>
     <Dialog v-model:open="open">
         <DialogTrigger as-child>
-            <Button variant="outline" size="sm" class="min-w-24">
-                Modifier
+            <Button
+                variant="ghost"
+                size="icon-sm"
+                class="text-muted-foreground hover:text-foreground"
+                :aria-label="`Modifier ${subject.name}`"
+                :title="`Modifier ${subject.name}`"
+            >
+                <PencilIcon aria-hidden="true" />
             </Button>
         </DialogTrigger>
 

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { TableCell, TableRow } from '@/components/ui/table';
-import { Trash2Icon } from '@lucide/vue';
+import { RotateCcwIcon, Trash2Icon } from '@lucide/vue';
 import { computed } from 'vue';
 import { Badge } from '@/components/ui/badge';
 import { Button, buttonVariants } from '@/components/ui/button';
@@ -71,12 +71,14 @@ const isInactive = computed(() => props.subject.status === 'Désactivée');
                 />
                 <Button
                     v-if="isInactive"
-                    variant="outline"
-                    size="sm"
-                    class="min-w-24"
+                    variant="ghost"
+                    size="icon-sm"
+                    class="text-muted-foreground hover:text-foreground"
+                    :aria-label="`Réactiver ${subject.name}`"
+                    :title="`Réactiver ${subject.name}`"
                     @click="emit('reactivate', subject.id)"
                 >
-                    Réactiver
+                    <RotateCcwIcon aria-hidden="true" />
                 </Button>
 
                 <AlertDialog v-if="!isInactive && !subject.hasGrades">
@@ -86,6 +88,7 @@ const isInactive = computed(() => props.subject.status === 'Désactivée');
                             size="icon-sm"
                             class="text-muted-foreground hover:text-destructive"
                             :aria-label="`Supprimer ${subject.name}`"
+                            :title="`Supprimer ${subject.name}`"
                         >
                             <Trash2Icon aria-hidden="true" />
                         </Button>
