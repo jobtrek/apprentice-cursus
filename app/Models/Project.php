@@ -3,7 +3,9 @@
 namespace App\Models;
 
 use Carbon\CarbonImmutable;
+use Database\Factories\ProjectFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -29,6 +31,9 @@ use Illuminate\Support\Facades\DB;
 ])]
 class Project extends Model
 {
+    /** @use HasFactory<ProjectFactory> */
+    use HasFactory;
+
     protected static function booted(): void
     {
         static::deleting(fn (self $project) => $project->comments()->delete());

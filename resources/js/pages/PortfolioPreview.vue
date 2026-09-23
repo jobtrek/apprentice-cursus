@@ -4,12 +4,21 @@ import { ChevronLeftIcon, ExternalLinkIcon, FileTextIcon } from '@lucide/vue';
 import {
     formatPeriod,
     parseTechnologies,
-    usePortfolio,
+    skillNames,
 } from '@/composables/usePortfolio';
 import { Button } from '@/components/ui/button';
 import portfolio from '@/routes/portfolio';
+import type {
+    PortfolioOwner,
+    PortfolioProject,
+    Skill,
+} from '@/types/portfolio';
 
-const { projects, owner, skillNames } = usePortfolio();
+defineProps<{
+    owner: PortfolioOwner;
+    projects: PortfolioProject[];
+    skills: Skill[];
+}>();
 
 /**
  * L'export passe par la boîte d'impression du navigateur ("Enregistrer au
@@ -48,8 +57,9 @@ function exportToPdf(): void {
             <div class="space-y-1">
                 <h1 class="text-2xl font-bold">{{ owner.name }}</h1>
                 <p class="text-sm text-neutral-500">
-                    Portfolio de projets — {{ owner.track }} ·
-                    {{ owner.promotion }}
+                    Portfolio de projets<template v-if="owner.track">
+                        — {{ owner.track }}</template
+                    >
                 </p>
             </div>
 
@@ -135,7 +145,7 @@ function exportToPdf(): void {
 
                 <ul class="mt-4 flex flex-wrap gap-1.5">
                     <li
-                        v-for="name in skillNames(project)"
+                        v-for="name in skillNames(project, skills)"
                         :key="name"
                         class="rounded-sm border border-blue-200 bg-blue-50 px-2 py-0.5 text-xs text-blue-900"
                     >

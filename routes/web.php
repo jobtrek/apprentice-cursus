@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\DossierController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -7,17 +8,15 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::inertia('/', 'Home')->name('home');
     Route::inertia('/grades/create', 'CreateGrade')->name('grades.create');
     Route::inertia('/grades/dashboard', 'GradesDashboard')->name('grades.dashboard');
-    Route::inertia('/portfolio', 'Portfolio')->name('portfolio.index');
-    Route::inertia('/portfolio/preview', 'PortfolioPreview')
-        ->name('portfolio.preview');
-    Route::inertia('/portfolio/projects/create', 'PortfolioProjectForm')
-        ->name('portfolio.projects.create');
-    Route::get(
-        '/portfolio/projects/{project}/edit',
-        fn (int $project) => Inertia::render('PortfolioProjectForm', [
-            'projectId' => $project,
-        ])
-    )->whereNumber('project')->name('portfolio.projects.edit');
+    // Le portfolio appartient à l'apprenti ; la ProjectPolicy vérifie en plus la propriété du projet.
+    Route::middleware('role:apprentice')->group(function () {
+        Route::get('/portfolio', [DossierController::class, 'index'])->name('portfolio.index');
+        Route::get('/portfolio/preview', [DossierController::class, 'preview'])->name('portfolio.preview');
+        Route::resource('portfolio/projects', DossierController::class)
+            ->except(['index', 'show'])
+            ->names('portfolio.projects')
+            ->whereNumber('project');
+    });
 
     // Données de démonstration, en attendant le modèle Grade côté serveur.
     $demoGrade = [

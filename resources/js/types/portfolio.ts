@@ -1,7 +1,6 @@
 /**
- * Champs alignés sur la migration `create_projects_table` de la branche
- * `database/migrations`. `screenshots` et `position` n'y existent pas encore :
- * ils sont pour l'instant portés uniquement par le front (voir README de la PR).
+ * Forme partagée par `App\Http\Resources\ProjectResource`. `screenshots` est
+ * toujours vide tant que le stockage des captures n'existe pas côté serveur.
  */
 export type PortfolioProject = {
     id: number;
@@ -25,6 +24,6 @@ export type Skill = {
 
 export type PortfolioOwner = {
     name: string;
-    track: string;
-    promotion: string;
+    /** Nom de la filière d'apprentissage, null si non attribuée. */
+    track: string | null;
 };

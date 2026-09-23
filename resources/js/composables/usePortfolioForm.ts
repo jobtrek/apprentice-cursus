@@ -1,92 +1,86 @@
+import { useForm } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
-import { usePortfolio } from '@/composables/usePortfolio';
 import { parseTechnologies } from '@/composables/usePortfolio';
+import portfolio from '@/routes/portfolio';
 import type { PortfolioProject } from '@/types/portfolio';
 
-type ProjectForm = Omit<
-    PortfolioProject,
-    | 'organization'
-    | 'responsibilities'
-    | 'technologies'
-    | 'repository_url'
-    | 'demo_path'
-    | 'date_end'
-> & {
+type ProjectForm = {
+    title: string;
     organization: string;
+    description: string;
     responsibilities: string;
     technologies: string[];
     repository_url: string;
     demo_path: string;
+    date_start: string;
     date_end: string;
+    screenshots: string[];
+    skill_ids: number[];
 };
 
 const MAX_SCREENSHOT_BYTES = 5 * 1024 * 1024;
 
-function blankForm(): ProjectForm {
+/**
+ * Les champs vides partent en chaîne vide : le middleware
+ * ConvertEmptyStringsToNull de Laravel les transforme en null.
+ */
+function toForm(project?: PortfolioProject): ProjectForm {
     return {
-        id: 0,
-        title: '',
-        organization: '',
-        description: '',
-        responsibilities: '',
-        technologies: [],
-        repository_url: '',
-        demo_path: '',
-        date_start: '',
-        date_end: '',
-        screenshots: [],
-        skill_ids: [],
+        title: project?.title ?? '',
+        organization: project?.organization ?? '',
+        description: project?.description ?? '',
+        responsibilities: project?.responsibilities ?? '',
+        technologies: parseTechnologies(project?.technologies ?? null),
+        repository_url: project?.repository_url ?? '',
+        demo_path: project?.demo_path ?? '',
+        date_start: project?.date_start ?? '',
+        date_end: project?.date_end ?? '',
+        screenshots: [...(project?.screenshots ?? [])],
+        skill_ids: [...(project?.skill_ids ?? [])],
     };
-}
-
-function toForm(project: PortfolioProject): ProjectForm {
-    return {
-        ...project,
-        organization: project.organization ?? '',
-        responsibilities: project.responsibilities ?? '',
-        repository_url: project.repository_url ?? '',
-        demo_path: project.demo_path ?? '',
-        date_end: project.date_end ?? '',
-        technologies: parseTechnologies(project.technologies),
-        screenshots: [...project.screenshots],
-        skill_ids: [...project.skill_ids],
-    };
-}
-
-/** Renvoie null si la valeur est vide, pour coller aux colonnes nullable. */
-function nullIfBlank(value: string): string | null {
-    const trimmed = value.trim();
-
-    return trimmed.length > 0 ? trimmed : null;
 }
 
 export function usePortfolioForm(existing?: PortfolioProject) {
-    const { skills, saveProject } = usePortfolio();
-
-    const form = ref<ProjectForm>(existing ? toForm(existing) : blankForm());
+    const form = useForm<ProjectForm>(toForm(existing));
     const technologyDraft = ref('');
-    const errors = ref<Record<string, string>>({});
+    const screenshotError = ref<string | null>(null);
 
-    const isEditing = computed(() => form.value.id !== 0);
+    const isEditing = computed(() => existing !== undefined);
+
+    /**
+     * Erreurs de la Form Request, plus le rejet local des captures. Celles des
+     * éléments de liste (`skill_ids.0`) sont regroupées sous leur champ.
+     */
+    const errors = computed<Partial<Record<keyof ProjectForm, string>>>(() => {
+        const found: Partial<Record<keyof ProjectForm, string>> = {};
+
+        for (const [key, message] of Object.entries(form.errors)) {
+            const field = key.split('.')[0] as keyof ProjectForm;
+            found[field] ??= message;
+        }
+
+        if (screenshotError.value) {
+            found.screenshots = screenshotError.value;
+        }
+
+        return found;
+    });
 
     function addTechnology(): void {
         const technology = technologyDraft.value.trim();
 
-        if (
-            technology.length === 0 ||
-            form.value.technologies.includes(technology)
-        ) {
+        if (technology.length === 0 || form.technologies.includes(technology)) {
             technologyDraft.value = '';
 
             return;
         }
 
-        form.value.technologies.push(technology);
+        form.technologies.push(technology);
         technologyDraft.value = '';
     }
 
     function removeTechnology(technology: string): void {
-        form.value.technologies = form.value.technologies.filter(
+        form.technologies = form.technologies.filter(
             (candidate) => candidate !== technology,
         );
     }
@@ -94,30 +88,29 @@ export function usePortfolioForm(existing?: PortfolioProject) {
     /** Retire la dernière techno quand on recule dans un champ déjà vide. */
     function removeLastTechnology(): void {
         if (technologyDraft.value.length === 0) {
-            form.value.technologies.pop();
+            form.technologies.pop();
         }
     }
 
     function toggleSkill(id: number): void {
-        const index = form.value.skill_ids.indexOf(id);
+        const index = form.skill_ids.indexOf(id);
 
         if (index === -1) {
-            form.value.skill_ids.push(id);
+            form.skill_ids.push(id);
 
             return;
         }
 
-        form.value.skill_ids.splice(index, 1);
+        form.skill_ids.splice(index, 1);
     }
 
     function hasSkill(id: number): boolean {
-        return form.value.skill_ids.includes(id);
+        return form.skill_ids.includes(id);
     }
 
     /**
-     * Les images sont lues en data URL et gardées en mémoire : elles sont
-     * donc directement affichables dans l'aperçu. À remplacer par un envoi
-     * vers la route de stockage quand le backend l'exposera.
+     * Les images sont lues en data URL pour l'aperçu uniquement : elles ne
+     * sont pas envoyées tant que le serveur n'a pas de stockage pour elles.
      */
     function readScreenshot(file: File): Promise<string> {
         return new Promise((resolve, reject) => {
@@ -158,81 +151,33 @@ export function usePortfolioForm(existing?: PortfolioProject) {
                 continue;
             }
 
-            form.value.screenshots.push(await readScreenshot(file));
+            form.screenshots.push(await readScreenshot(file));
         }
 
-        if (rejected.length > 0) {
-            errors.value = { ...errors.value, screenshots: rejected.join(' ') };
+        screenshotError.value = rejected.length > 0 ? rejected.join(' ') : null;
+    }
+
+    function removeScreenshot(index: number): void {
+        form.screenshots.splice(index, 1);
+    }
+
+    function submit(): void {
+        // Pas encore de stockage serveur pour les captures (voir readScreenshot).
+        const payload = form.transform(
+            ({ screenshots: _screenshots, ...data }) => data,
+        );
+
+        if (existing) {
+            payload.put(portfolio.projects.update.url(existing.id));
 
             return;
         }
 
-        const { screenshots: _removed, ...rest } = errors.value;
-        errors.value = rest;
-    }
-
-    function removeScreenshot(index: number): void {
-        form.value.screenshots.splice(index, 1);
-    }
-
-    /**
-     * Validation côté client uniquement : elle sera doublée par une Form
-     * Request dès que le backend exposera la route.
-     */
-    function validate(): boolean {
-        const found: Record<string, string> = {};
-
-        if (form.value.title.trim().length === 0) {
-            found.title = 'Le titre du projet est obligatoire.';
-        }
-
-        if (form.value.description.trim().length === 0) {
-            found.description = 'La description est obligatoire.';
-        }
-
-        if (form.value.date_start.length === 0) {
-            found.date_start = 'La date de début est obligatoire.';
-        }
-
-        if (
-            form.value.date_end.length > 0 &&
-            form.value.date_end < form.value.date_start
-        ) {
-            found.date_end = 'La date de fin doit suivre la date de début.';
-        }
-
-        errors.value = found;
-
-        return Object.keys(found).length === 0;
-    }
-
-    function submit(): PortfolioProject | null {
-        if (!validate()) {
-            return null;
-        }
-
-        return saveProject({
-            id: form.value.id,
-            title: form.value.title.trim(),
-            organization: nullIfBlank(form.value.organization),
-            description: form.value.description.trim(),
-            responsibilities: nullIfBlank(form.value.responsibilities),
-            technologies:
-                form.value.technologies.length > 0
-                    ? form.value.technologies.join(', ')
-                    : null,
-            repository_url: nullIfBlank(form.value.repository_url),
-            demo_path: nullIfBlank(form.value.demo_path),
-            date_start: form.value.date_start,
-            date_end: nullIfBlank(form.value.date_end),
-            screenshots: form.value.screenshots,
-            skill_ids: form.value.skill_ids,
-        });
+        payload.post(portfolio.projects.store.url());
     }
 
     return {
         form,
-        skills,
         errors,
         isEditing,
         technologyDraft,
