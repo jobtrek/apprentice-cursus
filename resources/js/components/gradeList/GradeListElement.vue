@@ -1,12 +1,17 @@
 <script setup lang="ts">
 import { router } from '@inertiajs/vue3';
 import { TableCell, TableRow } from '@/components/ui/table';
-import grades from '@/routes/grades';
 import type { Grade } from '@/types/grade';
+import type { RouteDefinition } from '@/wayfinder';
 
-const props = defineProps<Grade>();
+const props = defineProps<
+    Grade & {
+        /** Page de détail ouverte au clic sur la ligne. */
+        href: RouteDefinition<'get'>;
+    }
+>();
 
-const openDetail = () => router.visit(grades.show(props.id));
+const openDetail = () => router.visit(props.href);
 </script>
 
 <template>

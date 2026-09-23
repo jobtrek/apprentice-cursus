@@ -13,6 +13,10 @@ export interface Apprentice {
 
 const apprentices = ref<Apprentice[]>(rawApprentices as Apprentice[]);
 
+/** Apprenti·e correspondant à l'identifiant d'URL, s'il existe. */
+export const findApprentice = (id: number | string): Apprentice | undefined =>
+    apprentices.value.find((apprentice) => apprentice.id === String(id));
+
 export const useApprentices = () => {
     const search = ref('');
     const trackFilter = ref<'All' | 'IT' | 'EC'>('All');

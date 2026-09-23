@@ -3,13 +3,13 @@ import {
     FolderKanbanIcon,
     HomeIcon,
     PlusCircleIcon,
-    SettingsIcon,
     UsersIcon,
 } from '@lucide/vue';
 import type { Component } from 'vue';
-import { administration, apprentisdashboard, home } from '@/routes';
+import { apprentisdashboard, home } from '@/routes';
 import grades from '@/routes/grades';
 import portfolio from '@/routes/portfolio';
+import type { UserRole } from '@/types';
 import type { RouteDefinition } from '@/wayfinder';
 
 export type NavItem = {
@@ -24,11 +24,29 @@ export type NavItem = {
      * `/grades/create` active « Ajouter une note » et non « Carnet de notes ».
      */
     matches?: string[];
+    /**
+     * Rôles qui voient l'élément. Absent : visible par tous. Ce filtre ne fait
+     * que masquer l'interface, l'accès est contrôlé côté serveur.
+     */
+    roles?: UserRole[];
 };
+
+/** Libellés affichés dans l'interface pour chaque rôle. */
+export const ROLE_LABELS: Record<UserRole, string> = {
+    apprentice: 'Apprenti·e',
+    coach: 'Coach',
+    trainer: 'Formateur·rice',
+    admin: 'Administrateur·rice',
+    super_admin: 'Super-administrateur·rice',
+};
+
+/** Rôles qui suivent des apprentis (voir role_permissions.md). */
+const SUPERVISORS: UserRole[] = ['coach', 'trainer', 'admin', 'super_admin'];
 
 /**
  * Source unique de la navigation principale : la barre de navigation et les
- * raccourcis de l'accueil en dérivent. C'est ici qu'il faudra filtrer par rôle.
+ * raccourcis de l'accueil en dérivent, filtrés par `navItemsForRole`.
+ * L'ordre va du commun (Accueil) au plus spécifique.
  */
 export const NAV_ITEMS: NavItem[] = [
     {
@@ -42,32 +60,40 @@ export const NAV_ITEMS: NavItem[] = [
         href: grades.dashboard(),
         icon: BookOpenIcon,
         matches: ['/grades'],
+        roles: ['apprentice'],
     },
     {
         label: 'Ajouter une note',
         description: 'Saisissez une nouvelle note et déposez le justificatif.',
         href: grades.create(),
         icon: PlusCircleIcon,
+        roles: ['apprentice'],
     },
     {
         label: 'Portfolio',
         description: 'Gérez vos projets et exportez votre portfolio.',
         href: portfolio.index(),
         icon: FolderKanbanIcon,
+        roles: ['apprentice'],
     },
     {
         label: 'Apprentis',
-        description: 'Suivez les apprentis dont vous êtes responsable.',
+        description: 'Suivez les notes et le portfolio de vos apprentis.',
         href: apprentisdashboard(),
         icon: UsersIcon,
-    },
-    {
-        label: 'Administration',
-        description: 'Gérez les comptes et le référentiel des matières.',
-        href: administration(),
-        icon: SettingsIcon,
+        matches: ['/apprentices'],
+        roles: SUPERVISORS,
     },
 ];
+
+/** Éléments visibles pour `role`. Sans rôle connu, seuls les communs restent. */
+export const navItemsForRole = (
+    items: NavItem[],
+    role: UserRole | null | undefined,
+): NavItem[] =>
+    items.filter(
+        (item) => !item.roles || (role != null && item.roles.includes(role)),
+    );
 
 const stripQuery = (url: string): string => url.split(/[?#]/)[0];
 

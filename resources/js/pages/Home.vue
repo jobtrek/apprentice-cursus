@@ -8,7 +8,7 @@ import {
     CardHeader,
     CardTitle,
 } from '@/components/ui/card';
-import { NAV_ITEMS } from '@/constants/navigation';
+import { useNavigation } from '@/composables/useNavigation';
 import { home } from '@/routes';
 
 const page = usePage();
@@ -17,8 +17,12 @@ const firstName = computed(
     () => page.props.auth?.user?.name?.split(/\s+/)[0] ?? '',
 );
 
-// Les raccourcis reprennent la navigation principale, sans l'accueil lui-même.
-const shortcuts = NAV_ITEMS.filter((item) => item.href.url !== home().url);
+const { items } = useNavigation();
+
+// Les raccourcis reprennent la navigation du rôle, sans l'accueil lui-même.
+const shortcuts = computed(() =>
+    items.value.filter((item) => item.href.url !== home().url),
+);
 </script>
 
 <template>

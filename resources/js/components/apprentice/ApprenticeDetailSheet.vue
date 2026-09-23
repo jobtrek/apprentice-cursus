@@ -1,10 +1,14 @@
 <script setup lang="ts">
+import { Link } from '@inertiajs/vue3';
+import { ArrowRightIcon } from '@lucide/vue';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import {
     Sheet,
     SheetContent,
     SheetDescription,
+    SheetFooter,
     SheetHeader,
     SheetTitle,
 } from '@/components/ui/sheet';
@@ -18,6 +22,7 @@ import {
 import ApprenticeMetaRow from './ApprenticeMetaRow.vue';
 import ApprenticeScoreSummary from './ApprenticeScoreSummary.vue';
 import ApprenticeScoreTable from './ApprenticeScoreTable.vue';
+import apprentices from '@/routes/apprentices';
 
 defineProps<{
     apprentice: Apprentice | null;
@@ -61,6 +66,15 @@ const open = defineModel<boolean>('open', { required: true });
 
                 <ApprenticeScoreTable :branches="BRANCH_SCORES" />
             </div>
+
+            <SheetFooter v-if="apprentice" class="border-t">
+                <Button as-child>
+                    <Link :href="apprentices.show(apprentice.id)">
+                        Voir le carnet de notes
+                        <ArrowRightIcon aria-hidden="true" />
+                    </Link>
+                </Button>
+            </SheetFooter>
         </SheetContent>
     </Sheet>
 </template>

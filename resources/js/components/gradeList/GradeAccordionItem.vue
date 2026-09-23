@@ -8,11 +8,13 @@ import {
 import DataTable from '@/components/DataTable.vue';
 import GradeListElement from '@/components/gradeList/GradeListElement.vue';
 import { cn } from '@/lib/utils';
-import type { GradeMenu } from '@/types/grade';
+import type { Grade, GradeMenu } from '@/types/grade';
+import type { RouteDefinition } from '@/wayfinder';
 
 withDefaults(
     defineProps<{
         menu: GradeMenu;
+        gradeHref: (grade: Grade) => RouteDefinition<'get'>;
         depth?: number;
     }>(),
     {
@@ -43,6 +45,7 @@ withDefaults(
                     v-for="sub in menu.subMenu"
                     :key="sub.title"
                     :menu="sub"
+                    :grade-href="gradeHref"
                     :depth="depth + 1"
                 />
             </Accordion>
@@ -53,7 +56,7 @@ withDefaults(
                 empty-message="Aucune note trouvée."
             >
                 <template #row="{ item }">
-                    <GradeListElement v-bind="item" />
+                    <GradeListElement v-bind="item" :href="gradeHref(item)" />
                 </template>
             </DataTable>
         </AccordionContent>
