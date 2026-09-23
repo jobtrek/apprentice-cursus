@@ -12,7 +12,7 @@ export default defineConfig([
   },
 
   {
-    files: ["**/*.vue"],
+    files: ["**/*.vue"], // .ts handled by OXLint
 
     extends: [
       eslintPluginBetterTailwindcss.configs.recommended
