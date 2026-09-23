@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { Head } from "@inertiajs/vue3";
+import { Head } from '@inertiajs/vue3';
+import { PageContainer, PageHeader } from '@/components/page';
 </script>
 
 <template>
-    <Head title="Home" />
+    <Head title="Accueil" />
 
-    <div class="flex flex-col items-start gap-4">
-        <h1 class="text-xl font-semibold">You're logged in</h1>
-    </div>
+    <PageContainer>
+        <PageHeader title="Accueil" description="Vous êtes connecté·e." />
+    </PageContainer>
 </template>

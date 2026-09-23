@@ -3,7 +3,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
-import { Link } from '@inertiajs/vue3';
+import { PageContainer, PageHeader } from '@/components/page';
+import { Head, Link } from '@inertiajs/vue3';
 import { ref } from 'vue';
 
 type Comment = {
@@ -57,50 +58,47 @@ const submitComment = () => {
 </script>
 
 <template>
-    <div class="mx-auto mt-6 flex w-full max-w-3xl flex-col gap-4">
+    <Head :title="title ?? 'Détail de la note'" />
+
+    <PageContainer>
         <div class="flex flex-col gap-1">
             <Link
                 href="/"
-                class="
-                  text-sm text-muted-foreground
-                  hover:underline
-                "
+                class="text-muted-foreground text-sm hover:underline"
             >
                 {{
                     breadcrumb ??
                     'Carnet de notes · Année 1 · Modules école pro'
                 }}
             </Link>
-            <div class="flex items-center justify-between gap-4">
-                <h1 class="text-2xl font-semibold">
-                    {{ title ?? 'M117 — Épreuve pratique, base de données' }}
-                </h1>
 
-                <ToggleGroup
-                    v-model="perspective"
-                    type="single"
-                    variant="outline"
-                    size="sm"
-                    class="shrink-0"
-                >
-                    <ToggleGroupItem value="apprentice">
-                        Apprenti
-                    </ToggleGroupItem>
-                    <ToggleGroupItem value="coach">
-                        Coach / Formateur
-                    </ToggleGroupItem>
-                </ToggleGroup>
-            </div>
+            <PageHeader
+                :title="title ?? 'M117 — Épreuve pratique, base de données'"
+            >
+                <template #actions>
+                    <ToggleGroup
+                        v-model="perspective"
+                        type="single"
+                        variant="outline"
+                        size="sm"
+                        class="shrink-0"
+                    >
+                        <ToggleGroupItem value="apprentice">
+                            Apprenti
+                        </ToggleGroupItem>
+                        <ToggleGroupItem value="coach">
+                            Coach / Formateur
+                        </ToggleGroupItem>
+                    </ToggleGroup>
+                </template>
+            </PageHeader>
         </div>
 
         <Card>
             <CardContent class="grid grid-cols-4 gap-6">
                 <div>
                     <p
-                        class="
-                          text-xs font-medium tracking-wide
-                          text-muted-foreground uppercase
-                        "
+                        class="text-muted-foreground text-xs font-medium tracking-wide uppercase"
                     >
                         Note
                     </p>
@@ -110,10 +108,7 @@ const submitComment = () => {
                 </div>
                 <div>
                     <p
-                        class="
-                          text-xs font-medium tracking-wide
-                          text-muted-foreground uppercase
-                        "
+                        class="text-muted-foreground text-xs font-medium tracking-wide uppercase"
                     >
                         Date du test
                     </p>
@@ -121,10 +116,7 @@ const submitComment = () => {
                 </div>
                 <div>
                     <p
-                        class="
-                          text-xs font-medium tracking-wide
-                          text-muted-foreground uppercase
-                        "
+                        class="text-muted-foreground text-xs font-medium tracking-wide uppercase"
                     >
                         Matière
                     </p>
@@ -132,10 +124,7 @@ const submitComment = () => {
                 </div>
                 <div>
                     <p
-                        class="
-                          text-xs font-medium tracking-wide
-                          text-muted-foreground uppercase
-                        "
+                        class="text-muted-foreground text-xs font-medium tracking-wide uppercase"
                     >
                         Déposé le
                     </p>
@@ -145,8 +134,8 @@ const submitComment = () => {
         </Card>
 
         <Card class="overflow-hidden py-0">
-            <div class="flex h-[70vh] justify-center overflow-auto bg-muted">
-                <p v-if="!pdfUrl" class="m-auto text-sm text-muted-foreground">
+            <div class="bg-muted flex h-[70vh] justify-center overflow-auto">
+                <p v-if="!pdfUrl" class="text-muted-foreground m-auto text-sm">
                     Aucun document déposé.
                 </p>
                 <embed
@@ -162,18 +151,12 @@ const submitComment = () => {
             <h2 class="text-lg font-semibold">Commentaires</h2>
 
             <div v-if="comments.length" class="relative flex flex-col">
-                <div
-                    class="absolute inset-y-2 left-[5px] w-px bg-border"
-                />
+                <div class="bg-border absolute inset-y-2 left-[5px] w-px" />
 
                 <div
                     v-for="(comment, index) in comments"
                     :key="index"
-                    class="
-                      relative flex flex-col gap-1 py-4 pl-6
-                      first:pt-0
-                      last:pb-0
-                    "
+                    class="relative flex flex-col gap-1 py-4 pl-6 first:pt-0 last:pb-0"
                 >
                     <span
                         :class="roleStyle(comment.role).split(' ')[0]"
@@ -181,7 +164,7 @@ const submitComment = () => {
                     />
                     <div class="flex items-center justify-between gap-2">
                         <p class="font-medium">{{ comment.author }}</p>
-                        <p class="text-xs text-muted-foreground">
+                        <p class="text-muted-foreground text-xs">
                             {{ comment.date }}
                         </p>
                     </div>
@@ -194,7 +177,7 @@ const submitComment = () => {
                     <p class="text-sm">{{ comment.text }}</p>
                 </div>
             </div>
-            <p v-else class="text-sm text-muted-foreground">
+            <p v-else class="text-muted-foreground text-sm">
                 Aucun commentaire pour le moment.
             </p>
 
@@ -217,9 +200,9 @@ const submitComment = () => {
                     </Button>
                 </div>
             </div>
-            <p v-else class="text-xs text-muted-foreground">
+            <p v-else class="text-muted-foreground text-xs">
                 Les apprentis ne peuvent pas commenter cette évaluation.
             </p>
         </div>
-    </div>
+    </PageContainer>
 </template>

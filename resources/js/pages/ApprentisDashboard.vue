@@ -1,12 +1,14 @@
 <script setup lang="ts">
-import { ref } from "vue";
-import ApprenticeDetailSheet from "@/components/apprentice/ApprenticeDetailSheet.vue";
-import ApprenticeSearchBar from "@/components/apprentice/ApprenticeSearchBar.vue";
-import TabFilter from "@/components/TabFilter.vue";
-import ApprenticeYearFilter from "@/components/apprentice/ApprenticeYearFilter.vue";
-import { useApprentices, type Apprentice } from "@/composables/useApprentices";
-import DataTable from "@/components/DataTable.vue";
-import ApprenticeRow from "@/components/apprentice/ApprenticeRow.vue";
+import { Head } from '@inertiajs/vue3';
+import { ref } from 'vue';
+import ApprenticeDetailSheet from '@/components/apprentice/ApprenticeDetailSheet.vue';
+import ApprenticeSearchBar from '@/components/apprentice/ApprenticeSearchBar.vue';
+import TabFilter from '@/components/TabFilter.vue';
+import ApprenticeYearFilter from '@/components/apprentice/ApprenticeYearFilter.vue';
+import { useApprentices, type Apprentice } from '@/composables/useApprentices';
+import DataTable from '@/components/DataTable.vue';
+import ApprenticeRow from '@/components/apprentice/ApprenticeRow.vue';
+import { PageContainer, PageHeader } from '@/components/page';
 
 const { filtered, search, trackFilter, yearFilter } = useApprentices();
 
@@ -19,33 +21,38 @@ const openDetail = (apprentice: Apprentice) => {
 };
 
 const apprenticeColumns = [
-    { key: "apprentice", label: "Apprenti·e" },
-    { key: "track", label: "Filière" },
-    { key: "year", label: "Année" },
-    { key: "coach", label: "Coach" },
-    { key: "trainer", label: "Formateur" },
+    { key: 'apprentice', label: 'Apprenti·e' },
+    { key: 'track', label: 'Filière' },
+    { key: 'year', label: 'Année' },
+    { key: 'coach', label: 'Coach' },
+    { key: 'trainer', label: 'Formateur' },
 ];
 
 const trackOptions = [
-    { label: "All", value: "All" },
-    { label: "IT", value: "IT" },
-    { label: "EC", value: "EC" },
+    { label: 'All', value: 'All' },
+    { label: 'IT', value: 'IT' },
+    { label: 'EC', value: 'EC' },
 ] as const;
 </script>
 
 <template>
-    <div class="w-full max-w-4xl font-sans">
-        <h1 class="mb-1 text-2xl font-semibold">Apprentis</h1>
-        <p class="mb-6 text-muted-foreground">
-            {{ filtered.length }} apprenti·e{{ filtered.length > 1 ? "s" : "" }}
-            au total
-        </p>
+    <Head title="Apprentis" />
 
-        <ApprenticeSearchBar v-model="search" />
+    <PageContainer>
+        <PageHeader title="Apprentis">
+            <template #description>
+                {{ filtered.length }} apprenti·e{{
+                    filtered.length > 1 ? 's' : ''
+                }}
+                au total
+            </template>
+        </PageHeader>
 
-        <TabFilter v-model="trackFilter" :options="trackOptions" />
-
-        <ApprenticeYearFilter v-model="yearFilter" />
+        <div class="flex flex-col gap-4">
+            <ApprenticeSearchBar v-model="search" />
+            <TabFilter v-model="trackFilter" :options="trackOptions" />
+            <ApprenticeYearFilter v-model="yearFilter" />
+        </div>
 
         <DataTable
             :columns="apprenticeColumns"
@@ -61,5 +68,5 @@ const trackOptions = [
             :apprentice="selected"
             v-model:open="sheetOpen"
         />
-    </div>
+    </PageContainer>
 </template>

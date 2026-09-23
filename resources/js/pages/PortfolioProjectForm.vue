@@ -12,6 +12,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { usePortfolio } from '@/composables/usePortfolio';
 import { usePortfolioForm } from '@/composables/usePortfolioForm';
 import portfolio from '@/routes/portfolio';
+import { PageContainer, PageHeader } from '@/components/page';
 
 const props = defineProps<{
     projectId?: number;
@@ -77,20 +78,16 @@ function onDelete(): void {
 <template>
     <Head :title="isEditing ? 'Modifier un projet' : 'Nouveau projet'" />
 
-    <div class="mx-auto flex w-full max-w-2xl flex-col gap-6">
-        <div class="space-y-1">
+    <PageContainer size="sm">
+        <div class="flex flex-col gap-1">
             <Link
                 :href="portfolio.index()"
-                class="
-                  text-sm text-muted-foreground
-                  hover:text-foreground
-                "
+                class="text-muted-foreground hover:text-foreground text-sm"
             >
                 Portfolio
             </Link>
-            <h1 class="text-xl font-semibold">
-                {{ heading || 'Nouveau projet' }}
-            </h1>
+
+            <PageHeader :title="heading || 'Nouveau projet'" />
         </div>
 
         <Card>
@@ -102,10 +99,7 @@ function onDelete(): void {
                 >
                     <fieldset class="space-y-4">
                         <legend
-                            class="
-                              mb-4 text-xs font-medium tracking-wider
-                              text-muted-foreground uppercase
-                            "
+                            class="text-muted-foreground mb-4 text-xs font-medium tracking-wider uppercase"
                         >
                             Informations générales
                         </legend>
@@ -122,10 +116,7 @@ function onDelete(): void {
                             <InputError :message="errors.title" />
                         </div>
 
-                        <div class="
-                          grid gap-4
-                          sm:grid-cols-2
-                        ">
+                        <div class="grid gap-4 sm:grid-cols-2">
                             <div class="grid gap-2">
                                 <Label for="organization">Entreprise</Label>
                                 <Input
@@ -144,10 +135,7 @@ function onDelete(): void {
                             </div>
                         </div>
 
-                        <div class="
-                          grid gap-4
-                          sm:grid-cols-2
-                        ">
+                        <div class="grid gap-4 sm:grid-cols-2">
                             <div class="grid gap-2">
                                 <Label for="date_start">Date de début</Label>
                                 <Input
@@ -191,10 +179,7 @@ function onDelete(): void {
 
                     <fieldset class="space-y-4">
                         <legend
-                            class="
-                              mb-4 text-xs font-medium tracking-wider
-                              text-muted-foreground uppercase
-                            "
+                            class="text-muted-foreground mb-4 text-xs font-medium tracking-wider uppercase"
                         >
                             Technique
                         </legend>
@@ -202,29 +187,17 @@ function onDelete(): void {
                         <div class="grid gap-2">
                             <Label for="technology-draft">Technologies</Label>
                             <div
-                                class="
-                                  flex flex-wrap items-center gap-1.5 rounded-md
-                                  border border-input px-2 py-1.5
-                                  focus-within:border-ring
-                                  focus-within:ring-[3px]
-                                  focus-within:ring-ring/50
-                                "
+                                class="border-input focus-within:border-ring focus-within:ring-ring/50 flex flex-wrap items-center gap-1.5 rounded-md border px-2 py-1.5 focus-within:ring-[3px]"
                             >
                                 <span
                                     v-for="technology in form.technologies"
                                     :key="technology"
-                                    class="
-                                      flex items-center gap-1 rounded-sm
-                                      bg-muted px-2 py-0.5 text-xs
-                                    "
+                                    class="bg-muted flex items-center gap-1 rounded-sm px-2 py-0.5 text-xs"
                                 >
                                     {{ technology }}
                                     <button
                                         type="button"
-                                        class="
-                                          text-muted-foreground
-                                          hover:text-foreground
-                                        "
+                                        class="text-muted-foreground hover:text-foreground"
                                         :aria-label="`Retirer ${technology}`"
                                         @click="removeTechnology(technology)"
                                     >
@@ -237,10 +210,7 @@ function onDelete(): void {
                                 <input
                                     id="technology-draft"
                                     v-model="technologyDraft"
-                                    class="
-                                      min-w-40 flex-1 bg-transparent text-sm
-                                      outline-none
-                                    "
+                                    class="min-w-40 flex-1 bg-transparent text-sm outline-none"
                                     placeholder="Ajouter une technologie..."
                                     @keydown.enter.prevent="addTechnology"
                                     @keydown.,.prevent="addTechnology"
@@ -248,15 +218,12 @@ function onDelete(): void {
                                     @blur="addTechnology"
                                 />
                             </div>
-                            <p class="text-xs text-muted-foreground">
+                            <p class="text-muted-foreground text-xs">
                                 Validez avec Entrée ou une virgule.
                             </p>
                         </div>
 
-                        <div class="
-                          grid gap-4
-                          sm:grid-cols-2
-                        ">
+                        <div class="grid gap-4 sm:grid-cols-2">
                             <div class="grid gap-2">
                                 <Label for="demo_path">
                                     Lien de démonstration
@@ -288,10 +255,7 @@ function onDelete(): void {
 
                     <fieldset class="space-y-4">
                         <legend
-                            class="
-                              mb-4 text-xs font-medium tracking-wider
-                              text-muted-foreground uppercase
-                            "
+                            class="text-muted-foreground mb-4 text-xs font-medium tracking-wider uppercase"
                         >
                             Captures d'écran
                         </legend>
@@ -305,17 +269,11 @@ function onDelete(): void {
                                 <img
                                     :src="screenshot"
                                     :alt="`Capture d'écran ${index + 1}`"
-                                    class="
-                                      size-24 rounded-sm bg-muted object-cover
-                                    "
+                                    class="bg-muted size-24 rounded-sm object-cover"
                                 />
                                 <button
                                     type="button"
-                                    class="
-                                      absolute -top-2 -right-2 flex size-5
-                                      items-center justify-center rounded-full
-                                      bg-foreground text-background
-                                    "
+                                    class="bg-foreground text-background absolute -top-2 -right-2 flex size-5 items-center justify-center rounded-full"
                                     :aria-label="`Retirer la capture ${index + 1}`"
                                     @click="removeScreenshot(index)"
                                 >
@@ -325,12 +283,7 @@ function onDelete(): void {
 
                             <button
                                 type="button"
-                                class="
-                                  flex size-24 items-center justify-center
-                                  rounded-sm border border-dashed border-input
-                                  text-muted-foreground
-                                  hover:bg-accent
-                                "
+                                class="border-input text-muted-foreground hover:bg-accent flex size-24 items-center justify-center rounded-sm border border-dashed"
                                 aria-label="Ajouter une capture d'écran"
                                 data-test="add-screenshot-button"
                                 @click="pickScreenshots"
@@ -349,7 +302,7 @@ function onDelete(): void {
                             />
                         </div>
                         <InputError :message="errors.screenshots" />
-                        <p class="text-xs text-muted-foreground">
+                        <p class="text-muted-foreground text-xs">
                             Images uniquement, 5 Mo maximum par fichier.
                         </p>
                     </fieldset>
@@ -358,10 +311,7 @@ function onDelete(): void {
 
                     <fieldset class="space-y-4">
                         <legend
-                            class="
-                              mb-4 text-xs font-medium tracking-wider
-                              text-muted-foreground uppercase
-                            "
+                            class="text-muted-foreground mb-4 text-xs font-medium tracking-wider uppercase"
                         >
                             Compétences démontrées
                         </legend>
@@ -371,20 +321,11 @@ function onDelete(): void {
                                 v-for="skill in skills"
                                 :key="skill.id"
                                 type="button"
-                                class="
-                                  rounded-sm border px-3 py-1.5 text-sm
-                                  transition-colors
-                                "
+                                class="rounded-sm border px-3 py-1.5 text-sm transition-colors"
                                 :class="
                                     hasSkill(skill.id)
-                                        ? `
-                                          border-primary bg-primary/10
-                                          text-primary
-                                        `
-                                        : `
-                                          border-input
-                                          hover:bg-accent
-                                        `
+                                        ? `border-primary bg-primary/10 text-primary`
+                                        : `border-input hover:bg-accent`
                                 "
                                 :aria-pressed="hasSkill(skill.id)"
                                 @click="toggleSkill(skill.id)"
@@ -407,10 +348,7 @@ function onDelete(): void {
                             v-if="isEditing"
                             type="button"
                             variant="ghost"
-                            class="
-                              ml-auto text-destructive
-                              hover:text-destructive
-                            "
+                            class="text-destructive hover:text-destructive ml-auto"
                             @click="onDelete"
                         >
                             <Trash2Icon aria-hidden="true" />
@@ -420,5 +358,5 @@ function onDelete(): void {
                 </form>
             </CardContent>
         </Card>
-    </div>
+    </PageContainer>
 </template>

@@ -1,57 +1,59 @@
 <script setup lang="ts">
-import { ref, computed } from "vue";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import ApprenticeSearchBar from "@/components/apprentice/ApprenticeSearchBar.vue";
-import TabFilter from "@/components/TabFilter.vue";
-import DataTable from "@/components/DataTable.vue";
-import SubjectTableRow from "@/components/subject/SubjectTableRow.vue";
+import { Head } from '@inertiajs/vue3';
+import { ref, computed } from 'vue';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import ApprenticeSearchBar from '@/components/apprentice/ApprenticeSearchBar.vue';
+import TabFilter from '@/components/TabFilter.vue';
+import DataTable from '@/components/DataTable.vue';
+import SubjectTableRow from '@/components/subject/SubjectTableRow.vue';
 import NewSubjectDialog, {
     type NewSubjectPayload,
-} from "@/components/subject/NewSubjectDialog.vue";
-import rawSubjects from "@/data_2/subjects.json";
+} from '@/components/subject/NewSubjectDialog.vue';
+import rawSubjects from '@/data_2/subjects.json';
+import { PageContainer, PageHeader } from '@/components/page';
 
 type Subject = {
     id: number;
     name: string;
     domain: string;
     track: string;
-    status: "Active" | "Désactivée";
+    status: 'Active' | 'Désactivée';
     hasGrades: boolean;
 };
 
 const subjectColumns = [
     {
-        key: "name",
-        label: "MATIÈRE",
-        class: "w-[40%] uppercase text-xs font-semibold",
+        key: 'name',
+        label: 'MATIÈRE',
+        class: 'w-[40%] uppercase text-xs font-semibold',
     },
     {
-        key: "domain",
-        label: "DOMAINE / MODULE",
-        class: "uppercase text-xs font-semibold",
+        key: 'domain',
+        label: 'DOMAINE / MODULE',
+        class: 'uppercase text-xs font-semibold',
     },
     {
-        key: "track",
-        label: "FILIÈRE",
-        class: "uppercase text-xs font-semibold",
+        key: 'track',
+        label: 'FILIÈRE',
+        class: 'uppercase text-xs font-semibold',
     },
-    { key: "actions", label: "", class: "text-right" },
+    { key: 'actions', label: '', class: 'text-right' },
 ];
 
 const trackOptions = [
-    { label: "All", value: "All" },
-    { label: "IT", value: "IT" },
-    { label: "EC", value: "EC" },
+    { label: 'All', value: 'All' },
+    { label: 'IT', value: 'IT' },
+    { label: 'EC', value: 'EC' },
 ] as const;
 
 const trackMap: Record<string, string> = {
-    IT: "Informatique",
-    EC: "Employé-e de commerce",
+    IT: 'Informatique',
+    EC: 'Employé-e de commerce',
 };
 
-const currentTab = ref("matieres");
-const searchQuery = ref("");
-const selectedTrack = ref<"All" | "IT" | "EC">("All");
+const currentTab = ref('matieres');
+const searchQuery = ref('');
+const selectedTrack = ref<'All' | 'IT' | 'EC'>('All');
 const createdSubjects = ref<Subject[]>([]);
 const overriddenSubjects = ref<Record<number, Subject>>({});
 const deletedSubjectIds = ref<number[]>([]);
@@ -72,7 +74,7 @@ function handleCreateSubject(payload: NewSubjectPayload) {
         name: payload.name,
         domain: payload.domain,
         track: trackMap[payload.track],
-        status: "Active",
+        status: 'Active',
         hasGrades: false,
     });
 }
@@ -96,7 +98,7 @@ function handleSaveSubject(payload: {
     id: number;
     name: string;
     domain: string;
-    track: "IT" | "EC";
+    track: 'IT' | 'EC';
 }) {
     applyUpdate(payload.id, {
         name: payload.name,
@@ -106,11 +108,11 @@ function handleSaveSubject(payload: {
 }
 
 function handleDeactivateSubject(id: number) {
-    applyUpdate(id, { status: "Désactivée" });
+    applyUpdate(id, { status: 'Désactivée' });
 }
 
 function handleReactivateSubject(id: number) {
-    applyUpdate(id, { status: "Active" });
+    applyUpdate(id, { status: 'Active' });
 }
 
 function handleDeleteSubject(id: number) {
@@ -131,7 +133,7 @@ const filteredSubjects = computed(() => {
     return allSubjects.value.filter((subject) => {
         const matchesSearch = subject.name.toLowerCase().includes(searchLower);
         const matchesTrack =
-            selectedTrack.value === "All" ||
+            selectedTrack.value === 'All' ||
             subject.track === trackMap[selectedTrack.value];
 
         return matchesSearch && matchesTrack;
@@ -140,43 +142,37 @@ const filteredSubjects = computed(() => {
 </script>
 
 <template>
-    <div class="w-full max-w-4xl font-sans">
-        <h1 class="text-2xl font-bold mb-6">Administration</h1>
+    <Head title="Administration" />
+
+    <PageContainer>
+        <PageHeader title="Administration" />
 
         <Tabs v-model="currentTab" class="w-full">
             <TabsList
-                class="flex justify-start bg-transparent p-0 h-auto border-b rounded-none mb-6"
+                class="bg-muted grid h-12 w-full grid-cols-2 rounded-xl border"
             >
-                <TabsTrigger
-                    value="comptes"
-                    class="grid h-12 w-full rounded-xl border ""
-                >
+                <TabsTrigger value="comptes" class="rounded-lg text-base">
                     Comptes
                 </TabsTrigger>
-                <TabsTrigger
-                    value="matieres"
-                    class="grid h-12 w-full rounded-xl border ""
-                >
+                <TabsTrigger value="matieres" class="rounded-lg text-base">
                     Matières
                 </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="matieres">
-                <div class="mb-2">
-                    <ApprenticeSearchBar v-model="searchQuery" />
+            <TabsContent value="matieres" class="flex flex-col gap-4">
+                <ApprenticeSearchBar v-model="searchQuery" />
 
-                    <div
-                        class="flex flex-col sm:flex-row justify-between items-start gap-4"
-                    >
-                        <div class="w-full sm:max-w-2xl">
-                            <TabFilter
-                                v-model="selectedTrack"
-                                :options="trackOptions"
-                            />
-                        </div>
-
-                        <NewSubjectDialog @create="handleCreateSubject" />
+                <div
+                    class="flex flex-col items-start justify-between gap-4 sm:flex-row"
+                >
+                    <div class="w-full sm:max-w-2xl">
+                        <TabFilter
+                            v-model="selectedTrack"
+                            :options="trackOptions"
+                        />
                     </div>
+
+                    <NewSubjectDialog @create="handleCreateSubject" />
                 </div>
 
                 <DataTable
@@ -195,7 +191,7 @@ const filteredSubjects = computed(() => {
                     </template>
                 </DataTable>
 
-                <p class="text-xs text-muted-foreground mt-4">
+                <p class="text-muted-foreground text-xs">
                     Une matière déjà utilisée dans au moins une note ne peut pas
                     être supprimée — elle peut uniquement être désactivée. Elle
                     reste visible dans les carnets existants.
@@ -203,10 +199,10 @@ const filteredSubjects = computed(() => {
             </TabsContent>
 
             <TabsContent value="comptes">
-                <div class="py-8 text-center text-muted-foreground">
+                <div class="text-muted-foreground py-8 text-center">
                     Contenu des comptes (en cours de développement)
                 </div>
             </TabsContent>
         </Tabs>
-    </div>
+    </PageContainer>
 </template>

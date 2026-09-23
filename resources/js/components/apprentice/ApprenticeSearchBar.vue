@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { InputGroup, InputGroupInput } from "@/components/ui/input-group";
+import { InputGroup, InputGroupInput } from '@/components/ui/input-group';
 
 const search = defineModel<string>({ required: true });
 </script>
 
 <template>
-    <InputGroup class="mb-6">
+    <InputGroup>
         <svg
             data-icon="inline-start"
             xmlns="http://www.w3.org/2000/svg"
