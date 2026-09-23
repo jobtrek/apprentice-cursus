@@ -49,8 +49,8 @@
             "@php -r \"file_exists('.env') || copy('.env.example', '.env');\"",
             "@php artisan key:generate",
             "@php artisan migrate --force",
-            "npm install",
-            "npm run build"
+            "pnpm install",
+            "pnpm build"
         ],
         "dev": [
             "Composer\\Config::disableProcessTimeout",
@@ -64,8 +64,8 @@
         ],
         "ci:check": [
             "Composer\\Config::disableProcessTimeout",
-            "npm run check",
-            "npm run types:check",
+            "pnpm check",
+            "pnpm types:check",
             "@test"
         ],
         "types:check": [
