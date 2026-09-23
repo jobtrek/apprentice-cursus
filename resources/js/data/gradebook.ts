@@ -71,3 +71,13 @@ export const GRADE_TABLES: GradeMenu[] = [
     { title: 'Culture générale', columns, grades: gradeRows },
     { title: 'TPI', columns, grades: gradeRows },
 ];
+
+const flattenGrades = (menus: GradeMenu[]): Grade[] =>
+    menus.flatMap((menu) => [
+        ...menu.grades,
+        ...flattenGrades(menu.subMenu ?? []),
+    ]);
+
+/** Note de démonstration correspondant à l'identifiant d'URL, si elle existe. */
+export const findGrade = (id: number): Grade | undefined =>
+    flattenGrades(GRADE_TABLES).find((grade) => grade.id === id);

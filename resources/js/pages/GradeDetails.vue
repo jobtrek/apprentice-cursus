@@ -8,13 +8,23 @@ import {
     SectionHeader,
     StatItem,
 } from '@/components/page';
+import {
+    Empty,
+    EmptyContent,
+    EmptyDescription,
+    EmptyHeader,
+    EmptyMedia,
+    EmptyTitle,
+} from '@/components/ui/empty';
 import { findApprentice } from '@/composables/useApprentices';
 import { useNavigation } from '@/composables/useNavigation';
 import { apprentisdashboard } from '@/routes';
 import apprentices from '@/routes/apprentices';
 import grades from '@/routes/grades';
+import { findGrade } from '@/data/gradebook';
 import type { UserRole } from '@/types';
-import { Head } from '@inertiajs/vue3';
+import { Head, Link } from '@inertiajs/vue3';
+import { FileXIcon } from '@lucide/vue';
 import { computed, ref } from 'vue';
 
 type Comment = {
@@ -25,17 +35,14 @@ type Comment = {
 };
 
 const props = defineProps<{
-    breadcrumb?: string;
-    title?: string;
-    note?: number;
-    testDate?: string;
-    matiere?: string;
-    depositedAt?: string;
+    gradeId: number;
     pdfUrl?: string;
     comments?: Comment[];
     /** Présent quand un coach ou formateur consulte la note d'un·e apprenti·e. */
     apprenticeId?: number;
 }>();
+
+const grade = computed(() => findGrade(props.gradeId));
 
 const comments = ref<Comment[]>(props.comments ?? []);
 const newComment = ref('');
@@ -81,6 +88,9 @@ const breadcrumbs = computed(() =>
         : [{ label: 'Carnet de notes', href: grades.dashboard() }],
 );
 
+/** Page à laquelle revenir : le dernier niveau du fil d'Ariane. */
+const backHref = computed(() => breadcrumbs.value.at(-1)!.href);
+
 const submitComment = () => {
     if (!newComment.value.trim() || !commenterLabel.value) return;
 
@@ -99,30 +109,48 @@ const submitComment = () => {
 </script>
 
 <template>
-    <Head :title="title ?? 'Détail de la note'" />
+    <Head :title="grade?.title ?? 'Note introuvable'" />
 
-    <PageContainer>
+    <PageContainer v-if="!grade">
+        <PageHeader title="Note introuvable" :breadcrumbs="breadcrumbs" />
+
+        <Empty class="border">
+            <EmptyHeader>
+                <EmptyMedia variant="icon">
+                    <FileXIcon />
+                </EmptyMedia>
+                <EmptyTitle>Aucune note ne correspond</EmptyTitle>
+                <EmptyDescription>
+                    Cette note n'existe pas ou a été supprimée.
+                </EmptyDescription>
+            </EmptyHeader>
+            <EmptyContent>
+                <Button as-child variant="outline">
+                    <Link :href="backHref">Retour</Link>
+                </Button>
+            </EmptyContent>
+        </Empty>
+    </PageContainer>
+
+    <PageContainer v-else>
         <PageHeader
-            :title="title ?? 'M117 — Épreuve pratique, base de données'"
-            :description="breadcrumb ?? 'Année 1 · Modules école pro'"
+            :title="grade.title"
+            :description="`${grade.subject} · Semestre ${grade.semester}`"
             :breadcrumbs="breadcrumbs"
         />
 
         <Card>
-            <CardContent class="grid grid-cols-2 gap-6 sm:grid-cols-4">
+            <CardContent class="grid grid-cols-2 gap-6 sm:grid-cols-3">
                 <StatItem label="Note">
                     <p class="text-3xl font-semibold tabular-nums">
-                        {{ (note ?? 5).toFixed(1) }}
+                        {{ grade.value.toFixed(1) }}
                     </p>
                 </StatItem>
                 <StatItem label="Date du test">
-                    {{ testDate ?? '22.10.2025' }}
+                    {{ grade.date }}
                 </StatItem>
                 <StatItem label="Matière">
-                    {{ matiere ?? 'M117 — Base de données' }}
-                </StatItem>
-                <StatItem label="Déposé le">
-                    {{ depositedAt ?? '23.10.2025' }}
+                    {{ grade.subject }}
                 </StatItem>
             </CardContent>
         </Card>

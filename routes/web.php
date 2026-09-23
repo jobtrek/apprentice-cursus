@@ -38,26 +38,37 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ],
     ];
 
-    Route::inertia('/grades/{grade}', 'GradeDetails', $demoGrade)
-        ->name('grades.show');
-
-    Route::inertia('/apprentisdashboard', 'ApprentisDashboard')->name('apprentisdashboard');
+    Route::get(
+        '/grades/{grade}',
+        fn (int $grade) => Inertia::render('GradeDetails', [
+            ...$demoGrade,
+            'gradeId' => $grade,
+        ])
+    )->whereNumber('grade')->name('grades.show');
 
     // Parcours coach/formateur : liste → apprenti → carnet de notes → épreuve.
-    Route::get(
-        '/apprentices/{apprentice}',
-        fn (int $apprentice) => Inertia::render('ApprenticeShow', [
-            'apprenticeId' => $apprentice,
-        ])
-    )->whereNumber('apprentice')->name('apprentices.show');
+    // Mêmes rôles que `SUPERVISORS` dans resources/js/constants/navigation.ts.
+    // TODO: limiter les formateurs à leur section quand les apprentis viendront
+    // de la base (aujourd'hui des données de démo côté frontend).
+    Route::middleware('role:coach,trainer,admin,super_admin')->group(function () use ($demoGrade) {
+        Route::inertia('/apprentisdashboard', 'ApprentisDashboard')->name('apprentisdashboard');
 
-    Route::get(
-        '/apprentices/{apprentice}/grades/{grade}',
-        fn (int $apprentice) => Inertia::render('GradeDetails', [
-            ...$demoGrade,
-            'apprenticeId' => $apprentice,
-        ])
-    )->whereNumber(['apprentice', 'grade'])->name('apprentices.grades.show');
+        Route::get(
+            '/apprentices/{apprentice}',
+            fn (int $apprentice) => Inertia::render('ApprenticeShow', [
+                'apprenticeId' => $apprentice,
+            ])
+        )->whereNumber('apprentice')->name('apprentices.show');
+
+        Route::get(
+            '/apprentices/{apprentice}/grades/{grade}',
+            fn (int $apprentice, int $grade) => Inertia::render('GradeDetails', [
+                ...$demoGrade,
+                'apprenticeId' => $apprentice,
+                'gradeId' => $grade,
+            ])
+        )->whereNumber(['apprentice', 'grade'])->name('apprentices.grades.show');
+    });
 });
 
 require __DIR__.'/profile.php';
