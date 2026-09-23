@@ -61,7 +61,7 @@ export default defineConfig({
     },
     staged: {
         '*.{js,ts,vue,css}': 'vp check --fix',
-        '*.php': 'vendor/bin/pint --test',
+        '*.php': 'vendor/bin/pint',
     },
     fmt: {
         printWidth: 80,
