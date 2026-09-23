@@ -1,8 +1,13 @@
 <script setup lang="ts">
+import InputError from '@/components/InputError.vue';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Separator } from '@/components/ui/separator';
+import login from '@/routes/login';
 import microsoft from '@/routes/microsoft';
-import { Head } from '@inertiajs/vue3';
+import { Head, useForm } from '@inertiajs/vue3';
 import MicrosoftLogo from '../../../assets/microsoft (2).svg';
 
 defineOptions({
@@ -17,6 +22,17 @@ defineProps<{
     status?: string;
     error?: string;
 }>();
+
+const form = useForm({
+    email: '',
+    password: '',
+});
+
+const submit = () => {
+    form.post(login.store.url(), {
+        onFinish: () => form.reset('password'),
+    });
+};
 </script>
 
 <template>

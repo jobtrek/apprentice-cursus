@@ -60,6 +60,10 @@ export default defineConfig({
             typeAware: true,
         },
     },
+    staged: {
+        '*.{js,ts,vue,css}': 'vp check --fix',
+        '*.php': 'vendor/bin/pint',
+    },
     fmt: {
         printWidth: 80,
         tabWidth: 4,

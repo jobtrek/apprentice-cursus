@@ -34,8 +34,8 @@ All PHP/artisan commands run inside Sail: `./vendor/bin/sail <cmd>`. JS package 
 # Lint / format
 composer lint            # pint --parallel (write)
 composer lint:check      # pint --parallel --test (check only)
-pnpm check                # frontend lint (eslint etc.)
-pnpm check:fix
+pnpm check                # vp check: Oxfmt + Oxlint + ESLint-Vue-Tailwind
+pnpm check:fix            # vp check --fix (write)
 
 # Static analysis
 composer types:check     # phpstan (larastan) via phpstan.neon, level 7
@@ -46,7 +46,7 @@ composer ci:check
 composer test             # config:clear + lint:check + types:check + artisan test
 ```
 
-No test runner is configured on the JS side yet (`README.md`/`technical_details.md` mention Vitest + Vue Testing Library as the intended choice, not yet wired up).
+No test runner is configured on the JS side yet (intended: `vp test` with imports from `vite-plus/test`, not yet wired up).
 
 ## Architecture notes
 
