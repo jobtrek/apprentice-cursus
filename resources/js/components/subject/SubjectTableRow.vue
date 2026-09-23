@@ -1,7 +1,10 @@
 <script setup lang="ts">
-import { TableCell, TableRow } from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
-import EditSubject from "@/components/subject/EditSubject.vue";
+import { TableCell, TableRow } from '@/components/ui/table';
+import { Trash2Icon } from '@lucide/vue';
+import { computed } from 'vue';
+import { Badge } from '@/components/ui/badge';
+import { Button, buttonVariants } from '@/components/ui/button';
+import EditSubject from '@/components/subject/EditSubject.vue';
 import {
     AlertDialog,
     AlertDialogAction,
@@ -12,7 +15,7 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
     AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
+} from '@/components/ui/alert-dialog';
 
 const props = defineProps<{
     subject: {
@@ -20,54 +23,55 @@ const props = defineProps<{
         name: string;
         domain: string;
         track: string;
-        status: "Active" | "Désactivée";
+        status: 'Active' | 'Désactivée';
         hasGrades: boolean;
     };
 }>();
 
 const emit = defineEmits<{
     (
-        e: "save",
+        e: 'save',
         payload: {
             id: number;
             name: string;
             domain: string;
-            track: "IT" | "EC";
+            track: 'IT' | 'EC';
         },
     ): void;
-    (e: "deactivate", id: number): void;
-    (e: "reactivate", id: number): void;
-    (e: "delete", id: number): void;
+    (e: 'deactivate', id: number): void;
+    (e: 'reactivate', id: number): void;
+    (e: 'delete', id: number): void;
 }>();
 
 const trackAbbreviations: Record<string, string> = {
-    Informatique: "IT",
-    "Employé-e de commerce": "EC",
+    Informatique: 'IT',
+    'Employé-e de commerce': 'EC',
 };
 
-const trackLabel =
-    trackAbbreviations[props.subject.track] ?? props.subject.track;
+const trackLabel = computed(
+    () => trackAbbreviations[props.subject.track] ?? props.subject.track,
+);
+
+const isInactive = computed(() => props.subject.status === 'Désactivée');
 </script>
 
 <template>
-    <TableRow
-        :class="subject.status === 'Désactivée' ? 'text-muted-foreground' : ''"
-    >
-        <TableCell
-            class="font-medium max-w-0"
-            :class="subject.status === 'Active' ? 'text-card-foreground' : ''"
-        >
-            <span class="block truncate" :title="subject.name">{{
-                subject.name
-            }}</span>
+    <TableRow :class="isInactive && 'text-muted-foreground'">
+        <TableCell class="max-w-0 font-medium">
+            <div class="flex min-w-0 items-center gap-2">
+                <span class="truncate" :title="subject.name">
+                    {{ subject.name }}
+                </span>
+                <Badge v-if="isInactive" variant="outline">Désactivée</Badge>
+            </div>
         </TableCell>
         <TableCell>{{ subject.domain }}</TableCell>
         <TableCell>{{ trackLabel }}</TableCell>
 
-        <TableCell class="text-right">
-            <div class="flex items-center gap-2">
+        <TableCell>
+            <div class="flex items-center justify-end gap-2">
                 <EditSubject
-                    v-if="subject.status === 'Active'"
+                    v-if="!isInactive"
                     :subject="{
                         id: subject.id,
                         name: subject.name,
@@ -79,33 +83,25 @@ const trackLabel =
                     @save="emit('save', $event)"
                     @deactivate="emit('deactivate', $event)"
                 />
-
-                <AlertDialog
-                    v-if="subject.status === 'Active' && !subject.hasGrades"
+                <Button
+                    v-if="isInactive"
+                    variant="outline"
+                    size="sm"
+                    class="min-w-24"
+                    @click="emit('reactivate', subject.id)"
                 >
+                    Réactiver
+                </Button>
+
+                <AlertDialog v-if="!isInactive && !subject.hasGrades">
                     <AlertDialogTrigger as-child>
                         <Button
                             variant="ghost"
-                            size="icon"
-                            class="h-8 w-8 text-muted-foreground hover:text-destructive justify-center"
+                            size="icon-sm"
+                            class="text-muted-foreground hover:text-destructive"
+                            :aria-label="`Supprimer ${subject.name}`"
                         >
-                            <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                width="16"
-                                height="16"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                stroke-width="2"
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                            >
-                                <path d="M3 6h18" />
-                                <path
-                                    d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"
-                                />
-                                <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
-                            </svg>
+                            <Trash2Icon aria-hidden="true" />
                         </Button>
                     </AlertDialogTrigger>
                     <AlertDialogContent>
@@ -121,7 +117,9 @@ const trackLabel =
                         <AlertDialogFooter>
                             <AlertDialogCancel>Annuler</AlertDialogCancel>
                             <AlertDialogAction
-                                class="bg-destructive hover:bg-destructive/90 text-white"
+                                :class="
+                                    buttonVariants({ variant: 'destructive' })
+                                "
                                 @click="emit('delete', subject.id)"
                             >
                                 Supprimer
@@ -129,16 +127,11 @@ const trackLabel =
                         </AlertDialogFooter>
                     </AlertDialogContent>
                 </AlertDialog>
-
-                <Button
-                    v-if="subject.status === 'Désactivée'"
-                    variant="default"
-                    size="sm"
-                    class="bg-emerald-600 hover:bg-emerald-500 text-white"
-                    @click="emit('reactivate', subject.id)"
-                >
-                    Réactiver
-                </Button>
+                <!--
+                    Emplacement réservé : sans lui, « Modifier » se décale sur
+                    les lignes où la suppression n'est pas possible.
+                -->
+                <span v-else class="size-8 shrink-0" aria-hidden="true" />
             </div>
         </TableCell>
     </TableRow>

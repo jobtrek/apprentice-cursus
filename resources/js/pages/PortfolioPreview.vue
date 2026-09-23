@@ -24,23 +24,16 @@ function exportToPdf(): void {
 <template>
     <Head title="Aperçu du portfolio" />
 
-    <div class="min-h-svh bg-muted/40">
+    <div class="bg-muted/40 min-h-svh">
         <header
-            class="
-              sticky top-0 z-10 flex items-center justify-between gap-4 border-b
-              bg-background px-6 py-3
-              print:hidden
-            "
+            class="bg-background sticky top-0 z-10 flex items-center justify-between gap-4 border-b px-6 py-3 print:hidden"
         >
             <Link
                 :href="portfolio.index()"
-                class="
-                  flex items-center gap-1 text-sm text-muted-foreground
-                  hover:text-foreground
-                "
+                class="text-muted-foreground hover:text-foreground flex items-center gap-1 text-sm"
             >
                 <ChevronLeftIcon class="size-4" aria-hidden="true" />
-                Aperçu du portfolio
+                Retour au portfolio
             </Link>
 
             <Button data-test="export-pdf-button" @click="exportToPdf">
@@ -50,10 +43,7 @@ function exportToPdf(): void {
         </header>
 
         <main
-            class="
-              mx-auto my-10 max-w-3xl bg-white p-12 text-neutral-900 shadow-sm
-              print:my-0 print:max-w-none print:px-0 print:shadow-none
-            "
+            class="mx-auto my-10 max-w-3xl bg-white p-12 text-neutral-900 shadow-sm print:my-0 print:max-w-none print:px-0 print:shadow-none"
         >
             <div class="space-y-1">
                 <h1 class="text-2xl font-bold">{{ owner.name }}</h1>
@@ -98,10 +88,7 @@ function exportToPdf(): void {
                             project.technologies,
                         )"
                         :key="technology"
-                        class="
-                          rounded-sm border border-neutral-200 px-2 py-0.5
-                          text-xs
-                        "
+                        class="rounded-sm border border-neutral-200 px-2 py-0.5 text-xs"
                     >
                         {{ technology }}
                     </li>
@@ -116,10 +103,7 @@ function exportToPdf(): void {
                         :href="project.demo_path"
                         target="_blank"
                         rel="noopener noreferrer"
-                        class="
-                          flex items-center gap-1.5 underline-offset-4
-                          hover:underline
-                        "
+                        class="flex items-center gap-1.5 underline-offset-4 hover:underline"
                     >
                         <ExternalLinkIcon class="size-3.5" aria-hidden="true" />
                         Démonstration
@@ -129,10 +113,7 @@ function exportToPdf(): void {
                         :href="project.repository_url"
                         target="_blank"
                         rel="noopener noreferrer"
-                        class="
-                          flex items-center gap-1.5 underline-offset-4
-                          hover:underline
-                        "
+                        class="flex items-center gap-1.5 underline-offset-4 hover:underline"
                     >
                         <ExternalLinkIcon class="size-3.5" aria-hidden="true" />
                         Code source
@@ -156,10 +137,7 @@ function exportToPdf(): void {
                     <li
                         v-for="name in skillNames(project)"
                         :key="name"
-                        class="
-                          rounded-sm border border-blue-200 bg-blue-50 px-2
-                          py-0.5 text-xs text-blue-900
-                        "
+                        class="rounded-sm border border-blue-200 bg-blue-50 px-2 py-0.5 text-xs text-blue-900"
                     >
                         {{ name }}
                     </li>

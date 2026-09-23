@@ -1,26 +1,29 @@
 <script setup lang="ts">
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Separator } from '@/components/ui/separator';
 import {
     Sheet,
     SheetContent,
+    SheetDescription,
     SheetHeader,
     SheetTitle,
-} from "@/components/ui/sheet";
-import ApprenticeMetaRow from "./ApprenticeMetaRow.vue";
-import ApprenticeScoreSummary from "./ApprenticeScoreSummary.vue";
-import ApprenticeScoreTable from "./ApprenticeScoreTable.vue";
+} from '@/components/ui/sheet';
+import { getInitials } from '@/composables/useInitials';
+import type { Apprentice } from '@/composables/useApprentices';
 import {
     AVERAGE_SCORE,
     BRANCH_SCORES,
     MAX_SCORE,
-} from "@/data_2/apprenticesScores";
-import type { Apprentice } from "@/composables/useApprentices";
+} from '@/data_2/apprenticesScores';
+import ApprenticeMetaRow from './ApprenticeMetaRow.vue';
+import ApprenticeScoreSummary from './ApprenticeScoreSummary.vue';
+import ApprenticeScoreTable from './ApprenticeScoreTable.vue';
 
 defineProps<{
     apprentice: Apprentice | null;
 }>();
 
-const open = defineModel<boolean>("open", { required: true });
+const open = defineModel<boolean>('open', { required: true });
 </script>
 
 <template>
@@ -28,39 +31,35 @@ const open = defineModel<boolean>("open", { required: true });
         <SheetContent class="overflow-y-auto">
             <SheetHeader>
                 <div class="flex items-center gap-3">
-                    <Avatar>
+                    <Avatar class="size-10">
                         <AvatarImage :src="apprentice?.avatarUrl ?? ''" />
-                        <AvatarFallback>{{
-                            apprentice?.name.charAt(0)
-                        }}</AvatarFallback>
+                        <AvatarFallback>
+                            {{ getInitials(apprentice?.name) }}
+                        </AvatarFallback>
                     </Avatar>
                     <div>
                         <SheetTitle>{{ apprentice?.name }}</SheetTitle>
-                        <p class="text-sm text-muted-foreground">
+                        <SheetDescription>
                             {{ apprentice?.track }} · {{ apprentice?.year }}
-                        </p>
+                        </SheetDescription>
                     </div>
                 </div>
             </SheetHeader>
 
-            <div v-if="apprentice" class="mt-2">
-                <div class="ml-4 border-t pt-4">
-                    <ApprenticeMetaRow
-                        :coach="apprentice.coach"
-                        :formateur="apprentice.trainer"
-                    />
-                </div>
+            <div v-if="apprentice" class="flex flex-col gap-6 px-4 pb-6">
+                <Separator />
 
-                <div class="mt-4 border-t pt-6">
-                    <ApprenticeScoreSummary
-                        :average="AVERAGE_SCORE"
-                        :max="MAX_SCORE"
-                    />
-                </div>
+                <ApprenticeMetaRow
+                    :coach="apprentice.coach"
+                    :formateur="apprentice.trainer"
+                />
 
-                <div class="mt-6 border-t px-4 pt-4">
-                    <ApprenticeScoreTable :branches="BRANCH_SCORES" />
-                </div>
+                <ApprenticeScoreSummary
+                    :average="AVERAGE_SCORE"
+                    :max="MAX_SCORE"
+                />
+
+                <ApprenticeScoreTable :branches="BRANCH_SCORES" />
             </div>
         </SheetContent>
     </Sheet>

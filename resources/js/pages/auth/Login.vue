@@ -7,8 +7,9 @@ import MicrosoftLogo from '../../../assets/microsoft (2).svg';
 
 defineOptions({
     layout: {
-        title: 'Log in to your account',
-        description: 'Sign in with your Microsoft account to continue',
+        title: 'Connexion',
+        description:
+            'Connectez-vous avec votre compte Microsoft pour continuer.',
     },
 });
 
@@ -20,18 +21,18 @@ defineProps<{
 </script>
 
 <template>
-    <Head title="Log in" />
+    <Head title="Connexion" />
 
     <div
         v-if="status"
-        class="mb-4 text-center text-sm font-medium text-green-600"
+        class="text-success mb-4 text-center text-sm font-medium"
     >
         {{ status }}
     </div>
 
     <div
         v-if="error"
-        class="mb-4 text-center text-sm font-medium text-destructive"
+        class="text-destructive mb-4 text-center text-sm font-medium"
     >
         {{ error }}
     </div>
@@ -39,9 +40,9 @@ defineProps<{
     <Card class="mx-auto w-full max-w-sm">
         <CardContent>
             <form :action="microsoft.redirect.url()">
-                <Button type="submit" variant="outline" class="w-full" :tabindex="6">
-                    <img :src="MicrosoftLogo" alt="" class="mr-2 h-5 w-5" />
-                    Log in with Microsoft
+                <Button type="submit" variant="outline" class="w-full">
+                    <img :src="MicrosoftLogo" alt="" class="size-5" />
+                    Se connecter avec Microsoft
                 </Button>
             </form>
         </CardContent>

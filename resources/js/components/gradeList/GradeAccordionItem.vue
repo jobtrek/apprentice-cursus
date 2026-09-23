@@ -1,34 +1,43 @@
 <script setup lang="ts">
-import {Accordion, AccordionItem, AccordionTrigger, AccordionContent} from "@/components/ui/accordion";
-import GradeListContainer from "@/components/gradeList/GradeListContainer.vue";
-import GradeListElement from "@/components/gradeList/GradeListElement.vue";
-import type { Grade } from "@/types/grade";
+import {
+    Accordion,
+    AccordionContent,
+    AccordionItem,
+    AccordionTrigger,
+} from '@/components/ui/accordion';
+import DataTable from '@/components/DataTable.vue';
+import GradeListElement from '@/components/gradeList/GradeListElement.vue';
+import { cn } from '@/lib/utils';
+import type { GradeMenu } from '@/types/grade';
 
-type menu = {
-    title: string
-    columns: string[]
-    grades: Grade[]
-    subMenu?: menu[]
-}
-
-const props = withDefaults(defineProps<{
-    menu: menu
-    depth?: number
-}>(), {
-    depth: 0,
-})
+withDefaults(
+    defineProps<{
+        menu: GradeMenu;
+        depth?: number;
+    }>(),
+    {
+        depth: 0,
+    },
+);
 </script>
 
 <template>
     <AccordionItem :value="menu.title">
-        <AccordionTrigger :class="(depth === 0 ? 'text-lg font-semibold' : 'text-sm font-medium') + ' flex-row-reverse justify-end gap-2'">
+        <AccordionTrigger
+            :class="
+                cn(
+                    'flex-row-reverse justify-end gap-2 hover:no-underline',
+                    depth === 0 ? 'text-base font-semibold' : 'text-sm',
+                )
+            "
+        >
             {{ menu.title }}
         </AccordionTrigger>
         <AccordionContent>
             <Accordion
                 v-if="menu.subMenu"
                 type="multiple"
-                class="ml-4 border-l-2 border-muted-foreground/30 pl-4"
+                class="ml-2 border-l pl-4"
             >
                 <GradeAccordionItem
                     v-for="sub in menu.subMenu"
@@ -37,13 +46,16 @@ const props = withDefaults(defineProps<{
                     :depth="depth + 1"
                 />
             </Accordion>
-            <GradeListContainer v-else class="p-2 bg-white" :columns="menu.columns">
-                <GradeListElement
-                    v-for="(grade, id) in menu.grades"
-                    :key="id"
-                    v-bind="grade"
-                />
-            </GradeListContainer>
+            <DataTable
+                v-else
+                :columns="menu.columns"
+                :data="menu.grades"
+                empty-message="Aucune note trouvée."
+            >
+                <template #row="{ item }">
+                    <GradeListElement v-bind="item" />
+                </template>
+            </DataTable>
         </AccordionContent>
     </AccordionItem>
 </template>

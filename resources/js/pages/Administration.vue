@@ -1,57 +1,50 @@
 <script setup lang="ts">
-import { ref, computed } from "vue";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import ApprenticeSearchBar from "@/components/apprentice/ApprenticeSearchBar.vue";
-import TabFilter from "@/components/TabFilter.vue";
-import DataTable from "@/components/DataTable.vue";
-import SubjectTableRow from "@/components/subject/SubjectTableRow.vue";
+import { Head } from '@inertiajs/vue3';
+import { ref, computed } from 'vue';
+import { UsersIcon } from '@lucide/vue';
+import DataTable from '@/components/DataTable.vue';
+import { PageContainer, PageHeader } from '@/components/page';
+import SearchInput from '@/components/SearchInput.vue';
 import NewSubjectDialog, {
     type NewSubjectPayload,
-} from "@/components/subject/NewSubjectDialog.vue";
-import rawSubjects from "@/data_2/subjects.json";
+} from '@/components/subject/NewSubjectDialog.vue';
+import SubjectTableRow from '@/components/subject/SubjectTableRow.vue';
+import TabFilter from '@/components/TabFilter.vue';
+import {
+    Empty,
+    EmptyDescription,
+    EmptyHeader,
+    EmptyMedia,
+    EmptyTitle,
+} from '@/components/ui/empty';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { TRACK_FILTER_OPTIONS } from '@/constants/constants';
+import rawSubjects from '@/data_2/subjects.json';
 
 type Subject = {
     id: number;
     name: string;
     domain: string;
     track: string;
-    status: "Active" | "Désactivée";
+    status: 'Active' | 'Désactivée';
     hasGrades: boolean;
 };
 
 const subjectColumns = [
-    {
-        key: "name",
-        label: "MATIÈRE",
-        class: "w-[40%] uppercase text-xs font-semibold",
-    },
-    {
-        key: "domain",
-        label: "DOMAINE / MODULE",
-        class: "uppercase text-xs font-semibold",
-    },
-    {
-        key: "track",
-        label: "FILIÈRE",
-        class: "uppercase text-xs font-semibold",
-    },
-    { key: "actions", label: "", class: "text-right" },
+    { key: 'name', label: 'Matière', class: 'w-1/2' },
+    { key: 'domain', label: 'Domaine / Module', class: 'w-1/4' },
+    { key: 'track', label: 'Filière', class: 'w-20' },
+    { key: 'actions', label: '', class: 'w-0' },
 ];
 
-const trackOptions = [
-    { label: "All", value: "All" },
-    { label: "IT", value: "IT" },
-    { label: "EC", value: "EC" },
-] as const;
-
 const trackMap: Record<string, string> = {
-    IT: "Informatique",
-    EC: "Employé-e de commerce",
+    IT: 'Informatique',
+    EC: 'Employé-e de commerce',
 };
 
-const currentTab = ref("matieres");
-const searchQuery = ref("");
-const selectedTrack = ref<"All" | "IT" | "EC">("All");
+const currentTab = ref('matieres');
+const searchQuery = ref('');
+const selectedTrack = ref<'All' | 'IT' | 'EC'>('All');
 const createdSubjects = ref<Subject[]>([]);
 const overriddenSubjects = ref<Record<number, Subject>>({});
 const deletedSubjectIds = ref<number[]>([]);
@@ -72,7 +65,7 @@ function handleCreateSubject(payload: NewSubjectPayload) {
         name: payload.name,
         domain: payload.domain,
         track: trackMap[payload.track],
-        status: "Active",
+        status: 'Active',
         hasGrades: false,
     });
 }
@@ -96,7 +89,7 @@ function handleSaveSubject(payload: {
     id: number;
     name: string;
     domain: string;
-    track: "IT" | "EC";
+    track: 'IT' | 'EC';
 }) {
     applyUpdate(payload.id, {
         name: payload.name,
@@ -106,11 +99,11 @@ function handleSaveSubject(payload: {
 }
 
 function handleDeactivateSubject(id: number) {
-    applyUpdate(id, { status: "Désactivée" });
+    applyUpdate(id, { status: 'Désactivée' });
 }
 
 function handleReactivateSubject(id: number) {
-    applyUpdate(id, { status: "Active" });
+    applyUpdate(id, { status: 'Active' });
 }
 
 function handleDeleteSubject(id: number) {
@@ -131,7 +124,7 @@ const filteredSubjects = computed(() => {
     return allSubjects.value.filter((subject) => {
         const matchesSearch = subject.name.toLowerCase().includes(searchLower);
         const matchesTrack =
-            selectedTrack.value === "All" ||
+            selectedTrack.value === 'All' ||
             subject.track === trackMap[selectedTrack.value];
 
         return matchesSearch && matchesTrack;
@@ -140,41 +133,35 @@ const filteredSubjects = computed(() => {
 </script>
 
 <template>
-    <div class="w-full max-w-4xl font-sans">
-        <h1 class="text-2xl font-bold mb-6">Administration</h1>
+    <Head title="Administration" />
 
-        <Tabs v-model="currentTab" class="w-full">
-            <TabsList
-                class="flex justify-start bg-transparent p-0 h-auto border-b rounded-none mb-6"
-            >
-                <TabsTrigger
-                    value="comptes"
-                    class="grid h-12 w-full rounded-xl border ""
-                >
-                    Comptes
-                </TabsTrigger>
-                <TabsTrigger
-                    value="matieres"
-                    class="grid h-12 w-full rounded-xl border ""
-                >
+    <PageContainer size="lg">
+        <PageHeader
+            title="Administration"
+            description="Gérez les comptes et le référentiel des matières."
+        />
+
+        <Tabs v-model="currentTab" class="gap-6">
+            <TabsList>
+                <TabsTrigger value="matieres" class="px-3">
                     Matières
                 </TabsTrigger>
+                <TabsTrigger value="comptes" class="px-3">Comptes</TabsTrigger>
             </TabsList>
 
-            <TabsContent value="matieres">
-                <div class="mb-2">
-                    <ApprenticeSearchBar v-model="searchQuery" />
-
-                    <div
-                        class="flex flex-col sm:flex-row justify-between items-start gap-4"
-                    >
-                        <div class="w-full sm:max-w-2xl">
-                            <TabFilter
-                                v-model="selectedTrack"
-                                :options="trackOptions"
-                            />
-                        </div>
-
+            <TabsContent value="matieres" class="flex flex-col gap-4">
+                <div class="flex flex-col gap-3 lg:flex-row lg:items-center">
+                    <SearchInput
+                        v-model="searchQuery"
+                        placeholder="Rechercher une matière"
+                        class="lg:max-w-xs"
+                    />
+                    <TabFilter
+                        v-model="selectedTrack"
+                        :options="TRACK_FILTER_OPTIONS"
+                        label="Filtrer par filière"
+                    />
+                    <div class="lg:ml-auto">
                         <NewSubjectDialog @create="handleCreateSubject" />
                     </div>
                 </div>
@@ -195,7 +182,7 @@ const filteredSubjects = computed(() => {
                     </template>
                 </DataTable>
 
-                <p class="text-xs text-muted-foreground mt-4">
+                <p class="text-muted-foreground text-sm">
                     Une matière déjà utilisée dans au moins une note ne peut pas
                     être supprimée — elle peut uniquement être désactivée. Elle
                     reste visible dans les carnets existants.
@@ -203,10 +190,18 @@ const filteredSubjects = computed(() => {
             </TabsContent>
 
             <TabsContent value="comptes">
-                <div class="py-8 text-center text-muted-foreground">
-                    Contenu des comptes (en cours de développement)
-                </div>
+                <Empty class="border">
+                    <EmptyHeader>
+                        <EmptyMedia variant="icon">
+                            <UsersIcon />
+                        </EmptyMedia>
+                        <EmptyTitle>Gestion des comptes</EmptyTitle>
+                        <EmptyDescription>
+                            Cette section est en cours de développement.
+                        </EmptyDescription>
+                    </EmptyHeader>
+                </Empty>
             </TabsContent>
         </Tabs>
-    </div>
+    </PageContainer>
 </template>
