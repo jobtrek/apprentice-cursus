@@ -17,7 +17,7 @@ void createInertiaApp({
         return name.startsWith('auth/') ? AuthLayout : AppLayout;
     },
     progress: {
-        color: '#4B5563',
+        color: 'var(--primary)',
     },
 });
 

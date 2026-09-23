@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { BranchScore } from '@/data_2/apprenticesScores';
+import type { BranchScore } from '@/data/apprenticesScores';
 import BranchScoreRow from './BranchScoreRow.vue';
 
 defineProps<{

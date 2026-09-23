@@ -1,12 +1,5 @@
 <script setup lang="ts">
 import { Head, Link, usePage } from '@inertiajs/vue3';
-import {
-    BookOpenIcon,
-    FolderKanbanIcon,
-    PlusCircleIcon,
-    SettingsIcon,
-    UsersIcon,
-} from '@lucide/vue';
 import { computed } from 'vue';
 import { PageContainer, PageHeader } from '@/components/page';
 import {
@@ -15,9 +8,8 @@ import {
     CardHeader,
     CardTitle,
 } from '@/components/ui/card';
-import { administration, apprentisdashboard } from '@/routes';
-import grades from '@/routes/grades';
-import portfolio from '@/routes/portfolio';
+import { NAV_ITEMS } from '@/constants/navigation';
+import { home } from '@/routes';
 
 const page = usePage();
 
@@ -25,38 +17,8 @@ const firstName = computed(
     () => page.props.auth?.user?.name?.split(/\s+/)[0] ?? '',
 );
 
-const shortcuts = [
-    {
-        title: 'Carnet de notes',
-        description: 'Consultez les notes et les moyennes par domaine.',
-        href: grades.dashboard(),
-        icon: BookOpenIcon,
-    },
-    {
-        title: 'Ajouter une note',
-        description: 'Saisissez une nouvelle note et déposez le justificatif.',
-        href: grades.create(),
-        icon: PlusCircleIcon,
-    },
-    {
-        title: 'Portfolio',
-        description: 'Gérez vos projets et exportez votre portfolio.',
-        href: portfolio.index(),
-        icon: FolderKanbanIcon,
-    },
-    {
-        title: 'Apprentis',
-        description: 'Suivez les apprentis dont vous êtes responsable.',
-        href: apprentisdashboard(),
-        icon: UsersIcon,
-    },
-    {
-        title: 'Administration',
-        description: 'Gérez les comptes et le référentiel des matières.',
-        href: administration(),
-        icon: SettingsIcon,
-    },
-];
+// Les raccourcis reprennent la navigation principale, sans l'accueil lui-même.
+const shortcuts = NAV_ITEMS.filter((item) => item.href.url !== home().url);
 </script>
 
 <template>
@@ -71,7 +33,7 @@ const shortcuts = [
         <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <Link
                 v-for="shortcut in shortcuts"
-                :key="shortcut.title"
+                :key="shortcut.href.url"
                 :href="shortcut.href"
                 class="group focus-visible:ring-ring/50 rounded-xl focus-visible:ring-[3px] focus-visible:outline-none"
             >
@@ -88,7 +50,7 @@ const shortcuts = [
                                 aria-hidden="true"
                             />
                         </div>
-                        <CardTitle>{{ shortcut.title }}</CardTitle>
+                        <CardTitle>{{ shortcut.label }}</CardTitle>
                         <CardDescription>
                             {{ shortcut.description }}
                         </CardDescription>

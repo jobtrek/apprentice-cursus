@@ -31,30 +31,18 @@ import {
 import { Input } from '@/components/ui/input';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { Separator } from '@/components/ui/separator';
-
-export type EditableSubject = {
-    id: number;
-    name: string;
-    domain: string;
-    track: 'IT' | 'EC';
-    status: 'Active' | 'Désactivée';
-    hasGrades: boolean;
-};
+import type {
+    EditableSubject,
+    SubjectSavePayload,
+    Track,
+} from '@/types/subject';
 
 const props = defineProps<{
     subject: EditableSubject;
 }>();
 
 const emit = defineEmits<{
-    (
-        e: 'save',
-        payload: {
-            id: number;
-            name: string;
-            domain: string;
-            track: 'IT' | 'EC';
-        },
-    ): void;
+    (e: 'save', payload: SubjectSavePayload): void;
     (e: 'deactivate', id: number): void;
 }>();
 
@@ -62,7 +50,7 @@ const open = ref(false);
 
 const name = ref(props.subject.name);
 const domain = ref(props.subject.domain);
-const track = ref<'IT' | 'EC'>(props.subject.track);
+const track = ref<Track>(props.subject.track);
 
 watch(open, (isOpen) => {
     if (isOpen) {

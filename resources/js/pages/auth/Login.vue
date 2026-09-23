@@ -16,7 +16,6 @@ defineOptions({
 defineProps<{
     status?: string;
     error?: string;
-    canResetPassword: boolean;
 }>();
 </script>
 
@@ -37,7 +36,7 @@ defineProps<{
         {{ error }}
     </div>
 
-    <Card class="mx-auto w-full max-w-sm">
+    <Card>
         <CardContent>
             <form :action="microsoft.redirect.url()">
                 <Button type="submit" variant="outline" class="w-full">

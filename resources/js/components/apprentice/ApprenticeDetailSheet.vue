@@ -14,7 +14,7 @@ import {
     AVERAGE_SCORE,
     BRANCH_SCORES,
     MAX_SCORE,
-} from '@/data_2/apprenticesScores';
+} from '@/data/apprenticesScores';
 import ApprenticeMetaRow from './ApprenticeMetaRow.vue';
 import ApprenticeScoreSummary from './ApprenticeScoreSummary.vue';
 import ApprenticeScoreTable from './ApprenticeScoreTable.vue';

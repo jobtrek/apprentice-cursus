@@ -5,9 +5,7 @@ import { UsersIcon } from '@lucide/vue';
 import DataTable from '@/components/DataTable.vue';
 import { PageContainer, PageHeader } from '@/components/page';
 import SearchInput from '@/components/SearchInput.vue';
-import NewSubjectDialog, {
-    type NewSubjectPayload,
-} from '@/components/subject/NewSubjectDialog.vue';
+import NewSubjectDialog from '@/components/subject/NewSubjectDialog.vue';
 import SubjectTableRow from '@/components/subject/SubjectTableRow.vue';
 import TabFilter from '@/components/TabFilter.vue';
 import {
@@ -19,16 +17,12 @@ import {
 } from '@/components/ui/empty';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { TRACK_FILTER_OPTIONS } from '@/constants/constants';
-import rawSubjects from '@/data_2/subjects.json';
-
-type Subject = {
-    id: number;
-    name: string;
-    domain: string;
-    track: string;
-    status: 'Active' | 'Désactivée';
-    hasGrades: boolean;
-};
+import rawSubjects from '@/data/subjects.json';
+import type {
+    NewSubjectPayload,
+    Subject,
+    SubjectSavePayload,
+} from '@/types/subject';
 
 const subjectColumns = [
     { key: 'name', label: 'Matière', class: 'w-1/2' },
@@ -85,12 +79,7 @@ function applyUpdate(id: number, changes: Partial<Subject>) {
     }
 }
 
-function handleSaveSubject(payload: {
-    id: number;
-    name: string;
-    domain: string;
-    track: 'IT' | 'EC';
-}) {
+function handleSaveSubject(payload: SubjectSavePayload) {
     applyUpdate(payload.id, {
         name: payload.name,
         domain: payload.domain,

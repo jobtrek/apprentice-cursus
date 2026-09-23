@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { computed } from "vue";
-import ScoreGauge from "./ScoreGauge.vue";
-import { getBranchStatus, type BranchScore } from "@/data_2/apprenticesScores";
+import { computed } from 'vue';
+import ScoreGauge from './ScoreGauge.vue';
+import { getBranchStatus, type BranchScore } from '@/data/apprenticesScores';
 
 const props = defineProps<{
     branch: BranchScore;
@@ -15,8 +15,8 @@ const status = computed(() =>
 <template>
     <div class="flex items-center justify-between py-4">
         <div>
-            <p class="font-medium text-card-foreground">{{ branch.name }}</p>
-            <p class="text-sm text-muted-foreground">
+            <p class="text-card-foreground font-medium">{{ branch.name }}</p>
+            <p class="text-muted-foreground text-sm">
                 Dernière éval · {{ branch.lastEvalLabel }}
             </p>
         </div>
@@ -34,9 +34,7 @@ const status = computed(() =>
                 class="shrink-0"
             />
             <span
-                class="
-                  w-8 text-right text-sm font-semibold text-card-foreground
-                "
+                class="text-card-foreground w-8 text-right text-sm font-semibold"
             >
                 {{ branch.score.toFixed(1) }}
             </span>

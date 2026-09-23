@@ -20,12 +20,7 @@ import {
 } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
-
-export type NewSubjectPayload = {
-    name: string;
-    domain: string;
-    track: 'IT' | 'EC';
-};
+import type { NewSubjectPayload, Track } from '@/types/subject';
 
 const emit = defineEmits<{
     (e: 'create', payload: NewSubjectPayload): void;
@@ -35,7 +30,7 @@ const open = ref(false);
 
 const name = ref('');
 const domain = ref('');
-const track = ref<'IT' | 'EC'>('IT');
+const track = ref<Track>('IT');
 
 const isValid = () => name.value.trim() !== '' && domain.value.trim() !== '';
 

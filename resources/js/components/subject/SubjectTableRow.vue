@@ -16,28 +16,14 @@ import {
     AlertDialogTitle,
     AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+import type { Subject, SubjectSavePayload, Track } from '@/types/subject';
 
 const props = defineProps<{
-    subject: {
-        id: number;
-        name: string;
-        domain: string;
-        track: string;
-        status: 'Active' | 'Désactivée';
-        hasGrades: boolean;
-    };
+    subject: Subject;
 }>();
 
 const emit = defineEmits<{
-    (
-        e: 'save',
-        payload: {
-            id: number;
-            name: string;
-            domain: string;
-            track: 'IT' | 'EC';
-        },
-    ): void;
+    (e: 'save', payload: SubjectSavePayload): void;
     (e: 'deactivate', id: number): void;
     (e: 'reactivate', id: number): void;
     (e: 'delete', id: number): void;
@@ -76,7 +62,7 @@ const isInactive = computed(() => props.subject.status === 'Désactivée');
                         id: subject.id,
                         name: subject.name,
                         domain: subject.domain,
-                        track: trackLabel as 'IT' | 'EC',
+                        track: trackLabel as Track,
                         status: subject.status,
                         hasGrades: subject.hasGrades,
                     }"

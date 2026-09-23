@@ -97,7 +97,7 @@ const submitComment = () => {
         <Card>
             <CardContent class="grid grid-cols-2 gap-6 sm:grid-cols-4">
                 <StatItem label="Note">
-                    <p class="text-2xl font-semibold tabular-nums">
+                    <p class="text-3xl font-semibold tabular-nums">
                         {{ (note ?? 5).toFixed(1) }}
                     </p>
                 </StatItem>

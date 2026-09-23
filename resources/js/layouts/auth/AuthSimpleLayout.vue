@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import AppLogo from '@/components/AppLogo.vue';
+
 defineProps<{
     title?: string;
     description?: string;
@@ -12,6 +14,7 @@ defineProps<{
         <div class="w-full max-w-sm">
             <div class="flex flex-col gap-8">
                 <div class="flex flex-col items-center gap-4">
+                    <AppLogo class="h-10 w-auto" />
                     <div class="space-y-2 text-center">
                         <h1 class="text-2xl font-semibold tracking-tight">
                             {{ title }}
