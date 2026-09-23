@@ -2,16 +2,20 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import {
     PageContainer,
     PageHeader,
     SectionHeader,
     StatItem,
 } from '@/components/page';
+import { findApprentice } from '@/composables/useApprentices';
+import { useNavigation } from '@/composables/useNavigation';
+import { apprentisdashboard } from '@/routes';
+import apprentices from '@/routes/apprentices';
 import grades from '@/routes/grades';
+import type { UserRole } from '@/types';
 import { Head } from '@inertiajs/vue3';
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 
 type Comment = {
     author: string;
@@ -29,13 +33,25 @@ const props = defineProps<{
     depositedAt?: string;
     pdfUrl?: string;
     comments?: Comment[];
+    /** Présent quand un coach ou formateur consulte la note d'un·e apprenti·e. */
+    apprenticeId?: number;
 }>();
 
 const comments = ref<Comment[]>(props.comments ?? []);
 const newComment = ref('');
 
-const perspective = ref<'apprentice' | 'coach'>('coach');
-const canComment = () => perspective.value === 'coach';
+const { role } = useNavigation();
+
+/** Libellé de l'auteur d'un commentaire, selon les rôles autorisés à commenter. */
+const COMMENTER_LABELS: Partial<Record<UserRole, string>> = {
+    coach: 'Coach',
+    trainer: 'Formateur',
+};
+
+const commenterLabel = computed(() =>
+    role.value ? COMMENTER_LABELS[role.value] : undefined,
+);
+const canComment = computed(() => commenterLabel.value !== undefined);
 
 const roleStyles: Record<string, { dot: string; text: string }> = {
     Coach: { dot: 'bg-info', text: 'text-info' },
@@ -49,14 +65,28 @@ const roleStyle = (role: string) =>
         text: 'text-muted-foreground',
     };
 
-const breadcrumbs = [{ label: 'Carnet de notes', href: grades.dashboard() }];
+const apprentice = computed(() =>
+    props.apprenticeId ? findApprentice(props.apprenticeId) : undefined,
+);
+
+const breadcrumbs = computed(() =>
+    props.apprenticeId
+        ? [
+              { label: 'Apprentis', href: apprentisdashboard() },
+              {
+                  label: apprentice.value?.name ?? 'Apprenti·e',
+                  href: apprentices.show(props.apprenticeId),
+              },
+          ]
+        : [{ label: 'Carnet de notes', href: grades.dashboard() }],
+);
 
 const submitComment = () => {
-    if (!newComment.value.trim()) return;
+    if (!newComment.value.trim() || !commenterLabel.value) return;
 
     comments.value.push({
         author: 'Vous',
-        role: perspective.value === 'coach' ? 'Coach' : 'Apprenti',
+        role: commenterLabel.value,
         date: new Date().toLocaleDateString('fr-CH', {
             day: '2-digit',
             month: 'short',
@@ -76,23 +106,7 @@ const submitComment = () => {
             :title="title ?? 'M117 — Épreuve pratique, base de données'"
             :description="breadcrumb ?? 'Année 1 · Modules école pro'"
             :breadcrumbs="breadcrumbs"
-        >
-            <template #actions>
-                <ToggleGroup
-                    v-model="perspective"
-                    type="single"
-                    variant="outline"
-                    size="sm"
-                >
-                    <ToggleGroupItem value="apprentice"
-                        >Apprenti</ToggleGroupItem
-                    >
-                    <ToggleGroupItem value="coach">
-                        Coach / Formateur
-                    </ToggleGroupItem>
-                </ToggleGroup>
-            </template>
-        </PageHeader>
+        />
 
         <Card>
             <CardContent class="grid grid-cols-2 gap-6 sm:grid-cols-4">
@@ -161,7 +175,7 @@ const submitComment = () => {
                 Aucun commentaire pour le moment.
             </p>
 
-            <div v-if="canComment()" class="flex flex-col gap-2 pt-2">
+            <div v-if="canComment" class="flex flex-col gap-2 pt-2">
                 <Textarea
                     v-model="newComment"
                     placeholder="Écrire un commentaire…"
@@ -181,7 +195,8 @@ const submitComment = () => {
                 </div>
             </div>
             <p v-else class="text-muted-foreground text-sm">
-                Les apprentis ne peuvent pas commenter cette évaluation.
+                Seuls les coachs et formateurs peuvent commenter cette
+                évaluation.
             </p>
         </section>
     </PageContainer>

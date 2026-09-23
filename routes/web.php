@@ -19,7 +19,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ])
     )->whereNumber('project')->name('portfolio.projects.edit');
 
-    Route::inertia('/grades/{grade}', 'GradeDetails', [
+    // Données de démonstration, en attendant le modèle Grade côté serveur.
+    $demoGrade = [
         'pdfUrl' => '/demo/sample-grade-test.pdf',
         'comments' => [
             [
@@ -35,12 +36,28 @@ Route::middleware(['auth', 'verified'])->group(function () {
                 'text' => 'Vu en cours la semaine prochaine — on reprendra l\'exercice 4 ensemble.',
             ],
         ],
-    ])->name('grades.show');
+    ];
+
+    Route::inertia('/grades/{grade}', 'GradeDetails', $demoGrade)
+        ->name('grades.show');
 
     Route::inertia('/apprentisdashboard', 'ApprentisDashboard')->name('apprentisdashboard');
 
-    Route::inertia('/administration', 'Administration')->name('administration');
+    // Parcours coach/formateur : liste → apprenti → carnet de notes → épreuve.
+    Route::get(
+        '/apprentices/{apprentice}',
+        fn (int $apprentice) => Inertia::render('ApprenticeShow', [
+            'apprenticeId' => $apprentice,
+        ])
+    )->whereNumber('apprentice')->name('apprentices.show');
 
+    Route::get(
+        '/apprentices/{apprentice}/grades/{grade}',
+        fn (int $apprentice) => Inertia::render('GradeDetails', [
+            ...$demoGrade,
+            'apprenticeId' => $apprentice,
+        ])
+    )->whereNumber(['apprentice', 'grade'])->name('apprentices.grades.show');
 });
 
 require __DIR__.'/profile.php';

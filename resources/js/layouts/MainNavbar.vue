@@ -16,14 +16,15 @@ import {
     SheetTrigger,
 } from '@/components/ui/sheet';
 import { getInitials } from '@/composables/useInitials';
-import { findActiveNavItem, NAV_ITEMS } from '@/constants/navigation';
+import { useNavigation } from '@/composables/useNavigation';
+import { ROLE_LABELS } from '@/constants/navigation';
 import { home, logout } from '@/routes';
 
 const page = usePage();
 
 const user = computed(() => page.props.auth?.user ?? null);
 
-const activeItem = computed(() => findActiveNavItem(NAV_ITEMS, page.url));
+const { role, items, activeItem } = useNavigation();
 
 const mobileMenuOpen = ref(false);
 </script>
@@ -55,7 +56,7 @@ const mobileMenuOpen = ref(false);
 
                     <div class="flex flex-col gap-1 px-4">
                         <Link
-                            v-for="item in NAV_ITEMS"
+                            v-for="item in items"
                             :key="item.href.url"
                             :href="item.href"
                             class="flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors"
@@ -91,7 +92,7 @@ const mobileMenuOpen = ref(false);
                 class="hidden h-full min-w-0 flex-1 items-center gap-1 overflow-x-auto md:flex"
             >
                 <Link
-                    v-for="item in NAV_ITEMS"
+                    v-for="item in items"
                     :key="item.href.url"
                     :href="item.href"
                     class="relative flex h-full items-center px-3 text-sm whitespace-nowrap transition-colors"
@@ -117,9 +118,17 @@ const mobileMenuOpen = ref(false);
                 <NotificationsMenu />
 
                 <div v-if="user" class="flex items-center gap-2">
-                    <span class="hidden text-sm font-medium lg:inline">
-                        {{ user.name }}
-                    </span>
+                    <div class="hidden flex-col items-end lg:flex">
+                        <span class="text-sm leading-tight font-medium">
+                            {{ user.name }}
+                        </span>
+                        <span
+                            v-if="role"
+                            class="text-muted-foreground text-xs leading-tight"
+                        >
+                            {{ ROLE_LABELS[role] }}
+                        </span>
+                    </div>
 
                     <Avatar :title="user.name">
                         <AvatarFallback class="text-xs">
