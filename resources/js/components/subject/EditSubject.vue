@@ -1,6 +1,7 @@
 <script lang="ts" setup>
-import { ref, watch } from "vue";
-import { Button } from "@/components/ui/button";
+import { PencilIcon } from '@lucide/vue';
+import { ref, watch } from 'vue';
+import { Button } from '@/components/ui/button';
 import {
     Dialog,
     DialogContent,
@@ -10,7 +11,7 @@ import {
     DialogTitle,
     DialogTrigger,
     DialogClose,
-} from "@/components/ui/dialog";
+} from '@/components/ui/dialog';
 import {
     AlertDialog,
     AlertDialogAction,
@@ -21,48 +22,36 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
     AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
+} from '@/components/ui/alert-dialog';
 import {
     Field,
     FieldDescription,
     FieldGroup,
     FieldLabel,
-} from "@/components/ui/field";
-import { Input } from "@/components/ui/input";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { Separator } from "@/components/ui/separator";
-
-export type EditableSubject = {
-    id: number;
-    name: string;
-    domain: string;
-    track: "IT" | "EC";
-    status: "Active" | "Désactivée";
-    hasGrades: boolean;
-};
+} from '@/components/ui/field';
+import { Input } from '@/components/ui/input';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { Separator } from '@/components/ui/separator';
+import type {
+    EditableSubject,
+    SubjectSavePayload,
+    Track,
+} from '@/types/subject';
 
 const props = defineProps<{
     subject: EditableSubject;
 }>();
 
 const emit = defineEmits<{
-    (
-        e: "save",
-        payload: {
-            id: number;
-            name: string;
-            domain: string;
-            track: "IT" | "EC";
-        },
-    ): void;
-    (e: "deactivate", id: number): void;
+    (e: 'save', payload: SubjectSavePayload): void;
+    (e: 'deactivate', id: number): void;
 }>();
 
 const open = ref(false);
 
 const name = ref(props.subject.name);
 const domain = ref(props.subject.domain);
-const track = ref<"IT" | "EC">(props.subject.track);
+const track = ref<Track>(props.subject.track);
 
 watch(open, (isOpen) => {
     if (isOpen) {
@@ -72,12 +61,12 @@ watch(open, (isOpen) => {
     }
 });
 
-const isValid = () => name.value.trim() !== "" && domain.value.trim() !== "";
+const isValid = () => name.value.trim() !== '' && domain.value.trim() !== '';
 
 function handleSubmit() {
     if (!isValid()) return;
 
-    emit("save", {
+    emit('save', {
         id: props.subject.id,
         name: name.value.trim(),
         domain: domain.value.trim(),
@@ -88,7 +77,7 @@ function handleSubmit() {
 }
 
 function handleDeactivate() {
-    emit("deactivate", props.subject.id);
+    emit('deactivate', props.subject.id);
     open.value = false;
 }
 </script>
@@ -97,11 +86,13 @@ function handleDeactivate() {
     <Dialog v-model:open="open">
         <DialogTrigger as-child>
             <Button
-                variant="outline"
-                size="sm"
-                class="hover:border-primary hover:bg-primary/10 hover:text-primary transition-colors"
+                variant="ghost"
+                size="icon-sm"
+                class="text-muted-foreground hover:text-foreground"
+                :aria-label="`Modifier ${subject.name}`"
+                :title="`Modifier ${subject.name}`"
             >
-                Modifier
+                <PencilIcon aria-hidden="true" />
             </Button>
         </DialogTrigger>
 
@@ -162,7 +153,7 @@ function handleDeactivate() {
                             <Button
                                 type="button"
                                 variant="outline"
-                                class="border-amber-600 text-amber-600 hover:bg-amber-600/10 hover:text-amber-600"
+                                class="border-warning/50 text-warning hover:bg-warning/10 hover:text-warning"
                             >
                                 Désactiver
                             </Button>
@@ -182,7 +173,7 @@ function handleDeactivate() {
                             <AlertDialogFooter>
                                 <AlertDialogCancel>Annuler</AlertDialogCancel>
                                 <AlertDialogAction
-                                    class="bg-amber-600 hover:bg-amber-500 text-white"
+                                    class="bg-warning text-warning-foreground hover:bg-warning/90"
                                     @click="handleDeactivate"
                                 >
                                     Désactiver

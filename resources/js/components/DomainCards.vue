@@ -1,18 +1,32 @@
 <script setup lang="ts">
-import {Card, CardHeader, CardTitle} from "@/components/ui/card";
-defineProps({
-    title: String,
-    grade: Number,
-    weight: String
-})
+import { Badge } from '@/components/ui/badge';
+import {
+    Card,
+    CardAction,
+    CardContent,
+    CardDescription,
+    CardHeader,
+} from '@/components/ui/card';
+
+defineProps<{
+    title: string;
+    grade: number;
+    weight: string;
+}>();
 </script>
 
 <template>
-    <Card class="p-5 w-full h-full">
-        <CardHeader class="flex flex-row justify-between p-0">
-            <CardTitle>{{title}}</CardTitle>
-            <Card class="flex-row items-center rounded-md px-2.5 py-0.5 text-xs font-medium">{{weight}}</Card>
+    <Card class="gap-2">
+        <CardHeader>
+            <CardDescription>{{ title }}</CardDescription>
+            <CardAction>
+                <Badge variant="secondary">{{ weight }}</Badge>
+            </CardAction>
         </CardHeader>
-        <CardTitle class="text-3xl font-bold">{{grade}}</CardTitle>
+        <CardContent>
+            <p class="text-3xl font-semibold tabular-nums">
+                {{ grade.toFixed(1) }}
+            </p>
+        </CardContent>
     </Card>
 </template>

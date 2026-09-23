@@ -1,6 +1,7 @@
 <script lang="ts" setup>
-import { ref } from "vue";
-import { Button } from "@/components/ui/button";
+import { PlusIcon } from '@lucide/vue';
+import { ref } from 'vue';
+import { Button } from '@/components/ui/button';
 import {
     Dialog,
     DialogContent,
@@ -10,44 +11,39 @@ import {
     DialogTitle,
     DialogTrigger,
     DialogClose,
-} from "@/components/ui/dialog";
+} from '@/components/ui/dialog';
 import {
     Field,
     FieldDescription,
     FieldGroup,
     FieldLabel,
-} from "@/components/ui/field";
-import { Input } from "@/components/ui/input";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-
-export type NewSubjectPayload = {
-    name: string;
-    domain: string;
-    track: "IT" | "EC";
-};
+} from '@/components/ui/field';
+import { Input } from '@/components/ui/input';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import type { NewSubjectPayload, Track } from '@/types/subject';
 
 const emit = defineEmits<{
-    (e: "create", payload: NewSubjectPayload): void;
+    (e: 'create', payload: NewSubjectPayload): void;
 }>();
 
 const open = ref(false);
 
-const name = ref("");
-const domain = ref("");
-const track = ref<"IT" | "EC">("IT");
+const name = ref('');
+const domain = ref('');
+const track = ref<Track>('IT');
 
-const isValid = () => name.value.trim() !== "" && domain.value.trim() !== "";
+const isValid = () => name.value.trim() !== '' && domain.value.trim() !== '';
 
 function resetForm() {
-    name.value = "";
-    domain.value = "";
-    track.value = "IT";
+    name.value = '';
+    domain.value = '';
+    track.value = 'IT';
 }
 
 function handleSubmit() {
     if (!isValid()) return;
 
-    emit("create", {
+    emit('create', {
         name: name.value.trim(),
         domain: domain.value.trim(),
         track: track.value,
@@ -66,8 +62,9 @@ function handleOpenChange(value: boolean) {
 <template>
     <Dialog :open="open" @update:open="handleOpenChange">
         <DialogTrigger as-child>
-            <Button variant="default" class="shrink-0 h-12 w-full sm:w-auto">
-                <span class="mr-2">+</span> Nouvelle matière
+            <Button>
+                <PlusIcon aria-hidden="true" />
+                Nouvelle matière
             </Button>
         </DialogTrigger>
 

@@ -2,6 +2,7 @@
 import { Head, Link } from '@inertiajs/vue3';
 import {
     EyeIcon,
+    FolderOpenIcon,
     GripVerticalIcon,
     ImageIcon,
     PencilIcon,
@@ -16,7 +17,16 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import {
+    Empty,
+    EmptyContent,
+    EmptyDescription,
+    EmptyHeader,
+    EmptyMedia,
+    EmptyTitle,
+} from '@/components/ui/empty';
 import portfolio from '@/routes/portfolio';
+import { PageContainer, PageHeader } from '@/components/page';
 
 const { projects, moveProject } = usePortfolio();
 
@@ -62,17 +72,12 @@ function onHandleKeydown(event: KeyboardEvent, index: number): void {
 <template>
     <Head title="Portfolio" />
 
-    <div class="flex flex-col gap-6">
-        <div class="flex flex-wrap items-start justify-between gap-4">
-            <div class="space-y-1">
-                <h1 class="text-2xl font-semibold">Portfolio</h1>
-                <p class="text-sm text-muted-foreground">
-                    Glissez un projet pour changer son ordre d'affichage dans
-                    l'aperçu exportable.
-                </p>
-            </div>
-
-            <div class="flex items-center gap-2">
+    <PageContainer>
+        <PageHeader
+            title="Portfolio"
+            description="Glissez un projet pour changer son ordre d'affichage dans l'aperçu exportable."
+        >
+            <template #actions>
                 <Button as-child variant="outline">
                     <Link :href="portfolio.preview()">
                         <EyeIcon aria-hidden="true" />
@@ -85,18 +90,15 @@ function onHandleKeydown(event: KeyboardEvent, index: number): void {
                         Nouveau projet
                     </Link>
                 </Button>
-            </div>
-        </div>
+            </template>
+        </PageHeader>
 
         <Card v-if="projects.length > 0" class="gap-0 overflow-hidden py-0">
             <ul>
                 <li
                     v-for="(project, index) in projects"
                     :key="project.id"
-                    class="
-                      flex items-center gap-4 border-b p-4
-                      last:border-b-0
-                    "
+                    class="flex items-center gap-4 border-b p-4 last:border-b-0"
                     :class="{
                         'opacity-50': draggedIndex === index,
                         'bg-accent/60':
@@ -110,12 +112,7 @@ function onHandleKeydown(event: KeyboardEvent, index: number): void {
                 >
                     <button
                         type="button"
-                        class="
-                          cursor-grab rounded-sm text-muted-foreground
-                          hover:text-foreground
-                          focus-visible:ring-2 focus-visible:ring-ring
-                          focus-visible:outline-none
-                        "
+                        class="text-muted-foreground hover:text-foreground focus-visible:ring-ring/50 cursor-grab rounded-sm focus-visible:ring-[3px] focus-visible:outline-none"
                         :aria-label="`Déplacer ${project.title}. Utilisez les flèches haut et bas.`"
                         @keydown="onHandleKeydown($event, index)"
                     >
@@ -123,17 +120,14 @@ function onHandleKeydown(event: KeyboardEvent, index: number): void {
                     </button>
 
                     <div
-                        class="
-                          flex size-12 shrink-0 items-center justify-center
-                          rounded-sm bg-muted text-muted-foreground
-                        "
+                        class="bg-muted text-muted-foreground flex size-12 shrink-0 items-center justify-center rounded-md"
                     >
                         <ImageIcon class="size-4" aria-hidden="true" />
                     </div>
 
                     <div class="min-w-0 flex-1 space-y-1">
                         <p class="truncate font-medium">{{ project.title }}</p>
-                        <p class="truncate text-sm text-muted-foreground">
+                        <p class="text-muted-foreground truncate text-sm">
                             <template v-if="project.organization">
                                 {{ project.organization }} ·
                             </template>
@@ -169,18 +163,25 @@ function onHandleKeydown(event: KeyboardEvent, index: number): void {
             </ul>
         </Card>
 
-        <Card v-else class="items-center gap-3 p-10 text-center">
-            <p class="font-medium">Aucun projet pour l'instant</p>
-            <p class="max-w-sm text-sm text-muted-foreground">
-                Ajoutez votre premier projet pour commencer à constituer votre
-                portfolio de formation.
-            </p>
-            <Button as-child class="mt-2">
-                <Link :href="portfolio.projects.create()">
-                    <PlusIcon aria-hidden="true" />
-                    Nouveau projet
-                </Link>
-            </Button>
-        </Card>
-    </div>
+        <Empty v-else class="border">
+            <EmptyHeader>
+                <EmptyMedia variant="icon">
+                    <FolderOpenIcon />
+                </EmptyMedia>
+                <EmptyTitle>Aucun projet pour l'instant</EmptyTitle>
+                <EmptyDescription>
+                    Ajoutez votre premier projet pour commencer à constituer
+                    votre portfolio de formation.
+                </EmptyDescription>
+            </EmptyHeader>
+            <EmptyContent>
+                <Button as-child>
+                    <Link :href="portfolio.projects.create()">
+                        <PlusIcon aria-hidden="true" />
+                        Nouveau projet
+                    </Link>
+                </Button>
+            </EmptyContent>
+        </Empty>
+    </PageContainer>
 </template>
