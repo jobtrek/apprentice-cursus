@@ -1,3 +1,4 @@
+import type { UrlMethodPair } from '@inertiajs/core';
 import { useForm } from '@inertiajs/vue3';
 import { computed, onScopeDispose, ref } from 'vue';
 import portfolio from '@/routes/portfolio';
@@ -25,6 +26,8 @@ export type ScreenshotPreview =
     | { kind: 'new'; file: File; url: string };
 
 const MAX_SCREENSHOT_BYTES = 5 * 1024 * 1024;
+/** Même limite que `ProjectScreenshot::MAX_PER_PROJECT`. */
+export const MAX_SCREENSHOTS = 10;
 
 /**
  * Les champs vides partent en chaîne vide : le middleware
@@ -47,8 +50,24 @@ function toForm(project?: PortfolioProject): ProjectForm {
     };
 }
 
+/**
+ * Un PUT multipart n'est pas lu par PHP : la mise à jour passe par POST avec
+ * `?_method=PUT` (variante `.form` de Wayfinder). Precognition valide sur la
+ * même route, sans envoyer les fichiers.
+ */
+function endpoint(existing?: PortfolioProject): UrlMethodPair {
+    if (!existing) {
+        return portfolio.projects.store();
+    }
+
+    return {
+        url: portfolio.projects.update.form(existing.id).action,
+        method: 'post',
+    };
+}
+
 export function usePortfolioForm(existing?: PortfolioProject) {
-    const form = useForm<ProjectForm>(toForm(existing));
+    const form = useForm<ProjectForm>(endpoint(existing), toForm(existing));
     const technologyDraft = ref('');
     const screenshotError = ref<string | null>(null);
 
@@ -84,18 +103,24 @@ export function usePortfolioForm(existing?: PortfolioProject) {
 
         form.technologies.push(technology);
         technologyDraft.value = '';
+        form.validate('technologies');
     }
 
     function removeTechnology(technology: string): void {
         form.technologies = form.technologies.filter(
             (candidate) => candidate !== technology,
         );
+        form.validate('technologies');
     }
 
     /** Retire la dernière techno quand on recule dans un champ déjà vide. */
     function removeLastTechnology(): void {
-        if (technologyDraft.value.length === 0) {
+        if (
+            technologyDraft.value.length === 0 &&
+            form.technologies.length > 0
+        ) {
             form.technologies.pop();
+            form.validate('technologies');
         }
     }
 
@@ -149,6 +174,14 @@ export function usePortfolioForm(existing?: PortfolioProject) {
                 continue;
             }
 
+            if (screenshotPreviews.value.length >= MAX_SCREENSHOTS) {
+                rejected.push(
+                    `${MAX_SCREENSHOTS} captures maximum par projet.`,
+                );
+
+                break;
+            }
+
             objectUrls.set(file, URL.createObjectURL(file));
             form.screenshots.push(file);
         }
@@ -176,21 +209,9 @@ export function usePortfolioForm(existing?: PortfolioProject) {
         objectUrls.forEach((url) => URL.revokeObjectURL(url));
     });
 
-    /**
-     * Toujours en multipart pour envoyer les fichiers. Un PUT multipart n'est pas
-     * lu par PHP : la mise à jour passe par POST avec `_method` (method spoofing).
-     */
+    /** Inertia passe en multipart dès qu'un fichier est présent. */
     function submit(): void {
-        if (existing) {
-            form.transform((data) => ({ ...data, _method: 'put' })).post(
-                portfolio.projects.update.url(existing.id),
-                { forceFormData: true },
-            );
-
-            return;
-        }
-
-        form.post(portfolio.projects.store.url(), { forceFormData: true });
+        form.submit();
     }
 
     return {

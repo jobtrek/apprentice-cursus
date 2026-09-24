@@ -247,3 +247,75 @@ test('nothing is deleted when deleting the project fails', function () {
         ->and(ProjectScreenshot::find($screenshot->id))->not->toBeNull()
         ->and(Comment::find($comment->id))->not->toBeNull();
 });
+
+test('deleting a project removes its comments', function () {
+    $apprentice = User::factory()->create();
+    $project = Project::factory()->for($apprentice)->create();
+    $comment = new Comment(['body' => 'Bien.']);
+    $comment->author()->associate(User::factory()->coach()->create());
+    $project->comments()->save($comment);
+
+    $this->actingAs($apprentice)->delete(route('portfolio.projects.destroy', $project));
+
+    $this->assertModelMissing($comment);
+});
+
+test('screenshots up to 5 MB are accepted', function () {
+    Storage::fake();
+
+    $this->actingAs(User::factory()->create())
+        ->post(route('portfolio.projects.store'), projectPayload([
+            'screenshots' => [UploadedFile::fake()->image('capture.png')->size(4096)],
+        ]))
+        ->assertSessionHasNoErrors();
+});
+
+test('kept and new screenshots together cannot exceed the limit', function () {
+    Storage::fake();
+    $apprentice = User::factory()->create();
+    $project = Project::factory()->for($apprentice)->create();
+    $kept = collect(range(1, ProjectScreenshot::MAX_PER_PROJECT))->map(fn (int $i) => $project->screenshots()->create([
+        'path' => UploadedFile::fake()->image("{$i}.png")->store("projects/{$project->id}"),
+    ]));
+
+    $this->actingAs($apprentice)
+        ->post(route('portfolio.projects.update', $project), projectPayload([
+            '_method' => 'put',
+            'kept_screenshot_ids' => $kept->pluck('id')->all(),
+            'screenshots' => [UploadedFile::fake()->image('extra.png')],
+        ]))
+        ->assertSessionHasErrors('screenshots');
+
+    expect($project->screenshots()->count())->toBe(ProjectScreenshot::MAX_PER_PROJECT);
+});
+
+test('precognitive requests validate without creating the project', function () {
+    $apprentice = User::factory()->create();
+
+    $this->actingAs($apprentice)
+        ->withPrecognition()
+        ->postJson(route('portfolio.projects.store'), projectPayload(['title' => '']))
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('title');
+
+    $this->actingAs($apprentice)
+        ->withPrecognition()
+        ->postJson(route('portfolio.projects.store'), projectPayload())
+        ->assertSuccessfulPrecognition();
+
+    expect($apprentice->projects()->count())->toBe(0);
+});
+
+test('precognitive requests reach the update route through method spoofing', function () {
+    $apprentice = User::factory()->create();
+    $project = Project::factory()->for($apprentice)->create(['title' => 'Ancien titre']);
+
+    $this->actingAs($apprentice)
+        ->withPrecognition()
+        ->postJson(route('portfolio.projects.update', ['project' => $project, '_method' => 'PUT']), projectPayload([
+            'title' => 'Nouveau titre',
+        ]))
+        ->assertSuccessfulPrecognition();
+
+    expect($project->refresh()->title)->toBe('Ancien titre');
+});

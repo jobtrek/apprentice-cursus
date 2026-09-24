@@ -7,6 +7,8 @@ use App\Http\Resources\ProjectResource;
 use App\Models\Project;
 use App\Models\ProjectScreenshot;
 use App\Models\Skill;
+use App\Models\User;
+use Closure;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -24,13 +26,8 @@ class DossierController extends Controller
 {
     public function index(Request $request): Response
     {
-        $projects = $request->user()->projects()
-            ->with(['skills:id', 'screenshots'])
-            ->orderByDesc('date_start')
-            ->get();
-
         return Inertia::render('Portfolio', [
-            'projects' => ProjectResource::collection($projects)->resolve(),
+            'projects' => $this->portfolioProjects($request->user()),
         ]);
     }
 
@@ -38,17 +35,12 @@ class DossierController extends Controller
     {
         $user = $request->user()->load('apprenticeship');
 
-        $projects = $user->projects()
-            ->with(['skills:id', 'screenshots'])
-            ->orderByDesc('date_start')
-            ->get();
-
         return Inertia::render('PortfolioPreview', [
             'owner' => [
                 'name' => $user->name,
                 'track' => $user->apprenticeship?->name,
             ],
-            'projects' => ProjectResource::collection($projects)->resolve(),
+            'projects' => $this->portfolioProjects($user),
             'skills' => $this->skills(),
         ]);
     }
@@ -65,20 +57,13 @@ class DossierController extends Controller
     public function store(PortfolioProjectRequest $request): RedirectResponse
     {
         $data = $request->validated();
-        $storedPaths = [];
 
-        try {
-            DB::transaction(function () use ($request, $data, &$storedPaths): void {
-                $project = $request->user()->projects()->create($this->attributes($data));
+        $this->saveProject($request, function () use ($request, $data): Project {
+            $project = $request->user()->projects()->create($this->attributes($data));
+            $project->skills()->sync($data['skill_ids'] ?? []);
 
-                $project->skills()->sync($data['skill_ids'] ?? []);
-                $this->storeScreenshots($project, $request->file('screenshots', []), $storedPaths);
-            });
-        } catch (Throwable $e) {
-            Storage::delete($storedPaths);
-
-            throw $e;
-        }
+            return $project;
+        });
 
         return redirect()->route('portfolio.index');
     }
@@ -96,26 +81,19 @@ class DossierController extends Controller
     public function update(PortfolioProjectRequest $request, Project $project): RedirectResponse
     {
         $data = $request->validated();
-        $storedPaths = [];
 
-        try {
-            DB::transaction(function () use ($request, $project, $data, &$storedPaths): void {
-                $project->update($this->attributes($data));
+        $this->saveProject($request, function () use ($project, $data): Project {
+            $project->update($this->attributes($data));
+            $project->skills()->sync($data['skill_ids'] ?? []);
 
-                $project->skills()->sync($data['skill_ids'] ?? []);
+            // Screenshots left out of `kept_screenshot_ids` were removed in the form.
+            $project->screenshots()
+                ->whereNotIn('id', $data['kept_screenshot_ids'] ?? [])
+                ->get()
+                ->each->delete();
 
-                // Screenshots left out of `kept_screenshot_ids` were removed in the form.
-                $project->screenshots()
-                    ->whereNotIn('id', $data['kept_screenshot_ids'] ?? [])
-                    ->get()
-                    ->each->delete();
-                $this->storeScreenshots($project, $request->file('screenshots', []), $storedPaths);
-            });
-        } catch (Throwable $e) {
-            Storage::delete($storedPaths);
-
-            throw $e;
-        }
+            return $project;
+        });
 
         return redirect()->route('portfolio.index');
     }
@@ -134,6 +112,39 @@ class DossierController extends Controller
         Gate::authorize('view', $screenshot->project);
 
         return Storage::response($screenshot->path);
+    }
+
+    /**
+     * Runs `$save` and stores the uploaded screenshots in one transaction.
+     *
+     * @param  Closure(): Project  $save
+     */
+    private function saveProject(PortfolioProjectRequest $request, Closure $save): void
+    {
+        $storedPaths = [];
+
+        try {
+            DB::transaction(function () use ($request, $save, &$storedPaths): void {
+                $this->storeScreenshots($save(), $request->file('screenshots', []), $storedPaths);
+            });
+        } catch (Throwable $e) {
+            Storage::delete($storedPaths);
+
+            throw $e;
+        }
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    private function portfolioProjects(User $user): array
+    {
+        $projects = $user->projects()
+            ->with(['skills:id', 'screenshots'])
+            ->orderByDesc('date_start')
+            ->get();
+
+        return ProjectResource::collection($projects)->resolve();
     }
 
     /**

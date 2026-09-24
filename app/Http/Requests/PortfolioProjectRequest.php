@@ -3,9 +3,11 @@
 namespace App\Http\Requests;
 
 use App\Models\Project;
+use App\Models\ProjectScreenshot;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 
 class PortfolioProjectRequest extends FormRequest
 {
@@ -65,9 +67,8 @@ class PortfolioProjectRequest extends FormRequest
             'demo_path' => ['nullable', 'url', 'max:255'],
             'date_start' => ['required', 'date'],
             'date_end' => ['nullable', 'date', 'after_or_equal:date_start'],
-            // New uploads only; screenshots already saved are kept by id.
-            'screenshots' => ['nullable', 'array'],
-            'screenshots.*' => ['image', 'max:5120', 'max:10'],
+            'screenshots' => ['nullable', 'array', 'max:'.ProjectScreenshot::MAX_PER_PROJECT],
+            'screenshots.*' => ['image', 'max:5120'],
             'kept_screenshot_ids' => ['nullable', 'array'],
             'kept_screenshot_ids.*' => [
                 'integer',
@@ -75,6 +76,30 @@ class PortfolioProjectRequest extends FormRequest
             ],
             'skill_ids' => ['nullable', 'array'],
             'skill_ids.*' => ['integer', 'distinct', 'exists:skills,id'],
+        ];
+    }
+
+    /**
+     * Screenshots kept from earlier saves count toward the limit too, so a
+     * project cannot grow past it over several updates.
+     *
+     * @return array<int, callable(Validator): void>
+     */
+
+    // this is for when a user updates a project, so that it doesn't pass the limit
+    public function after(): array
+    {
+        return [
+            function (Validator $validator): void {
+                $total = count($this->input('kept_screenshot_ids', [])) + count($this->file('screenshots', []));
+
+                if ($total > ProjectScreenshot::MAX_PER_PROJECT) {
+                    $validator->errors()->add(
+                        'screenshots',
+                        'Un projet ne peut pas avoir plus de '.ProjectScreenshot::MAX_PER_PROJECT.' captures.',
+                    );
+                }
+            },
         ];
     }
 
@@ -91,7 +116,7 @@ class PortfolioProjectRequest extends FormRequest
     /**
      * The app has no French translation files yet and the form is in French.
      *
-     * @return array<string, string>
+     * @return array<string, string|array<string, string>>
      */
     public function messages(): array
     {
@@ -106,9 +131,10 @@ class PortfolioProjectRequest extends FormRequest
             'demo_path.url' => 'Le lien doit être une URL complète (https://…).',
             'technologies.max' => 'La liste des technologies ne doit pas dépasser :max caractères.',
             'skill_ids.*' => 'Une compétence sélectionnée n\'existe plus.',
+            'screenshots.max' => 'Un projet ne peut pas avoir plus de :max captures.',
             'screenshots.*' => 'Chaque capture doit être une image de 5 Mo maximum.',
             'kept_screenshot_ids.*' => 'Une capture enregistrée n\'existe plus.',
-            'max' => 'Ce champ ne doit pas dépasser :max caractères.',
+            'max' => ['string' => 'Ce champ ne doit pas dépasser :max caractères.'],
         ];
     }
 }

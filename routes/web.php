@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\DossierController;
+use Illuminate\Foundation\Http\Middleware\HandlePrecognitiveRequests;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -15,6 +16,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::resource('portfolio/projects', DossierController::class)
             ->except(['index', 'show'])
             ->names('portfolio.projects')
+            ->middlewareFor(['store', 'update'], HandlePrecognitiveRequests::class)
             ->whereNumber('project');
         Route::get('/portfolio/screenshots/{screenshot}', [DossierController::class, 'screenshot'])
             ->whereNumber('screenshot')

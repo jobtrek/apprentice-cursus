@@ -29,7 +29,10 @@ import {
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Toggle } from '@/components/ui/toggle';
-import { usePortfolioForm } from '@/composables/usePortfolioForm';
+import {
+    MAX_SCREENSHOTS,
+    usePortfolioForm,
+} from '@/composables/usePortfolioForm';
 import portfolio from '@/routes/portfolio';
 import { PageContainer, PageHeader } from '@/components/page';
 import type { PortfolioProject, Skill } from '@/types/portfolio';
@@ -73,12 +76,17 @@ function onScreenshotsPicked(event: Event): void {
     input.value = '';
 }
 
+const deleting = ref(false);
+
 function onDelete(): void {
     if (!props.project) {
         return;
     }
 
-    router.delete(portfolio.projects.destroy.url(props.project.id));
+    router.delete(portfolio.projects.destroy.url(props.project.id), {
+        onStart: () => (deleting.value = true),
+        onFinish: () => (deleting.value = false),
+    });
 }
 </script>
 
@@ -103,6 +111,7 @@ function onDelete(): void {
                                     id="title"
                                     v-model="form.title"
                                     name="title"
+                                    @change="form.validate('title')"
                                     required
                                     :aria-invalid="Boolean(errors.title)"
                                 />
@@ -120,6 +129,7 @@ function onDelete(): void {
                                         id="organization"
                                         v-model="form.organization"
                                         name="organization"
+                                        @change="form.validate('organization')"
                                         :aria-invalid="
                                             Boolean(errors.organization)
                                         "
@@ -140,6 +150,9 @@ function onDelete(): void {
                                         id="responsibilities"
                                         v-model="form.responsibilities"
                                         name="responsibilities"
+                                        @change="
+                                            form.validate('responsibilities')
+                                        "
                                         :aria-invalid="
                                             Boolean(errors.responsibilities)
                                         "
@@ -162,6 +175,7 @@ function onDelete(): void {
                                         v-model="form.date_start"
                                         type="date"
                                         name="date_start"
+                                        @change="form.validate('date_start')"
                                         required
                                         :aria-invalid="
                                             Boolean(errors.date_start)
@@ -178,6 +192,7 @@ function onDelete(): void {
                                         v-model="form.date_end"
                                         type="date"
                                         name="date_end"
+                                        @change="form.validate('date_end')"
                                         :aria-invalid="Boolean(errors.date_end)"
                                     />
                                     <FieldError :errors="[errors.date_end]" />
@@ -192,6 +207,7 @@ function onDelete(): void {
                                     id="description"
                                     v-model="form.description"
                                     name="description"
+                                    @change="form.validate('description')"
                                     rows="4"
                                     required
                                     :aria-invalid="Boolean(errors.description)"
@@ -264,6 +280,7 @@ function onDelete(): void {
                                         v-model="form.demo_path"
                                         type="url"
                                         name="demo_path"
+                                        @change="form.validate('demo_path')"
                                         :aria-invalid="
                                             Boolean(errors.demo_path)
                                         "
@@ -284,6 +301,9 @@ function onDelete(): void {
                                         v-model="form.repository_url"
                                         type="url"
                                         name="repository_url"
+                                        @change="
+                                            form.validate('repository_url')
+                                        "
                                         :aria-invalid="
                                             Boolean(errors.repository_url)
                                         "
@@ -366,7 +386,8 @@ function onDelete(): void {
                                     ]"
                                 />
                                 <FieldDescription>
-                                    Images uniquement, 5 Mo maximum par fichier.
+                                    Images uniquement, 5 Mo maximum par fichier,
+                                    {{ MAX_SCREENSHOTS }} captures au plus.
                                 </FieldDescription>
                             </Field>
                         </FieldSet>
@@ -410,6 +431,7 @@ function onDelete(): void {
                             <Button
                                 type="button"
                                 variant="ghost"
+                                :disabled="deleting"
                                 class="text-destructive hover:bg-destructive/10 hover:text-destructive ml-auto"
                             >
                                 <Trash2Icon aria-hidden="true" />
@@ -434,6 +456,7 @@ function onDelete(): void {
                                             variant: 'destructive',
                                         })
                                     "
+                                    :disabled="deleting"
                                     @click="onDelete"
                                 >
                                     Supprimer

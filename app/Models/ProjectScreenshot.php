@@ -19,6 +19,8 @@ use Illuminate\Support\Facades\Storage;
 #[Fillable(['path'])]
 class ProjectScreenshot extends Model
 {
+    public const MAX_PER_PROJECT = 10;
+
     protected static function booted(): void
     {
         // Only remove the file once the row deletion is committed, so a rolled

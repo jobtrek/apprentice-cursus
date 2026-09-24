@@ -26,6 +26,9 @@ importers:
       clsx:
         specifier: ^2.1.1
         version: 2.1.1
+      laravel-precognition-vue:
+        specifier: ^2.0.0
+        version: 2.0.0(vue@3.5.42(typescript@5.9.3))
       laravel-vite-plugin:
         specifier: ^3.0.0
         version: 3.2.0(vite@8.2.2(@types/node@22.20.2)(jiti@2.7.0)(yaml@2.9.1))
@@ -1629,6 +1632,11 @@ packages:
 
   keyv@5.6.0:
     resolution: {integrity: sha512-CYDD3SOtsHtyXeEORYRx2qBtpDJFjRTGXUtmNEMGyzYOKj1TE3tycdlho7kA1Ufx9OYWZzg52QFBGALTirzDSw==}
+
+  laravel-precognition-vue@2.0.0:
+    resolution: {integrity: sha512-Sxl+D5IXPpUvyS5gRjWVrGDwVPSuCIoLImSkz06Er26qgo6Eelb2i2UbFKLLeq3+cmG23VgbdZqc/qYeoIs2KQ==}
+    peerDependencies:
+      vue: ^3.0.0
 
   laravel-precognition@2.0.0:
     resolution: {integrity: sha512-dmA4HGc9m+TsVNsJs9/XQBI8u6j7coilN+qKkBuhuXQzH3HypwS/c5dFQ4UqUGjBbcxIM7zdk91kM/SRZwIvWQ==}
@@ -3624,6 +3632,14 @@ snapshots:
   keyv@5.6.0:
     dependencies:
       '@keyv/serialize': 1.1.1
+
+  laravel-precognition-vue@2.0.0(vue@3.5.42(typescript@5.9.3)):
+    dependencies:
+      es-toolkit: 1.52.0
+      laravel-precognition: 2.0.0
+      vue: 3.5.42(typescript@5.9.3)
+    transitivePeerDependencies:
+      - axios
 
   laravel-precognition@2.0.0:
     dependencies:
