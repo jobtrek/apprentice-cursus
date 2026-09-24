@@ -26,9 +26,13 @@ import {
     EmptyTitle,
 } from '@/components/ui/empty';
 import portfolio from '@/routes/portfolio';
+import AddActionButton from '@/components/AddActionButton.vue';
 import { PageContainer, PageHeader } from '@/components/page';
+import AddProjectDialog from '@/components/portfolio/AddProjectDialog.vue';
+import { useAddProjectDialog } from '@/composables/useAddProjectDialog';
 
 const { projects, moveProject } = usePortfolio();
+const { open: openAddProject } = useAddProjectDialog();
 
 const draggedIndex = ref<number | null>(null);
 const dropTargetIndex = ref<number | null>(null);
@@ -84,12 +88,11 @@ function onHandleKeydown(event: KeyboardEvent, index: number): void {
                         Aperçu
                     </Link>
                 </Button>
-                <Button as-child data-test="new-project-link">
-                    <Link :href="portfolio.projects.create()">
-                        <PlusIcon aria-hidden="true" />
-                        Nouveau projet
-                    </Link>
-                </Button>
+                <AddActionButton
+                    label="Nouveau projet"
+                    data-test="new-project-button"
+                    @click="openAddProject"
+                />
             </template>
         </PageHeader>
 
@@ -175,13 +178,13 @@ function onHandleKeydown(event: KeyboardEvent, index: number): void {
                 </EmptyDescription>
             </EmptyHeader>
             <EmptyContent>
-                <Button as-child>
-                    <Link :href="portfolio.projects.create()">
-                        <PlusIcon aria-hidden="true" />
-                        Nouveau projet
-                    </Link>
+                <Button @click="openAddProject">
+                    <PlusIcon aria-hidden="true" />
+                    Nouveau projet
                 </Button>
             </EmptyContent>
         </Empty>
+
+        <AddProjectDialog />
     </PageContainer>
 </template>

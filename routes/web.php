@@ -9,8 +9,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::inertia('/portfolio', 'Portfolio')->name('portfolio.index');
     Route::inertia('/portfolio/preview', 'PortfolioPreview')
         ->name('portfolio.preview');
-    Route::inertia('/portfolio/projects/create', 'PortfolioProjectForm')
-        ->name('portfolio.projects.create');
     Route::get(
         '/portfolio/projects/{project}/edit',
         fn (int $project) => Inertia::render('PortfolioProjectForm', [
