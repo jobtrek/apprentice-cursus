@@ -22,10 +22,10 @@ use LogicException;
  * node is a weighted average of its children. Weights are percentages of
  * their parent and are meant to be normalized by their sum.
  *
- * Each root is then linked to its apprenticeship (ApprenticeshipSeeder must
- * run first).
- *
- * Idempotent: a tree whose root already exists is left untouched.
+ * Each root is linked to its apprenticeship (ApprenticeshipSeeder must run
+ * first). That link is the tree's stable identifier: an apprenticeship that
+ * already has a tree is left untouched, otherwise a complete tree is created
+ * and linked. Node names are never used to find an existing tree.
  */
 class EvaluationTreeSeeder extends Seeder
 {
@@ -49,34 +49,30 @@ class EvaluationTreeSeeder extends Seeder
     public function run(): void
     {
         DB::transaction(function (): void {
-            $this->seedTree($this->itTree());
-            $this->seedTree($this->ecTree());
-
-            $this->linkApprenticeship(ApprenticeshipSeeder::IT, self::IT_ROOT);
-            $this->linkApprenticeship(ApprenticeshipSeeder::EC, self::EC_ROOT);
+            $this->seedTree(ApprenticeshipSeeder::IT, fn (): array => $this->itTree());
+            $this->seedTree(ApprenticeshipSeeder::EC, fn (): array => $this->ecTree());
         });
     }
 
-    private function linkApprenticeship(string $apprenticeship, string $root): void
-    {
-        Apprenticeship::query()
-            ->where('name', $apprenticeship)
-            ->update([
-                'evaluation_node_id' => EvaluationNode::query()->where('name', $root)->value('id'),
-            ]);
-    }
-
     /**
-     * @param  array<string, mixed>  $root
+     * @param  callable(): array<string, mixed>  $tree
      */
-    private function seedTree(array $root): void
+    private function seedTree(string $apprenticeshipName, callable $tree): void
     {
-        if (EvaluationNode::query()->where('name', $root['name'])->exists()) {
+        $apprenticeship = Apprenticeship::query()
+            ->where('name', $apprenticeshipName)
+            ->firstOr(fn () => throw new LogicException(
+                "Apprenticeship [{$apprenticeshipName}] not found: run ApprenticeshipSeeder first.",
+            ));
+
+        if ($apprenticeship->evaluation_node_id !== null) {
             return;
         }
 
         $this->nodesByKey = [];
-        $this->createNode($root);
+        $root = $this->createNode($tree());
+
+        $apprenticeship->update(['evaluation_node_id' => $root->id]);
     }
 
     /**
