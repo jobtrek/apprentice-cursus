@@ -113,3 +113,27 @@ the table for the weight of each grade inside of EC's program. MP = Maturité
 **Decision:** The `DB::statement()` CHECK constraints above make the migrations PostgreSQL-specific.
 
 **Why:** `compose.yaml` and `.env.example` already commit the project to PostgreSQL. The `sqlite` fallback left in `config/database.php` is the framework default, not a supported target.
+
+## 2026-09-23 — Roles and sections come from Microsoft Entra ID, no admin role
+
+**Decision:** Entra ID is the only source of roles and sections. The app knows three roles (`apprentice`, `trainer`, `coach`), stored in `users.role`; the section is stored in `users.apprenticeship_id`, matched on a new `apprenticeships.code` (`it` / `ec`). There is no admin or super-admin role: accounts are managed in Entra, subjects and the IT skills catalog are seeded. `users.trainer_id` is dropped — trainers see every apprentice of their section.
+
+**Why:** Accounts already live in Entra; a second account-management UI in the app would duplicate it and drift. With no assignment table for trainers, the section alone decides their scope, so the column has nothing left to say.
+
+### Sync runs at login, in middleware, and in a daily job
+
+**Decision:** One mapper resolves role, section and `is_active`. It runs at login, every 15 minutes per session (`EnsureAzureAccountIsActive`), and daily (`app:sync-entra-roles`), which also provisions users before their first login (upsert on `azure_id`). Exactly one app role and, for apprentices and trainers, exactly one section is required; anything else refuses the login. A Graph outage fails open. Users are matched on `azure_id` only — no email linking, no default role.
+
+**Why:** Login-only sync never catches people who leave (they never log in again), and lets a removed role live on in an open session. Email is mutable in Entra; the object ID is not.
+
+### Sector change deletes grades, after the apprentice confirms
+
+**Decision:** When an apprentice moves to the other section group, the sync only sets `users.pending_apprenticeship_id`. At the next login the apprentice must confirm before their grades (with PDFs, comments and `evaluation_results`) are deleted through Eloquent and `apprenticeship_id` switches. Projects are kept.
+
+**Why:** Grades point at `evaluation_nodes` of the old tree and are meaningless in the new one. This is a deliberate exception to "history-bearing foreign keys restrict instead of cascading": the deletion is explicit and confirmed by a human, never triggered by the automatic sync, so a wrong click in Entra cannot wipe a record.
+
+### Trust model for coaching and MP status
+
+**Decision:** Coaches self-assign apprentices who have no coach (atomic `UPDATE … WHERE coach_id IS NULL`) and de-assign only their own. A coach losing the role clears `coach_id` on their apprentices. EC apprentices declare `is_mp` themselves. No approval step for either.
+
+**Why:** Keeps the app simple while there is no admin. A request/validation flow can be added later as app logic without a new Entra role.

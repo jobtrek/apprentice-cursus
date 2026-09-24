@@ -38,8 +38,9 @@ erDiagram
         varchar tenant_id "nullable, for SSO, varchat since it's UUID"
         varchar name
         varchar email UK
+        password_hash "nullable, for local auth"
         boolean is_mp "nullable, doing the maturité professionnelle variant"
-        enum role "apprentice, coach, trainer, admin, super_admin"
+        enum role "apprentice, coach, trainer, "
         enum apprenticeship_name "nullable, IT | EC"
         bigint apprenticeship_id FK "nullable, -> apprenticeships (track)"
         bigint coach_id FK "nullable, self-ref"

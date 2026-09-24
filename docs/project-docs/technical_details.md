@@ -1,8 +1,6 @@
 # Technical details — Vue 3 + Inertia (current stack)
 
-**Status:** describes the stack `docs/plan-d/spec.md` currently commits to. This is the baseline.
-
-Story IDs below refer to `docs/user_stories/grade_manager.md`.
+**Status:** describes the current stack. User stories live in `docs/user_stories/user_story_final.md`.
 
 ---
 
@@ -10,7 +8,7 @@ Story IDs below refer to `docs/user_stories/grade_manager.md`.
 
 | Concern | Choice |
 |---|---|
-| Backend | Laravel 12 |
+| Backend | Laravel 13 (PHP 8.3+) |
 | Frontend | Vue 3 |
 | Server ↔ client | Inertia.js (`@inertiajs/vue3`) |
 | Build | Vite + `@vitejs/plugin-vue` |
@@ -18,5 +16,7 @@ Story IDs below refer to `docs/user_stories/grade_manager.md`.
 | Styling | Tailwind CSS |
 | Components | shadcn-vue |
 | PDF rendering | `vue-pdf-embed` (pdf.js wrapper) |
-| Component tests | Vitest + Vue Testing Library |
+| Database | PostgreSQL |
+| Auth | Microsoft Entra ID via Socialite (`socialiteproviders/microsoft-azure`) |
+| Component tests | Vitest + Vue Testing Library (planned, not wired up yet) |
 
