@@ -22,7 +22,7 @@ the table for the weight of each grade inside of EC's program. MP = Maturité
 
 ## 2026-09-09 — Migrations & models derived from the MCD
 
-**Decision:** `db_schema/mcd.mmd` is turned into Laravel migrations and Eloquent models. Where the diagram was incomplete or ambiguous, the entries below record what was chosen instead.
+**Decision:** `../db_schema/mcd.mmd` is turned into Laravel migrations and Eloquent models. Where the diagram was incomplete or ambiguous, the entries below record what was chosen instead.
 
 ### Users: extended, not replaced
 
@@ -119,3 +119,7 @@ the table for the weight of each grade inside of EC's program. MP = Maturité
 **Decision:** Portfolio projects are sent to the pages as `ProjectResource::collection(...)->resolve()` / `(new ProjectResource(...))->resolve()`, never as raw models. The resource is the single mapping to the `PortfolioProject` type in `resources/js/types/portfolio.ts`. `->resolve()` drops the `{ data: ... }` wrapper, since Inertia props are not a JSON API response.
 
 **Why:** Passing the model straight to `Inertia::render()` serializes it with `toArray()`, which leaks columns the page must not see (`user_id`, timestamps, the private storage `path` of each screenshot) and emits the wrong shapes: dates as full ISO timestamps where `<input type="date">` needs `Y-m-d`, skills as full objects with pivot data where the form needs `skill_ids`, and screenshots as rows where the page needs an authorized `url`. The same shape is needed by `index`, `preview` and `edit`, so mapping inline in each controller method would triplicate it. Model-level `$hidden` / `date:` casts / appended accessors were rejected: they apply to every serialization of the model app-wide and would split the page contract across `Project` and `ProjectScreenshot`.
+
+## 2026-09-24 — MCD of the actual database (from live dump)
+
+**Source:** live PostgreSQL dump (owner `sail`). Diagram lives in `../db_schema/mcd_actual.mmd` — faithful readout, not a redesign.
