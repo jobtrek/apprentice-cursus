@@ -49,6 +49,7 @@ const {
     removeLastTechnology,
     toggleSkill,
     hasSkill,
+    screenshotPreviews,
     addScreenshots,
     removeScreenshot,
     submit,
@@ -65,9 +66,9 @@ function pickScreenshots(): void {
     screenshotInput.value?.click();
 }
 
-async function onScreenshotsPicked(event: Event): Promise<void> {
+function onScreenshotsPicked(event: Event): void {
     const input = event.target as HTMLInputElement;
-    await addScreenshots(input.files);
+    addScreenshots(input.files);
     // Remis à zéro pour que réimporter le même fichier redéclenche l'événement.
     input.value = '';
 }
@@ -300,17 +301,24 @@ function onDelete(): void {
                         <FieldSet>
                             <FieldLegend>Captures d'écran</FieldLegend>
 
-                            <Field :data-invalid="Boolean(errors.screenshots)">
+                            <Field
+                                :data-invalid="
+                                    Boolean(
+                                        errors.screenshots ||
+                                        errors.kept_screenshot_ids,
+                                    )
+                                "
+                            >
                                 <div class="flex flex-wrap gap-3">
                                     <div
                                         v-for="(
                                             screenshot, index
-                                        ) in form.screenshots"
-                                        :key="index"
+                                        ) in screenshotPreviews"
+                                        :key="screenshot.url"
                                         class="relative"
                                     >
                                         <img
-                                            :src="screenshot"
+                                            :src="screenshot.url"
                                             :alt="`Capture d'écran ${index + 1}`"
                                             class="bg-muted size-24 rounded-md object-cover"
                                         />
@@ -320,7 +328,9 @@ function onDelete(): void {
                                             size="icon-xs"
                                             class="absolute -top-2 -right-2 rounded-full border shadow-xs"
                                             :aria-label="`Retirer la capture ${index + 1}`"
-                                            @click="removeScreenshot(index)"
+                                            @click="
+                                                removeScreenshot(screenshot)
+                                            "
                                         >
                                             <XIcon aria-hidden="true" />
                                         </Button>
@@ -349,7 +359,12 @@ function onDelete(): void {
                                         @change="onScreenshotsPicked"
                                     />
                                 </div>
-                                <FieldError :errors="[errors.screenshots]" />
+                                <FieldError
+                                    :errors="[
+                                        errors.screenshots,
+                                        errors.kept_screenshot_ids,
+                                    ]"
+                                />
                                 <FieldDescription>
                                     Images uniquement, 5 Mo maximum par fichier.
                                 </FieldDescription>

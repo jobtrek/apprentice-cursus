@@ -3,6 +3,7 @@
 namespace App\Http\Resources;
 
 use App\Models\Project;
+use App\Models\ProjectScreenshot;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -29,8 +30,10 @@ class ProjectResource extends JsonResource
             'demo_path' => $this->demo_path,
             'date_start' => $this->date_start->toDateString(),
             'date_end' => $this->date_end?->toDateString(),
-            // No storage for screenshots yet; the frontend type still expects the key.
-            'screenshots' => [],
+            'screenshots' => $this->whenLoaded('screenshots', fn () => $this->screenshots->map(fn (ProjectScreenshot $screenshot) => [
+                'id' => $screenshot->id,
+                'url' => route('portfolio.screenshots.show', $screenshot),
+            ])),
             'skill_ids' => $this->whenLoaded('skills', fn () => $this->skills->modelKeys()),
         ];
     }

@@ -1,7 +1,4 @@
-/**
- * Forme partagée par `App\Http\Resources\ProjectResource`. `screenshots` est
- * toujours vide tant que le stockage des captures n'existe pas côté serveur.
- */
+/** Forme partagée par `App\Http\Resources\ProjectResource`. */
 export type PortfolioProject = {
     id: number;
     title: string;
@@ -13,8 +10,14 @@ export type PortfolioProject = {
     demo_path: string | null;
     date_start: string;
     date_end: string | null;
-    screenshots: string[];
+    screenshots: ProjectScreenshot[];
     skill_ids: number[];
+};
+
+/** `url` pointe vers une route authentifiée, pas vers un fichier public. */
+export type ProjectScreenshot = {
+    id: number;
+    url: string;
 };
 
 export type Skill = {

@@ -5,21 +5,25 @@ namespace App\Http\Controllers;
 use App\Http\Requests\PortfolioProjectRequest;
 use App\Http\Resources\ProjectResource;
 use App\Models\Project;
+use App\Models\ProjectScreenshot;
 use App\Models\Skill;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class DossierController extends Controller
 {
     public function index(Request $request): Response
     {
         $projects = $request->user()->projects()
-            ->with('skills:id')
+            ->with(['skills:id', 'screenshots'])
             ->orderByDesc('date_start')
             ->get();
 
@@ -33,7 +37,7 @@ class DossierController extends Controller
         $user = $request->user()->load('apprenticeship');
 
         $projects = $user->projects()
-            ->with('skills:id')
+            ->with(['skills:id', 'screenshots'])
             ->orderByDesc('date_start')
             ->get();
 
@@ -64,6 +68,7 @@ class DossierController extends Controller
             $project = $request->user()->projects()->create($this->attributes($data));
 
             $project->skills()->sync($data['skill_ids'] ?? []);
+            $this->storeScreenshots($project, $request->file('screenshots', []));
         });
 
         return redirect()->route('portfolio.index');
@@ -74,7 +79,7 @@ class DossierController extends Controller
         Gate::authorize('update', $project);
 
         return Inertia::render('PortfolioProjectForm', [
-            'project' => (new ProjectResource($project->load('skills:id')))->resolve(),
+            'project' => (new ProjectResource($project->load(['skills:id', 'screenshots'])))->resolve(),
             'skills' => $this->skills(),
         ]);
     }
@@ -83,10 +88,17 @@ class DossierController extends Controller
     {
         $data = $request->validated();
 
-        DB::transaction(function () use ($project, $data): void {
+        DB::transaction(function () use ($request, $project, $data): void {
             $project->update($this->attributes($data));
 
             $project->skills()->sync($data['skill_ids'] ?? []);
+
+            // Screenshots left out of `kept_screenshot_ids` were removed in the form.
+            $project->screenshots()
+                ->whereNotIn('id', $data['kept_screenshot_ids'] ?? [])
+                ->get()
+                ->each->delete();
+            $this->storeScreenshots($project, $request->file('screenshots', []));
         });
 
         return redirect()->route('portfolio.index');
@@ -99,6 +111,25 @@ class DossierController extends Controller
         $project->delete();
 
         return redirect()->route('portfolio.index');
+    }
+
+    public function screenshot(ProjectScreenshot $screenshot): StreamedResponse
+    {
+        Gate::authorize('view', $screenshot->project);
+
+        return Storage::response($screenshot->path);
+    }
+
+    /**
+     * @param  array<int, UploadedFile>  $files
+     */
+    private function storeScreenshots(Project $project, array $files): void
+    {
+        foreach ($files as $file) {
+            $project->screenshots()->create([
+                'path' => $file->store("projects/{$project->id}"),
+            ]);
+        }
     }
 
     /**

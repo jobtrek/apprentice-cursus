@@ -5,6 +5,7 @@ namespace App\Http\Requests;
 use App\Models\Project;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class PortfolioProjectRequest extends FormRequest
 {
@@ -63,11 +64,27 @@ class PortfolioProjectRequest extends FormRequest
             'demo_path' => ['nullable', 'url', 'max:255'],
             'date_start' => ['required', 'date'],
             'date_end' => ['nullable', 'date', 'after_or_equal:date_start'],
+            // New uploads only; screenshots already saved are kept by id.
             'screenshots' => ['nullable', 'array'],
             'screenshots.*' => ['image', 'max:5120'],
+            'kept_screenshot_ids' => ['nullable', 'array'],
+            'kept_screenshot_ids.*' => [
+                'integer',
+                Rule::exists('project_screenshots', 'id')->where('project_id', $this->projectId()),
+            ],
             'skill_ids' => ['nullable', 'array'],
             'skill_ids.*' => ['integer', 'distinct', 'exists:skills,id'],
         ];
+    }
+
+    /**
+     * Null on store, so `kept_screenshot_ids` can never match another project's screenshots.
+     */
+    private function projectId(): ?int
+    {
+        $project = $this->route('project');
+
+        return $project instanceof Project ? $project->id : null;
     }
 
     /**
@@ -89,6 +106,7 @@ class PortfolioProjectRequest extends FormRequest
             'technologies.max' => 'La liste des technologies ne doit pas dépasser :max caractères.',
             'skill_ids.*' => 'Une compétence sélectionnée n\'existe plus.',
             'screenshots.*' => 'Chaque capture doit être une image de 5 Mo maximum.',
+            'kept_screenshot_ids.*' => 'Une capture enregistrée n\'existe plus.',
             'max' => 'Ce champ ne doit pas dépasser :max caractères.',
         ];
     }

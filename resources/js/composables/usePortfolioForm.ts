@@ -1,5 +1,5 @@
 import { useForm } from '@inertiajs/vue3';
-import { computed, ref } from 'vue';
+import { computed, onScopeDispose, ref } from 'vue';
 import { parseTechnologies } from '@/composables/usePortfolio';
 import portfolio from '@/routes/portfolio';
 import type { PortfolioProject } from '@/types/portfolio';
@@ -14,9 +14,16 @@ type ProjectForm = {
     demo_path: string;
     date_start: string;
     date_end: string;
-    screenshots: string[];
+    /** Nouveaux fichiers seulement ; les captures enregistrées sont gardées par id. */
+    screenshots: File[];
+    kept_screenshot_ids: number[];
     skill_ids: number[];
 };
+
+/** Vignette affichée dans le formulaire, enregistrée ou pas encore envoyée. */
+export type ScreenshotPreview =
+    | { kind: 'saved'; id: number; url: string }
+    | { kind: 'new'; file: File; url: string };
 
 const MAX_SCREENSHOT_BYTES = 5 * 1024 * 1024;
 
@@ -35,7 +42,8 @@ function toForm(project?: PortfolioProject): ProjectForm {
         demo_path: project?.demo_path ?? '',
         date_start: project?.date_start ?? '',
         date_end: project?.date_end ?? '',
-        screenshots: [...(project?.screenshots ?? [])],
+        screenshots: [],
+        kept_screenshot_ids: (project?.screenshots ?? []).map(({ id }) => id),
         skill_ids: [...(project?.skill_ids ?? [])],
     };
 }
@@ -108,30 +116,21 @@ export function usePortfolioForm(existing?: PortfolioProject) {
         return form.skill_ids.includes(id);
     }
 
-    /**
-     * Les images sont lues en data URL pour l'aperçu uniquement : elles ne
-     * sont pas envoyées tant que le serveur n'a pas de stockage pour elles.
-     */
-    function readScreenshot(file: File): Promise<string> {
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = () => {
-                // readAsDataURL donne toujours une chaîne, mais le type de
-                // FileReader couvre aussi ArrayBuffer.
-                if (typeof reader.result === 'string') {
-                    resolve(reader.result);
+    /** URL locales des nouveaux fichiers, libérées quand on les retire. */
+    const objectUrls = new Map<File, string>();
 
-                    return;
-                }
+    const screenshotPreviews = computed<ScreenshotPreview[]>(() => [
+        ...(existing?.screenshots ?? [])
+            .filter(({ id }) => form.kept_screenshot_ids.includes(id))
+            .map(({ id, url }) => ({ kind: 'saved' as const, id, url })),
+        ...form.screenshots.map((file) => ({
+            kind: 'new' as const,
+            file,
+            url: objectUrls.get(file) ?? '',
+        })),
+    ]);
 
-                reject(new Error('Lecture du fichier impossible.'));
-            };
-            reader.onerror = () => reject(reader.error);
-            reader.readAsDataURL(file);
-        });
-    }
-
-    async function addScreenshots(files: FileList | null): Promise<void> {
+    function addScreenshots(files: FileList | null): void {
         if (!files || files.length === 0) {
             return;
         }
@@ -151,29 +150,48 @@ export function usePortfolioForm(existing?: PortfolioProject) {
                 continue;
             }
 
-            form.screenshots.push(await readScreenshot(file));
+            objectUrls.set(file, URL.createObjectURL(file));
+            form.screenshots.push(file);
         }
 
         screenshotError.value = rejected.length > 0 ? rejected.join(' ') : null;
     }
 
-    function removeScreenshot(index: number): void {
-        form.screenshots.splice(index, 1);
-    }
-
-    function submit(): void {
-        // Pas encore de stockage serveur pour les captures (voir readScreenshot).
-        const payload = form.transform(
-            ({ screenshots: _screenshots, ...data }) => data,
-        );
-
-        if (existing) {
-            payload.put(portfolio.projects.update.url(existing.id));
+    function removeScreenshot(preview: ScreenshotPreview): void {
+        if (preview.kind === 'saved') {
+            form.kept_screenshot_ids = form.kept_screenshot_ids.filter(
+                (id) => id !== preview.id,
+            );
 
             return;
         }
 
-        payload.post(portfolio.projects.store.url());
+        URL.revokeObjectURL(preview.url);
+        objectUrls.delete(preview.file);
+        form.screenshots = form.screenshots.filter(
+            (file) => file !== preview.file,
+        );
+    }
+
+    onScopeDispose(() => {
+        objectUrls.forEach((url) => URL.revokeObjectURL(url));
+    });
+
+    /**
+     * Toujours en multipart pour envoyer les fichiers. Un PUT multipart n'est pas
+     * lu par PHP : la mise à jour passe par POST avec `_method` (method spoofing).
+     */
+    function submit(): void {
+        if (existing) {
+            form.transform((data) => ({ ...data, _method: 'put' })).post(
+                portfolio.projects.update.url(existing.id),
+                { forceFormData: true },
+            );
+
+            return;
+        }
+
+        form.post(portfolio.projects.store.url(), { forceFormData: true });
     }
 
     return {
@@ -186,6 +204,7 @@ export function usePortfolioForm(existing?: PortfolioProject) {
         removeLastTechnology,
         toggleSkill,
         hasSkill,
+        screenshotPreviews,
         addScreenshots,
         removeScreenshot,
         submit,

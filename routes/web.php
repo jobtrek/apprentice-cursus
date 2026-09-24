@@ -16,6 +16,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
             ->except(['index', 'show'])
             ->names('portfolio.projects')
             ->whereNumber('project');
+        Route::get('/portfolio/screenshots/{screenshot}', [DossierController::class, 'screenshot'])
+            ->whereNumber('screenshot')
+            ->name('portfolio.screenshots.show');
     });
 
     // Données de démonstration, en attendant le modèle Grade côté serveur.

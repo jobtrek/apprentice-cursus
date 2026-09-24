@@ -136,8 +136,8 @@ function exportToPdf(): void {
                 >
                     <img
                         v-for="(screenshot, index) in project.screenshots"
-                        :key="index"
-                        :src="screenshot"
+                        :key="screenshot.id"
+                        :src="screenshot.url"
                         :alt="`${project.title} — capture ${index + 1}`"
                         class="h-20 w-32 rounded-sm bg-neutral-100 object-cover"
                     />
