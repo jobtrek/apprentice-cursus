@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Comment;
 use App\Models\Project;
 use App\Models\ProjectScreenshot;
 use App\Models\Skill;
@@ -36,7 +37,8 @@ test('apprentices only see their own projects', function () {
         ->assertInertia(fn (Assert $page) => $page
             ->component('Portfolio')
             ->has('projects', 1)
-            ->where('projects.0.id', $own->id));
+            ->where('projects.0.id', $own->id)
+            ->where('projects.0.technologies', ['Laravel', 'Vue.js']));
 });
 
 test('non-apprentices cannot access the portfolio', function () {
@@ -176,4 +178,72 @@ test('deleting a project removes its screenshot files', function () {
     $this->actingAs($apprentice)->delete(route('portfolio.projects.destroy', $project));
 
     Storage::assertMissing($screenshot->path);
+});
+
+test('files already written are deleted when saving the project fails', function () {
+    Storage::fake();
+    $apprentice = User::factory()->create();
+    // Fails after the screenshot row has been inserted, forcing a rollback.
+    ProjectScreenshot::created(function () {
+        throw new RuntimeException('Insert failed.');
+    });
+
+    expect(fn () => $this->actingAs($apprentice)
+        ->withoutExceptionHandling()
+        ->post(route('portfolio.projects.store'), projectPayload([
+            'screenshots' => [UploadedFile::fake()->image('capture.png')],
+        ])))->toThrow(RuntimeException::class, 'Insert failed.');
+
+    expect(Storage::allFiles())->toBeEmpty()
+        ->and(Project::count())->toBe(0);
+});
+
+test('removed screenshot files are kept when updating the project fails', function () {
+    Storage::fake();
+    $apprentice = User::factory()->create();
+    $project = Project::factory()->for($apprentice)->create();
+    $removed = $project->screenshots()->create([
+        'path' => UploadedFile::fake()->image('old.png')->store("projects/{$project->id}"),
+    ]);
+    // Fails after the removed screenshot has been deleted, forcing a rollback.
+    ProjectScreenshot::created(function () {
+        throw new RuntimeException('Insert failed.');
+    });
+
+    expect(fn () => $this->actingAs($apprentice)
+        ->withoutExceptionHandling()
+        ->put(route('portfolio.projects.update', $project), projectPayload([
+            'kept_screenshot_ids' => [],
+            'screenshots' => [UploadedFile::fake()->image('new.png')],
+        ])))->toThrow(RuntimeException::class, 'Insert failed.');
+
+    Storage::assertExists($removed->path);
+    expect(ProjectScreenshot::find($removed->id))->not->toBeNull()
+        ->and(Storage::allFiles())->toHaveCount(1);
+});
+
+test('nothing is deleted when deleting the project fails', function () {
+    Storage::fake();
+    $apprentice = User::factory()->create();
+    $project = Project::factory()->for($apprentice)->create();
+    $screenshot = $project->screenshots()->create([
+        'path' => UploadedFile::fake()->image('capture.png')->store("projects/{$project->id}"),
+    ]);
+    $comment = new Comment(['body' => 'Bien.']);
+    $comment->author()->associate(User::factory()->coach()->create());
+    $project->comments()->save($comment);
+    // Fails after comments and screenshots have been deleted, forcing a rollback.
+    Project::deleted(function () {
+        throw new RuntimeException('Delete failed.');
+    });
+
+    expect(fn () => $this->actingAs($apprentice)
+        ->withoutExceptionHandling()
+        ->delete(route('portfolio.projects.destroy', $project)))
+        ->toThrow(RuntimeException::class, 'Delete failed.');
+
+    Storage::assertExists($screenshot->path);
+    expect(Project::find($project->id))->not->toBeNull()
+        ->and(ProjectScreenshot::find($screenshot->id))->not->toBeNull()
+        ->and(Comment::find($comment->id))->not->toBeNull();
 });

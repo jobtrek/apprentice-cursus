@@ -29,8 +29,9 @@ class PortfolioProjectRequest extends FormRequest
     }
 
     /**
-     * The form edits technologies as a tag list, but the column is a single
-     * comma-separated string, so both shapes are accepted and normalized here.
+     * The form edits technologies as a tag list (the shape ProjectResource sends
+     * back), but the column is a single comma-separated string, so the list is
+     * joined here before validation.
      */
     protected function prepareForValidation(): void
     {
@@ -66,7 +67,7 @@ class PortfolioProjectRequest extends FormRequest
             'date_end' => ['nullable', 'date', 'after_or_equal:date_start'],
             // New uploads only; screenshots already saved are kept by id.
             'screenshots' => ['nullable', 'array'],
-            'screenshots.*' => ['image', 'max:5120'],
+            'screenshots.*' => ['image', 'max:5120', 'max:10'],
             'kept_screenshot_ids' => ['nullable', 'array'],
             'kept_screenshot_ids.*' => [
                 'integer',

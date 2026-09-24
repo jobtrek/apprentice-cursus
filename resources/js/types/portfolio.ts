@@ -5,7 +5,7 @@ export type PortfolioProject = {
     organization: string | null;
     description: string;
     responsibilities: string | null;
-    technologies: string | null;
+    technologies: string[];
     repository_url: string | null;
     demo_path: string | null;
     date_start: string;

@@ -9,7 +9,7 @@ import {
     PlusIcon,
 } from '@lucide/vue';
 import { ref } from 'vue';
-import { formatPeriod, parseTechnologies } from '@/composables/usePortfolio';
+import { formatPeriod } from '@/composables/usePortfolio';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -157,9 +157,7 @@ function onHandleKeydown(event: KeyboardEvent, index: number): void {
                         </p>
                         <div class="flex flex-wrap gap-1 pt-1">
                             <Badge
-                                v-for="technology in parseTechnologies(
-                                    project.technologies,
-                                )"
+                                v-for="technology in project.technologies"
                                 :key="technology"
                                 variant="outline"
                             >

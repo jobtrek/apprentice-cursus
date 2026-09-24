@@ -1,6 +1,5 @@
 import { useForm } from '@inertiajs/vue3';
 import { computed, onScopeDispose, ref } from 'vue';
-import { parseTechnologies } from '@/composables/usePortfolio';
 import portfolio from '@/routes/portfolio';
 import type { PortfolioProject } from '@/types/portfolio';
 
@@ -37,7 +36,7 @@ function toForm(project?: PortfolioProject): ProjectForm {
         organization: project?.organization ?? '',
         description: project?.description ?? '',
         responsibilities: project?.responsibilities ?? '',
-        technologies: parseTechnologies(project?.technologies ?? null),
+        technologies: [...(project?.technologies ?? [])],
         repository_url: project?.repository_url ?? '',
         demo_path: project?.demo_path ?? '',
         date_start: project?.date_start ?? '',

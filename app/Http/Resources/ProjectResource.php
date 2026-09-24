@@ -25,7 +25,7 @@ class ProjectResource extends JsonResource
             'organization' => $this->organization,
             'description' => $this->description,
             'responsibilities' => $this->responsibilities,
-            'technologies' => $this->technologies,
+            'technologies' => $this->technologyList(),
             'repository_url' => $this->repository_url,
             'demo_path' => $this->demo_path,
             'date_start' => $this->date_start->toDateString(),
@@ -36,5 +36,22 @@ class ProjectResource extends JsonResource
             ])),
             'skill_ids' => $this->whenLoaded('skills', fn () => $this->skills->modelKeys()),
         ];
+    }
+
+    /**
+     * Sent as the same list the form submits, so the front never has to split
+     * the comma-separated column (see PortfolioProjectRequest::prepareForValidation()).
+     *
+     * @return list<string>
+     */
+    private function technologyList(): array
+    {
+        if ($this->technologies === null) {
+            return [];
+        }
+
+        $technologies = array_map(trim(...), explode(',', $this->technologies));
+
+        return array_values(array_filter($technologies, fn (string $technology): bool => $technology !== ''));
     }
 }

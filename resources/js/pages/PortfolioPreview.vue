@@ -1,11 +1,7 @@
 <script setup lang="ts">
 import { Head, Link } from '@inertiajs/vue3';
 import { ChevronLeftIcon, ExternalLinkIcon, FileTextIcon } from '@lucide/vue';
-import {
-    formatPeriod,
-    parseTechnologies,
-    skillNames,
-} from '@/composables/usePortfolio';
+import { formatPeriod, skillNames } from '@/composables/usePortfolio';
 import { Button } from '@/components/ui/button';
 import portfolio from '@/routes/portfolio';
 import type {
@@ -94,9 +90,7 @@ function exportToPdf(): void {
 
                 <ul class="mt-3 flex flex-wrap gap-1.5">
                     <li
-                        v-for="technology in parseTechnologies(
-                            project.technologies,
-                        )"
+                        v-for="technology in project.technologies"
                         :key="technology"
                         class="rounded-sm border border-neutral-200 px-2 py-0.5 text-xs"
                     >

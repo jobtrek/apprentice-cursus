@@ -34,18 +34,6 @@ export function formatPeriod(start: string, end: string | null): string {
     }`;
 }
 
-/** `Vue.js, Laravel` -> `['Vue.js', 'Laravel']`. */
-export function parseTechnologies(technologies: string | null): string[] {
-    if (!technologies) {
-        return [];
-    }
-
-    return technologies
-        .split(',')
-        .map((technology) => technology.trim())
-        .filter((technology) => technology.length > 0);
-}
-
 /** Noms des compétences du projet, dans l'ordre du catalogue `skills`. */
 export function skillNames(
     project: PortfolioProject,
