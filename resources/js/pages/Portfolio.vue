@@ -28,11 +28,12 @@ import {
 import portfolio from '@/routes/portfolio';
 import AddActionButton from '@/components/AddActionButton.vue';
 import { PageContainer, PageHeader } from '@/components/page';
-import AddProjectDialog from '@/components/portfolio/AddProjectDialog.vue';
-import { useAddProjectDialog } from '@/composables/useAddProjectDialog';
+import ProjectDialog from '@/components/portfolio/ProjectDialog.vue';
+import { useProjectDialog } from '@/composables/useProjectDialog';
 
 const { projects, moveProject } = usePortfolio();
-const { open: openAddProject } = useAddProjectDialog();
+const { openCreate: openAddProject, openEdit: openEditProject } =
+    useProjectDialog();
 
 const draggedIndex = ref<number | null>(null);
 const dropTargetIndex = ref<number | null>(null);
@@ -154,13 +155,14 @@ function onHandleKeydown(event: KeyboardEvent, index: number): void {
                         </div>
                     </div>
 
-                    <Button as-child variant="outline" size="icon">
-                        <Link
-                            :href="portfolio.projects.edit(project.id)"
-                            :aria-label="`Modifier ${project.title}`"
-                        >
-                            <PencilIcon aria-hidden="true" />
-                        </Link>
+                    <Button
+                        variant="outline"
+                        size="icon"
+                        :aria-label="`Modifier ${project.title}`"
+                        :title="`Modifier ${project.title}`"
+                        @click="openEditProject(project)"
+                    >
+                        <PencilIcon aria-hidden="true" />
                     </Button>
                 </li>
             </ul>
@@ -185,6 +187,6 @@ function onHandleKeydown(event: KeyboardEvent, index: number): void {
             </EmptyContent>
         </Empty>
 
-        <AddProjectDialog />
+        <ProjectDialog />
     </PageContainer>
 </template>

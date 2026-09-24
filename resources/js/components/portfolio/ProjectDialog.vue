@@ -1,8 +1,5 @@
 <script setup lang="ts">
-import { Head, Link, router } from '@inertiajs/vue3';
 import { Trash2Icon } from '@lucide/vue';
-import { computed } from 'vue';
-import { PageContainer, PageHeader } from '@/components/page';
 import ProjectForm from '@/components/portfolio/ProjectForm.vue';
 import {
     AlertDialog,
@@ -16,27 +13,22 @@ import {
     AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { Button, buttonVariants } from '@/components/ui/button';
-import { Card, CardContent, CardFooter } from '@/components/ui/card';
+import {
+    Dialog,
+    DialogClose,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
 import { usePortfolio } from '@/composables/usePortfolio';
-import portfolio from '@/routes/portfolio';
+import { useProjectDialog } from '@/composables/useProjectDialog';
 
-// Modification d'un projet. La création passe par <AddProjectDialog> sur la
-// page Portfolio.
-const props = defineProps<{
-    projectId: number;
-}>();
+const FORM_ID = 'project-dialog-form';
 
-const FORM_ID = 'edit-project-form';
-
-const { findProject, deleteProject } = usePortfolio();
-
-const project = computed(() => findProject(props.projectId));
-
-const breadcrumbs = [{ label: 'Portfolio', href: portfolio.index() }];
-
-function backToPortfolio(): void {
-    router.visit(portfolio.index());
-}
+const { isOpen, project, close } = useProjectDialog();
+const { deleteProject } = usePortfolio();
 
 function onDelete(): void {
     if (!project.value) {
@@ -44,45 +36,49 @@ function onDelete(): void {
     }
 
     deleteProject(project.value.id);
-    backToPortfolio();
+    close();
 }
 </script>
 
 <template>
-    <Head title="Modifier un projet" />
+    <!--
+        Création quand `project` est vide, modification sinon. Le contenu est
+        démonté à la fermeture : le formulaire repart de `project` à chaque
+        ouverture, sans remise à zéro manuelle.
+    -->
+    <Dialog v-model:open="isOpen">
+        <DialogContent
+            class="flex max-h-[90svh] flex-col gap-0 p-0 sm:max-w-2xl"
+        >
+            <DialogHeader class="border-b p-6">
+                <DialogTitle>
+                    {{ project ? 'Modifier le projet' : 'Nouveau projet' }}
+                </DialogTitle>
+                <DialogDescription>
+                    {{
+                        project
+                            ? project.title
+                            : "Décrivez le projet pour l'ajouter à votre portfolio."
+                    }}
+                </DialogDescription>
+            </DialogHeader>
 
-    <PageContainer size="sm">
-        <PageHeader
-            :title="project?.title ?? 'Modifier un projet'"
-            :breadcrumbs="breadcrumbs"
-        />
-
-        <Card>
-            <CardContent>
+            <div class="overflow-y-auto p-6">
                 <ProjectForm
                     :id="FORM_ID"
+                    :key="project?.id ?? 'new'"
                     :project="project"
-                    @saved="backToPortfolio"
+                    @saved="close"
                 />
-            </CardContent>
+            </div>
 
-            <CardFooter class="flex-wrap gap-2 border-t">
-                <Button
-                    type="submit"
-                    :form="FORM_ID"
-                    data-test="save-project-button"
-                >
-                    Enregistrer le projet
-                </Button>
-                <Button as-child type="button" variant="outline">
-                    <Link :href="portfolio.index()">Annuler</Link>
-                </Button>
+            <DialogFooter class="border-t p-6">
                 <AlertDialog v-if="project">
                     <AlertDialogTrigger as-child>
                         <Button
                             type="button"
                             variant="ghost"
-                            class="text-destructive hover:bg-destructive/10 hover:text-destructive ml-auto"
+                            class="text-destructive hover:bg-destructive/10 hover:text-destructive sm:mr-auto"
                         >
                             <Trash2Icon aria-hidden="true" />
                             Supprimer
@@ -111,7 +107,18 @@ function onDelete(): void {
                         </AlertDialogFooter>
                     </AlertDialogContent>
                 </AlertDialog>
-            </CardFooter>
-        </Card>
-    </PageContainer>
+
+                <DialogClose as-child>
+                    <Button type="button" variant="outline">Annuler</Button>
+                </DialogClose>
+                <Button
+                    type="submit"
+                    :form="FORM_ID"
+                    data-test="save-project-button"
+                >
+                    Enregistrer le projet
+                </Button>
+            </DialogFooter>
+        </DialogContent>
+    </Dialog>
 </template>

@@ -9,12 +9,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::inertia('/portfolio', 'Portfolio')->name('portfolio.index');
     Route::inertia('/portfolio/preview', 'PortfolioPreview')
         ->name('portfolio.preview');
-    Route::get(
-        '/portfolio/projects/{project}/edit',
-        fn (int $project) => Inertia::render('PortfolioProjectForm', [
-            'projectId' => $project,
-        ])
-    )->whereNumber('project')->name('portfolio.projects.edit');
 
     // Données de démonstration, en attendant le modèle Grade côté serveur.
     $demoGrade = [

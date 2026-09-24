@@ -81,3 +81,19 @@ const flattenGrades = (menus: GradeMenu[]): Grade[] =>
 /** Note de démonstration correspondant à l'identifiant d'URL, si elle existe. */
 export const findGrade = (id: number): Grade | undefined =>
     flattenGrades(GRADE_TABLES).find((grade) => grade.id === id);
+
+/** « 12.03.2026 » → « 2026-03-12 », comparable en tant que chaîne. */
+const sortableDate = (date: string): string =>
+    date.split('.').reverse().join('-');
+
+/** Notes de démonstration, sans doublon, de la plus récente à la plus ancienne. */
+export const recentGrades = (limit: number): Grade[] =>
+    [
+        ...new Map(
+            flattenGrades(GRADE_TABLES).map((grade) => [grade.id, grade]),
+        ).values(),
+    ]
+        .sort((a, b) =>
+            sortableDate(b.date).localeCompare(sortableDate(a.date)),
+        )
+        .slice(0, limit);
