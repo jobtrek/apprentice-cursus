@@ -1,144 +1,160 @@
-import { computed, ref } from 'vue';
-import { usePortfolio } from '@/composables/usePortfolio';
-import { parseTechnologies } from '@/composables/usePortfolio';
+import type { UrlMethodPair } from '@inertiajs/core';
+import { useForm } from '@inertiajs/vue3';
+import { computed, onScopeDispose, ref } from 'vue';
+import portfolio from '@/routes/portfolio';
 import type { PortfolioProject } from '@/types/portfolio';
 
-type ProjectForm = Omit<
-    PortfolioProject,
-    | 'organization'
-    | 'responsibilities'
-    | 'technologies'
-    | 'repository_url'
-    | 'demo_path'
-    | 'date_end'
-> & {
+type ProjectForm = {
+    title: string;
     organization: string;
+    description: string;
     responsibilities: string;
     technologies: string[];
     repository_url: string;
     demo_path: string;
+    date_start: string;
     date_end: string;
+    /** Nouveaux fichiers seulement ; les captures enregistrées sont gardées par id. */
+    screenshots: File[];
+    kept_screenshot_ids: number[];
+    skill_ids: number[];
 };
 
+/** Vignette affichée dans le formulaire, enregistrée ou pas encore envoyée. */
+export type ScreenshotPreview =
+    | { kind: 'saved'; id: number; url: string }
+    | { kind: 'new'; file: File; url: string };
+
 const MAX_SCREENSHOT_BYTES = 5 * 1024 * 1024;
+/** Même limite que `ProjectScreenshot::MAX_PER_PROJECT`. */
+export const MAX_SCREENSHOTS = 10;
 
-function blankForm(): ProjectForm {
+/**
+ * Les champs vides partent en chaîne vide : le middleware
+ * ConvertEmptyStringsToNull de Laravel les transforme en null.
+ */
+function toForm(project?: PortfolioProject): ProjectForm {
     return {
-        id: 0,
-        title: '',
-        organization: '',
-        description: '',
-        responsibilities: '',
-        technologies: [],
-        repository_url: '',
-        demo_path: '',
-        date_start: '',
-        date_end: '',
+        title: project?.title ?? '',
+        organization: project?.organization ?? '',
+        description: project?.description ?? '',
+        responsibilities: project?.responsibilities ?? '',
+        technologies: [...(project?.technologies ?? [])],
+        repository_url: project?.repository_url ?? '',
+        demo_path: project?.demo_path ?? '',
+        date_start: project?.date_start ?? '',
+        date_end: project?.date_end ?? '',
         screenshots: [],
-        skill_ids: [],
+        kept_screenshot_ids: (project?.screenshots ?? []).map(({ id }) => id),
+        skill_ids: [...(project?.skill_ids ?? [])],
     };
 }
 
-function toForm(project: PortfolioProject): ProjectForm {
+/**
+ * Un PUT multipart n'est pas lu par PHP : la mise à jour passe par POST avec
+ * `?_method=PUT` (variante `.form` de Wayfinder). Precognition valide sur la
+ * même route, sans envoyer les fichiers.
+ */
+function endpoint(existing?: PortfolioProject): UrlMethodPair {
+    if (!existing) {
+        return portfolio.projects.store();
+    }
+
     return {
-        ...project,
-        organization: project.organization ?? '',
-        responsibilities: project.responsibilities ?? '',
-        repository_url: project.repository_url ?? '',
-        demo_path: project.demo_path ?? '',
-        date_end: project.date_end ?? '',
-        technologies: parseTechnologies(project.technologies),
-        screenshots: [...project.screenshots],
-        skill_ids: [...project.skill_ids],
+        url: portfolio.projects.update.form(existing.id).action,
+        method: 'post',
     };
-}
-
-/** Renvoie null si la valeur est vide, pour coller aux colonnes nullable. */
-function nullIfBlank(value: string): string | null {
-    const trimmed = value.trim();
-
-    return trimmed.length > 0 ? trimmed : null;
 }
 
 export function usePortfolioForm(existing?: PortfolioProject) {
-    const { skills, saveProject } = usePortfolio();
-
-    const form = ref<ProjectForm>(existing ? toForm(existing) : blankForm());
+    const form = useForm<ProjectForm>(endpoint(existing), toForm(existing));
     const technologyDraft = ref('');
-    const errors = ref<Record<string, string>>({});
+    const screenshotError = ref<string | null>(null);
 
-    const isEditing = computed(() => form.value.id !== 0);
+    const isEditing = computed(() => existing !== undefined);
+
+    /**
+     * Erreurs de la Form Request, plus le rejet local des captures. Celles des
+     * éléments de liste (`skill_ids.0`) sont regroupées sous leur champ.
+     */
+    const errors = computed<Partial<Record<keyof ProjectForm, string>>>(() => {
+        const found: Partial<Record<keyof ProjectForm, string>> = {};
+
+        for (const [key, message] of Object.entries(form.errors)) {
+            const field = key.split('.')[0] as keyof ProjectForm;
+            found[field] ??= message;
+        }
+
+        if (screenshotError.value) {
+            found.screenshots = screenshotError.value;
+        }
+
+        return found;
+    });
 
     function addTechnology(): void {
         const technology = technologyDraft.value.trim();
 
-        if (
-            technology.length === 0 ||
-            form.value.technologies.includes(technology)
-        ) {
+        if (technology.length === 0 || form.technologies.includes(technology)) {
             technologyDraft.value = '';
 
             return;
         }
 
-        form.value.technologies.push(technology);
+        form.technologies.push(technology);
         technologyDraft.value = '';
+        form.validate('technologies');
     }
 
     function removeTechnology(technology: string): void {
-        form.value.technologies = form.value.technologies.filter(
+        form.technologies = form.technologies.filter(
             (candidate) => candidate !== technology,
         );
+        form.validate('technologies');
     }
 
     /** Retire la dernière techno quand on recule dans un champ déjà vide. */
     function removeLastTechnology(): void {
-        if (technologyDraft.value.length === 0) {
-            form.value.technologies.pop();
+        if (
+            technologyDraft.value.length === 0 &&
+            form.technologies.length > 0
+        ) {
+            form.technologies.pop();
+            form.validate('technologies');
         }
     }
 
     function toggleSkill(id: number): void {
-        const index = form.value.skill_ids.indexOf(id);
+        const index = form.skill_ids.indexOf(id);
 
         if (index === -1) {
-            form.value.skill_ids.push(id);
+            form.skill_ids.push(id);
 
             return;
         }
 
-        form.value.skill_ids.splice(index, 1);
+        form.skill_ids.splice(index, 1);
     }
 
     function hasSkill(id: number): boolean {
-        return form.value.skill_ids.includes(id);
+        return form.skill_ids.includes(id);
     }
 
-    /**
-     * Les images sont lues en data URL et gardées en mémoire : elles sont
-     * donc directement affichables dans l'aperçu. À remplacer par un envoi
-     * vers la route de stockage quand le backend l'exposera.
-     */
-    function readScreenshot(file: File): Promise<string> {
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = () => {
-                // readAsDataURL donne toujours une chaîne, mais le type de
-                // FileReader couvre aussi ArrayBuffer.
-                if (typeof reader.result === 'string') {
-                    resolve(reader.result);
+    /** URL locales des nouveaux fichiers, libérées quand on les retire. */
+    const objectUrls = new Map<File, string>();
 
-                    return;
-                }
+    const screenshotPreviews = computed<ScreenshotPreview[]>(() => [
+        ...(existing?.screenshots ?? [])
+            .filter(({ id }) => form.kept_screenshot_ids.includes(id))
+            .map(({ id, url }) => ({ kind: 'saved' as const, id, url })),
+        ...form.screenshots.map((file) => ({
+            kind: 'new' as const,
+            file,
+            url: objectUrls.get(file) ?? '',
+        })),
+    ]);
 
-                reject(new Error('Lecture du fichier impossible.'));
-            };
-            reader.onerror = () => reject(reader.error);
-            reader.readAsDataURL(file);
-        });
-    }
-
-    async function addScreenshots(files: FileList | null): Promise<void> {
+    function addScreenshots(files: FileList | null): void {
         if (!files || files.length === 0) {
             return;
         }
@@ -158,81 +174,48 @@ export function usePortfolioForm(existing?: PortfolioProject) {
                 continue;
             }
 
-            form.value.screenshots.push(await readScreenshot(file));
+            if (screenshotPreviews.value.length >= MAX_SCREENSHOTS) {
+                rejected.push(
+                    `${MAX_SCREENSHOTS} captures maximum par projet.`,
+                );
+
+                break;
+            }
+
+            objectUrls.set(file, URL.createObjectURL(file));
+            form.screenshots.push(file);
         }
 
-        if (rejected.length > 0) {
-            errors.value = { ...errors.value, screenshots: rejected.join(' ') };
+        screenshotError.value = rejected.length > 0 ? rejected.join(' ') : null;
+    }
+
+    function removeScreenshot(preview: ScreenshotPreview): void {
+        if (preview.kind === 'saved') {
+            form.kept_screenshot_ids = form.kept_screenshot_ids.filter(
+                (id) => id !== preview.id,
+            );
 
             return;
         }
 
-        const { screenshots: _removed, ...rest } = errors.value;
-        errors.value = rest;
+        URL.revokeObjectURL(preview.url);
+        objectUrls.delete(preview.file);
+        form.screenshots = form.screenshots.filter(
+            (file) => file !== preview.file,
+        );
     }
 
-    function removeScreenshot(index: number): void {
-        form.value.screenshots.splice(index, 1);
-    }
+    onScopeDispose(() => {
+        objectUrls.forEach((url) => URL.revokeObjectURL(url));
+    });
 
-    /**
-     * Validation côté client uniquement : elle sera doublée par une Form
-     * Request dès que le backend exposera la route.
-     */
-    function validate(): boolean {
-        const found: Record<string, string> = {};
-
-        if (form.value.title.trim().length === 0) {
-            found.title = 'Le titre du projet est obligatoire.';
-        }
-
-        if (form.value.description.trim().length === 0) {
-            found.description = 'La description est obligatoire.';
-        }
-
-        if (form.value.date_start.length === 0) {
-            found.date_start = 'La date de début est obligatoire.';
-        }
-
-        if (
-            form.value.date_end.length > 0 &&
-            form.value.date_end < form.value.date_start
-        ) {
-            found.date_end = 'La date de fin doit suivre la date de début.';
-        }
-
-        errors.value = found;
-
-        return Object.keys(found).length === 0;
-    }
-
-    function submit(): PortfolioProject | null {
-        if (!validate()) {
-            return null;
-        }
-
-        return saveProject({
-            id: form.value.id,
-            title: form.value.title.trim(),
-            organization: nullIfBlank(form.value.organization),
-            description: form.value.description.trim(),
-            responsibilities: nullIfBlank(form.value.responsibilities),
-            technologies:
-                form.value.technologies.length > 0
-                    ? form.value.technologies.join(', ')
-                    : null,
-            repository_url: nullIfBlank(form.value.repository_url),
-            demo_path: nullIfBlank(form.value.demo_path),
-            date_start: form.value.date_start,
-            date_end: nullIfBlank(form.value.date_end),
-            screenshots: form.value.screenshots,
-            skill_ids: form.value.skill_ids,
-        });
+    /** Inertia passe en multipart dès qu'un fichier est présent. */
+    function submit(): void {
+        form.submit();
     }
 
     return {
         form,
-        skills,
         errors,
         isEditing,
         technologyDraft,
@@ -241,6 +224,7 @@ export function usePortfolioForm(existing?: PortfolioProject) {
         removeLastTechnology,
         toggleSkill,
         hasSkill,
+        screenshotPreviews,
         addScreenshots,
         removeScreenshot,
         submit,

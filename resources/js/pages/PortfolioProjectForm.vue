@@ -29,24 +29,21 @@ import {
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Toggle } from '@/components/ui/toggle';
-import { usePortfolio } from '@/composables/usePortfolio';
-import { usePortfolioForm } from '@/composables/usePortfolioForm';
+import {
+    MAX_SCREENSHOTS,
+    usePortfolioForm,
+} from '@/composables/usePortfolioForm';
 import portfolio from '@/routes/portfolio';
 import { PageContainer, PageHeader } from '@/components/page';
+import type { PortfolioProject, Skill } from '@/types/portfolio';
 
 const props = defineProps<{
-    projectId?: number;
+    project?: PortfolioProject;
+    skills: Skill[];
 }>();
-
-const { findProject, deleteProject } = usePortfolio();
-
-const existing = computed(() =>
-    props.projectId ? findProject(props.projectId) : undefined,
-);
 
 const {
     form,
-    skills,
     errors,
     isEditing,
     technologyDraft,
@@ -55,14 +52,14 @@ const {
     removeLastTechnology,
     toggleSkill,
     hasSkill,
+    screenshotPreviews,
     addScreenshots,
     removeScreenshot,
     submit,
-} = usePortfolioForm(existing.value);
+} = usePortfolioForm(props.project);
 
-const heading = computed(() =>
-    isEditing.value ? form.value.title : 'Nouveau projet',
-);
+// Titre enregistré, pour que l'en-tête ne suive pas la frappe.
+const heading = computed(() => props.project?.title ?? 'Nouveau projet');
 
 const breadcrumbs = [{ label: 'Portfolio', href: portfolio.index() }];
 
@@ -72,28 +69,24 @@ function pickScreenshots(): void {
     screenshotInput.value?.click();
 }
 
-async function onScreenshotsPicked(event: Event): Promise<void> {
+function onScreenshotsPicked(event: Event): void {
     const input = event.target as HTMLInputElement;
-    await addScreenshots(input.files);
+    addScreenshots(input.files);
     // Remis à zéro pour que réimporter le même fichier redéclenche l'événement.
     input.value = '';
 }
 
-function onSubmit(): void {
-    if (submit() === null) {
-        return;
-    }
-
-    router.visit(portfolio.index());
-}
+const deleting = ref(false);
 
 function onDelete(): void {
-    if (!isEditing.value) {
+    if (!props.project) {
         return;
     }
 
-    deleteProject(form.value.id);
-    router.visit(portfolio.index());
+    router.delete(portfolio.projects.destroy.url(props.project.id), {
+        onStart: () => (deleting.value = true),
+        onFinish: () => (deleting.value = false),
+    });
 }
 </script>
 
@@ -101,12 +94,9 @@ function onDelete(): void {
     <Head :title="isEditing ? 'Modifier un projet' : 'Nouveau projet'" />
 
     <PageContainer size="sm">
-        <PageHeader
-            :title="heading || 'Nouveau projet'"
-            :breadcrumbs="breadcrumbs"
-        />
+        <PageHeader :title="heading" :breadcrumbs="breadcrumbs" />
 
-        <form novalidate @submit.prevent="onSubmit">
+        <form novalidate @submit.prevent="submit">
             <Card>
                 <CardContent>
                     <FieldGroup>
@@ -121,6 +111,7 @@ function onDelete(): void {
                                     id="title"
                                     v-model="form.title"
                                     name="title"
+                                    @change="form.validate('title')"
                                     required
                                     :aria-invalid="Boolean(errors.title)"
                                 />
@@ -128,7 +119,9 @@ function onDelete(): void {
                             </Field>
 
                             <div class="grid gap-6 sm:grid-cols-2">
-                                <Field>
+                                <Field
+                                    :data-invalid="Boolean(errors.organization)"
+                                >
                                     <FieldLabel for="organization">
                                         Entreprise
                                     </FieldLabel>
@@ -136,9 +129,20 @@ function onDelete(): void {
                                         id="organization"
                                         v-model="form.organization"
                                         name="organization"
+                                        @change="form.validate('organization')"
+                                        :aria-invalid="
+                                            Boolean(errors.organization)
+                                        "
+                                    />
+                                    <FieldError
+                                        :errors="[errors.organization]"
                                     />
                                 </Field>
-                                <Field>
+                                <Field
+                                    :data-invalid="
+                                        Boolean(errors.responsibilities)
+                                    "
+                                >
                                     <FieldLabel for="responsibilities">
                                         Rôle
                                     </FieldLabel>
@@ -146,6 +150,15 @@ function onDelete(): void {
                                         id="responsibilities"
                                         v-model="form.responsibilities"
                                         name="responsibilities"
+                                        @change="
+                                            form.validate('responsibilities')
+                                        "
+                                        :aria-invalid="
+                                            Boolean(errors.responsibilities)
+                                        "
+                                    />
+                                    <FieldError
+                                        :errors="[errors.responsibilities]"
                                     />
                                 </Field>
                             </div>
@@ -162,6 +175,7 @@ function onDelete(): void {
                                         v-model="form.date_start"
                                         type="date"
                                         name="date_start"
+                                        @change="form.validate('date_start')"
                                         required
                                         :aria-invalid="
                                             Boolean(errors.date_start)
@@ -178,6 +192,7 @@ function onDelete(): void {
                                         v-model="form.date_end"
                                         type="date"
                                         name="date_end"
+                                        @change="form.validate('date_end')"
                                         :aria-invalid="Boolean(errors.date_end)"
                                     />
                                     <FieldError :errors="[errors.date_end]" />
@@ -192,6 +207,7 @@ function onDelete(): void {
                                     id="description"
                                     v-model="form.description"
                                     name="description"
+                                    @change="form.validate('description')"
                                     rows="4"
                                     required
                                     :aria-invalid="Boolean(errors.description)"
@@ -205,7 +221,7 @@ function onDelete(): void {
                         <FieldSet>
                             <FieldLegend>Technique</FieldLegend>
 
-                            <Field>
+                            <Field :data-invalid="Boolean(errors.technologies)">
                                 <FieldLabel for="technology-draft">
                                     Technologies
                                 </FieldLabel>
@@ -246,13 +262,16 @@ function onDelete(): void {
                                         @blur="addTechnology"
                                     />
                                 </div>
+                                <FieldError :errors="[errors.technologies]" />
                                 <FieldDescription>
                                     Validez avec Entrée ou une virgule.
                                 </FieldDescription>
                             </Field>
 
                             <div class="grid gap-6 sm:grid-cols-2">
-                                <Field>
+                                <Field
+                                    :data-invalid="Boolean(errors.demo_path)"
+                                >
                                     <FieldLabel for="demo_path">
                                         Lien de démonstration
                                     </FieldLabel>
@@ -261,10 +280,19 @@ function onDelete(): void {
                                         v-model="form.demo_path"
                                         type="url"
                                         name="demo_path"
+                                        @change="form.validate('demo_path')"
+                                        :aria-invalid="
+                                            Boolean(errors.demo_path)
+                                        "
                                         placeholder="https://"
                                     />
+                                    <FieldError :errors="[errors.demo_path]" />
                                 </Field>
-                                <Field>
+                                <Field
+                                    :data-invalid="
+                                        Boolean(errors.repository_url)
+                                    "
+                                >
                                     <FieldLabel for="repository_url">
                                         Lien du code source
                                     </FieldLabel>
@@ -273,7 +301,16 @@ function onDelete(): void {
                                         v-model="form.repository_url"
                                         type="url"
                                         name="repository_url"
+                                        @change="
+                                            form.validate('repository_url')
+                                        "
+                                        :aria-invalid="
+                                            Boolean(errors.repository_url)
+                                        "
                                         placeholder="https://"
+                                    />
+                                    <FieldError
+                                        :errors="[errors.repository_url]"
                                     />
                                 </Field>
                             </div>
@@ -284,17 +321,24 @@ function onDelete(): void {
                         <FieldSet>
                             <FieldLegend>Captures d'écran</FieldLegend>
 
-                            <Field :data-invalid="Boolean(errors.screenshots)">
+                            <Field
+                                :data-invalid="
+                                    Boolean(
+                                        errors.screenshots ||
+                                        errors.kept_screenshot_ids,
+                                    )
+                                "
+                            >
                                 <div class="flex flex-wrap gap-3">
                                     <div
                                         v-for="(
                                             screenshot, index
-                                        ) in form.screenshots"
-                                        :key="index"
+                                        ) in screenshotPreviews"
+                                        :key="screenshot.url"
                                         class="relative"
                                     >
                                         <img
-                                            :src="screenshot"
+                                            :src="screenshot.url"
                                             :alt="`Capture d'écran ${index + 1}`"
                                             class="bg-muted size-24 rounded-md object-cover"
                                         />
@@ -304,7 +348,9 @@ function onDelete(): void {
                                             size="icon-xs"
                                             class="absolute -top-2 -right-2 rounded-full border shadow-xs"
                                             :aria-label="`Retirer la capture ${index + 1}`"
-                                            @click="removeScreenshot(index)"
+                                            @click="
+                                                removeScreenshot(screenshot)
+                                            "
                                         >
                                             <XIcon aria-hidden="true" />
                                         </Button>
@@ -333,9 +379,15 @@ function onDelete(): void {
                                         @change="onScreenshotsPicked"
                                     />
                                 </div>
-                                <FieldError :errors="[errors.screenshots]" />
+                                <FieldError
+                                    :errors="[
+                                        errors.screenshots,
+                                        errors.kept_screenshot_ids,
+                                    ]"
+                                />
                                 <FieldDescription>
-                                    Images uniquement, 5 Mo maximum par fichier.
+                                    Images uniquement, 5 Mo maximum par fichier,
+                                    {{ MAX_SCREENSHOTS }} captures au plus.
                                 </FieldDescription>
                             </Field>
                         </FieldSet>
@@ -358,12 +410,17 @@ function onDelete(): void {
                                     {{ skill.name }}
                                 </Toggle>
                             </div>
+                            <FieldError :errors="[errors.skill_ids]" />
                         </FieldSet>
                     </FieldGroup>
                 </CardContent>
 
                 <CardFooter class="flex-wrap gap-2 border-t">
-                    <Button type="submit" data-test="save-project-button">
+                    <Button
+                        type="submit"
+                        :disabled="form.processing"
+                        data-test="save-project-button"
+                    >
                         Enregistrer le projet
                     </Button>
                     <Button as-child type="button" variant="outline">
@@ -374,6 +431,7 @@ function onDelete(): void {
                             <Button
                                 type="button"
                                 variant="ghost"
+                                :disabled="deleting"
                                 class="text-destructive hover:bg-destructive/10 hover:text-destructive ml-auto"
                             >
                                 <Trash2Icon aria-hidden="true" />
@@ -383,7 +441,7 @@ function onDelete(): void {
                         <AlertDialogContent>
                             <AlertDialogHeader>
                                 <AlertDialogTitle>
-                                    Supprimer « {{ form.title }} » ?
+                                    Supprimer « {{ heading }} » ?
                                 </AlertDialogTitle>
                                 <AlertDialogDescription>
                                     Cette action est irréversible. Le projet
@@ -398,6 +456,7 @@ function onDelete(): void {
                                             variant: 'destructive',
                                         })
                                     "
+                                    :disabled="deleting"
                                     @click="onDelete"
                                 >
                                     Supprimer

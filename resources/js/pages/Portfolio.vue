@@ -9,11 +9,7 @@ import {
     PlusIcon,
 } from '@lucide/vue';
 import { ref } from 'vue';
-import {
-    formatPeriod,
-    parseTechnologies,
-    usePortfolio,
-} from '@/composables/usePortfolio';
+import { formatPeriod } from '@/composables/usePortfolio';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -27,8 +23,29 @@ import {
 } from '@/components/ui/empty';
 import portfolio from '@/routes/portfolio';
 import { PageContainer, PageHeader } from '@/components/page';
+import type { PortfolioProject } from '@/types/portfolio';
 
-const { projects, moveProject } = usePortfolio();
+const props = defineProps<{
+    projects: PortfolioProject[];
+}>();
+
+/**
+ * Copie locale pour le glisser-déposer. L'ordre n'est pas encore enregistré :
+ * la table `projects` n'a pas de colonne `position`.
+ */
+const projects = ref<PortfolioProject[]>([...props.projects]);
+
+/** Déplace un projet dans la liste, en bornant la position d'arrivée. */
+function moveProject(from: number, to: number): void {
+    if (to < 0 || to >= projects.value.length || from === to) {
+        return;
+    }
+
+    const reordered = [...projects.value];
+    const [moved] = reordered.splice(from, 1);
+    reordered.splice(to, 0, moved);
+    projects.value = reordered;
+}
 
 const draggedIndex = ref<number | null>(null);
 const dropTargetIndex = ref<number | null>(null);
@@ -140,9 +157,7 @@ function onHandleKeydown(event: KeyboardEvent, index: number): void {
                         </p>
                         <div class="flex flex-wrap gap-1 pt-1">
                             <Badge
-                                v-for="technology in parseTechnologies(
-                                    project.technologies,
-                                )"
+                                v-for="technology in project.technologies"
                                 :key="technology"
                                 variant="outline"
                             >
