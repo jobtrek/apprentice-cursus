@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Enums\AggregationType;
 use App\Enums\EvaluationVariant;
 use App\Enums\PeriodScope;
+use App\Models\Apprenticeship;
 use App\Models\EvaluationNode;
 use App\Models\Subject;
 use App\Models\SubjectCategory;
@@ -20,6 +21,9 @@ use LogicException;
  * Every leaf is a subject that grades are entered against; every composite
  * node is a weighted average of its children. Weights are percentages of
  * their parent and are meant to be normalized by their sum.
+ *
+ * Each root is then linked to its apprenticeship (ApprenticeshipSeeder must
+ * run first).
  *
  * Idempotent: a tree whose root already exists is left untouched.
  */
@@ -47,7 +51,19 @@ class EvaluationTreeSeeder extends Seeder
         DB::transaction(function (): void {
             $this->seedTree($this->itTree());
             $this->seedTree($this->ecTree());
+
+            $this->linkApprenticeship(ApprenticeshipSeeder::IT, self::IT_ROOT);
+            $this->linkApprenticeship(ApprenticeshipSeeder::EC, self::EC_ROOT);
         });
+    }
+
+    private function linkApprenticeship(string $apprenticeship, string $root): void
+    {
+        Apprenticeship::query()
+            ->where('name', $apprenticeship)
+            ->update([
+                'evaluation_node_id' => EvaluationNode::query()->where('name', $root)->value('id'),
+            ]);
     }
 
     /**
