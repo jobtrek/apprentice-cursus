@@ -167,6 +167,18 @@ test('another project\'s screenshot cannot be kept or viewed', function () {
     expect(ProjectScreenshot::find($foreign->id))->not->toBeNull();
 });
 
+test('scalar screenshot fields fail validation instead of crashing', function () {
+    $apprentice = User::factory()->create();
+    $project = Project::factory()->for($apprentice)->create();
+
+    $this->actingAs($apprentice)
+        ->put(route('portfolio.projects.update', $project), projectPayload([
+            'kept_screenshot_ids' => '5',
+            'screenshots' => 'not-a-file',
+        ]))
+        ->assertSessionHasErrors(['kept_screenshot_ids', 'screenshots']);
+});
+
 test('deleting a project removes its screenshot files', function () {
     Storage::fake();
     $apprentice = User::factory()->create();

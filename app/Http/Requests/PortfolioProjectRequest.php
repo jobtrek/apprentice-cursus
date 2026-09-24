@@ -91,7 +91,11 @@ class PortfolioProjectRequest extends FormRequest
     {
         return [
             function (Validator $validator): void {
-                $total = count($this->input('kept_screenshot_ids', [])) + count($this->file('screenshots', []));
+                // Runs even when the `array` rules failed, so scalars must not reach count().
+                $keptScreenshotIds = $this->input('kept_screenshot_ids', []);
+                $screenshots = $this->file('screenshots', []);
+                $total = count(is_array($keptScreenshotIds) ? $keptScreenshotIds : [])
+                    + count(is_array($screenshots) ? $screenshots : []);
 
                 if ($total > ProjectScreenshot::MAX_PER_PROJECT) {
                     $validator->errors()->add(
