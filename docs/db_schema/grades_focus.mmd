@@ -1,0 +1,108 @@
+erDiagram
+
+    grades {
+        bigint id PK
+        bigint user_id FK "-> users (apprentice, kept from existing model)"
+        bigint subject_id FK "-> subjects (domain derived via subject)"
+        decimal value "grade value, e.g. 1.0-6.0"
+        date submitted_at "date of submission (-> grades.test_date)"
+        timestamp created_at
+        timestamp updated_at "date of modification"
+    }
+
+    subjects {
+        bigint id PK
+        bigint domain_id FK "-> domains (each subject belongs to exactly one domain)"
+        bigint subject_type_id FK "-> subject_types"
+        varchar name "e.g. Francais, Math, Module 164"
+    }
+
+    subject_types {
+        bigint id PK
+        varchar name "e.g. CIE, Modules (-> subject_category.name)"
+    }
+
+    domains {
+        bigint id PK
+        bigint apprenticeship_id FK "-> apprenticeships (NEW link, not in mcd_actual)"
+        bigint parent_domain_id FK "nullable, self-ref -> domains (optional parent)"
+        varchar name "e.g. DCO B, Note finale CFC"
+        decimal weight "NOT NULL DEFAULT 100, weight WITHIN the parent domain (unused on roots)"
+        enum calculus "average | weighted_average (-> evaluation_nodes.aggregation)"
+        decimal rounding "0.5 = half, 0.1 = tenth (-> evaluation_nodes.rounding_step)"
+    }
+
+    apprenticeships {
+        bigint id PK
+        varchar name
+        timestamp created_at "nullable"
+        timestamp updated_at "nullable"
+    }
+
+    domain_connections {
+        bigint id PK
+        bigint parent_id FK "-> domains, on delete cascade"
+        bigint child_id FK "-> domains, on delete cascade"
+        decimal weight "NOT NULL DEFAULT 100, weight of child WITHIN this parent"
+        timestamp created_at
+    }
+    %% domain_connections: UNIQUE(parent_id, child_id), DAG (not strict tree).
+    %% Coexists with domains.parent_domain_id for now — pending decision to remove the self-FK.
+
+    users {
+        bigint id PK
+        varchar name
+        varchar email UK
+        timestamp email_verified_at "nullable"
+        varchar password "nullable"
+        varchar azure_id UK "nullable"
+        varchar tenant_id "nullable"
+        boolean is_mp "nullable"
+        boolean is_active "default true"
+        varchar role "default apprentice, CHECK apprentice|coach|trainer|admin|super_admin"
+        bigint apprenticeship_id FK "nullable, -> apprenticeships, on delete set null"
+        bigint coach_id FK "nullable, self-ref -> users, on delete set null"
+        bigint trainer_id FK "nullable, self-ref -> users, on delete set null"
+    }
+
+    projects {
+        bigint id PK
+        bigint user_id FK "-> users, on delete restrict"
+        varchar title
+        varchar organization "nullable"
+        text description
+        varchar responsibilities "nullable"
+        varchar technologies "nullable"
+        varchar repository_url "nullable"
+        varchar demo_path "nullable"
+        date date_start
+        date date_end "nullable"
+        timestamp created_at "nullable"
+        timestamp updated_at "nullable"
+    }
+
+    comments {
+        bigint id PK
+        bigint author_id FK "-> users, on delete restrict"
+        varchar commentable_type "grade | project, polymorphic, no FK"
+        bigint commentable_id "polymorphic, no FK"
+        text body "CHECK char_length <= 2000"
+        timestamp created_at "nullable"
+        timestamp updated_at "nullable"
+    }
+
+    subject_types ||--o{ subjects : "groups"
+    subjects ||--o{ grades : "belongs_to"
+    apprenticeships ||--o{ domains : "scopes"
+    apprenticeships ||--o{ users : "tracks"
+    domains ||--o{ subjects : "contains"
+    domains ||--o{ domains : "parent_of"
+    domains ||--o{ domain_connections : "as_parent"
+    domains ||--o{ domain_connections : "as_child"
+    users ||--o{ users : "coaches"
+    users ||--o{ users : "trains"
+    users ||--o{ grades : "earns"
+    users ||--o{ projects : "owns"
+    users ||--o{ comments : "authors"
+    grades ||..o{ comments : "polymorphic, no FK"
+    projects ||..o{ comments : "polymorphic, no FK"

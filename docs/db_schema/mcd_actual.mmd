@@ -1,0 +1,135 @@
+erDiagram
+    subject_category {
+        bigint id PK
+        varchar name
+    }
+
+    subjects {
+        bigint id PK
+        bigint subject_category_id FK "-> subject_category, on delete cascade"
+        timestamp created_at "default CURRENT_TIMESTAMP"
+    }
+
+    apprenticeships {
+        bigint id PK
+        varchar name
+        timestamp created_at "nullable"
+        timestamp updated_at "nullable"
+    }
+
+    users {
+        bigint id PK
+        varchar name
+        varchar email UK
+        timestamp email_verified_at "nullable"
+        varchar password "nullable"
+        varchar azure_id UK "nullable"
+        varchar tenant_id "nullable"
+        boolean is_mp "nullable"
+        boolean is_active "default true"
+        varchar role "default apprentice, CHECK apprentice|coach|trainer|admin|super_admin"
+        bigint apprenticeship_id FK "nullable, -> apprenticeships, on delete set null"
+        bigint coach_id FK "nullable, self-ref -> users, on delete set null"
+        bigint trainer_id FK "nullable, self-ref -> users, on delete set null"
+    }
+
+    evaluation_nodes {
+        bigint id PK
+        bigint subject_id FK "nullable, -> subjects, on delete set null"
+        varchar name
+        varchar aggregation "nullable, CHECK NULL | weighted_average"
+        numeric rounding_step "nullable, numeric(2,1)"
+        varchar period_scope "CHECK semester|cursus"
+        varchar variant "nullable, CHECK NULL | standard | mp"
+        timestamp created_at "default CURRENT_TIMESTAMP"
+    }
+
+    evaluation_node_connections {
+        bigint id PK
+        bigint parent_id FK "-> evaluation_nodes, on delete cascade"
+        bigint child_id FK "-> evaluation_nodes, on delete cascade"
+        numeric weight "numeric(5,2), weight of child WITHIN parent"
+        timestamp created_at "default CURRENT_TIMESTAMP"
+    }
+    %% evaluation_node_connections: UNIQUE(parent_id, child_id), CHECK(parent_id <> child_id), DAG not strict tree
+
+    grades {
+        bigint id PK
+        bigint user_id FK "-> users, on delete restrict"
+        bigint evaluation_node_id FK "-> evaluation_nodes (leaf), on delete restrict"
+        numeric value "numeric(2,1), CHECK 1.0-6.0"
+        date test_date
+        smallint semester "CHECK 1..8"
+        varchar file_path "nullable"
+        varchar original_filename "nullable"
+        timestamp notified_at "nullable"
+        timestamp created_at "nullable"
+        timestamp updated_at "nullable"
+    }
+
+    evaluation_results {
+        bigint id PK
+        bigint user_id FK "-> users, on delete restrict"
+        bigint evaluation_node_id FK "-> evaluation_nodes, on delete restrict"
+        smallint semester "CHECK 0..8, sentinel 0 when period_scope = cursus"
+        numeric rounded_value "numeric(2,1), CHECK 1.0-6.0"
+        timestamp created_at "nullable"
+        timestamp updated_at "nullable"
+    }
+    %% evaluation_results: UNIQUE(user_id, evaluation_node_id, semester), upsert target on recompute
+
+    projects {
+        bigint id PK
+        bigint user_id FK "-> users, on delete restrict"
+        varchar title
+        varchar organization "nullable"
+        text description
+        varchar responsibilities "nullable"
+        varchar technologies "nullable"
+        varchar repository_url "nullable"
+        varchar demo_path "nullable"
+        date date_start
+        date date_end "nullable"
+        timestamp created_at "nullable"
+        timestamp updated_at "nullable"
+    }
+
+    comments {
+        bigint id PK
+        bigint author_id FK "-> users, on delete restrict"
+        varchar commentable_type "grade | project, polymorphic, no FK"
+        bigint commentable_id "polymorphic, no FK"
+        text body "CHECK char_length <= 2000"
+        timestamp created_at "nullable"
+        timestamp updated_at "nullable"
+    }
+
+    skills {
+        bigint id PK
+        varchar name UK
+        timestamp created_at "default CURRENT_TIMESTAMP"
+    }
+
+    project_skill {
+        bigint project_id FK "-> projects, on delete cascade, PK"
+        bigint skill_id FK "-> skills, on delete cascade, PK"
+    }
+    %% project_skill: PRIMARY KEY(project_id, skill_id), plain pivot, no model
+
+    subject_category ||--o{ subjects : "has"
+    apprenticeships ||--o{ users : "tracks"
+    users ||--o{ users : "coaches"
+    users ||--o{ users : "trains"
+    subjects ||--o{ evaluation_nodes : "labels"
+    evaluation_nodes ||--o{ evaluation_node_connections : "as_parent"
+    evaluation_nodes ||--o{ evaluation_node_connections : "as_child"
+    users ||--o{ grades : "earns"
+    evaluation_nodes ||--o{ grades : "measures"
+    users ||--o{ evaluation_results : "computes_for"
+    evaluation_nodes ||--o{ evaluation_results : "aggregates_to"
+    users ||--o{ projects : "owns"
+    users ||--o{ comments : "authors"
+    projects ||--o{ project_skill : "uses"
+    skills ||--o{ project_skill : "tagged_by"
+    grades ||..o{ comments : "polymorphic, no FK"
+    projects ||..o{ comments : "polymorphic, no FK"
