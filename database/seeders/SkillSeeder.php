@@ -6,21 +6,25 @@ use App\Models\Skill;
 use Illuminate\Database\Seeder;
 
 /**
- * Initial IT skills catalog; afterwards the Super-Admin maintains it
- * (role_permissions.md).
+ * Seeds the IT skills catalog apprentices pick from for portfolio projects.
+ * Same list as the demo data in resources/js/data/portfolio.json.
  */
 class SkillSeeder extends Seeder
 {
+    private const SKILLS = [
+        'Développement web',
+        'Bases de données',
+        'Gestion de projet',
+        'Sécurité informatique',
+        'Cloud & infrastructure',
+        'Travail en équipe',
+        'Assurance qualité',
+    ];
+
     public function run(): void
     {
-        collect([
-            'Développement web',
-            'Bases de données',
-            'Gestion de projet',
-            'Sécurité informatique',
-            'Cloud & infrastructure',
-            'Travail en équipe',
-            'Assurance qualité',
-        ])->each(fn (string $name) => Skill::firstOrCreate(['name' => $name]));
+        foreach (self::SKILLS as $name) {
+            Skill::query()->firstOrCreate(['name' => $name]);
+        }
     }
 }
