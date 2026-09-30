@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\Permission;
+use App\Enums\UserRole;
 use App\Models\Apprenticeship;
 use App\Models\Comment;
 use App\Models\EvaluationNode;
@@ -52,14 +53,30 @@ test('roles map to the expected permissions', function () {
         ->and(Role::findByName('trainer')->hasPermissionTo(Permission::CoachingAssignSelf->value))->toBeFalse();
 });
 
-test('a role change keeps the Spatie role in sync', function () {
+test('the role accessor derives from the single Spatie role', function () {
     $user = User::factory()->create();
-    expect($user->hasRole('apprentice'))->toBeTrue();
+    expect($user->role)->toBe(UserRole::Apprentice);
 
-    $user->forceFill(['role' => 'coach'])->save();
+    $user->syncRoles(UserRole::Coach->value);
 
-    expect($user->fresh()->hasRole('coach'))->toBeTrue()
-        ->and($user->fresh()->hasRole('apprentice'))->toBeFalse();
+    expect($user->role)->toBe(UserRole::Coach)
+        ->and($user->fresh()->hasRole('coach'))->toBeTrue()
+        ->and($user->fresh()->hasRole('apprentice'))->toBeFalse()
+        ->and(User::role('coach')->pluck('id')->all())->toBe([$user->id]);
+});
+
+test('factory states leave exactly one role', function () {
+    expect(User::factory()->coach()->create()->roles->pluck('name')->all())->toBe(['coach'])
+        ->and(User::factory()->trainer()->create()->roles->pluck('name')->all())->toBe(['trainer'])
+        ->and(User::factory()->make()->role)->toBeNull();
+});
+
+test('a migrated database without seeders has roles and permissions', function () {
+    expect(Role::findByName('coach')->hasPermissionTo(Permission::GradesComment->value))->toBeTrue();
+
+    $this->actingAs(User::factory()->coach()->create())
+        ->get(route('apprentisdashboard'))
+        ->assertOk();
 });
 
 describe('apprentice', function () {

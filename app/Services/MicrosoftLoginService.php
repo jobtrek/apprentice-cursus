@@ -57,7 +57,7 @@ class MicrosoftLoginService
                     Log::info('Microsoft SSO auto-provisioned a new account.', [
                         'user_id' => $user->id,
                         'email' => $user->email,
-                        'role' => $user->role->value,
+                        'role' => $user->role?->value,
                     ]);
                 }
 

@@ -33,16 +33,17 @@ class DemoApprenticeSeeder extends Seeder
                 continue;
             }
 
-            User::query()->forceCreate([
+            $user = User::query()->forceCreate([
                 'id' => (int) $row['id'],
                 'name' => $row['name'],
                 'email' => "demo-apprentice-{$row['id']}@example.com",
                 // Random, unknown password: demo accounts have no usable local credentials.
                 'password' => Str::password(32),
-                'role' => UserRole::Apprentice,
                 'is_active' => true,
                 'apprenticeship_id' => $apprenticeships[$row['track']] ?? null,
             ]);
+
+            $user->assignRole(UserRole::Apprentice->value);
         }
 
         DB::statement("SELECT setval(pg_get_serial_sequence('users', 'id'), (SELECT MAX(id) FROM users))");

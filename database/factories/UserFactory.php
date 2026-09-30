@@ -18,6 +18,14 @@ class UserFactory extends Factory
     protected static ?string $password;
 
     /**
+     * Created users get exactly one Spatie role: apprentice unless a state says otherwise.
+     */
+    public function configure(): static
+    {
+        return $this->afterCreating(fn (User $user) => $user->syncRoles(UserRole::Apprentice->value));
+    }
+
+    /**
      * Define the model's default state.
      *
      * @return array<string, mixed>
@@ -29,7 +37,6 @@ class UserFactory extends Factory
             'email' => fake()->unique()->safeEmail(),
             'email_verified_at' => now(),
             'password' => static::$password ??= Hash::make('password'),
-            'role' => UserRole::Apprentice,
             'is_active' => true,
         ];
     }
@@ -54,9 +61,7 @@ class UserFactory extends Factory
      */
     public function coach(): static
     {
-        return $this->state(fn (array $attributes) => [
-            'role' => UserRole::Coach,
-        ]);
+        return $this->afterCreating(fn (User $user) => $user->syncRoles(UserRole::Coach->value));
     }
 
     /**
@@ -64,8 +69,6 @@ class UserFactory extends Factory
      */
     public function trainer(): static
     {
-        return $this->state(fn (array $attributes) => [
-            'role' => UserRole::Trainer,
-        ]);
+        return $this->afterCreating(fn (User $user) => $user->syncRoles(UserRole::Trainer->value));
     }
 }

@@ -57,7 +57,7 @@ class AzureAccountSync
     }
 
     /**
-     * Apply the group's role and apprenticeship to the user and (re)activate it.
+     * Apply the group's role (Spatie) and apprenticeship to the user and (re)activate it.
      * A user that already has a different apprenticeship keeps it.
      *
      * @throws ApprenticeshipNotSeededException before anything is modified
@@ -84,13 +84,16 @@ class AzureAccountSync
         }
 
         $user->forceFill([
-            'role' => $group->role(),
             'apprenticeship_id' => $apprenticeshipId,
             'is_active' => true,
         ]);
 
         if (! $user->exists || $user->isDirty()) {
             $user->save();
+        }
+
+        if ($user->role !== $group->role()) {
+            $user->syncRoles($group->role()->value);
         }
     }
 

@@ -23,7 +23,7 @@ use Spatie\Permission\Traits\HasRoles;
  * @property string $email
  * @property bool|null $is_mp Maturité professionnelle track. NULL = not applicable (non-apprentice roles).
  * @property bool $is_active Deactivation flag. Users are never deleted, only deactivated.
- * @property UserRole $role
+ * @property-read UserRole|null $role Derived from the Spatie role; use syncRoles() to change it.
  * @property string|null $apprenticeship_name
  * @property int|null $apprenticeship_id
  * @property int|null $coach_id
@@ -51,15 +51,6 @@ class User extends Authenticatable
      */
     public $timestamps = false;
 
-    protected static function booted(): void
-    {
-        static::saved(function (self $user): void {
-            if ($user->wasRecentlyCreated || $user->wasChanged('role')) {
-                $user->syncRoles($user->role->value);
-            }
-        });
-    }
-
     /**
      * Get the attributes that should be cast.
      *
@@ -72,8 +63,21 @@ class User extends Authenticatable
             'password' => 'hashed',
             'is_mp' => 'boolean',
             'is_active' => 'boolean',
-            'role' => UserRole::class,
         ];
+    }
+
+    /**
+     * The single Spatie role of the user as an enum. Spatie is the only source
+     * of truth; there is no users.role column.
+     *
+     * Deliberately a legacy getter, not an Attribute::make() `role()` method:
+     * that method would shadow Spatie's `scopeRole()` in `User::role('coach')`.
+     */
+    public function getRoleAttribute(): ?UserRole
+    {
+        $name = $this->getRoleNames()->first();
+
+        return $name === null ? null : UserRole::tryFrom($name);
     }
 
     /**

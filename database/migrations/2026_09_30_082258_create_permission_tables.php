@@ -112,6 +112,8 @@ return new class extends Migration
                 ->cascadeOnDelete();
 
             $table->primary([$pivotPermission, $pivotRole], 'role_has_permissions_permission_id_role_id_primary');
+            // Postgres does not index FKs: the composite PK leads with the permission id, so role lookups need their own index.
+            $table->index($pivotRole, 'role_has_permissions_role_id_index');
         });
 
         app('cache')
