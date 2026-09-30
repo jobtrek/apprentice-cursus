@@ -7,6 +7,7 @@ use App\Models\Apprenticeship;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 /**
  * Seeds the apprentices shown on the (still static) apprentices dashboard,
@@ -27,14 +28,21 @@ class DemoApprenticeSeeder extends Seeder
         ];
 
         foreach ($demo as $row) {
-            User::query()->firstOrNew(['id' => (int) $row['id']])->forceFill([
+            // Never overwrite an existing account (name, password, role, active state).
+            if (User::query()->whereKey((int) $row['id'])->exists()) {
+                continue;
+            }
+
+            User::query()->forceCreate([
+                'id' => (int) $row['id'],
                 'name' => $row['name'],
                 'email' => "demo-apprentice-{$row['id']}@example.com",
-                'password' => 'password',
+                // Random, unknown password: demo accounts have no usable local credentials.
+                'password' => Str::password(32),
                 'role' => UserRole::Apprentice,
                 'is_active' => true,
                 'apprenticeship_id' => $apprenticeships[$row['track']] ?? null,
-            ])->save();
+            ]);
         }
 
         DB::statement("SELECT setval(pg_get_serial_sequence('users', 'id'), (SELECT MAX(id) FROM users))");
