@@ -11,17 +11,18 @@ use Laravel\Socialite\Facades\Socialite;
 use Laravel\Socialite\Two\AbstractProvider;
 use Laravel\Socialite\Two\InvalidStateException;
 use Laravel\Socialite\Two\User as AzureUser;
-use Illuminate\Support\Facades\App;
-use Illuminate\Support\Str;
-
+use RuntimeException;
 use Throwable;
 
-/** @var AbstractProvider $driver */
 class MicrosoftAuthController extends Controller
 {
-    public function redirectToProvider()
+    public function redirectToProvider(): RedirectResponse
     {
         $driver = Socialite::driver('azure');
+
+        if (! $driver instanceof AbstractProvider) {
+            throw new RuntimeException('The azure Socialite driver must be an OAuth2 provider.');
+        }
 
         return $driver->with(['prompt' => 'login'])->redirect();
     }
@@ -31,6 +32,14 @@ class MicrosoftAuthController extends Controller
         try {
             $azureUser = Socialite::driver('azure')->user();
 
+            if (! $azureUser instanceof AzureUser || ! $azureUser->getId()) {
+                Log::error('Microsoft SSO did not return a usable azure id.', [
+                    'class' => $azureUser::class,
+                ]);
+
+                return $this->loginError('Could not sign in with Microsoft. Please try again.');
+            }
+
         } catch (InvalidStateException) {
             return $this->loginError('Your Microsoft sign-in session expired. Please try again.');
         } catch (Throwable $e) {
@@ -38,15 +47,6 @@ class MicrosoftAuthController extends Controller
 
             return $this->loginError('Could not sign in with Microsoft. Please try again.');
         }
-        // this will invalidate and block anyone trying to connect with a non existing account.
-        if (! $azureUser instanceof AzureUser || ! $azureUser->getId()) {
-            Log::error('Microsoft SSO did not return a usable azure id.', [
-                'class' => $azureUser::class,
-            ]);
-
-            return $this->loginError('Could not sign in with Microsoft. Please try again.');
-        }
-
         $tenantId = config('services.azure.tenant');
 
         $user = User::where('azure_id', $azureUser->getId())->first();

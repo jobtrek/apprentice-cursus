@@ -6,7 +6,6 @@ use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use Microsoft\Graph\GraphServiceClient;
 
 /**
  * App-only (client credentials) access to Microsoft Graph, used to re-validate
@@ -23,15 +22,59 @@ class AzureGraphService
      * endpoint unreachable) so callers can fail open rather than mass-logout
      * every SSO user during a Microsoft outage.
      */
-    public function getGroups()
+    /** @return list<array{id?: string, displayName?: string, mail?: string|null}>|null */
+    public function getGroups(string $azureId): ?array
     {
-
         $token = $this->getAppToken();
 
-        $response = Http::withToken($token)->get('https://graph.microsoft.com/v1.0/me/memberOf');
+        if (! $token) {
+            return null;
+        }
 
-        return $response->json('value') ?? null;
+        $response = Http::withToken($token)
+            ->acceptJson()
+            ->get("https://graph.microsoft.com/v1.0/users/{$azureId}/transitiveMemberOf", [
+                '$select' => 'id,displayName',
+            ]);
 
+        if (! $response->successful()) {
+            Log::error('Microsoft Graph group lookup failed.', [
+                'status' => $response->status(),
+                'body' => $response->body(),
+            ]);
+
+            return null;
+        }
+
+        return $response->json('value');
+    }
+
+    /** @return list<array{id?: string, displayName?: string, mail?: string|null}>|null */
+    public function getGroupMembers(string $groupId): ?array
+    {
+        $token = $this->getAppToken();
+
+        if (! $token) {
+            return null;
+        }
+
+        $response = Http::withToken($token)
+            ->acceptJson()
+            ->get("https://graph.microsoft.com/v1.0/groups/{$groupId}/transitiveMembers", [
+                '$select' => 'id,displayName,mail',
+                '$top' => 999,
+            ]);
+
+        if (! $response->successful()) {
+            Log::error('Microsoft Graph group members lookup failed.', [
+                'status' => $response->status(),
+                'body' => $response->body(),
+            ]);
+
+            return null;
+        }
+
+        return $response->json('value');
     }
 
     // public function getRolesAndPermissions()
@@ -85,7 +128,7 @@ class AzureGraphService
         return (bool) $response->json('accountEnabled', true);
     }
 
-    private function getAppToken(): ?string
+    public function getAppToken(): ?string
     {
         return Cache::remember(self::TOKEN_CACHE_KEY, 300, function (): ?string {
             $tenant = config('services.azure.tenant');

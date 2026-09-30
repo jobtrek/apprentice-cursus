@@ -3,8 +3,8 @@
 namespace App\Providers;
 
 use App\Services\Microsoft\AzureGraphService;
-use Illuminate\Support\ServiceProvider;
 use Illuminate\Contracts\Foundation\Application;
+use Illuminate\Support\ServiceProvider;
 
 class RiakServiceProvider extends ServiceProvider
 {
@@ -14,7 +14,7 @@ class RiakServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->singleton(AzureGraphService::class, function (Application $app) {
-            return new AzureGraphService();
+            return new AzureGraphService;
         });
     }
 

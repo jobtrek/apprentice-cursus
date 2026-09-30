@@ -28,6 +28,22 @@ return [
         'redirect' => env('MICROSOFT_REDIRECT_URI'),
         'tenant' => env('MICROSOFT_TENANT_ID'),
         'account_check_interval' => env('MICROSOFT_ACCOUNT_CHECK_INTERVAL', 900),
+
+        // Placeholders in {braces} are filled with str_replace / Str::swap by the caller.
+        'endpoints' => [
+            'token' => 'https://login.microsoftonline.com/{tenant}/oauth2/v2.0/token',
+            'scope' => 'https://graph.microsoft.com/.default',
+            'user' => 'https://graph.microsoft.com/v1.0/users/{user}',
+            'user_groups' => 'https://graph.microsoft.com/v1.0/users/{user}/transitiveMemberOf',
+            'group' => 'https://graph.microsoft.com/v1.0/groups/{group}',
+            'group_members' => 'https://graph.microsoft.com/v1.0/groups/{group}/transitiveMembers',
+        ],
+
+        'group_roles' => array_filter([
+            env('MICROSOFT_GROUP_APPRENTICES_IT') => 'apprentices_IT',
+            env('MICROSOFT_GROUP_APPRENTICES_EC') => 'apprentices_EC',
+            env('MICROSOFT_GROUP_TRAINER') => 'trainer',
+        ], fn ($role, $id) => filled($id), ARRAY_FILTER_USE_BOTH),
     ],
 
     'ses' => [
