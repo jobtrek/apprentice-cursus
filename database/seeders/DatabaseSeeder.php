@@ -26,11 +26,6 @@ class DatabaseSeeder extends Seeder
         // Explicit ids 1..n, so they must be created before any other user.
         $this->call(DemoApprenticeSeeder::class);
 
-        User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
-        ]); // the factory gives it the apprentice role
-
         $this->call(UserSeeder::class);
 
         // Only accounts the demo seeder created, not pre-existing users at those ids.
