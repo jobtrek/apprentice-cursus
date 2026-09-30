@@ -52,7 +52,7 @@ test('an existing account with the same email is not adopted', function () {
 test('an unknown azure id provisions a new account', function () {
     fakeSso('azure-2', 'new@example.test', IT_GROUP);
 
-    $this->get(route('microsoft.callback'))->assertRedirect(route('home'));
+    $this->get(route('microsoft.callback'))->assertRedirect(route('grades.dashboard'));
 
     $user = User::where('azure_id', 'azure-2')->first();
     expect($user)->not->toBeNull()
@@ -63,7 +63,7 @@ test('an unknown azure id provisions a new account', function () {
 test('a trainer logs in with the IT apprenticeship and can view an IT apprentice grade', function () {
     fakeSso('azure-trainer', 'trainer@example.test', TRAINER_GROUP);
 
-    $this->get(route('microsoft.callback'))->assertRedirect(route('home'));
+    $this->get(route('microsoft.callback'))->assertRedirect(route('apprentisdashboard'));
 
     $trainer = User::where('azure_id', 'azure-trainer')->firstOrFail();
     expect($trainer->role)->toBe(UserRole::Trainer)
@@ -79,7 +79,7 @@ test('a trainer logs in with the IT apprenticeship and can view an IT apprentice
 test('login primes the periodic account re-check cache', function () {
     fakeSso('azure-3', 'cache@example.test', IT_GROUP);
 
-    $this->get(route('microsoft.callback'))->assertRedirect(route('home'));
+    $this->get(route('microsoft.callback'))->assertRedirect(route('grades.dashboard'));
 
     $user = User::where('azure_id', 'azure-3')->firstOrFail();
     expect(Cache::has(AzureAccountSync::checkCacheKey($user)))->toBeTrue();
@@ -135,7 +135,7 @@ test('a deactivated user with a valid group mapping is reactivated on login', fu
     $user = User::factory()->create(['azure_id' => 'azure-7', 'is_active' => false]);
     fakeSso('azure-7', $user->email, IT_GROUP);
 
-    $this->get(route('microsoft.callback'))->assertRedirect(route('home'));
+    $this->get(route('microsoft.callback'))->assertRedirect(route('grades.dashboard'));
 
     expect($user->fresh()->is_active)->toBeTrue();
     $this->assertAuthenticatedAs($user);

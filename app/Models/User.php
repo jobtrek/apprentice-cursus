@@ -3,6 +3,7 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Enums\Permission;
 use App\Enums\UserRole;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -129,6 +130,19 @@ class User extends Authenticatable
     public function projects(): HasMany
     {
         return $this->hasMany(Project::class);
+    }
+
+    /**
+     * Named route a user lands on after signing in, chosen by permission
+     * rather than by role so new roles only need permissions.
+     */
+    public function homeRoute(): string
+    {
+        return match (true) {
+            $this->hasPermissionTo(Permission::GradesViewOwn->value) => 'grades.dashboard',
+            $this->hasPermissionTo(Permission::ApprenticesViewList->value) => 'apprentisdashboard',
+            default => 'home',
+        };
     }
 
     public function supervises(self $apprentice): bool

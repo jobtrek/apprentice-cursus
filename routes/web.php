@@ -24,7 +24,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
             ->name('show');
     });
 
-    Route::middleware('can:portfolio.manage-own')
+    Route::middleware('can:'.Permission::PortfolioManageOwn->value)
         ->prefix('portfolio')
         ->name('portfolio.')
         ->controller(DossierController::class)
@@ -33,13 +33,15 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::get('/preview', 'preview')->name('preview');
             Route::resource('projects', DossierController::class)
                 ->except(['index', 'show'])
-                ->middlewareFor(['store', 'update'], HandlePrecognitiveRequests::class);
+                ->middlewareFor(['store', 'update'], HandlePrecognitiveRequests::class)
+                ->whereNumber('project');
         });
 
     Route::get('/portfolio/screenshots/{screenshot}', [DossierController::class, 'screenshot'])
+        ->whereNumber('screenshot')
         ->name('portfolio.screenshots.show');
 
-    Route::middleware('can:apprentices.view-list')->group(function () {
+    Route::middleware('can:'.Permission::ApprenticesViewList->value)->group(function () {
         Route::inertia('/apprentisdashboard', 'ApprentisDashboard')->name('apprentisdashboard');
 
         Route::prefix('apprentices/{apprentice}')

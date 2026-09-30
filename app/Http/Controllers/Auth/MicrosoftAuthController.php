@@ -53,6 +53,6 @@ class MicrosoftAuthController extends Controller
             (int) config('services.azure.account_check_interval', 900),
         );
 
-        return redirect()->route('home');
+        return redirect()->route($user->homeRoute());
     }
 }

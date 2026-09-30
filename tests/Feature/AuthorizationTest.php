@@ -329,3 +329,33 @@ describe('commenting', function () {
             ->and($coach->can('delete', $comment))->toBeFalse();
     });
 });
+
+describe('routing and landing', function () {
+    test('homeRoute is chosen by permission', function () {
+        $noRole = User::factory()->create();
+        $noRole->syncRoles([]);
+
+        expect(User::factory()->create()->homeRoute())->toBe('grades.dashboard')
+            ->and(User::factory()->coach()->create()->homeRoute())->toBe('apprentisdashboard')
+            ->and(User::factory()->trainer()->create()->homeRoute())->toBe('apprentisdashboard')
+            ->and($noRole->fresh()->homeRoute())->toBe('home');
+    });
+
+    test('grade pages expose the server-side comment decision', function () {
+        $coach = User::factory()->coach()->create();
+        $apprentice = makeApprentice(coach: $coach);
+        $grade = makeGrade($apprentice);
+
+        $this->actingAs($coach)->get(route('grades.show', $grade))
+            ->assertInertia(fn (Assert $page) => $page->where('can.comment', true));
+        $this->actingAs($apprentice)->get(route('grades.show', $grade))
+            ->assertInertia(fn (Assert $page) => $page->where('can.comment', false));
+    });
+
+    test('non-numeric portfolio ids are not routable', function () {
+        $this->actingAs(User::factory()->create());
+
+        $this->get('/portfolio/projects/abc/edit')->assertNotFound();
+        $this->get('/portfolio/screenshots/abc')->assertNotFound();
+    });
+});
