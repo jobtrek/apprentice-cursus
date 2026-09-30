@@ -10,7 +10,7 @@ checked against `mcd_actual.mmd` and `db_schema/mcd.mmd`). Newest entries at the
 - User's initial vocabulary: grade (subject, domain, value, submission date,
   modification date), subject (name, type), type (name), domain (optional parent,
   name, weight, calculus `average | weighted_average`, rounding `half | tenth`).
-- Built `docs/db_schema/grades_focus.mmd` (note: sits next to `mcd_actual.mmd`,
+- Built `grades_focus.mmd` (note: sits next to `mcd_actual.mmd`,
   not in `db_schema/`).
 
 ## 2. How the pattern already existed (verified, other files untouched)
@@ -106,3 +106,4 @@ checked against `mcd_actual.mmd` and `db_schema/mcd.mmd`). Newest entries at the
   rounding then feeds upper averages — accepted by user).
 - Subjects remain the true leaves (grades attach to subjects, never directly to
   domains) — currently implicit; consider writing it as a stated rule.
+
