@@ -2,30 +2,48 @@
 import { Head, Link, router } from '@inertiajs/vue3';
 import { PlusIcon, Trash2Icon, XIcon } from '@lucide/vue';
 import { computed, ref } from 'vue';
-import InputError from '@/components/InputError.vue';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
+import { Badge } from '@/components/ui/badge';
+import { Button, buttonVariants } from '@/components/ui/button';
+import { Card, CardContent, CardFooter } from '@/components/ui/card';
+import {
+    Field,
+    FieldDescription,
+    FieldError,
+    FieldGroup,
+    FieldLabel,
+    FieldLegend,
+    FieldSeparator,
+    FieldSet,
+} from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
-import { usePortfolio } from '@/composables/usePortfolio';
-import { usePortfolioForm } from '@/composables/usePortfolioForm';
+import { Toggle } from '@/components/ui/toggle';
+import {
+    MAX_SCREENSHOTS,
+    usePortfolioForm,
+} from '@/composables/usePortfolioForm';
 import portfolio from '@/routes/portfolio';
+import { PageContainer, PageHeader } from '@/components/page';
+import type { PortfolioProject, Skill } from '@/types/portfolio';
 
 const props = defineProps<{
-    projectId?: number;
+    project?: PortfolioProject;
+    skills: Skill[];
 }>();
-
-const { findProject, deleteProject } = usePortfolio();
-
-const existing = computed(() =>
-    props.projectId ? findProject(props.projectId) : undefined,
-);
 
 const {
     form,
-    skills,
     errors,
     isEditing,
     technologyDraft,
@@ -34,14 +52,16 @@ const {
     removeLastTechnology,
     toggleSkill,
     hasSkill,
+    screenshotPreviews,
     addScreenshots,
     removeScreenshot,
     submit,
-} = usePortfolioForm(existing.value);
+} = usePortfolioForm(props.project);
 
-const heading = computed(() =>
-    isEditing.value ? form.value.title : 'Nouveau projet',
-);
+// Titre enregistré, pour que l'en-tête ne suive pas la frappe.
+const heading = computed(() => props.project?.title ?? 'Nouveau projet');
+
+const breadcrumbs = [{ label: 'Portfolio', href: portfolio.index() }];
 
 const screenshotInput = ref<HTMLInputElement | null>(null);
 
@@ -49,376 +69,403 @@ function pickScreenshots(): void {
     screenshotInput.value?.click();
 }
 
-async function onScreenshotsPicked(event: Event): Promise<void> {
+function onScreenshotsPicked(event: Event): void {
     const input = event.target as HTMLInputElement;
-    await addScreenshots(input.files);
+    addScreenshots(input.files);
     // Remis à zéro pour que réimporter le même fichier redéclenche l'événement.
     input.value = '';
 }
 
-function onSubmit(): void {
-    if (submit() === null) {
-        return;
-    }
-
-    router.visit(portfolio.index());
-}
+const deleting = ref(false);
 
 function onDelete(): void {
-    if (!isEditing.value) {
+    if (!props.project) {
         return;
     }
 
-    deleteProject(form.value.id);
-    router.visit(portfolio.index());
+    router.delete(portfolio.projects.destroy.url(props.project.id), {
+        onStart: () => (deleting.value = true),
+        onFinish: () => (deleting.value = false),
+    });
 }
 </script>
 
 <template>
     <Head :title="isEditing ? 'Modifier un projet' : 'Nouveau projet'" />
 
-    <div class="mx-auto flex w-full max-w-2xl flex-col gap-6">
-        <div class="space-y-1">
-            <Link
-                :href="portfolio.index()"
-                class="
-                  text-sm text-muted-foreground
-                  hover:text-foreground
-                "
-            >
-                Portfolio
-            </Link>
-            <h1 class="text-xl font-semibold">
-                {{ heading || 'Nouveau projet' }}
-            </h1>
-        </div>
+    <PageContainer size="sm">
+        <PageHeader :title="heading" :breadcrumbs="breadcrumbs" />
 
-        <Card>
-            <CardContent>
-                <form
-                    class="flex flex-col gap-8"
-                    novalidate
-                    @submit.prevent="onSubmit"
-                >
-                    <fieldset class="space-y-4">
-                        <legend
-                            class="
-                              mb-4 text-xs font-medium tracking-wider
-                              text-muted-foreground uppercase
-                            "
-                        >
-                            Informations générales
-                        </legend>
+        <form novalidate @submit.prevent="submit">
+            <Card>
+                <CardContent>
+                    <FieldGroup>
+                        <FieldSet>
+                            <FieldLegend>Informations générales</FieldLegend>
 
-                        <div class="grid gap-2">
-                            <Label for="title">Titre du projet</Label>
-                            <Input
-                                id="title"
-                                v-model="form.title"
-                                name="title"
-                                required
-                                :aria-invalid="Boolean(errors.title)"
-                            />
-                            <InputError :message="errors.title" />
-                        </div>
-
-                        <div class="
-                          grid gap-4
-                          sm:grid-cols-2
-                        ">
-                            <div class="grid gap-2">
-                                <Label for="organization">Entreprise</Label>
+                            <Field :data-invalid="Boolean(errors.title)">
+                                <FieldLabel for="title"
+                                    >Titre du projet</FieldLabel
+                                >
                                 <Input
-                                    id="organization"
-                                    v-model="form.organization"
-                                    name="organization"
-                                />
-                            </div>
-                            <div class="grid gap-2">
-                                <Label for="responsibilities">Rôle</Label>
-                                <Input
-                                    id="responsibilities"
-                                    v-model="form.responsibilities"
-                                    name="responsibilities"
-                                />
-                            </div>
-                        </div>
-
-                        <div class="
-                          grid gap-4
-                          sm:grid-cols-2
-                        ">
-                            <div class="grid gap-2">
-                                <Label for="date_start">Date de début</Label>
-                                <Input
-                                    id="date_start"
-                                    v-model="form.date_start"
-                                    type="date"
-                                    name="date_start"
+                                    id="title"
+                                    v-model="form.title"
+                                    name="title"
+                                    @change="form.validate('title')"
                                     required
-                                    :aria-invalid="Boolean(errors.date_start)"
+                                    :aria-invalid="Boolean(errors.title)"
                                 />
-                                <InputError :message="errors.date_start" />
-                            </div>
-                            <div class="grid gap-2">
-                                <Label for="date_end">Date de fin</Label>
-                                <Input
-                                    id="date_end"
-                                    v-model="form.date_end"
-                                    type="date"
-                                    name="date_end"
-                                    :aria-invalid="Boolean(errors.date_end)"
-                                />
-                                <InputError :message="errors.date_end" />
-                            </div>
-                        </div>
+                                <FieldError :errors="[errors.title]" />
+                            </Field>
 
-                        <div class="grid gap-2">
-                            <Label for="description">Description</Label>
-                            <Textarea
-                                id="description"
-                                v-model="form.description"
-                                name="description"
-                                rows="4"
-                                required
-                                :aria-invalid="Boolean(errors.description)"
-                            />
-                            <InputError :message="errors.description" />
-                        </div>
-                    </fieldset>
-
-                    <Separator />
-
-                    <fieldset class="space-y-4">
-                        <legend
-                            class="
-                              mb-4 text-xs font-medium tracking-wider
-                              text-muted-foreground uppercase
-                            "
-                        >
-                            Technique
-                        </legend>
-
-                        <div class="grid gap-2">
-                            <Label for="technology-draft">Technologies</Label>
-                            <div
-                                class="
-                                  flex flex-wrap items-center gap-1.5 rounded-md
-                                  border border-input px-2 py-1.5
-                                  focus-within:border-ring
-                                  focus-within:ring-[3px]
-                                  focus-within:ring-ring/50
-                                "
-                            >
-                                <span
-                                    v-for="technology in form.technologies"
-                                    :key="technology"
-                                    class="
-                                      flex items-center gap-1 rounded-sm
-                                      bg-muted px-2 py-0.5 text-xs
+                            <div class="grid gap-6 sm:grid-cols-2">
+                                <Field
+                                    :data-invalid="Boolean(errors.organization)"
+                                >
+                                    <FieldLabel for="organization">
+                                        Entreprise
+                                    </FieldLabel>
+                                    <Input
+                                        id="organization"
+                                        v-model="form.organization"
+                                        name="organization"
+                                        @change="form.validate('organization')"
+                                        :aria-invalid="
+                                            Boolean(errors.organization)
+                                        "
+                                    />
+                                    <FieldError
+                                        :errors="[errors.organization]"
+                                    />
+                                </Field>
+                                <Field
+                                    :data-invalid="
+                                        Boolean(errors.responsibilities)
                                     "
                                 >
-                                    {{ technology }}
+                                    <FieldLabel for="responsibilities">
+                                        Rôle
+                                    </FieldLabel>
+                                    <Input
+                                        id="responsibilities"
+                                        v-model="form.responsibilities"
+                                        name="responsibilities"
+                                        @change="
+                                            form.validate('responsibilities')
+                                        "
+                                        :aria-invalid="
+                                            Boolean(errors.responsibilities)
+                                        "
+                                    />
+                                    <FieldError
+                                        :errors="[errors.responsibilities]"
+                                    />
+                                </Field>
+                            </div>
+
+                            <div class="grid gap-6 sm:grid-cols-2">
+                                <Field
+                                    :data-invalid="Boolean(errors.date_start)"
+                                >
+                                    <FieldLabel for="date_start">
+                                        Date de début
+                                    </FieldLabel>
+                                    <Input
+                                        id="date_start"
+                                        v-model="form.date_start"
+                                        type="date"
+                                        name="date_start"
+                                        @change="form.validate('date_start')"
+                                        required
+                                        :aria-invalid="
+                                            Boolean(errors.date_start)
+                                        "
+                                    />
+                                    <FieldError :errors="[errors.date_start]" />
+                                </Field>
+                                <Field :data-invalid="Boolean(errors.date_end)">
+                                    <FieldLabel for="date_end">
+                                        Date de fin
+                                    </FieldLabel>
+                                    <Input
+                                        id="date_end"
+                                        v-model="form.date_end"
+                                        type="date"
+                                        name="date_end"
+                                        @change="form.validate('date_end')"
+                                        :aria-invalid="Boolean(errors.date_end)"
+                                    />
+                                    <FieldError :errors="[errors.date_end]" />
+                                </Field>
+                            </div>
+
+                            <Field :data-invalid="Boolean(errors.description)">
+                                <FieldLabel for="description">
+                                    Description
+                                </FieldLabel>
+                                <Textarea
+                                    id="description"
+                                    v-model="form.description"
+                                    name="description"
+                                    @change="form.validate('description')"
+                                    rows="4"
+                                    required
+                                    :aria-invalid="Boolean(errors.description)"
+                                />
+                                <FieldError :errors="[errors.description]" />
+                            </Field>
+                        </FieldSet>
+
+                        <FieldSeparator />
+
+                        <FieldSet>
+                            <FieldLegend>Technique</FieldLegend>
+
+                            <Field :data-invalid="Boolean(errors.technologies)">
+                                <FieldLabel for="technology-draft">
+                                    Technologies
+                                </FieldLabel>
+                                <div
+                                    class="border-input focus-within:border-ring focus-within:ring-ring/50 dark:bg-input/30 flex min-h-9 flex-wrap items-center gap-1.5 rounded-md border px-2 py-1.5 shadow-xs focus-within:ring-[3px]"
+                                >
+                                    <Badge
+                                        v-for="technology in form.technologies"
+                                        :key="technology"
+                                        variant="secondary"
+                                        class="gap-1 pr-1"
+                                    >
+                                        {{ technology }}
+                                        <button
+                                            type="button"
+                                            class="text-muted-foreground hover:text-foreground rounded-sm"
+                                            :aria-label="`Retirer ${technology}`"
+                                            @click="
+                                                removeTechnology(technology)
+                                            "
+                                        >
+                                            <XIcon
+                                                class="size-3"
+                                                aria-hidden="true"
+                                            />
+                                        </button>
+                                    </Badge>
+                                    <input
+                                        id="technology-draft"
+                                        v-model="technologyDraft"
+                                        class="placeholder:text-muted-foreground min-w-40 flex-1 bg-transparent text-sm outline-none"
+                                        placeholder="Ajouter une technologie…"
+                                        @keydown.enter.prevent="addTechnology"
+                                        @keydown.,.prevent="addTechnology"
+                                        @keydown.backspace="
+                                            removeLastTechnology
+                                        "
+                                        @blur="addTechnology"
+                                    />
+                                </div>
+                                <FieldError :errors="[errors.technologies]" />
+                                <FieldDescription>
+                                    Validez avec Entrée ou une virgule.
+                                </FieldDescription>
+                            </Field>
+
+                            <div class="grid gap-6 sm:grid-cols-2">
+                                <Field
+                                    :data-invalid="Boolean(errors.demo_path)"
+                                >
+                                    <FieldLabel for="demo_path">
+                                        Lien de démonstration
+                                    </FieldLabel>
+                                    <Input
+                                        id="demo_path"
+                                        v-model="form.demo_path"
+                                        type="url"
+                                        name="demo_path"
+                                        @change="form.validate('demo_path')"
+                                        :aria-invalid="
+                                            Boolean(errors.demo_path)
+                                        "
+                                        placeholder="https://"
+                                    />
+                                    <FieldError :errors="[errors.demo_path]" />
+                                </Field>
+                                <Field
+                                    :data-invalid="
+                                        Boolean(errors.repository_url)
+                                    "
+                                >
+                                    <FieldLabel for="repository_url">
+                                        Lien du code source
+                                    </FieldLabel>
+                                    <Input
+                                        id="repository_url"
+                                        v-model="form.repository_url"
+                                        type="url"
+                                        name="repository_url"
+                                        @change="
+                                            form.validate('repository_url')
+                                        "
+                                        :aria-invalid="
+                                            Boolean(errors.repository_url)
+                                        "
+                                        placeholder="https://"
+                                    />
+                                    <FieldError
+                                        :errors="[errors.repository_url]"
+                                    />
+                                </Field>
+                            </div>
+                        </FieldSet>
+
+                        <FieldSeparator />
+
+                        <FieldSet>
+                            <FieldLegend>Captures d'écran</FieldLegend>
+
+                            <Field
+                                :data-invalid="
+                                    Boolean(
+                                        errors.screenshots ||
+                                        errors.kept_screenshot_ids,
+                                    )
+                                "
+                            >
+                                <div class="flex flex-wrap gap-3">
+                                    <div
+                                        v-for="(
+                                            screenshot, index
+                                        ) in screenshotPreviews"
+                                        :key="screenshot.url"
+                                        class="relative"
+                                    >
+                                        <img
+                                            :src="screenshot.url"
+                                            :alt="`Capture d'écran ${index + 1}`"
+                                            class="bg-muted size-24 rounded-md object-cover"
+                                        />
+                                        <Button
+                                            type="button"
+                                            variant="secondary"
+                                            size="icon-xs"
+                                            class="absolute -top-2 -right-2 rounded-full border shadow-xs"
+                                            :aria-label="`Retirer la capture ${index + 1}`"
+                                            @click="
+                                                removeScreenshot(screenshot)
+                                            "
+                                        >
+                                            <XIcon aria-hidden="true" />
+                                        </Button>
+                                    </div>
+
                                     <button
                                         type="button"
-                                        class="
-                                          text-muted-foreground
-                                          hover:text-foreground
-                                        "
-                                        :aria-label="`Retirer ${technology}`"
-                                        @click="removeTechnology(technology)"
+                                        class="border-input text-muted-foreground hover:bg-muted/50 hover:text-foreground flex size-24 items-center justify-center rounded-md border border-dashed transition-colors"
+                                        aria-label="Ajouter une capture d'écran"
+                                        data-test="add-screenshot-button"
+                                        @click="pickScreenshots"
                                     >
-                                        <XIcon
-                                            class="size-3"
+                                        <PlusIcon
+                                            class="size-5"
                                             aria-hidden="true"
                                         />
                                     </button>
-                                </span>
-                                <input
-                                    id="technology-draft"
-                                    v-model="technologyDraft"
-                                    class="
-                                      min-w-40 flex-1 bg-transparent text-sm
-                                      outline-none
-                                    "
-                                    placeholder="Ajouter une technologie..."
-                                    @keydown.enter.prevent="addTechnology"
-                                    @keydown.,.prevent="addTechnology"
-                                    @keydown.backspace="removeLastTechnology"
-                                    @blur="addTechnology"
-                                />
-                            </div>
-                            <p class="text-xs text-muted-foreground">
-                                Validez avec Entrée ou une virgule.
-                            </p>
-                        </div>
 
-                        <div class="
-                          grid gap-4
-                          sm:grid-cols-2
-                        ">
-                            <div class="grid gap-2">
-                                <Label for="demo_path">
-                                    Lien de démonstration
-                                </Label>
-                                <Input
-                                    id="demo_path"
-                                    v-model="form.demo_path"
-                                    type="url"
-                                    name="demo_path"
-                                    placeholder="https://"
+                                    <input
+                                        ref="screenshotInput"
+                                        type="file"
+                                        accept="image/*"
+                                        multiple
+                                        class="hidden"
+                                        data-test="screenshot-input"
+                                        @change="onScreenshotsPicked"
+                                    />
+                                </div>
+                                <FieldError
+                                    :errors="[
+                                        errors.screenshots,
+                                        errors.kept_screenshot_ids,
+                                    ]"
                                 />
-                            </div>
-                            <div class="grid gap-2">
-                                <Label for="repository_url">
-                                    Lien du code source
-                                </Label>
-                                <Input
-                                    id="repository_url"
-                                    v-model="form.repository_url"
-                                    type="url"
-                                    name="repository_url"
-                                    placeholder="https://"
-                                />
-                            </div>
-                        </div>
-                    </fieldset>
+                                <FieldDescription>
+                                    Images uniquement, 5 Mo maximum par fichier,
+                                    {{ MAX_SCREENSHOTS }} captures au plus.
+                                </FieldDescription>
+                            </Field>
+                        </FieldSet>
 
-                    <Separator />
+                        <FieldSeparator />
 
-                    <fieldset class="space-y-4">
-                        <legend
-                            class="
-                              mb-4 text-xs font-medium tracking-wider
-                              text-muted-foreground uppercase
-                            "
-                        >
-                            Captures d'écran
-                        </legend>
+                        <FieldSet>
+                            <FieldLegend>Compétences démontrées</FieldLegend>
 
-                        <div class="flex flex-wrap gap-3">
-                            <div
-                                v-for="(screenshot, index) in form.screenshots"
-                                :key="index"
-                                class="relative"
-                            >
-                                <img
-                                    :src="screenshot"
-                                    :alt="`Capture d'écran ${index + 1}`"
-                                    class="
-                                      size-24 rounded-sm bg-muted object-cover
-                                    "
-                                />
-                                <button
-                                    type="button"
-                                    class="
-                                      absolute -top-2 -right-2 flex size-5
-                                      items-center justify-center rounded-full
-                                      bg-foreground text-background
-                                    "
-                                    :aria-label="`Retirer la capture ${index + 1}`"
-                                    @click="removeScreenshot(index)"
+                            <div class="flex flex-wrap gap-2">
+                                <Toggle
+                                    v-for="skill in skills"
+                                    :key="skill.id"
+                                    variant="outline"
+                                    size="sm"
+                                    class="data-[state=on]:border-primary data-[state=on]:bg-primary/10 data-[state=on]:text-primary"
+                                    :model-value="hasSkill(skill.id)"
+                                    @update:model-value="toggleSkill(skill.id)"
                                 >
-                                    <XIcon class="size-3" aria-hidden="true" />
-                                </button>
+                                    {{ skill.name }}
+                                </Toggle>
                             </div>
+                            <FieldError :errors="[errors.skill_ids]" />
+                        </FieldSet>
+                    </FieldGroup>
+                </CardContent>
 
-                            <button
+                <CardFooter class="flex-wrap gap-2 border-t">
+                    <Button
+                        type="submit"
+                        :disabled="form.processing"
+                        data-test="save-project-button"
+                    >
+                        Enregistrer le projet
+                    </Button>
+                    <Button as-child type="button" variant="outline">
+                        <Link :href="portfolio.index()">Annuler</Link>
+                    </Button>
+                    <AlertDialog v-if="isEditing">
+                        <AlertDialogTrigger as-child>
+                            <Button
                                 type="button"
-                                class="
-                                  flex size-24 items-center justify-center
-                                  rounded-sm border border-dashed border-input
-                                  text-muted-foreground
-                                  hover:bg-accent
-                                "
-                                aria-label="Ajouter une capture d'écran"
-                                data-test="add-screenshot-button"
-                                @click="pickScreenshots"
+                                variant="ghost"
+                                :disabled="deleting"
+                                class="text-destructive hover:bg-destructive/10 hover:text-destructive ml-auto"
                             >
-                                <PlusIcon class="size-5" aria-hidden="true" />
-                            </button>
-
-                            <input
-                                ref="screenshotInput"
-                                type="file"
-                                accept="image/*"
-                                multiple
-                                class="hidden"
-                                data-test="screenshot-input"
-                                @change="onScreenshotsPicked"
-                            />
-                        </div>
-                        <InputError :message="errors.screenshots" />
-                        <p class="text-xs text-muted-foreground">
-                            Images uniquement, 5 Mo maximum par fichier.
-                        </p>
-                    </fieldset>
-
-                    <Separator />
-
-                    <fieldset class="space-y-4">
-                        <legend
-                            class="
-                              mb-4 text-xs font-medium tracking-wider
-                              text-muted-foreground uppercase
-                            "
-                        >
-                            Compétences démontrées
-                        </legend>
-
-                        <div class="flex flex-wrap gap-2">
-                            <button
-                                v-for="skill in skills"
-                                :key="skill.id"
-                                type="button"
-                                class="
-                                  rounded-sm border px-3 py-1.5 text-sm
-                                  transition-colors
-                                "
-                                :class="
-                                    hasSkill(skill.id)
-                                        ? `
-                                          border-primary bg-primary/10
-                                          text-primary
-                                        `
-                                        : `
-                                          border-input
-                                          hover:bg-accent
-                                        `
-                                "
-                                :aria-pressed="hasSkill(skill.id)"
-                                @click="toggleSkill(skill.id)"
-                            >
-                                {{ skill.name }}
-                            </button>
-                        </div>
-                    </fieldset>
-
-                    <Separator />
-
-                    <div class="flex flex-wrap items-center gap-3">
-                        <Button type="submit" data-test="save-project-button">
-                            Enregistrer le projet
-                        </Button>
-                        <Button as-child type="button" variant="outline">
-                            <Link :href="portfolio.index()">Annuler</Link>
-                        </Button>
-                        <Button
-                            v-if="isEditing"
-                            type="button"
-                            variant="ghost"
-                            class="
-                              ml-auto text-destructive
-                              hover:text-destructive
-                            "
-                            @click="onDelete"
-                        >
-                            <Trash2Icon aria-hidden="true" />
-                            Supprimer
-                        </Button>
-                    </div>
-                </form>
-            </CardContent>
-        </Card>
-    </div>
+                                <Trash2Icon aria-hidden="true" />
+                                Supprimer
+                            </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                            <AlertDialogHeader>
+                                <AlertDialogTitle>
+                                    Supprimer « {{ heading }} » ?
+                                </AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    Cette action est irréversible. Le projet
+                                    sera retiré de votre portfolio.
+                                </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel>Annuler</AlertDialogCancel>
+                                <AlertDialogAction
+                                    :class="
+                                        buttonVariants({
+                                            variant: 'destructive',
+                                        })
+                                    "
+                                    :disabled="deleting"
+                                    @click="onDelete"
+                                >
+                                    Supprimer
+                                </AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
+                </CardFooter>
+            </Card>
+        </form>
+    </PageContainer>
 </template>

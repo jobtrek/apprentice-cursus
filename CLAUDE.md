@@ -9,7 +9,7 @@ Grade-tracking app for an apprenticeship program (Laravel + Inertia + Vue). Coac
 Domain source-of-truth docs (read before touching grading/tree logic):
 - `docs/adr/ADR.md` — architecture decisions (e.g. the MP/Matura grading variant is modeled as sibling nodes in one evaluation tree, not a separate tree)
 - `docs/project-docs/grade_tree_IT.md`, `docs/project-docs/grade_tree_EC.md`, `docs/project-docs/IT-schema.mmd`, `docs/project-docs/EC-schema.mmd` — the grade tree structures per program
-- `docs/project-docs/role_permissions.md` — authoritative permission matrix by role (Apprentice, Coach, Trainer, Admin, Super-Admin)
+- `docs/project-docs/role_permissions.md` — authoritative permission matrix by role (Apprentice, Coach, Trainer, Super-Admin)
 - `docs/project-docs/DoD.md` — Definition of Done
 - `docs/user_stories/user_story_final.md`
 
@@ -34,8 +34,8 @@ All PHP/artisan commands run inside Sail: `./vendor/bin/sail <cmd>`. JS package 
 # Lint / format
 composer lint            # pint --parallel (write)
 composer lint:check      # pint --parallel --test (check only)
-pnpm check                # frontend lint (eslint etc.)
-pnpm check:fix
+pnpm check                # vp check: Oxfmt + Oxlint + ESLint-Vue-Tailwind
+pnpm check:fix            # vp check --fix (write)
 
 # Static analysis
 composer types:check     # phpstan (larastan) via phpstan.neon, level 7
@@ -46,7 +46,7 @@ composer ci:check
 composer test             # config:clear + lint:check + types:check + artisan test
 ```
 
-No test runner is configured on the JS side yet (`README.md`/`technical_details.md` mention Vitest + Vue Testing Library as the intended choice, not yet wired up).
+No test runner is configured on the JS side yet (intended: `vp test` with imports from `vite-plus/test`, not yet wired up).
 
 ## Architecture notes
 

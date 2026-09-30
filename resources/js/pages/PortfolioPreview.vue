@@ -1,15 +1,20 @@
 <script setup lang="ts">
 import { Head, Link } from '@inertiajs/vue3';
 import { ChevronLeftIcon, ExternalLinkIcon, FileTextIcon } from '@lucide/vue';
-import {
-    formatPeriod,
-    parseTechnologies,
-    usePortfolio,
-} from '@/composables/usePortfolio';
+import { formatPeriod, skillNames } from '@/composables/usePortfolio';
 import { Button } from '@/components/ui/button';
 import portfolio from '@/routes/portfolio';
+import type {
+    PortfolioOwner,
+    PortfolioProject,
+    Skill,
+} from '@/types/portfolio';
 
-const { projects, owner, skillNames } = usePortfolio();
+defineProps<{
+    owner: PortfolioOwner;
+    projects: PortfolioProject[];
+    skills: Skill[];
+}>();
 
 /**
  * L'export passe par la boîte d'impression du navigateur ("Enregistrer au
@@ -24,23 +29,16 @@ function exportToPdf(): void {
 <template>
     <Head title="Aperçu du portfolio" />
 
-    <div class="min-h-svh bg-muted/40">
+    <div class="bg-muted/40 min-h-svh">
         <header
-            class="
-              sticky top-0 z-10 flex items-center justify-between gap-4 border-b
-              bg-background px-6 py-3
-              print:hidden
-            "
+            class="bg-background sticky top-0 z-10 flex items-center justify-between gap-4 border-b px-6 py-3 print:hidden"
         >
             <Link
                 :href="portfolio.index()"
-                class="
-                  flex items-center gap-1 text-sm text-muted-foreground
-                  hover:text-foreground
-                "
+                class="text-muted-foreground hover:text-foreground flex items-center gap-1 text-sm"
             >
                 <ChevronLeftIcon class="size-4" aria-hidden="true" />
-                Aperçu du portfolio
+                Retour au portfolio
             </Link>
 
             <Button data-test="export-pdf-button" @click="exportToPdf">
@@ -50,16 +48,14 @@ function exportToPdf(): void {
         </header>
 
         <main
-            class="
-              mx-auto my-10 max-w-3xl bg-white p-12 text-neutral-900 shadow-sm
-              print:my-0 print:max-w-none print:px-0 print:shadow-none
-            "
+            class="mx-auto my-10 max-w-3xl bg-white p-12 text-neutral-900 shadow-sm print:my-0 print:max-w-none print:px-0 print:shadow-none"
         >
             <div class="space-y-1">
                 <h1 class="text-2xl font-bold">{{ owner.name }}</h1>
                 <p class="text-sm text-neutral-500">
-                    Portfolio de projets — {{ owner.track }} ·
-                    {{ owner.promotion }}
+                    Portfolio de projets<template v-if="owner.track">
+                        — {{ owner.track }}</template
+                    >
                 </p>
             </div>
 
@@ -94,14 +90,9 @@ function exportToPdf(): void {
 
                 <ul class="mt-3 flex flex-wrap gap-1.5">
                     <li
-                        v-for="technology in parseTechnologies(
-                            project.technologies,
-                        )"
+                        v-for="technology in project.technologies"
                         :key="technology"
-                        class="
-                          rounded-sm border border-neutral-200 px-2 py-0.5
-                          text-xs
-                        "
+                        class="rounded-sm border border-neutral-200 px-2 py-0.5 text-xs"
                     >
                         {{ technology }}
                     </li>
@@ -116,10 +107,7 @@ function exportToPdf(): void {
                         :href="project.demo_path"
                         target="_blank"
                         rel="noopener noreferrer"
-                        class="
-                          flex items-center gap-1.5 underline-offset-4
-                          hover:underline
-                        "
+                        class="flex items-center gap-1.5 underline-offset-4 hover:underline"
                     >
                         <ExternalLinkIcon class="size-3.5" aria-hidden="true" />
                         Démonstration
@@ -129,10 +117,7 @@ function exportToPdf(): void {
                         :href="project.repository_url"
                         target="_blank"
                         rel="noopener noreferrer"
-                        class="
-                          flex items-center gap-1.5 underline-offset-4
-                          hover:underline
-                        "
+                        class="flex items-center gap-1.5 underline-offset-4 hover:underline"
                     >
                         <ExternalLinkIcon class="size-3.5" aria-hidden="true" />
                         Code source
@@ -145,8 +130,8 @@ function exportToPdf(): void {
                 >
                     <img
                         v-for="(screenshot, index) in project.screenshots"
-                        :key="index"
-                        :src="screenshot"
+                        :key="screenshot.id"
+                        :src="screenshot.url"
                         :alt="`${project.title} — capture ${index + 1}`"
                         class="h-20 w-32 rounded-sm bg-neutral-100 object-cover"
                     />
@@ -154,12 +139,9 @@ function exportToPdf(): void {
 
                 <ul class="mt-4 flex flex-wrap gap-1.5">
                     <li
-                        v-for="name in skillNames(project)"
+                        v-for="name in skillNames(project, skills)"
                         :key="name"
-                        class="
-                          rounded-sm border border-blue-200 bg-blue-50 px-2
-                          py-0.5 text-xs text-blue-900
-                        "
+                        class="rounded-sm border border-blue-200 bg-blue-50 px-2 py-0.5 text-xs text-blue-900"
                     >
                         {{ name }}
                     </li>

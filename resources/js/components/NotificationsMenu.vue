@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
 import {
     Popover,
     PopoverContent,
@@ -25,28 +27,22 @@ const triggerLabel = computed(() =>
 
 <template>
     <Popover>
-        <PopoverTrigger
-            :aria-label="triggerLabel"
-            class="
-              relative inline-flex size-9 items-center justify-center rounded-md
-              text-muted-foreground transition-colors
-              hover:bg-accent hover:text-foreground
-              focus-visible:ring-[3px] focus-visible:ring-ring/50
-              focus-visible:outline-none
-            "
-        >
-            <BellIcon class="size-5" />
-
-            <span
-                v-if="unreadCount > 0"
-                class="
-                  absolute top-1 right-1 flex size-4 items-center justify-center
-                  rounded-full bg-primary text-[10px] leading-none font-medium
-                  text-primary-foreground
-                "
+        <PopoverTrigger as-child>
+            <Button
+                variant="ghost"
+                size="icon"
+                class="text-muted-foreground relative"
+                :aria-label="triggerLabel"
             >
-                {{ unreadCount }}
-            </span>
+                <BellIcon class="size-5" />
+
+                <span
+                    v-if="unreadCount > 0"
+                    class="bg-primary text-primary-foreground absolute top-1 right-1 flex size-4 items-center justify-center rounded-full text-[10px] leading-none font-medium"
+                >
+                    {{ unreadCount }}
+                </span>
+            </Button>
         </PopoverTrigger>
 
         <PopoverContent
@@ -57,23 +53,20 @@ const triggerLabel = computed(() =>
             <div class="flex items-center justify-between border-b px-4 py-3">
                 <p class="text-sm font-semibold">Notifications</p>
 
-                <button
-                    type="button"
-                    class="
-                      text-xs text-muted-foreground transition-colors
-                      hover:text-foreground
-                      disabled:pointer-events-none disabled:opacity-50
-                    "
+                <Button
+                    variant="link"
+                    size="xs"
+                    class="text-muted-foreground hover:text-foreground h-auto px-0"
                     :disabled="unreadCount === 0"
                     @click="markAllAsRead"
                 >
                     Tout marquer comme lu
-                </button>
+                </Button>
             </div>
 
             <p
                 v-if="notifications.length === 0"
-                class="px-4 py-6 text-center text-sm text-muted-foreground"
+                class="text-muted-foreground px-4 py-6 text-center text-sm"
             >
                 Aucune notification pour le moment.
             </p>
@@ -85,11 +78,7 @@ const triggerLabel = computed(() =>
                 >
                     <button
                         type="button"
-                        class="
-                          flex w-full items-start gap-3 px-4 py-3 text-left
-                          transition-colors
-                          hover:bg-accent/60
-                        "
+                        class="hover:bg-accent/60 flex w-full items-start gap-3 px-4 py-3 text-left transition-colors"
                         :class="cn(!notification.read && 'bg-accent/40')"
                         @click="markAsRead(notification.id)"
                     >
@@ -102,15 +91,11 @@ const triggerLabel = computed(() =>
                             "
                         />
 
-                        <span
-                            class="
-                              flex size-8 shrink-0 items-center justify-center
-                              rounded-full bg-muted text-xs font-medium
-                              text-muted-foreground
-                            "
-                        >
-                            {{ getInitials(notification.author.name) }}
-                        </span>
+                        <Avatar>
+                            <AvatarFallback class="text-xs">
+                                {{ getInitials(notification.author.name) }}
+                            </AvatarFallback>
+                        </Avatar>
 
                         <span class="min-w-0 flex-1">
                             <span class="block text-sm">
@@ -126,16 +111,13 @@ const triggerLabel = computed(() =>
                             </span>
 
                             <span
-                                class="
-                                  mt-0.5 block truncate text-sm
-                                  text-muted-foreground
-                                "
+                                class="text-muted-foreground mt-0.5 block truncate text-sm"
                             >
                                 {{ notification.target }}
                             </span>
 
                             <span
-                                class="mt-1 block text-xs text-muted-foreground"
+                                class="text-muted-foreground mt-1 block text-xs"
                             >
                                 {{
                                     formatNotificationDate(
