@@ -18,7 +18,6 @@ function adminRoutes(): array
 {
     return [
         'grades.dashboard' => ['grades.dashboard', fn () => []],
-        'grades.create' => ['grades.create', fn () => []],
         'portfolio.index' => ['portfolio.index', fn () => []],
         'apprentisdashboard' => ['apprentisdashboard', fn () => []],
         'apprentices.show' => ['apprentices.show', fn (User $apprentice) => ['apprentice' => $apprentice]],

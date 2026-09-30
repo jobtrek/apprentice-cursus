@@ -28,6 +28,7 @@ class DossierController extends Controller
     {
         return Inertia::render('Portfolio', [
             'projects' => $this->portfolioProjects($request->user()),
+            'skills' => $this->skills(),
         ]);
     }
 

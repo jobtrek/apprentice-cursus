@@ -4,17 +4,14 @@ use App\Enums\Permission;
 use App\Http\Controllers\ApprenticeController;
 use App\Http\Controllers\DossierController;
 use App\Http\Controllers\GradeController;
-use App\Models\Grade;
+use App\Http\Controllers\HomeController;
 use Illuminate\Foundation\Http\Middleware\HandlePrecognitiveRequests;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::inertia('/', 'Home')->name('home');
+    Route::get('/', HomeController::class)->name('home');
 
     Route::prefix('grades')->name('grades.')->group(function () {
-        Route::inertia('/create', 'CreateGrade')
-            ->middleware('can:create,'.Grade::class)
-            ->name('create');
         Route::get('/dashboard', [GradeController::class, 'dashboard'])
             ->middleware('can:'.Permission::GradesViewOwn->value)
             ->name('dashboard');

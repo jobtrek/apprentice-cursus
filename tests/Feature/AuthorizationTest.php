@@ -59,7 +59,7 @@ describe('apprentice', function () {
         $apprentice = User::factory()->create();
         $grade = makeGrade($apprentice);
 
-        $this->actingAs($apprentice)->get(route('grades.create'))->assertOk();
+        $this->actingAs($apprentice)->get(route('grades.dashboard'))->assertOk();
         $this->actingAs($apprentice)->get(route('grades.show', $grade))->assertOk();
         $this->actingAs($apprentice)->get(route('portfolio.index'))->assertOk();
     });
@@ -81,11 +81,6 @@ describe('apprentice', function () {
 
         $this->actingAs($me)->get(route('grades.show', $otherGrade))->assertForbidden();
         $this->actingAs($me)->get(route('apprentices.grades.show', [$other, $otherGrade]))->assertForbidden();
-    });
-
-    test('non-apprentices cannot create grades', function () {
-        $this->actingAs(User::factory()->coach()->create())->get(route('grades.create'))->assertForbidden();
-        $this->actingAs(User::factory()->trainer()->create())->get(route('grades.create'))->assertForbidden();
     });
 });
 
@@ -112,7 +107,7 @@ describe('coach', function () {
     test('cannot use apprentice-only pages', function () {
         $coach = User::factory()->coach()->create();
 
-        $this->actingAs($coach)->get(route('grades.create'))->assertForbidden();
+        $this->actingAs($coach)->get(route('grades.dashboard'))->assertForbidden();
         $this->actingAs($coach)->get(route('portfolio.index'))->assertForbidden();
     });
 });
@@ -135,13 +130,13 @@ describe('trainer', function () {
     test('cannot use apprentice-only pages', function () {
         $trainer = User::factory()->trainer()->create();
 
-        $this->actingAs($trainer)->get(route('grades.create'))->assertForbidden();
+        $this->actingAs($trainer)->get(route('grades.dashboard'))->assertForbidden();
         $this->actingAs($trainer)->get(route('portfolio.index'))->assertForbidden();
     });
 });
 
 test('guests are redirected to login', function () {
-    $this->get(route('grades.create'))->assertRedirect(route('login'));
+    $this->get(route('grades.dashboard'))->assertRedirect(route('login'));
 });
 
 test('auth.can exposes permission booleans per role', function () {

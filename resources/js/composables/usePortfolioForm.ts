@@ -1,4 +1,4 @@
-import type { UrlMethodPair } from '@inertiajs/core';
+import type { UrlMethodPair, UseFormSubmitOptions } from '@inertiajs/core';
 import { useForm } from '@inertiajs/vue3';
 import { computed, onScopeDispose, ref } from 'vue';
 import portfolio from '@/routes/portfolio';
@@ -210,8 +210,8 @@ export function usePortfolioForm(existing?: PortfolioProject) {
     });
 
     /** Inertia passe en multipart dès qu'un fichier est présent. */
-    function submit(): void {
-        form.submit();
+    function submit(options?: UseFormSubmitOptions): void {
+        form.submit(options);
     }
 
     return {

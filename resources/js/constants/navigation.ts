@@ -2,7 +2,6 @@ import {
     BookOpenIcon,
     FolderKanbanIcon,
     HomeIcon,
-    PlusCircleIcon,
     UsersIcon,
 } from '@lucide/vue';
 import type { Component } from 'vue';
@@ -21,7 +20,7 @@ export type NavItem = {
     /**
      * Préfixes d'URL qui rendent l'élément actif, en plus de `href`. Quand
      * plusieurs éléments correspondent, le préfixe le plus long l'emporte :
-     * `/grades/create` active « Ajouter une note » et non « Carnet de notes ».
+     * `/apprentices/3` active « Apprentis », `/grades/5` « Carnet de notes ».
      */
     matches?: string[];
     /**
@@ -58,13 +57,6 @@ export const NAV_ITEMS: NavItem[] = [
         icon: BookOpenIcon,
         matches: ['/grades'],
         can: 'viewOwnGrades',
-    },
-    {
-        label: 'Ajouter une note',
-        description: 'Saisissez une nouvelle note et déposez le justificatif.',
-        href: grades.create(),
-        icon: PlusCircleIcon,
-        can: 'createGrade',
     },
     {
         label: 'Portfolio',
