@@ -1,58 +1,71 @@
 erDiagram
 
+    %% Mirrors database/migrations. Framework tables (password_reset_tokens, sessions,
+    %% cache, cache_locks, jobs, job_batches, failed_jobs) are left out.
+    %% "enum" columns are varchar + CHECK in Postgres, not native enums.
 
     evaluation_nodes {
         bigint id PK
-        bigint subject_id FK "nullable, -> subjects (leaves)"
+        bigint subject_id FK "nullable, -> subjects (leaves), nullOnDelete"
         varchar name "e.g. Final grade, DCO B, French..."
-        enum aggregation "meant to tell how to combine nodes children into a nodes value; NULL = leaf node, no children"
-        decimal rounding_step "nullable, 0.5 or NULL"
-        enum period_scope "semester or cursus"
+        enum aggregation "nullable, weighted_average; NULL = leaf node, no children"
+        decimal rounding_step "nullable, (2,1), 0.5 or NULL"
+        enum period_scope "semester | cursus"
         enum variant "nullable, standard | mp -> which track this node belongs to; NULL = shared by both"
-        timestamp created_at
+        timestamp created_at "default now"
     }
 
     evaluation_node_connections {
         bigint id PK
-        bigint parent_id FK "-> evaluation_nodes"
-        bigint child_id FK "-> evaluation_nodes, self-ref (DAG, not strict tree)"
-        decimal weight "weight of child WITHIN this parent"
-        timestamp created_at
+        bigint parent_id FK "-> evaluation_nodes, cascadeOnDelete"
+        bigint child_id FK "-> evaluation_nodes, self-ref (DAG, not strict tree), cascadeOnDelete"
+        decimal weight "(5,2), weight of child WITHIN this parent"
+        timestamp created_at "default now"
     }
     %% evaluation_node_connections: UNIQUE (parent_id, child_id) — prevents duplicate edges double-counting weight
+    %% CHECK (parent_id <> child_id) blocks self-loops; longer cycles are enforced by EvaluationNode::addChild()
 
     subjects {
         bigint id PK
-        bigint subject_category_id FK "-> subject_category"
-        timestamp created_at
+        bigint subject_category_id FK "-> subject_category, cascadeOnDelete"
+        timestamp created_at "default now"
     }
 
     subject_category {
         bigint id PK
-        varchar Name "CIE, competence elargie, Modules. Used for grouping in the UI"
+        varchar name "CIE, competence elargie, Modules. Used for grouping in the UI"
+    }
+
+    apprenticeships {
+        bigint id PK
+        varchar name "IT | EC (track)"
+        timestamp created_at
+        timestamp updated_at
     }
 
     users {
         bigint id PK
         varchar azure_id UK "nullable, for SSO, varchar since it's UUID"
-        varchar tenant_id "nullable, for SSO, varchat since it's UUID"
+        varchar tenant_id "nullable, for SSO, varchar since it's UUID"
         varchar name
         varchar email UK
+        timestamp email_verified_at "nullable"
+        varchar password "nullable, SSO users have none"
         boolean is_mp "nullable, doing the maturité professionnelle variant"
-        enum role "apprentice, coach, trainer, admin, super_admin"
-        enum apprenticeship_name "nullable, IT | EC"
-        bigint apprenticeship_id FK "nullable, -> apprenticeships (track)"
-        bigint coach_id FK "nullable, self-ref"
-        bigint trainer_id FK "nullable, self-ref"
+        boolean is_active "default true"
+        enum role "apprentice | coach | trainer | admin | super_admin, default apprentice"
+        bigint apprenticeship_id FK "nullable, -> apprenticeships (track), nullOnDelete"
+        bigint coach_id FK "nullable, self-ref, nullOnDelete"
+        bigint trainer_id FK "nullable, self-ref, nullOnDelete"
     }
 
     grades {
         bigint id PK
-        bigint user_id FK "-> users (apprentice)"
-        bigint evaluation_node_id FK "-> evaluation_nodes (leaf)"
-        decimal value "CHECK 1.0-6.0, no half steps"
-        date test_date "CHECK <= today"
-        smallint semester "1..8, derived from test_date"
+        bigint user_id FK "-> users (apprentice), restrictOnDelete"
+        bigint evaluation_node_id FK "-> evaluation_nodes (leaf), restrictOnDelete"
+        decimal value "(2,1), CHECK 1.0-6.0, no half steps"
+        date test_date "<= today, enforced in FormRequest (CURRENT_DATE not allowed in CHECK)"
+        smallint semester "CHECK 1..8, derived from test_date"
         varchar file_path "nullable, required if not oral"
         varchar original_filename "nullable"
         timestamp notified_at "nullable, anti-duplicate email"
@@ -62,10 +75,10 @@ erDiagram
 
     evaluation_results {
         bigint id PK
-        bigint user_id FK "-> users (apprentice)"
-        bigint evaluation_node_id FK "-> evaluation_nodes"
-        smallint semester "NOT NULL, sentinel 0 when node.period_scope = cursus"
-        decimal rounded_value "displayed value"
+        bigint user_id FK "-> users (apprentice), restrictOnDelete"
+        bigint evaluation_node_id FK "-> evaluation_nodes, restrictOnDelete"
+        smallint semester "CHECK 0..8, sentinel 0 when node.period_scope = cursus"
+        decimal rounded_value "(2,1), CHECK 1.0-6.0, displayed value"
         timestamp created_at
         timestamp updated_at
     }
@@ -75,22 +88,22 @@ erDiagram
 
     comments {
         bigint id PK
-        bigint author_id FK "-> users"
+        bigint author_id FK "-> users, restrictOnDelete"
         varchar commentable_type "Grade | Project"
         bigint commentable_id
-        text body "max 2000 chars"
+        text body "CHECK max 2000 chars"
         timestamp created_at
         timestamp updated_at
     }
 
     projects {
         bigint id PK
-        bigint user_id FK "-> users (IT apprentice)"
+        bigint user_id FK "-> users (IT apprentice), restrictOnDelete"
         varchar title
         varchar organization "nullable"
         text description
         varchar responsibilities "nullable"
-        varchar technologies "nullable"
+        varchar technologies "nullable, comma-separated"
         varchar repository_url "nullable"
         varchar demo_path "nullable"
         date date_start
@@ -99,22 +112,33 @@ erDiagram
         timestamp updated_at
     }
 
+    project_screenshots {
+        bigint id PK
+        bigint project_id FK "-> projects, cascadeOnDelete"
+        varchar path "private disk, served through DossierController::screenshot"
+        timestamp created_at
+        timestamp updated_at
+    }
+    %% project_screenshots: max 10 per project (ProjectScreenshot::MAX_PER_PROJECT), enforced in PortfolioProjectRequest
+
     skills {
         bigint id PK
         varchar name UK
-        timestamp created_at
+        timestamp created_at "default now"
     }
 
     project_skill {
-        bigint project_id FK
-        bigint skill_id FK
+        bigint project_id PK, FK "-> projects, cascadeOnDelete"
+        bigint skill_id PK, FK "-> skills, cascadeOnDelete"
     }
 
     evaluation_nodes ||--o{ evaluation_node_connections : "parent"
     evaluation_nodes ||--o{ evaluation_node_connections : "child"
-    subjects ||--o{ evaluation_nodes : "label"
-    users ||--o{ users : "coach"
-    users ||--o{ users : "trainer"
+    subjects |o--o{ evaluation_nodes : "label"
+    subject_category ||--o{ subjects : "category"
+    apprenticeships |o--o{ users : "track"
+    users |o--o{ users : "coach"
+    users |o--o{ users : "trainer"
     users ||--o{ grades : "apprentice"
     evaluation_nodes ||--o{ grades : "leaf"
     evaluation_nodes ||--o{ evaluation_results : ""
@@ -123,6 +147,6 @@ erDiagram
     grades ||--o{ comments : "commentable"
     projects ||--o{ comments : "commentable"
     users ||--o{ projects : "apprentice"
+    projects ||--o{ project_screenshots : "screenshots"
     projects ||--o{ project_skill : ""
     skills ||--o{ project_skill : ""
-    subjects ||--o{ subject_category: "category"

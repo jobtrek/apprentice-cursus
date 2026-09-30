@@ -1,5 +1,7 @@
 <script setup lang="ts">
+import { router } from '@inertiajs/vue3';
 import { Trash2Icon } from '@lucide/vue';
+import { ref } from 'vue';
 import ProjectForm from '@/components/portfolio/ProjectForm.vue';
 import {
     AlertDialog,
@@ -22,21 +24,32 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
-import { usePortfolio } from '@/composables/usePortfolio';
 import { useProjectDialog } from '@/composables/useProjectDialog';
+import portfolio from '@/routes/portfolio';
+import type { Skill } from '@/types/portfolio';
+
+defineProps<{
+    skills: Skill[];
+}>();
 
 const FORM_ID = 'project-dialog-form';
 
 const { isOpen, project, close } = useProjectDialog();
-const { deleteProject } = usePortfolio();
+
+const projectForm = ref<InstanceType<typeof ProjectForm> | null>(null);
+const deleting = ref(false);
 
 function onDelete(): void {
     if (!project.value) {
         return;
     }
 
-    deleteProject(project.value.id);
-    close();
+    router.delete(portfolio.projects.destroy.url(project.value.id), {
+        preserveScroll: true,
+        onStart: () => (deleting.value = true),
+        onSuccess: close,
+        onFinish: () => (deleting.value = false),
+    });
 }
 </script>
 
@@ -65,9 +78,11 @@ function onDelete(): void {
 
             <div class="overflow-y-auto p-6">
                 <ProjectForm
+                    ref="projectForm"
                     :id="FORM_ID"
                     :key="project?.id ?? 'new'"
                     :project="project"
+                    :skills="skills"
                     @saved="close"
                 />
             </div>
@@ -78,6 +93,7 @@ function onDelete(): void {
                         <Button
                             type="button"
                             variant="ghost"
+                            :disabled="deleting"
                             class="text-destructive hover:bg-destructive/10 hover:text-destructive sm:mr-auto"
                         >
                             <Trash2Icon aria-hidden="true" />
@@ -100,6 +116,7 @@ function onDelete(): void {
                                 :class="
                                     buttonVariants({ variant: 'destructive' })
                                 "
+                                :disabled="deleting"
                                 @click="onDelete"
                             >
                                 Supprimer
@@ -114,6 +131,7 @@ function onDelete(): void {
                 <Button
                     type="submit"
                     :form="FORM_ID"
+                    :disabled="projectForm?.form.processing"
                     data-test="save-project-button"
                 >
                     Enregistrer le projet

@@ -9,7 +9,7 @@ Grade-tracking app for an apprenticeship program (Laravel + Inertia + Vue). Coac
 Domain source-of-truth docs (read before touching grading/tree logic):
 - `docs/adr/ADR.md` — architecture decisions (e.g. the MP/Matura grading variant is modeled as sibling nodes in one evaluation tree, not a separate tree)
 - `docs/project-docs/grade_tree_IT.md`, `docs/project-docs/grade_tree_EC.md`, `docs/project-docs/IT-schema.mmd`, `docs/project-docs/EC-schema.mmd` — the grade tree structures per program
-- `docs/project-docs/role_permissions.md` — authoritative permission matrix by role (Apprentice, Coach, Trainer, Admin, Super-Admin)
+- `docs/project-docs/role_permissions.md` — authoritative permission matrix by role (Apprentice, Coach, Trainer, Super-Admin)
 - `docs/project-docs/DoD.md` — Definition of Done
 - `docs/user_stories/user_story_final.md`
 

@@ -16,8 +16,11 @@ import {
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Toggle } from '@/components/ui/toggle';
-import { usePortfolioForm } from '@/composables/usePortfolioForm';
-import type { PortfolioProject } from '@/types/portfolio';
+import {
+    MAX_SCREENSHOTS,
+    usePortfolioForm,
+} from '@/composables/usePortfolioForm';
+import type { PortfolioProject, Skill } from '@/types/portfolio';
 
 const props = defineProps<{
     /**
@@ -27,16 +30,17 @@ const props = defineProps<{
     id: string;
     /** Projet à modifier. Absent : création d'un nouveau projet. */
     project?: PortfolioProject;
+    /** Catalogue des compétences proposées. */
+    skills: Skill[];
 }>();
 
 const emit = defineEmits<{
     /** Projet enregistré : le parent décide de la suite (fermer, rediriger…). */
-    saved: [project: PortfolioProject];
+    saved: [];
 }>();
 
 const {
     form,
-    skills,
     errors,
     technologyDraft,
     addTechnology,
@@ -44,10 +48,13 @@ const {
     removeLastTechnology,
     toggleSkill,
     hasSkill,
+    screenshotPreviews,
     addScreenshots,
     removeScreenshot,
     submit,
 } = usePortfolioForm(props.project);
+
+defineExpose({ form });
 
 const screenshotInput = ref<HTMLInputElement | null>(null);
 
@@ -55,19 +62,18 @@ function pickScreenshots(): void {
     screenshotInput.value?.click();
 }
 
-async function onScreenshotsPicked(event: Event): Promise<void> {
+function onScreenshotsPicked(event: Event): void {
     const input = event.target as HTMLInputElement;
-    await addScreenshots(input.files);
+    addScreenshots(input.files);
     // Remis à zéro pour que réimporter le même fichier redéclenche l'événement.
     input.value = '';
 }
 
 function onSubmit(): void {
-    const saved = submit();
-
-    if (saved !== null) {
-        emit('saved', saved);
-    }
+    submit({
+        preserveScroll: true,
+        onSuccess: () => emit('saved'),
+    });
 }
 </script>
 
@@ -83,6 +89,7 @@ function onSubmit(): void {
                         id="title"
                         v-model="form.title"
                         name="title"
+                        @change="form.validate('title')"
                         required
                         :aria-invalid="Boolean(errors.title)"
                     />
@@ -90,21 +97,27 @@ function onSubmit(): void {
                 </Field>
 
                 <div class="grid gap-6 sm:grid-cols-2">
-                    <Field>
+                    <Field :data-invalid="Boolean(errors.organization)">
                         <FieldLabel for="organization"> Entreprise </FieldLabel>
                         <Input
                             id="organization"
                             v-model="form.organization"
                             name="organization"
+                            @change="form.validate('organization')"
+                            :aria-invalid="Boolean(errors.organization)"
                         />
+                        <FieldError :errors="[errors.organization]" />
                     </Field>
-                    <Field>
+                    <Field :data-invalid="Boolean(errors.responsibilities)">
                         <FieldLabel for="responsibilities"> Rôle </FieldLabel>
                         <Input
                             id="responsibilities"
                             v-model="form.responsibilities"
                             name="responsibilities"
+                            @change="form.validate('responsibilities')"
+                            :aria-invalid="Boolean(errors.responsibilities)"
                         />
+                        <FieldError :errors="[errors.responsibilities]" />
                     </Field>
                 </div>
 
@@ -118,6 +131,7 @@ function onSubmit(): void {
                             v-model="form.date_start"
                             type="date"
                             name="date_start"
+                            @change="form.validate('date_start')"
                             required
                             :aria-invalid="Boolean(errors.date_start)"
                         />
@@ -130,6 +144,7 @@ function onSubmit(): void {
                             v-model="form.date_end"
                             type="date"
                             name="date_end"
+                            @change="form.validate('date_end')"
                             :aria-invalid="Boolean(errors.date_end)"
                         />
                         <FieldError :errors="[errors.date_end]" />
@@ -142,6 +157,7 @@ function onSubmit(): void {
                         id="description"
                         v-model="form.description"
                         name="description"
+                        @change="form.validate('description')"
                         rows="4"
                         required
                         :aria-invalid="Boolean(errors.description)"
@@ -155,7 +171,7 @@ function onSubmit(): void {
             <FieldSet>
                 <FieldLegend>Technique</FieldLegend>
 
-                <Field>
+                <Field :data-invalid="Boolean(errors.technologies)">
                     <FieldLabel for="technology-draft">
                         Technologies
                     </FieldLabel>
@@ -189,13 +205,14 @@ function onSubmit(): void {
                             @blur="addTechnology"
                         />
                     </div>
+                    <FieldError :errors="[errors.technologies]" />
                     <FieldDescription>
                         Validez avec Entrée ou une virgule.
                     </FieldDescription>
                 </Field>
 
                 <div class="grid gap-6 sm:grid-cols-2">
-                    <Field>
+                    <Field :data-invalid="Boolean(errors.demo_path)">
                         <FieldLabel for="demo_path">
                             Lien de démonstration
                         </FieldLabel>
@@ -204,10 +221,13 @@ function onSubmit(): void {
                             v-model="form.demo_path"
                             type="url"
                             name="demo_path"
+                            @change="form.validate('demo_path')"
+                            :aria-invalid="Boolean(errors.demo_path)"
                             placeholder="https://"
                         />
+                        <FieldError :errors="[errors.demo_path]" />
                     </Field>
-                    <Field>
+                    <Field :data-invalid="Boolean(errors.repository_url)">
                         <FieldLabel for="repository_url">
                             Lien du code source
                         </FieldLabel>
@@ -216,8 +236,11 @@ function onSubmit(): void {
                             v-model="form.repository_url"
                             type="url"
                             name="repository_url"
+                            @change="form.validate('repository_url')"
+                            :aria-invalid="Boolean(errors.repository_url)"
                             placeholder="https://"
                         />
+                        <FieldError :errors="[errors.repository_url]" />
                     </Field>
                 </div>
             </FieldSet>
@@ -227,15 +250,21 @@ function onSubmit(): void {
             <FieldSet>
                 <FieldLegend>Captures d'écran</FieldLegend>
 
-                <Field :data-invalid="Boolean(errors.screenshots)">
+                <Field
+                    :data-invalid="
+                        Boolean(
+                            errors.screenshots || errors.kept_screenshot_ids,
+                        )
+                    "
+                >
                     <div class="flex flex-wrap gap-3">
                         <div
-                            v-for="(screenshot, index) in form.screenshots"
-                            :key="index"
+                            v-for="(screenshot, index) in screenshotPreviews"
+                            :key="screenshot.url"
                             class="relative"
                         >
                             <img
-                                :src="screenshot"
+                                :src="screenshot.url"
                                 :alt="`Capture d'écran ${index + 1}`"
                                 class="bg-muted size-24 rounded-md object-cover"
                             />
@@ -245,7 +274,7 @@ function onSubmit(): void {
                                 size="icon-xs"
                                 class="absolute -top-2 -right-2 rounded-full border shadow-xs"
                                 :aria-label="`Retirer la capture ${index + 1}`"
-                                @click="removeScreenshot(index)"
+                                @click="removeScreenshot(screenshot)"
                             >
                                 <XIcon aria-hidden="true" />
                             </Button>
@@ -271,9 +300,15 @@ function onSubmit(): void {
                             @change="onScreenshotsPicked"
                         />
                     </div>
-                    <FieldError :errors="[errors.screenshots]" />
+                    <FieldError
+                        :errors="[
+                            errors.screenshots,
+                            errors.kept_screenshot_ids,
+                        ]"
+                    />
                     <FieldDescription>
-                        Images uniquement, 5 Mo maximum par fichier.
+                        Images uniquement, 5 Mo maximum par fichier,
+                        {{ MAX_SCREENSHOTS }} captures au plus.
                     </FieldDescription>
                 </Field>
             </FieldSet>
@@ -296,6 +331,7 @@ function onSubmit(): void {
                         {{ skill.name }}
                     </Toggle>
                 </div>
+                <FieldError :errors="[errors.skill_ids]" />
             </FieldSet>
         </FieldGroup>
     </form>

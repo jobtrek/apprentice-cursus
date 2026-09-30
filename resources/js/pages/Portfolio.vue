@@ -8,12 +8,8 @@ import {
     PencilIcon,
     PlusIcon,
 } from '@lucide/vue';
-import { ref } from 'vue';
-import {
-    formatPeriod,
-    parseTechnologies,
-    usePortfolio,
-} from '@/composables/usePortfolio';
+import { ref, watch } from 'vue';
+import { formatPeriod } from '@/composables/usePortfolio';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -30,10 +26,41 @@ import AddActionButton from '@/components/AddActionButton.vue';
 import { PageContainer, PageHeader } from '@/components/page';
 import ProjectDialog from '@/components/portfolio/ProjectDialog.vue';
 import { useProjectDialog } from '@/composables/useProjectDialog';
+import type { PortfolioProject, Skill } from '@/types/portfolio';
 
-const { projects, moveProject } = usePortfolio();
+const props = defineProps<{
+    projects: PortfolioProject[];
+    skills: Skill[];
+}>();
+
 const { openCreate: openAddProject, openEdit: openEditProject } =
     useProjectDialog();
+
+/**
+ * Copie locale pour le glisser-déposer. L'ordre n'est pas encore enregistré :
+ * la table `projects` n'a pas de colonne `position`. Resynchronisée quand le
+ * serveur renvoie la liste (après un ajout, une modification, une suppression).
+ */
+const projects = ref<PortfolioProject[]>([...props.projects]);
+
+watch(
+    () => props.projects,
+    (fresh) => {
+        projects.value = [...fresh];
+    },
+);
+
+/** Déplace un projet dans la liste, en bornant la position d'arrivée. */
+function moveProject(from: number, to: number): void {
+    if (to < 0 || to >= projects.value.length || from === to) {
+        return;
+    }
+
+    const reordered = [...projects.value];
+    const [moved] = reordered.splice(from, 1);
+    reordered.splice(to, 0, moved);
+    projects.value = reordered;
+}
 
 const draggedIndex = ref<number | null>(null);
 const dropTargetIndex = ref<number | null>(null);
@@ -144,9 +171,7 @@ function onHandleKeydown(event: KeyboardEvent, index: number): void {
                         </p>
                         <div class="flex flex-wrap gap-1 pt-1">
                             <Badge
-                                v-for="technology in parseTechnologies(
-                                    project.technologies,
-                                )"
+                                v-for="technology in project.technologies"
                                 :key="technology"
                                 variant="outline"
                             >
@@ -187,6 +212,6 @@ function onHandleKeydown(event: KeyboardEvent, index: number): void {
             </EmptyContent>
         </Empty>
 
-        <ProjectDialog />
+        <ProjectDialog :skills="skills" />
     </PageContainer>
 </template>
