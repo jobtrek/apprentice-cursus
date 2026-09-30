@@ -163,3 +163,14 @@ What each role can do and how the sync behaves: `docs/project-docs/role_permissi
 **Decision:** `User::$timestamps = false`.
 
 **Why:** The columns were dropped (`2026_09_17_083508_drop_default_columns_from_users_table`); Azure SSO is the sole write path and does not need them.
+
+## 2026-09-30 — Local-only admin role
+
+**Decision:** An `admin` role (`UserRole::Admin`) exists as a development tool only: access to everything, so developers can build a feature without switching accounts. It is implemented with Spatie's documented super-admin pattern, a `Gate::before` in `AppServiceProvider` that returns `true` when `User::isLocalAdmin()`, else `null`. `Permission::byRole()` gives admin an empty list. `isLocalAdmin()` is `app()->environment('local') && hasRole('admin')`, evaluated at call time. No `AzureGroup` maps to admin. `User::homeRoute()` and `User::supervises()` handle it explicitly. A migration calls `RolesAndPermissions::sync()` so the role exists on already-migrated databases.
+
+**Why:**
+- An empty `byRole()` list plus the Gate bypass means a new permission is covered automatically; a full list would need an edit for every permission and drift.
+- Checking the environment at call time, not at registration, means outside `local` the role grants nothing (every protected route returns 403) even if a row reaches production, and a test can switch the environment after boot.
+- No Entra group maps to it, so it can never come from Microsoft.
+- `hasPermissionTo()` does not go through the Gate, so a bypass there is not automatic: `homeRoute()` (lands on `apprentisdashboard`) and `supervises()` (supervises every apprentice) check `isLocalAdmin()` themselves. Code should prefer `$user->can()`.
+- Guide: `docs/permissions_guide.md`.

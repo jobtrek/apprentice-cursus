@@ -1,6 +1,6 @@
 # Roles Guide
 
-A short guide for anyone touching roles, login or emails without having built them. The full rules are in `docs/project-docs/role_permissions.md`.
+A short guide for anyone touching roles, login or emails without having built them. The full rules are in `docs/project-docs/role_permissions.md`. To add, remove or check a permission, see `docs/permissions_guide.md`.
 
 ## 1. The idea in 4 lines
 
@@ -30,6 +30,7 @@ trainer          ──►  trainer     ──►  grades.view-supervised, grade
 | Re-check every 15 min while logged in | `app/Http/Middleware/EnsureAzureAccountIsActive.php` |
 | "Can this person see that apprentice" | `User::supervises()` + `app/Policies/*`           |
 | Local test accounts                   | `database/seeders/UserSeeder.php`                 |
+| Local admin bypass                    | `app/Providers/AppServiceProvider.php` (`Gate::before`) + `User::isLocalAdmin()` |
 
 Roles are stored by **Spatie laravel-permission** (tables `roles`, `model_has_roles`, …). There is no `users.role` column. `$user->role` reads the Spatie role.
 
@@ -41,14 +42,23 @@ Password login only exists when `APP_ENV=local`.
 ./vendor/bin/sail artisan migrate:fresh --seed
 ```
 
-| Email                       | Password   | Acts like                                   |
-| --------------------------- | ---------- | ------------------------------------------- |
-| `trainer@example.com`       | `password` | A real Azure trainer, IT section (role, section, permissions all identical) |
-| `admin@example.com`         | `password` | A coach: coach of the 8 demo apprentices and of both local apprentices. No Azure group exists for coaches yet |
-| `apprentice-it@example.com` | `password` | A real Azure IT apprentice. Coach is `admin@example.com`, supervised by the local trainer |
-| `apprentice-ec@example.com` | `password` | A real Azure EC apprentice. Coach is `admin@example.com` |
+| Email                       | Password   | Role, section | Acts like                                   |
+| --------------------------- | ---------- | ------------- | ------------------------------------------- |
+| `admin@example.com`         | `password` | admin, none   | Global admin: sees and can do everything (local only) |
+| `coach@example.com`         | `password` | coach, none   | A coach: coach of the 8 demo apprentices and of both local apprentices. No Azure group exists for coaches yet |
+| `trainer@example.com`       | `password` | trainer, IT   | A real Azure trainer (role, section, permissions all identical) |
+| `apprentice-it@example.com` | `password` | apprentice, IT | A real Azure IT apprentice. Coach is `coach@example.com`, supervised by the local trainer |
+| `apprentice-ec@example.com` | `password` | apprentice, EC | A real Azure EC apprentice. Coach is `coach@example.com` |
 
 The 8 `demo-apprentice-N@example.com` accounts have random passwords: they are data to look at, not accounts to log in with.
+
+### The local admin
+
+- `admin@example.com` has the role `admin`. It exists so developers can build a feature without switching accounts: it passes every permission check and supervises every apprentice.
+- It only works when `APP_ENV=local`. Anywhere else the role grants nothing (every protected page returns 403), and no Microsoft group can give it.
+- Use it to explore, but test a feature with the real role too (trainer, coach, apprentice): the admin passes everything, so it never shows a missing permission.
+- Details and the two exceptions in code: `docs/permissions_guide.md`, section 6.
+- Already have a local database? Run `./vendor/bin/sail artisan migrate:fresh --seed`. The old `admin@example.com` was a coach, and the demo apprentices keep their old `coach_id` until you reseed.
 
 ### What is the same as Azure
 
@@ -61,6 +71,7 @@ The 8 `demo-apprentice-N@example.com` accounts have random passwords: they are d
 
 - Local accounts have no `azure_id`, so the 15-minute Microsoft re-check is skipped. To test "access removed", set `is_active = false` by hand.
 - Coaches cannot log in with Microsoft at all today. The local coach is the only way to test the coach role.
+- The admin role does not exist in production.
 
 ### Change someone's role locally
 
@@ -73,11 +84,7 @@ Always use `syncRoles()` (replaces), not `assignRole()` (adds): a user must have
 
 ## 4. Common tasks
 
-**Give a role a new permission**
-1. Add the case in `app/Enums/Permission.php`.
-2. Add it to the role in `Permission::byRole()`.
-3. `./vendor/bin/sail artisan db:seed --class=RolesAndPermissionsSeeder`.
-4. Protect the route with `->middleware('can:'.Permission::X->value)`.
+**Give a role a new permission**: follow `docs/permissions_guide.md` (enum case, `Permission::byRole()`, sync, route, policy, frontend flag, test). The same guide covers removing a permission and checking the result.
 
 **Add a new Azure group (e.g. coaches)**
 1. Add a case in `app/Enums/AzureGroup.php` and fill `role()` and `apprenticeship()`.

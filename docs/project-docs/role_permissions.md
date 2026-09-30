@@ -4,7 +4,7 @@ The only document on who can do what, and how people get their role. Design deci
 
 ## In short
 
-- There are **3 roles**: Apprentice, Trainer, Coach. No admin.
+- There are **3 roles**: Apprentice, Trainer, Coach. There is no admin in production. A local-only `admin` role exists for development (see `docs/permissions_guide.md`, section 6).
 - Your role comes from the **Microsoft Entra group** you are in. Nobody sets roles inside the app.
 - Everyone logs in with **Microsoft**. Password login only exists on a developer's machine.
 - **Apprentices** manage their own grades and portfolio. **Trainers and coaches** read and comment on the apprentices they supervise. They never change an apprentice's data.
@@ -16,6 +16,8 @@ The only document on who can do what, and how people get their role. Design deci
 | Apprentice | IT or EC apprentices group            | Nobody. You only see your own data                         |
 | Trainer    | Trainers group                        | Every apprentice of your section (all trainers are IT for now) |
 | Coach      | No group yet, so coaches cannot log in | Apprentices whose coach you are (IT and EC)                |
+
+The table lists the production roles. The `admin` role (local development only) is not one of them: it passes every check when `APP_ENV=local`, grants nothing elsewhere, and no Entra group maps to it.
 
 IT and EC apprentices have the same permissions. Only their grade tree differs (`grade_tree_IT.md`, `grade_tree_EC.md`).
 
@@ -72,4 +74,5 @@ Other rules:
 - "Supervised" means `User::supervises($apprentice)`: trainer = same section, coach = apprentice's `coach_id` is theirs.
 - Policies (`GradePolicy`, `ProjectPolicy`, `CommentPolicy`, `UserPolicy`) add the per-record checks: supervision, author only, active apprentice only.
 - Routes use `can:` middleware. The frontend reads the `auth.can` flags shared by `HandleInertiaRequests` and never re-derives rules.
-- Local login (password `password`): `admin@example.com` (coach), `trainer@example.com` (IT trainer), `apprentice-it@example.com` (IT apprentice), `apprentice-ec@example.com` (EC apprentice).
+- Local login (password `password`): `admin@example.com` (local-only admin, everything), `coach@example.com` (coach), `trainer@example.com` (IT trainer), `apprentice-it@example.com` (IT apprentice), `apprentice-ec@example.com` (EC apprentice).
+- The local admin comes from Spatie's `Gate::before` in `AppServiceProvider`, not from `byRole()`. Direct `hasPermissionTo()` calls bypass the Gate, so `User::homeRoute()` and `User::supervises()` handle it explicitly. Guide: `docs/permissions_guide.md`.
