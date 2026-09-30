@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Grade;
 use App\Models\User;
+use App\Support\Demo\DemoGrade;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -28,7 +29,7 @@ class ApprenticeController extends Controller
         Gate::authorize('view', $grade);
 
         return Inertia::render('GradeDetails', [
-            ...DemoGrade::payload(),
+            ...DemoGrade::props(),
             'apprenticeId' => $apprentice->id,
             'gradeId' => $grade->id,
             'can' => [

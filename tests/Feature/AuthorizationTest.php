@@ -359,3 +359,31 @@ describe('routing and landing', function () {
         $this->get('/portfolio/screenshots/abc')->assertNotFound();
     });
 });
+
+describe('demo data', function () {
+    test('grade pages carry no demo payload outside local', function () {
+        $apprentice = makeApprentice();
+        $grade = makeGrade($apprentice);
+
+        expect(app()->environment('local'))->toBeFalse();
+
+        $this->actingAs($apprentice)->get(route('grades.show', $grade))
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('GradeDetails')
+                ->where('pdfUrl', null)
+                ->where('comments', []));
+    });
+
+    test('grade pages carry the demo payload in local', function () {
+        app()->detectEnvironment(fn () => 'local');
+
+        $apprentice = makeApprentice();
+        $grade = makeGrade($apprentice);
+
+        $this->actingAs($apprentice)->get(route('grades.show', $grade))
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('GradeDetails')
+                ->where('pdfUrl', '/demo/sample-grade-test.pdf')
+                ->has('comments', 2));
+    });
+});

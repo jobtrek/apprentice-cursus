@@ -1,15 +1,24 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Support\Demo;
 
 /**
  * Données de démonstration, en attendant le modèle Grade côté serveur.
+ * Exposées uniquement en environnement local.
  */
 final class DemoGrade
 {
-    /** @return array{pdfUrl: string, comments: list<array{author: string, role: string, date: string, text: string}>} */
-    public static function payload(): array
+    /**
+     * Demo payload in the local environment, empty props everywhere else.
+     *
+     * @return array{pdfUrl: string|null, comments: list<array{author: string, role: string, date: string, text: string}>}
+     */
+    public static function props(): array
     {
+        if (! app()->environment('local')) {
+            return ['pdfUrl' => null, 'comments' => []];
+        }
+
         return [
             'pdfUrl' => '/demo/sample-grade-test.pdf',
             'comments' => [

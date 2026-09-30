@@ -36,7 +36,7 @@ type Comment = {
 
 const props = defineProps<{
     gradeId: number;
-    pdfUrl?: string;
+    pdfUrl?: string | null;
     comments?: Comment[];
     /** Présent quand un coach ou formateur consulte la note d'un·e apprenti·e. */
     apprenticeId?: number;
