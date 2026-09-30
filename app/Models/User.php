@@ -72,6 +72,9 @@ class User extends Authenticatable
         ];
     }
 
+    /**
+     * @return BelongsTo<Apprenticeship, $this>
+     */
     public function apprenticeship(): BelongsTo
     {
         return $this->belongsTo(Apprenticeship::class);
@@ -112,6 +115,9 @@ class User extends Authenticatable
         return $this->hasMany(Comment::class, 'author_id');
     }
 
+    /**
+     * @return HasMany<Project, $this>
+     */
     public function projects(): HasMany
     {
         return $this->hasMany(Project::class);
