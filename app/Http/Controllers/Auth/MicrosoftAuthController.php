@@ -96,12 +96,35 @@ class MicrosoftAuthController extends Controller
             $user->is_active = true;
         }
 
+        $apprenticeshipId = null;
+
+        if ($mapping['apprenticeship'] !== null) {
+            $apprenticeshipId = Apprenticeship::where('name', $mapping['apprenticeship'])->value('id');
+
+            if ($apprenticeshipId === null) {
+                Log::error('Microsoft SSO login refused: apprenticeship is not seeded.', [
+                    'apprenticeship' => $mapping['apprenticeship'],
+                ]);
+
+                return $this->loginError('Could not verify your apprenticeship. Please contact an administrator.');
+            }
+        }
+
+        // A section change needs the apprentice's confirmation before grades move (user story):
+        // keep the current apprenticeship until that flow exists.
+        if ($user->apprenticeship_id !== null && $apprenticeshipId !== null && $user->apprenticeship_id !== $apprenticeshipId) {
+            Log::warning('Microsoft SSO: section change pending confirmation, apprenticeship kept.', [
+                'user_id' => $user->id,
+                'from' => $user->apprenticeship_id,
+                'to' => $apprenticeshipId,
+            ]);
+            $apprenticeshipId = $user->apprenticeship_id;
+        }
+
         // Role and track are not mass-assignable (see User): Entra groups are their only source.
         $user->forceFill([
             'role' => $mapping['role'],
-            'apprenticeship_id' => $mapping['apprenticeship'] === null
-                ? null
-                : Apprenticeship::firstOrCreate(['name' => $mapping['apprenticeship']])->id,
+            'apprenticeship_id' => $apprenticeshipId,
         ])->save();
 
         if ($isNew) {

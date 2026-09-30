@@ -31,22 +31,12 @@ class AzureGraphService
             return null;
         }
 
-        $response = Http::withToken($token)
-            ->acceptJson()
-            ->get("https://graph.microsoft.com/v1.0/users/{$azureId}/transitiveMemberOf", [
-                '$select' => 'id,displayName',
-            ]);
-
-        if (! $response->successful()) {
-            Log::error('Microsoft Graph group lookup failed.', [
-                'status' => $response->status(),
-                'body' => $response->body(),
-            ]);
-
-            return null;
-        }
-
-        return $response->json('value');
+        return $this->getAllPages(
+            $token,
+            "https://graph.microsoft.com/v1.0/users/{$azureId}/transitiveMemberOf",
+            ['$select' => 'id,displayName'],
+            'Microsoft Graph group lookup failed.',
+        );
     }
 
     /** @return list<array{id?: string, displayName?: string, mail?: string|null}>|null */
@@ -58,23 +48,50 @@ class AzureGraphService
             return null;
         }
 
-        $response = Http::withToken($token)
-            ->acceptJson()
-            ->get("https://graph.microsoft.com/v1.0/groups/{$groupId}/transitiveMembers", [
-                '$select' => 'id,displayName,mail',
-                '$top' => 999,
-            ]);
+        return $this->getAllPages(
+            $token,
+            "https://graph.microsoft.com/v1.0/groups/{$groupId}/transitiveMembers",
+            ['$select' => 'id,displayName,mail', '$top' => 999],
+            'Microsoft Graph group members lookup failed.',
+        );
+    }
 
-        if (! $response->successful()) {
-            Log::error('Microsoft Graph group members lookup failed.', [
-                'status' => $response->status(),
-                'body' => $response->body(),
-            ]);
+    /**
+     * Follow @odata.nextLink until exhausted; null if any page fails.
+     *
+     * @param  array<string, mixed>  $query
+     * @return list<array{id?: string, displayName?: string, mail?: string|null}>|null
+     */
+    private function getAllPages(string $token, string $url, array $query, string $errorMessage): ?array
+    {
+        $items = [];
 
-            return null;
+        while ($url !== null) {
+            try {
+                $response = Http::withToken($token)->acceptJson()->get($url, $query);
+            } catch (ConnectionException $e) {
+                Log::error($errorMessage, ['message' => $e->getMessage()]);
+
+                return null;
+            }
+
+            if (! $response->successful()) {
+                Log::error($errorMessage, [
+                    'status' => $response->status(),
+                    'body' => $response->body(),
+                ]);
+
+                return null;
+            }
+
+            array_push($items, ...($response->json('value') ?? []));
+
+            // nextLink already carries the query string.
+            $url = $response->json('@odata.nextLink');
+            $query = [];
         }
 
-        return $response->json('value');
+        return $items;
     }
 
     // public function getRolesAndPermissions()

@@ -2,11 +2,14 @@
 
 namespace App\Http\Middleware;
 
+use App\Services\MappingRolesService;
 use App\Services\Microsoft\MicrosoftGraphService;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
+use RuntimeException;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
@@ -16,7 +19,10 @@ use Symfony\Component\HttpFoundation\Response;
  */
 class EnsureAzureAccountIsActive
 {
-    public function __construct(private readonly MicrosoftGraphService $graph) {}
+    public function __construct(
+        private readonly MicrosoftGraphService $graph,
+        private readonly MappingRolesService $mappingRoles,
+    ) {}
 
     public function handle(Request $request, Closure $next): Response
     {
@@ -36,16 +42,37 @@ class EnsureAzureAccountIsActive
         $enabled = $this->graph->isAccountEnabled($user->azure_id);
 
         if ($enabled === false) {
-            Auth::logout();
-            $request->session()->invalidate();
-            $request->session()->regenerateToken();
+            return $this->terminate($request, 'Your Microsoft account is no longer active. Please contact an administrator.');
+        }
 
-            return redirect()->route('login')
-                ->with('error', 'Your Microsoft account is no longer active. Please contact an administrator.');
+        // Re-check the group-derived role; fail open if Graph is unreachable.
+        try {
+            $mapping = $this->mappingRoles->resolveRole($user->azure_id);
+        } catch (RuntimeException $e) {
+            Log::error('Microsoft group re-check failed.', ['exception' => $e]);
+
+            return $next($request);
+        }
+
+        if ($mapping === null) {
+            return $this->terminate($request, 'Your Microsoft account no longer has access to this application. Please contact an administrator.');
+        }
+
+        if ($user->role !== $mapping['role']) {
+            $user->forceFill(['role' => $mapping['role']])->save();
         }
 
         Cache::put($cacheKey, true, $interval);
 
         return $next($request);
+    }
+
+    private function terminate(Request $request, string $message): Response
+    {
+        Auth::logout();
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+
+        return redirect()->route('login')->with('error', $message);
     }
 }

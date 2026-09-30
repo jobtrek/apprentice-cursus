@@ -15,8 +15,8 @@ class MappingRolesService
      * @var array<string, array{role: UserRole, apprenticeship: string|null}>
      */
     private const GROUP_ROLES = [
-        'apprentices_IT' => ['role' => UserRole::Apprentice, 'apprenticeship' => 'IT'],
-        'apprentices_EC' => ['role' => UserRole::Apprentice, 'apprenticeship' => 'EC'],
+        'apprentices_IT' => ['role' => UserRole::Apprentice, 'apprenticeship' => 'Informaticien·ne CFC'],
+        'apprentices_EC' => ['role' => UserRole::Apprentice, 'apprenticeship' => 'Employé·e de commerce CFC'],
         'trainer' => ['role' => UserRole::Trainer, 'apprenticeship' => null],
     ];
 
