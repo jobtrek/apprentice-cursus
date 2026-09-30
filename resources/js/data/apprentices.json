@@ -1,0 +1,74 @@
+[
+    {
+        "id": "1",
+        "name": "Léa Dubois",
+        "avatarUrl": "",
+        "track": "IT",
+        "year": "1ère",
+        "coach": "Marc Lefevre",
+        "trainer": "Sophie Renard"
+    },
+    {
+        "id": "2",
+        "name": "Nathan Girard",
+        "avatarUrl": "",
+        "track": "IT",
+        "year": "2ème",
+        "coach": "",
+        "trainer": "Sophie Renard"
+    },
+    {
+        "id": "3",
+        "name": "Camille Petit",
+        "avatarUrl": "",
+        "track": "EC",
+        "year": "1ère",
+        "coach": "Julien Blanc",
+        "trainer": ""
+    },
+    {
+        "id": "4",
+        "name": "Hugo Moreau",
+        "avatarUrl": "",
+        "track": "EC",
+        "year": "3ème",
+        "coach": "Julien Blanc",
+        "trainer": "Claire Fontaine"
+    },
+    {
+        "id": "5",
+        "name": "Manon Rousseau",
+        "avatarUrl": "",
+        "track": "IT",
+        "year": "3ème",
+        "coach": "",
+        "trainer": ""
+    },
+    {
+        "id": "6",
+        "name": "Théo Simon",
+        "avatarUrl": "",
+        "track": "IT",
+        "year": "4ème",
+        "coach": "Marc Lefevre",
+        "trainer": "Claire Fontaine"
+    },
+    {
+        "id": "7",
+        "name": "Chloé Laurent",
+        "avatarUrl": "",
+        "track": "EC",
+        "year": "2ème",
+        "coach": "Julien Blanc",
+        "trainer": "Sophie Renard"
+    },
+    {
+        "id": "8",
+        "name": "Lucas Michel",
+        "avatarUrl": "",
+        "track": "EC",
+        "year": "4ème",
+        "coach": "",
+        "trainer": "Claire Fontaine"
+    }
+]

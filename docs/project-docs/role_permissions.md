@@ -51,18 +51,9 @@ After login, apprentices land on their grades, trainers and coaches on the appre
 Other rules:
 
 - Accounts are matched on the Microsoft account id, never on email.
-- Apprentice accounts exist from the **daily sync**, before their first login. Trainers only exist after their first sign-in.
+- An account only exists after its first login.
 - Adding the person back to one group reactivates their account at the next login.
 - Moving an apprentice from IT to EC (or back) does not change their section yet: that needs a confirmation page that is not built. A warning is logged.
-
-## Apprentice sync
-
-`php artisan apprentices:sync` runs daily (and can be run by hand). It reads the members of the two apprentice groups (nested groups included) and applies the same rules as a sign-in: exactly one mapped group, account enabled in Entra, no email already used by another account.
-
-- Missing apprentices are created, with the group's section. Existing accounts keep their name and email and are reactivated if needed.
-- An apprentice removed from all apprentice groups is set inactive at the next sync. Nobody is deleted. Trainers are never touched.
-- **Safety guards:** if a group id is missing or any Microsoft call fails, the sync stops and writes nothing (exit code 1). If a group returns no members, the deactivations for that section are skipped and a warning is logged.
-- **Deployment:** the server must run the Laravel scheduler: a cron entry `* * * * * cd /path && php artisan schedule:run`, or `php artisan schedule:work`.
 
 ## Entra setup (for the Microsoft administrator)
 
@@ -79,7 +70,6 @@ Other rules:
 
 ## For developers
 
-- `php artisan apprentices:sync` can be run by hand (`./vendor/bin/sail artisan apprentices:sync` locally).
 - Code checks **permissions, never role names**. The list of permissions per role is `App\Enums\Permission::byRole()`. To change what a role can do, edit it there and re-run `RolesAndPermissionsSeeder`.
 - "Supervised" means `User::supervises($apprentice)`: trainer = same section, coach = apprentice's `coach_id` is theirs.
 - Policies (`GradePolicy`, `ProjectPolicy`, `CommentPolicy`, `UserPolicy`) add the per-record checks: supervision, author only, active apprentice only.

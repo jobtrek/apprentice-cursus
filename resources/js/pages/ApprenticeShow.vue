@@ -1,48 +1,84 @@
 <script setup lang="ts">
-import { Head } from '@inertiajs/vue3';
+import { Head, Link } from '@inertiajs/vue3';
+import { UserXIcon } from '@lucide/vue';
+import { computed } from 'vue';
 import ApprenticeMetaRow from '@/components/apprentice/ApprenticeMetaRow.vue';
 import GradeBook from '@/components/gradeList/GradeBook.vue';
 import { PageContainer, PageHeader } from '@/components/page';
-import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import {
+    Empty,
+    EmptyContent,
+    EmptyDescription,
+    EmptyHeader,
+    EmptyMedia,
+    EmptyTitle,
+} from '@/components/ui/empty';
+import { findApprentice } from '@/composables/useApprentices';
 import { apprentisdashboard } from '@/routes';
 import apprentices from '@/routes/apprentices';
-import type { Apprentice } from '@/types/apprentice';
 import type { Grade } from '@/types/grade';
 
 const props = defineProps<{
-    apprentice: Apprentice;
+    apprenticeId: number;
     grades: Grade[];
 }>();
+
+const apprentice = computed(() => findApprentice(props.apprenticeId));
 
 const breadcrumbs = [{ label: 'Apprentis', href: apprentisdashboard() }];
 
 const gradeHref = (grade: Grade) =>
     apprentices.grades.show({
-        apprentice: props.apprentice.id,
+        apprentice: props.apprenticeId,
         grade: grade.id,
     });
 </script>
 
 <template>
-    <Head :title="apprentice.name" />
+    <Head :title="apprentice?.name ?? 'Apprenti·e introuvable'" />
 
     <PageContainer size="lg">
-        <PageHeader :title="apprentice.name" :breadcrumbs="breadcrumbs">
-            <template #description>
-                <span class="flex items-center gap-2">
-                    {{ apprentice.apprenticeship ?? '—' }}
-                    <Badge v-if="!apprentice.isActive" variant="secondary">
-                        Inactif
-                    </Badge>
-                </span>
-            </template>
+        <template v-if="apprentice">
+            <PageHeader
+                :title="apprentice.name"
+                :description="`${apprentice.track} · ${apprentice.year} année`"
+                :breadcrumbs="breadcrumbs"
+            >
+                <ApprenticeMetaRow
+                    class="mt-2 max-w-sm"
+                    :coach="apprentice.coach"
+                    :formateur="apprentice.trainer"
+                />
+            </PageHeader>
 
-            <ApprenticeMetaRow
-                class="mt-2 max-w-sm"
-                :coach="apprentice.coach"
+            <GradeBook :grades="grades" :grade-href="gradeHref" />
+        </template>
+
+        <template v-else>
+            <PageHeader
+                title="Apprenti·e introuvable"
+                :breadcrumbs="breadcrumbs"
             />
-        </PageHeader>
 
-        <GradeBook :grades="grades" :grade-href="gradeHref" />
+            <Empty class="border">
+                <EmptyHeader>
+                    <EmptyMedia variant="icon">
+                        <UserXIcon />
+                    </EmptyMedia>
+                    <EmptyTitle>Aucun·e apprenti·e ne correspond</EmptyTitle>
+                    <EmptyDescription>
+                        Cet·te apprenti·e n'existe pas ou n'est plus suivi·e.
+                    </EmptyDescription>
+                </EmptyHeader>
+                <EmptyContent>
+                    <Button as-child variant="outline">
+                        <Link :href="apprentisdashboard()">
+                            Retour à la liste
+                        </Link>
+                    </Button>
+                </EmptyContent>
+            </Empty>
+        </template>
     </PageContainer>
 </template>

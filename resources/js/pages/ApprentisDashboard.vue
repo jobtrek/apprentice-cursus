@@ -7,20 +7,13 @@ import DataTable from '@/components/DataTable.vue';
 import { PageContainer, PageHeader } from '@/components/page';
 import SearchInput from '@/components/SearchInput.vue';
 import TabFilter from '@/components/TabFilter.vue';
-import { useApprentices } from '@/composables/useApprentices';
+import { useApprentices, type Apprentice } from '@/composables/useApprentices';
 import {
-    APPRENTICESHIP_FILTER_OPTIONS,
-    STATUS_FILTER_OPTIONS,
+    TRACK_FILTER_OPTIONS,
+    YEAR_FILTER_OPTIONS,
 } from '@/constants/constants';
-import type { Apprentice } from '@/types/apprentice';
 
-const props = defineProps<{
-    apprentices: Apprentice[];
-}>();
-
-const { filtered, search, apprenticeshipFilter, statusFilter } = useApprentices(
-    () => props.apprentices,
-);
+const { filtered, search, trackFilter, yearFilter } = useApprentices();
 
 const selected = ref<Apprentice | null>(null);
 const sheetOpen = ref(false);
@@ -32,8 +25,10 @@ const openDetail = (apprentice: Apprentice) => {
 
 const apprenticeColumns = [
     { key: 'apprentice', label: 'Apprenti·e' },
-    { key: 'apprenticeship', label: 'Filière' },
+    { key: 'track', label: 'Filière' },
+    { key: 'year', label: 'Année' },
     { key: 'coach', label: 'Coach' },
+    { key: 'trainer', label: 'Formateur' },
 ];
 </script>
 
@@ -46,7 +41,7 @@ const apprenticeColumns = [
                 {{ filtered.length }} apprenti·e{{
                     filtered.length > 1 ? 's' : ''
                 }}
-                affiché{{ filtered.length > 1 ? 's' : '' }}
+                au total
             </template>
         </PageHeader>
 
@@ -58,14 +53,14 @@ const apprenticeColumns = [
             />
             <div class="flex flex-wrap gap-3">
                 <TabFilter
-                    v-model="apprenticeshipFilter"
-                    :options="APPRENTICESHIP_FILTER_OPTIONS"
+                    v-model="trackFilter"
+                    :options="TRACK_FILTER_OPTIONS"
                     label="Filtrer par filière"
                 />
                 <TabFilter
-                    v-model="statusFilter"
-                    :options="STATUS_FILTER_OPTIONS"
-                    label="Filtrer par statut"
+                    v-model="yearFilter"
+                    :options="YEAR_FILTER_OPTIONS"
+                    label="Filtrer par année"
                 />
             </div>
         </div>

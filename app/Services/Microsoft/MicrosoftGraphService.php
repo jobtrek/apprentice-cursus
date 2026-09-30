@@ -36,9 +36,7 @@ class MicrosoftGraphService
 
         while ($url !== null) {
             try {
-                // A nextLink already carries its query (`$skiptoken`): passing an array, even an empty one, would replace it.
-                $request = Http::withToken($token)->acceptJson();
-                $response = $query === null ? $request->get($url) : $request->get($url, $query);
+                $response = Http::withToken($token)->acceptJson()->get($url, $query);
             } catch (ConnectionException $e) {
                 Log::error('Microsoft Graph group lookup failed.', ['message' => $e->getMessage()]);
 
@@ -56,70 +54,11 @@ class MicrosoftGraphService
 
             array_push($groups, ...($response->json('value') ?? []));
 
-            // json() reads dot notation as nesting, so the dotted key must be read from the array.
-            $url = $response->json()['@odata.nextLink'] ?? null;
-            $query = null;
+            $url = $response->json('@odata.nextLink');
+            $query = [];
         }
 
         return $groups;
-    }
-
-    /**
-     * User members of a group, nested groups included (`transitiveMembers`, so the
-     * result agrees with the `transitiveMemberOf` lookup used at sign-in), following
-     * `@odata.nextLink` paging. Returns null when the lookup could not be performed.
-     *
-     * The plain collection is used instead of the `/microsoft.graph.user` cast: the
-     * documented cast examples require the `ConsistencyLevel: eventual` header, and
-     * directoryObject collections always carry `@odata.type`, so nested groups,
-     * devices and contacts are dropped client-side instead.
-     *
-     * @return list<array{id: string, displayName?: string|null, userPrincipalName?: string|null, accountEnabled?: bool|null}>|null
-     */
-    public function getGroupMembers(string $groupId): ?array
-    {
-        $token = $this->getAppToken();
-
-        if (! $token) {
-            return null;
-        }
-
-        $url = "https://graph.microsoft.com/v1.0/groups/{$groupId}/transitiveMembers";
-        $query = ['$select' => 'id,displayName,userPrincipalName,accountEnabled'];
-        $members = [];
-
-        while ($url !== null) {
-            try {
-                // A nextLink already carries its query (`$skiptoken`): passing an array, even an empty one, would replace it.
-                $request = Http::withToken($token)->acceptJson();
-                $response = $query === null ? $request->get($url) : $request->get($url, $query);
-            } catch (ConnectionException $e) {
-                Log::error('Microsoft Graph group members lookup failed.', ['message' => $e->getMessage()]);
-
-                return null;
-            }
-
-            if (! $response->successful()) {
-                Log::error('Microsoft Graph group members lookup failed.', [
-                    'status' => $response->status(),
-                    'body' => $response->body(),
-                ]);
-
-                return null;
-            }
-
-            foreach ($response->json('value') ?? [] as $member) {
-                if (($member['@odata.type'] ?? null) === '#microsoft.graph.user' && isset($member['id'])) {
-                    $members[] = $member;
-                }
-            }
-
-            // json() reads dot notation as nesting, so the dotted key must be read from the array.
-            $url = $response->json()['@odata.nextLink'] ?? null;
-            $query = null;
-        }
-
-        return $members;
     }
 
     /**

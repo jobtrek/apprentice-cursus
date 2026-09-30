@@ -25,9 +25,6 @@ class HomeController extends Controller
                         ->get(),
                 )->resolve()
                 : [],
-            'apprentices' => $user->can(Permission::ApprenticesViewList->value)
-                ? ApprenticeController::supervisedBy($user)
-                : [],
         ]);
     }
 }

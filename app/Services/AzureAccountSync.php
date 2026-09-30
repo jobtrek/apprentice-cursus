@@ -98,20 +98,6 @@ class AzureAccountSync
         }
     }
 
-    /**
-     * Unsaved account for an Entra user, shared by the SSO login and the apprentice
-     * directory sync so both provision identically. Role and apprenticeship come from `apply()`.
-     */
-    public function newAccount(string $azureId, string $name, string $email): User
-    {
-        return new User([
-            'name' => $name,
-            'email' => $email,
-            'azure_id' => $azureId,
-            'tenant_id' => config('services.azure.tenant'),
-        ]);
-    }
-
     public function deactivate(User $user): void
     {
         $user->forceFill(['is_active' => false])->save();
