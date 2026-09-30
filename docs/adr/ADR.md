@@ -137,3 +137,9 @@ the table for the weight of each grade inside of EC's program. MP = Maturité
 **Decision:** Coaches self-assign apprentices who have no coach (atomic `UPDATE … WHERE coach_id IS NULL`) and de-assign only their own. A coach losing the role clears `coach_id` on their apprentices. EC apprentices declare `is_mp` themselves. No approval step for either.
 
 **Why:** Keeps the app simple while there is no admin. A request/validation flow can be added later as app logic without a new Entra role.
+
+## 2026-09-30 — Roles mapped from existing Entra mail groups until app roles exist
+
+**Decision:** Until the app roles and `Section-IT` / `Section-EC` groups of `azure_groups.md` are configured, the role and section come from group membership (`/users/{id}/transitiveMemberOf`), configured as `MICROSOFT_GROUP_*` Object IDs in `config('services.azure.group_roles')` and mapped in `App\Services\Microsoft\MappingRolesService`: IT apprentices group → `apprentice` + `it`, EC apprentices group → `apprentice` + `ec`, trainer group → `trainer` + `it` (no EC trainer group exists yet), `MICROSOFT_GROUP_COACH` → `coach`. Being in no role group, or in more than one, refuses the login. `App\Actions\SyncEntraRole` is the only write path for role, section and `is_active`, called at login and by `EnsureAzureAccountIsActive`.
+
+**Why:** The groups already exist; the app roles do not. Swapping to app roles later only changes `MappingRolesService::forUser()`.
