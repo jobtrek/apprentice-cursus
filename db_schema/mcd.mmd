@@ -1,7 +1,9 @@
 erDiagram
 
     %% Mirrors database/migrations. Framework tables (password_reset_tokens, sessions,
-    %% cache, cache_locks, jobs, job_batches, failed_jobs) are left out.
+    %% cache, cache_locks, jobs, job_batches, failed_jobs) are left out, as are Spatie's
+    %% permission tables (roles, permissions, model_has_roles, ...): a user's role lives in
+    %% model_has_roles, there is no users.role column.
     %% "enum" columns are varchar + CHECK in Postgres, not native enums.
 
     evaluation_nodes {
@@ -53,7 +55,6 @@ erDiagram
         varchar password "nullable, SSO users have none"
         boolean is_mp "nullable, doing the maturité professionnelle variant"
         boolean is_active "default true"
-        enum role "apprentice | coach | trainer, default apprentice"
         bigint apprenticeship_id FK "nullable, -> apprenticeships (track), nullOnDelete"
         bigint coach_id FK "nullable, self-ref, nullOnDelete"
         bigint trainer_id FK "nullable, self-ref, nullOnDelete"

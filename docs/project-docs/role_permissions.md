@@ -44,9 +44,7 @@ After login, apprentices land on their grades, trainers and coaches on the appre
 1. The user logs in with Microsoft. The app asks Microsoft which of the mapped groups they are in.
 2. **Exactly one group:** the account is created (first login) or updated with that group's role and section.
 3. **No group, several groups, or disabled in Entra:** the login is refused. An existing account is set inactive; it is never deleted.
-4. While logged in, this check runs again **every 15 minutes**. If access was removed, the session ends. If Microsoft is down, the user keeps working and the check retries a minute later.3. **No group, several grgr33. **No group, several groups, or disabled in Entra:** the login is refused. An existing account is set inactive; it is never deleted.
-oups, or disabled in Entra:** the login is refused. An existing account is set inactive; it is never deleted.
-
+4. While logged in, this check runs again **every 15 minutes**. If access was removed, the session ends. If Microsoft is down, the user keeps working and the check retries a minute later.
 
 Other rules:
 
