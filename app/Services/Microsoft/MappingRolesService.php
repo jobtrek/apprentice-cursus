@@ -2,6 +2,9 @@
 
 namespace App\Services\Microsoft;
 
+use App\Models\User;
+use Illuminate\Support\Facades\Log;
+
 class MappingRolesService
 {
     public function __construct(private readonly AzureGraphService $graph) {}
@@ -48,5 +51,28 @@ class MappingRolesService
         }
 
         return $mapped;
+    }
+
+    public function compareIdsFromAzure(int $id): ?string
+    {
+        $azureId = User::whereKey($id)->value('azure_id');
+
+        if ($azureId === null) {
+            return null;
+        }
+
+        $groupRoles = config('services.azure.group_roles');
+
+        foreach ($groupRoles as $groupId => $role) {
+            $memberIds = array_column($this->membersOf($role) ?? [], 'id');
+
+            if (in_array($azureId, $memberIds, true)) {
+                Log::info("User {$id} belongs to group {$role}", ['group_id' => $groupId]);
+
+                return $role;
+            }
+        }
+
+        return null;
     }
 }
