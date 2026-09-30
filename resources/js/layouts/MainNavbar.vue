@@ -5,6 +5,7 @@ import AppearanceToggle from "@/components/AppearanceToggle.vue";
 import AppLogo from "@/components/AppLogo.vue";
 import NotificationsMenu from "@/components/NotificationsMenu.vue";
 import { Button } from "@/components/ui/button";
+import { useCan } from "@/composables/useCan";
 import { getInitials } from "@/composables/useInitials";
 import { administration, apprentisdashboard, home, logout } from "@/routes";
 import grades from "@/routes/grades";
@@ -15,13 +16,33 @@ const page = usePage();
 const currentUrl = computed(() => page.url);
 const user = computed(() => page.props.auth?.user ?? null);
 
-const tabs = [
-    { label: "Accueil", href: home() },
-    { label: "Ajouter une note", href: grades.create() },
-    { label: "Portfolio", href: portfolio.index() },
-    { label: "Voir mes apprentis", href: apprentisdashboard() },
-    { label: "Administration", href: administration() },
-];
+const { can } = useCan();
+
+const tabs = computed(() =>
+    [
+        { label: "Accueil", href: home(), visible: true },
+        {
+            label: "Ajouter une note",
+            href: grades.create(),
+            visible: can("createGrade"),
+        },
+        {
+            label: "Portfolio",
+            href: portfolio.index(),
+            visible: can("viewPortfolio"),
+        },
+        {
+            label: "Voir mes apprentis",
+            href: apprentisdashboard(),
+            visible: can("viewApprentices"),
+        },
+        {
+            label: "Administration",
+            href: administration(),
+            visible: can("viewAdministration"),
+        },
+    ].filter((tab) => tab.visible),
+);
 
 const isActive = (href: { url: string }) =>
     currentUrl.value === href.url ||

@@ -2,6 +2,9 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\Grade;
+use App\Models\Project;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -40,7 +43,30 @@ class HandleInertiaRequests extends Middleware
             'name' => config('app.name'),
             'auth' => [
                 'user' => $request->user(),
+                'apprenticeship' => $request->user()?->apprenticeship?->code,
+                'can' => $this->permissions($request->user()),
             ],
+        ];
+    }
+
+    /**
+     * The frontend's @can: computed from the policies so Vue never re-derives a rule.
+     * These only hide UI; the routes and controllers enforce the same abilities.
+     *
+     * @return array<string, bool>
+     */
+    private function permissions(?User $user): array
+    {
+        if (! $user) {
+            return [];
+        }
+
+        return [
+            'createGrade' => $user->can('create', Grade::class),
+            'viewPortfolio' => $user->can('viewAny', Project::class),
+            'createProject' => $user->can('create', Project::class),
+            'viewApprentices' => $user->can('viewAny', User::class),
+            'viewAdministration' => $user->can('viewAdministration'),
         ];
     }
 }

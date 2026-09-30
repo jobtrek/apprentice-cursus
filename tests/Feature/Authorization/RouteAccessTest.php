@@ -23,3 +23,17 @@ test('each role reaches only its pages', function (string $route, array $allowed
     'apprentices dashboard' => ['apprentisdashboard', ['trainer', 'coach']],
     'administration' => ['administration', ['trainer', 'coach']],
 ]);
+
+test('the frontend receives the abilities of the role', function () {
+    $this->actingAs(User::factory()->trainer()->create())
+        ->get(route('home'))
+        ->assertInertia(fn ($page) => $page
+            ->where('auth.apprenticeship', 'it')
+            ->where('auth.can', [
+                'createGrade' => false,
+                'viewPortfolio' => false,
+                'createProject' => false,
+                'viewApprentices' => true,
+                'viewAdministration' => true,
+            ]));
+});
