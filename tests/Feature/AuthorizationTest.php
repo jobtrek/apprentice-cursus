@@ -2,6 +2,7 @@
 
 use App\Enums\Permission;
 use App\Models\Apprenticeship;
+use App\Models\Comment;
 use App\Models\EvaluationNode;
 use App\Models\Grade;
 use App\Models\Project;
@@ -241,4 +242,73 @@ test('auth.user only exposes explicit fields', function () {
         ->assertInertia(fn (Assert $page) => $page
             ->has('auth.user', fn (Assert $user) => $user
                 ->hasAll(['id', 'name', 'email', 'role', 'apprenticeship_id'])));
+});
+
+describe('supervision scoping', function () {
+    test('a trainer cannot open the page of another trainer or of itself', function () {
+        $it = section('IT');
+        $trainer = User::factory()->trainer()->create();
+        $trainer->forceFill(['apprenticeship_id' => $it->id])->save();
+        $otherTrainer = User::factory()->trainer()->create();
+        $otherTrainer->forceFill(['apprenticeship_id' => $it->id])->save();
+
+        $this->actingAs($trainer)->get(route('apprentices.show', $otherTrainer))->assertForbidden();
+        $this->actingAs($trainer)->get(route('apprentices.show', $trainer))->assertForbidden();
+    });
+
+    test('a coach does not supervise a non-apprentice it has coach_id on', function () {
+        $coach = User::factory()->coach()->create();
+        $trainer = User::factory()->trainer()->create();
+        $trainer->forceFill(['coach_id' => $coach->id])->save();
+
+        expect($coach->supervises($trainer))->toBeFalse();
+        $this->actingAs($coach)->get(route('apprentices.show', $trainer))->assertForbidden();
+    });
+});
+
+describe('commenting', function () {
+    test('grades of a deactivated apprentice cannot be commented', function () {
+        $coach = User::factory()->coach()->create();
+        $apprentice = makeApprentice(coach: $coach);
+        $grade = makeGrade($apprentice);
+
+        expect($coach->can('comment', $grade))->toBeTrue();
+
+        $apprentice->forceFill(['is_active' => false])->save();
+
+        expect($coach->fresh()->can('comment', $grade->fresh()))->toBeFalse();
+    });
+
+    function makeComment(Grade $grade, User $author): Comment
+    {
+        $comment = new Comment(['body' => 'Well done']);
+        $comment->author()->associate($author);
+        $grade->comments()->save($comment);
+
+        return $comment;
+    }
+
+    test('only the author can update or delete a comment', function () {
+        $coach = User::factory()->coach()->create();
+        $apprentice = makeApprentice(coach: $coach);
+        $comment = makeComment(makeGrade($apprentice), $coach);
+        $other = User::factory()->coach()->create();
+
+        expect($coach->can('update', $comment))->toBeTrue()
+            ->and($coach->can('delete', $comment))->toBeTrue()
+            ->and($other->can('update', $comment))->toBeFalse()
+            ->and($other->can('delete', $comment))->toBeFalse();
+    });
+
+    test('comments on a deactivated apprentice cannot be changed', function () {
+        $coach = User::factory()->coach()->create();
+        $apprentice = makeApprentice(coach: $coach);
+        $comment = makeComment(makeGrade($apprentice), $coach);
+
+        $apprentice->forceFill(['is_active' => false])->save();
+        $comment = Comment::query()->findOrFail($comment->id);
+
+        expect($coach->can('update', $comment))->toBeFalse()
+            ->and($coach->can('delete', $comment))->toBeFalse();
+    });
 });

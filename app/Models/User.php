@@ -129,7 +129,7 @@ class User extends Authenticatable
 
     public function supervises(self $apprentice): bool
     {
-        if ($apprentice->id === $this->id) {
+        if ($apprentice->id === $this->id || ! $apprentice->hasRole(UserRole::Apprentice->value)) {
             return false;
         }
 
