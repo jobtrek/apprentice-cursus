@@ -59,9 +59,8 @@ class EnsureAzureAccountIsActive
                 'user_id' => $user->id,
                 'apprenticeship' => $e->apprenticeship,
             ]);
-            Cache::put($cacheKey, true, AzureAccountSync::BACKOFF_SECONDS);
 
-            return $next($request);
+            return $this->endSession($request, 'Could not verify your apprenticeship. Please contact an administrator.');
         }
 
         Cache::put($cacheKey, true, (int) config('services.azure.account_check_interval', 900));

@@ -323,3 +323,40 @@ test('an account missing from Entra (Graph 404) is deactivated and logged out by
     $this->assertGuest();
     expect($user->fresh()->is_active)->toBeFalse();
 });
+
+test('an apprentice moved to the trainer group mid-session gets the trainer role and the IT apprenticeship', function () {
+    $ec = Apprenticeship::query()->create(['name' => ApprenticeshipSeeder::EC]);
+    $it = Apprenticeship::query()->where('name', ApprenticeshipSeeder::IT)->firstOrFail();
+    $user = User::factory()->create(['azure_id' => 'azure-19']);
+    $user->forceFill(['apprenticeship_id' => $ec->id])->save();
+
+    Log::spy();
+    fakeGraphRecheck('azure-19', [TRAINER_GROUP]);
+
+    $this->actingAs($user)->get(route('home'))->assertOk();
+
+    $this->assertAuthenticatedAs($user);
+    $user = $user->fresh();
+    expect($user->role)->toBe(UserRole::Trainer)
+        ->and($user->apprenticeship_id)->toBe($it->id);
+    Log::shouldNotHaveReceived('warning', [SECTION_CHANGE_WARNING, Mockery::type('array')]);
+});
+
+test('a missing apprenticeship row on re-check ends the session without deactivating or changing the user', function () {
+    config()->set('services.azure.groups.'.AzureGroup::ApprenticesEc->value, 'group-ec');
+    $it = Apprenticeship::query()->where('name', ApprenticeshipSeeder::IT)->firstOrFail();
+    $user = User::factory()->trainer()->create(['azure_id' => 'azure-20']);
+    $user->forceFill(['apprenticeship_id' => $it->id])->save();
+    fakeGraphRecheck('azure-20', ['group-ec']);
+
+    $this->actingAs($user)->get(route('home'))
+        ->assertRedirect(route('login'))
+        ->assertSessionHas('error', 'Could not verify your apprenticeship. Please contact an administrator.');
+
+    $this->assertGuest();
+    $user = $user->fresh();
+    expect($user->is_active)->toBeTrue()
+        ->and($user->role)->toBe(UserRole::Trainer)
+        ->and($user->apprenticeship_id)->toBe($it->id)
+        ->and(Cache::has(AzureAccountSync::checkCacheKey($user)))->toBeFalse();
+});

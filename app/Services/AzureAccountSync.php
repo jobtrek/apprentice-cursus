@@ -58,7 +58,7 @@ class AzureAccountSync
 
     /**
      * Apply the group's role (Spatie) and apprenticeship to the user and (re)activate it.
-     * A user that already has a different apprenticeship keeps it.
+     * A user whose role is unchanged keeps a different existing apprenticeship.
      *
      * @throws ApprenticeshipNotSeededException before anything is modified
      */
@@ -72,8 +72,9 @@ class AzureAccountSync
         }
 
         $apprenticeshipId = (int) $apprenticeshipId;
+        $roleUnchanged = $user->role === $group->role();
 
-        if ($user->apprenticeship_id !== null && $user->apprenticeship_id !== $apprenticeshipId) {
+        if ($roleUnchanged && $user->apprenticeship_id !== null && $user->apprenticeship_id !== $apprenticeshipId) {
             Log::warning('Microsoft SSO: section change pending confirmation, apprenticeship kept.', [
                 'user_id' => $user->id,
                 'from' => $user->apprenticeship_id,
@@ -92,7 +93,7 @@ class AzureAccountSync
             $user->save();
         }
 
-        if ($user->role !== $group->role()) {
+        if (! $roleUnchanged) {
             $user->syncRoles($group->role()->value);
         }
     }
