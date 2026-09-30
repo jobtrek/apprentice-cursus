@@ -2,11 +2,11 @@
 import { Badge } from '@/components/ui/badge';
 
 defineProps<{
-    value?: string;
+    value?: string | null;
 }>();
 </script>
 
 <template>
-    <Badge v-if="!value" variant="destructive">Non assigné</Badge>
+    <Badge v-if="!value" variant="destructive">Aucun coach</Badge>
     <span v-else>{{ value }}</span>
 </template>

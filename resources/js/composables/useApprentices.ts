@@ -1,39 +1,27 @@
-import { computed, ref } from 'vue';
-import rawApprentices from '@/data/apprentices.json';
+import { computed, ref, toValue, type MaybeRefOrGetter } from 'vue';
+import type { Apprentice } from '@/types/apprentice';
 
-export interface Apprentice {
-    id: string;
-    name: string;
-    avatarUrl?: string;
-    track: 'IT' | 'EC';
-    year: '1ère' | '2ème' | '3ème' | '4ème';
-    coach?: string;
-    trainer?: string;
-}
-
-const apprentices = ref<Apprentice[]>(rawApprentices as Apprentice[]);
-
-/** Apprenti·e correspondant à l'identifiant d'URL, s'il existe. */
-export const findApprentice = (id: number | string): Apprentice | undefined =>
-    apprentices.value.find((apprentice) => apprentice.id === String(id));
-
-export const useApprentices = () => {
+/** Recherche et filtres (filière, statut) sur la liste d'apprentis fournie par le serveur. */
+export const useApprentices = (apprentices: MaybeRefOrGetter<Apprentice[]>) => {
     const search = ref('');
-    const trackFilter = ref<'All' | 'IT' | 'EC'>('All');
-    const yearFilter = ref<'All' | Apprentice['year']>('All');
+    const apprenticeshipFilter = ref<'All' | 'IT' | 'EC'>('All');
+    const statusFilter = ref<'active' | 'inactive' | 'all'>('active');
 
-    const filtered = computed(() =>
-        apprentices.value.filter((a) => {
-            const matchesSearch = a.name
-                .toLowerCase()
-                .includes(search.value.toLowerCase());
-            const matchesTrack =
-                trackFilter.value === 'All' || a.track === trackFilter.value;
-            const matchesYear =
-                yearFilter.value === 'All' || a.year === yearFilter.value;
-            return matchesSearch && matchesTrack && matchesYear;
-        }),
-    );
+    const filtered = computed(() => {
+        const needle = search.value.toLowerCase();
 
-    return { apprentices, filtered, search, trackFilter, yearFilter };
+        return toValue(apprentices).filter((a) => {
+            const matchesSearch = a.name.toLowerCase().includes(needle);
+            const matchesApprenticeship =
+                apprenticeshipFilter.value === 'All' ||
+                a.apprenticeship === apprenticeshipFilter.value;
+            const matchesStatus =
+                statusFilter.value === 'all' ||
+                (statusFilter.value === 'active') === a.isActive;
+
+            return matchesSearch && matchesApprenticeship && matchesStatus;
+        });
+    });
+
+    return { filtered, search, apprenticeshipFilter, statusFilter };
 };

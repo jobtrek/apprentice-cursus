@@ -8,6 +8,8 @@ use App\Enums\UserRole;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
+use Illuminate\Database\Eloquent\Attributes\Scope;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -89,6 +91,9 @@ class User extends Authenticatable
         return $this->belongsTo(Apprenticeship::class);
     }
 
+    /**
+     * @return BelongsTo<self, $this>
+     */
     public function coach(): BelongsTo
     {
         return $this->belongsTo(self::class, 'coach_id');
@@ -170,6 +175,32 @@ class User extends Authenticatable
             UserRole::Trainer => $this->apprenticeship_id !== null
                 && $apprentice->apprenticeship_id === $this->apprenticeship_id,
             default => false,
+        };
+    }
+
+    /**
+     * Apprentices the viewer supervises, as a query. Set-based twin of
+     * supervises(): keep both in line (a test asserts they agree).
+     *
+     * Named supervisedBy(), not role-ish: `role()` is Spatie's scope.
+     *
+     * @param  Builder<User>  $query
+     */
+    #[Scope]
+    protected function supervisedBy(Builder $query, self $viewer): void
+    {
+        $query->role(UserRole::Apprentice->value)->whereKeyNot($viewer->id);
+
+        if ($viewer->isLocalAdmin()) {
+            return;
+        }
+
+        match ($viewer->role) {
+            UserRole::Coach => $query->where('coach_id', $viewer->id),
+            UserRole::Trainer => $viewer->apprenticeship_id === null
+                ? $query->whereRaw('1 = 0')
+                : $query->where('apprenticeship_id', $viewer->apprenticeship_id),
+            default => $query->whereRaw('1 = 0'),
         };
     }
 }

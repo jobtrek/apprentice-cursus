@@ -70,11 +70,10 @@ class MicrosoftLoginService
 
     private function provision(AzureUser $azureUser): User
     {
-        return new User([
-            'name' => $azureUser->getName() ?: $azureUser->getNickname() ?: $azureUser->getEmail(),
-            'email' => $azureUser->getEmail(),
-            'azure_id' => $azureUser->getId(),
-            'tenant_id' => config('services.azure.tenant'),
-        ]);
+        return $this->sync->newAccount(
+            (string) $azureUser->getId(),
+            $azureUser->getName() ?: $azureUser->getNickname() ?: $azureUser->getEmail(),
+            $azureUser->getEmail(),
+        );
     }
 }
