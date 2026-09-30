@@ -22,7 +22,7 @@ class SyncApprentices extends Command
             return self::FAILURE;
         }
 
-        $this->info("Apprentices synced: {$result->created} created, {$result->deactivated} deactivated, {$result->skipped} skipped.");
+        $this->info("Apprentices synced: {$result->created} created, {$result->updated} updated, {$result->deactivated} deactivated, {$result->skipped} skipped.");
 
         return self::SUCCESS;
     }

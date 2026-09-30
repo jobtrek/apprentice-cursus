@@ -57,12 +57,11 @@ Other rules:
 
 ## Apprentice sync
 
-`php artisan apprentices:sync` runs daily (and can be run by hand). It reads the members of the three groups (nested groups included), compares them with the accounts in the app, and applies the same rules as a sign-in: exactly one mapped group, account enabled in Entra, no email already used by another account.
+`php artisan apprentices:sync` runs daily (and can be run by hand). It reads the members of the two apprentice groups (nested groups included) and applies the same rules as a sign-in: exactly one mapped group, account enabled in Entra, no email already used by another account.
 
 - Missing apprentices are created, with the group's section. Existing accounts keep their name and email and are reactivated if needed.
-- An apprentice removed from all apprentice groups, disabled in Entra, or put in several groups is set inactive at the next sync. Nobody is deleted.
-- Trainers are never touched, even one who is also in an apprentice group: their next sign-in or re-check refuses them.
-- **Safety guards:** if a group id (trainer group included) is missing or any Microsoft call fails, the sync stops and writes nothing (exit code 1). If a group returns no members, the deactivations for that section are skipped and a warning is logged.
+- An apprentice removed from all apprentice groups is set inactive at the next sync. Nobody is deleted. Trainers are never touched.
+- **Safety guards:** if a group id is missing or any Microsoft call fails, the sync stops and writes nothing (exit code 1). If a group returns no members, the deactivations for that section are skipped and a warning is logged.
 - **Deployment:** the server must run the Laravel scheduler: a cron entry `* * * * * cd /path && php artisan schedule:run`, or `php artisan schedule:work`.
 
 ## Entra setup (for the Microsoft administrator)

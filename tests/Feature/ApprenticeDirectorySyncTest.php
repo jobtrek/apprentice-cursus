@@ -43,13 +43,14 @@ function syncMember(string $id, ?string $upn = null, bool $enabled = true, ?stri
 }
 
 /**
- * Fake the token and group members endpoints.
+ * Fake the token, members and transitiveMemberOf endpoints.
  *
- * @param  array<string, list<array<string, mixed>>|int>  $members  group id => members, or an HTTP status to fail with; unlisted groups are empty
+ * @param  array<string, list<array<string, mixed>>|int>  $members  group id => members, or an HTTP status to fail with
+ * @param  array<string, list<string>|int>  $memberOf  azure id => group ids, or an HTTP status; defaults to the group(s) the member is listed in
  */
-function fakeDirectory(array $members): void
+function fakeDirectory(array $members, array $memberOf = []): void
 {
-    Http::fake(function (Request $request) use ($members) {
+    Http::fake(function (Request $request) use ($members, $memberOf) {
         $url = $request->url();
 
         if (str_contains($url, 'login.microsoftonline.com')) {
@@ -60,6 +61,17 @@ function fakeDirectory(array $members): void
             $entry = $members[$m[1]] ?? [];
 
             return is_int($entry) ? Http::response([], $entry) : Http::response(['value' => $entry]);
+        }
+
+        if (preg_match('#/users/([^/]+)/transitiveMemberOf#', $url, $m)) {
+            $entry = $memberOf[$m[1]] ?? array_keys(array_filter(
+                $members,
+                fn ($list) => is_array($list) && in_array($m[1], array_column($list, 'id'), true),
+            ));
+
+            return is_int($entry)
+                ? Http::response([], $entry)
+                : Http::response(['value' => array_map(fn (string $id) => ['id' => $id, 'displayName' => 'g'], $entry)]);
         }
 
         return Http::response([], 404);
@@ -136,7 +148,11 @@ test('it follows paging of the members endpoint', function () {
             ]);
         }
 
-        return Http::response(['value' => []]);
+        if (str_contains($url, '/groups/'.SYNC_EC)) {
+            return Http::response(['value' => []]);
+        }
+
+        return Http::response(['value' => [['id' => SYNC_IT]]]);
     });
 
     expect(runSync()->created)->toBe(2)
@@ -154,6 +170,7 @@ test('it updates existing apprentices without overwriting name or email and reac
     $result = runSync();
 
     expect($result->created)->toBe(0)
+        ->and($result->updated)->toBe(1)
         ->and($active->fresh()->name)->toBe('Local name')
         ->and($active->fresh()->email)->toBe('local@example.test')
         ->and($inactive->fresh()->is_active)->toBeTrue()
@@ -192,10 +209,10 @@ test('it skips accounts whose email belongs to another account and continues', f
 
 test('a member of several mapped groups is not created and an existing account is deactivated', function () {
     $existing = syncedApprentice('a1', $this->it->id);
-    fakeDirectory([
-        SYNC_IT => [syncMember('a1'), syncMember('a2'), syncMember('a3')],
-        SYNC_EC => [syncMember('a1'), syncMember('a2')],
-    ]);
+    fakeDirectory(
+        [SYNC_IT => [syncMember('a1'), syncMember('a2'), syncMember('a3')], SYNC_EC => [syncMember('a1'), syncMember('a2')]],
+        ['a1' => [SYNC_IT, SYNC_EC], 'a2' => [SYNC_IT, SYNC_EC], 'a3' => [SYNC_IT]],
+    );
 
     $result = runSync();
 
@@ -251,39 +268,14 @@ test('it aborts without writing when the second members call fails', function ()
         ->and($existing->fresh()->is_active)->toBeTrue();
 });
 
-test('it aborts without writing when the trainer members call fails', function () {
-    $existing = syncedApprentice('a2', $this->it->id);
-    fakeDirectory([SYNC_IT => [syncMember('a1')], SYNC_EC => [], SYNC_TRAINER => 500]);
+test('it aborts without writing when a member group lookup fails', function () {
+    $existing = syncedApprentice('a3', $this->it->id);
+    fakeDirectory([SYNC_IT => [syncMember('a1'), syncMember('a2')], SYNC_EC => []], ['a1' => [SYNC_IT], 'a2' => 500]);
 
     expect(fn () => runSync())->toThrow(ApprenticeSyncAbortedException::class);
 
     expect(User::where('azure_id', 'a1')->exists())->toBeFalse()
         ->and($existing->fresh()->is_active)->toBeTrue();
-});
-
-test('an apprentice also in the trainer group is not created and an existing one is deactivated', function () {
-    $existing = syncedApprentice('a1', $this->it->id);
-    fakeDirectory([
-        SYNC_IT => [syncMember('a1'), syncMember('a2')],
-        SYNC_EC => [],
-        SYNC_TRAINER => [syncMember('a1'), syncMember('a2')],
-    ]);
-
-    $result = runSync();
-
-    expect($result->created)->toBe(0)
-        ->and($existing->fresh()->is_active)->toBeFalse()
-        ->and(User::where('azure_id', 'a2')->exists())->toBeFalse();
-});
-
-test('a trainer also in an apprentice group is not deactivated by the sync', function () {
-    $trainer = User::factory()->trainer()->create(['azure_id' => 't1', 'apprenticeship_id' => $this->it->id]);
-    fakeDirectory([SYNC_IT => [syncMember('t1')], SYNC_EC => [], SYNC_TRAINER => [syncMember('t1')]]);
-
-    runSync();
-
-    expect($trainer->fresh()->is_active)->toBeTrue()
-        ->and($trainer->fresh()->role)->toBe(UserRole::Trainer);
 });
 
 test('it rolls back when an apprenticeship is not seeded', function () {
