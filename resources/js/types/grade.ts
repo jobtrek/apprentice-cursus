@@ -2,6 +2,8 @@ export interface Grade {
     id: number;
     title: string;
     subject: string;
+    /** Ancêtres du nœud noté, du domaine jusqu'au parent direct (racine exclue). */
+    path: string[];
     value: number;
     semester: number;
     date: string;

@@ -21,6 +21,7 @@ import type { Grade } from '@/types/grade';
 
 const props = defineProps<{
     apprenticeId: number;
+    grades: Grade[];
 }>();
 
 const apprentice = computed(() => findApprentice(props.apprenticeId));
@@ -51,7 +52,7 @@ const gradeHref = (grade: Grade) =>
                 />
             </PageHeader>
 
-            <GradeBook :grade-href="gradeHref" />
+            <GradeBook :grades="grades" :grade-href="gradeHref" />
         </template>
 
         <template v-else>

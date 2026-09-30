@@ -1,5 +1,7 @@
 <?php
 
+use App\Enums\AzureGroup;
+
 return [
 
     /*
@@ -28,6 +30,13 @@ return [
         'redirect' => env('MICROSOFT_REDIRECT_URI'),
         'tenant' => env('MICROSOFT_TENANT_ID'),
         'account_check_interval' => env('MICROSOFT_ACCOUNT_CHECK_INTERVAL', 900),
+
+        // Graph group object ids, keyed by App\Enums\AzureGroup value.
+        'groups' => [
+            AzureGroup::ApprenticesIt->value => env('MICROSOFT_GROUP_APPRENTICES_IT'),
+            AzureGroup::ApprenticesEc->value => env('MICROSOFT_GROUP_APPRENTICES_EC'),
+            AzureGroup::Trainer->value => env('MICROSOFT_GROUP_TRAINER'),
+        ],
     ],
 
     'ses' => [

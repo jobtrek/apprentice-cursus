@@ -8,6 +8,11 @@ import AddGradeDialog from '@/components/grade/AddGradeDialog.vue';
 import { PageContainer, PageHeader } from '@/components/page';
 import { useAddGradeDialog } from '@/composables/useAddGradeDialog';
 import { useNavigation } from '@/composables/useNavigation';
+import type { Grade } from '@/types/grade';
+
+defineProps<{
+    recentGrades: Grade[];
+}>();
 
 const page = usePage();
 const { role } = useNavigation();
@@ -42,7 +47,7 @@ const isApprentice = computed(() => role.value === 'apprentice');
         </PageHeader>
 
         <template v-if="isApprentice">
-            <ApprenticeDashboard />
+            <ApprenticeDashboard :recent-grades="recentGrades" />
             <AddGradeDialog />
         </template>
         <SupervisorDashboard v-else />

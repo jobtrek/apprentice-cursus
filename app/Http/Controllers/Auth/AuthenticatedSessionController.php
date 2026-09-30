@@ -7,6 +7,7 @@ use App\Http\Requests\Auth\LoginRequest;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -17,6 +18,7 @@ class AuthenticatedSessionController extends Controller
         return Inertia::render('auth/Login', [
             'status' => $request->session()->get('status'),
             'error' => $request->session()->get('error'),
+            'passwordLoginUrl' => Route::has('login.store') ? route('login.store') : null,
         ]);
     }
 
@@ -34,7 +36,7 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
-        return redirect()->route('home');
+        return redirect()->route($user->homeRoute());
     }
 
     public function destroy(Request $request): RedirectResponse

@@ -1,79 +1,58 @@
 <?php
 
+use App\Enums\Permission;
+use App\Http\Controllers\ApprenticeController;
 use App\Http\Controllers\DossierController;
+use App\Http\Controllers\GradeController;
+use App\Http\Controllers\HomeController;
 use Illuminate\Foundation\Http\Middleware\HandlePrecognitiveRequests;
 use Illuminate\Support\Facades\Route;
-use Inertia\Inertia;
 
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::inertia('/', 'Home')->name('home');
-    Route::inertia('/grades/dashboard', 'GradesDashboard')->name('grades.dashboard');
-    // Le portfolio appartient à l'apprenti ; la ProjectPolicy vérifie en plus la propriété du projet.
-    Route::middleware('role:apprentice')->group(function () {
-        Route::get('/portfolio', [DossierController::class, 'index'])->name('portfolio.index');
-        Route::get('/portfolio/preview', [DossierController::class, 'preview'])->name('portfolio.preview');
-        Route::resource('portfolio/projects', DossierController::class)
-            ->except(['index', 'show'])
-            ->names('portfolio.projects')
-            ->middlewareFor(['store', 'update'], HandlePrecognitiveRequests::class)
-            ->whereNumber('project');
-        Route::get('/portfolio/screenshots/{screenshot}', [DossierController::class, 'screenshot'])
-            ->whereNumber('screenshot')
-            ->name('portfolio.screenshots.show');
+    Route::get('/', HomeController::class)->name('home');
+
+    Route::prefix('grades')->name('grades.')->group(function () {
+        Route::get('/dashboard', [GradeController::class, 'dashboard'])
+            ->middleware('can:'.Permission::GradesViewOwn->value)
+            ->name('dashboard');
+        Route::get('/{grade}', [GradeController::class, 'show'])
+            ->whereNumber('grade')
+            ->middleware('can:view,grade')
+            ->name('show');
     });
 
-    // Données de démonstration, en attendant le modèle Grade côté serveur.
-    $demoGrade = [
-        'pdfUrl' => '/demo/sample-grade-test.pdf',
-        'comments' => [
-            [
-                'author' => 'Marc Dubois',
-                'role' => 'Coach',
-                'date' => '15.11.2025',
-                'text' => 'Bon résultat sur la partie pratique. Pour le prochain test, revois la gestion des transactions et les jointures multiples.',
-            ],
-            [
-                'author' => 'Sylvie Meier',
-                'role' => 'Formateur',
-                'date' => '17.11.2025',
-                'text' => 'Vu en cours la semaine prochaine — on reprendra l\'exercice 4 ensemble.',
-            ],
-        ],
-    ];
+    Route::middleware('can:'.Permission::PortfolioManageOwn->value)
+        ->prefix('portfolio')
+        ->name('portfolio.')
+        ->controller(DossierController::class)
+        ->group(function () {
+            Route::get('/', 'index')->name('index');
+            Route::get('/preview', 'preview')->name('preview');
+            Route::resource('projects', DossierController::class)
+                ->except(['index', 'show'])
+                ->middlewareFor(['store', 'update'], HandlePrecognitiveRequests::class)
+                ->whereNumber('project');
+        });
 
-    Route::get(
-        '/grades/{grade}',
-        fn (int $grade) => Inertia::render('GradeDetails', [
-            ...$demoGrade,
-            'gradeId' => $grade,
-        ])
-    )->whereNumber('grade')->name('grades.show');
+    Route::get('/portfolio/screenshots/{screenshot}', [DossierController::class, 'screenshot'])
+        ->whereNumber('screenshot')
+        ->name('portfolio.screenshots.show');
 
-    // Parcours coach/formateur : liste → apprenti → carnet de notes → épreuve.
-    // Mêmes rôles que `SUPERVISORS` dans resources/js/constants/navigation.ts.
-    // TODO: limiter les formateurs à leur section quand les apprentis viendront
-    // de la base (aujourd'hui des données de démo côté frontend).
-    Route::middleware('role:coach,trainer,admin,super_admin')->group(function () use ($demoGrade) {
+    Route::middleware('can:'.Permission::ApprenticesViewList->value)->group(function () {
         Route::inertia('/apprentisdashboard', 'ApprentisDashboard')->name('apprentisdashboard');
 
-        Route::get(
-            '/apprentices/{apprentice}',
-            fn (int $apprentice) => Inertia::render('ApprenticeShow', [
-                'apprenticeId' => $apprentice,
-            ])
-        )->whereNumber('apprentice')->name('apprentices.show');
-
-        Route::get(
-            '/apprentices/{apprentice}/grades/{grade}',
-            fn (int $apprentice, int $grade) => Inertia::render('GradeDetails', [
-                ...$demoGrade,
-                'apprenticeId' => $apprentice,
-                'gradeId' => $grade,
-            ])
-        )->whereNumber(['apprentice', 'grade'])->name('apprentices.grades.show');
+        Route::prefix('apprentices/{apprentice}')
+            ->whereNumber('apprentice')
+            ->name('apprentices.')
+            ->controller(ApprenticeController::class)
+            ->group(function () {
+                Route::get('/', 'show')->name('show');
+                Route::get('/grades/{grade}', 'grade')
+                    ->whereNumber('grade')
+                    ->name('grades.show');
+            });
     });
 });
 
 require __DIR__.'/profile.php';
-
 require __DIR__.'/auth.php';

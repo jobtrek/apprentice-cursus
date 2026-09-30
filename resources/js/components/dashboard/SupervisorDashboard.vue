@@ -151,7 +151,7 @@ const byYear = computed<YearAverage[]>(() =>
                 <ul v-if="atRisk.length" class="divide-y">
                     <li v-for="row in atRisk" :key="row.id">
                         <Link
-                            :href="apprenticesRoutes.show(row.id)"
+                            :href="apprenticesRoutes.show(Number(row.id))"
                             class="hover:bg-muted/50 focus-visible:ring-ring/50 -mx-2 flex items-center gap-3 rounded-md px-2 py-3 transition-colors focus-visible:ring-[3px] focus-visible:outline-none"
                         >
                             <div class="min-w-0 flex-1">

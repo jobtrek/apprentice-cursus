@@ -5,12 +5,16 @@ import AddGradeDialog from '@/components/grade/AddGradeDialog.vue';
 import GradeBook from '@/components/gradeList/GradeBook.vue';
 import { PageContainer, PageHeader } from '@/components/page';
 import { useAddGradeDialog } from '@/composables/useAddGradeDialog';
-import grades from '@/routes/grades';
+import gradeRoutes from '@/routes/grades';
 import type { Grade } from '@/types/grade';
+
+defineProps<{
+    grades: Grade[];
+}>();
 
 const pageTitle = 'Carnet de notes';
 
-const gradeHref = (grade: Grade) => grades.show(grade.id);
+const gradeHref = (grade: Grade) => gradeRoutes.show(grade.id);
 
 const { open: openAddGrade } = useAddGradeDialog();
 </script>
@@ -29,7 +33,7 @@ const { open: openAddGrade } = useAddGradeDialog();
             </template>
         </PageHeader>
 
-        <GradeBook :grade-href="gradeHref" />
+        <GradeBook :grades="grades" :grade-href="gradeHref" />
 
         <AddGradeDialog />
     </PageContainer>

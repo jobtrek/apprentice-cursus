@@ -29,9 +29,15 @@ import {
     type ProgressPeriod,
     type ProgressPoint,
 } from '@/data/dashboard';
-import { DOMAIN_GRADES, FINAL_GRADE, recentGrades } from '@/data/gradebook';
+import { DOMAIN_GRADES, FINAL_GRADE } from '@/data/gradebook';
 import { trainingPeriod } from '@/lib/semester';
 import grades from '@/routes/grades';
+import type { Grade } from '@/types/grade';
+
+defineProps<{
+    /** Dernières notes de l'apprenti·e, de la plus récente à la plus ancienne. */
+    recentGrades: Grade[];
+}>();
 
 const period = trainingPeriod(DEMO_APPRENTICESHIP_START_YEAR);
 
@@ -46,8 +52,6 @@ const trend = computed(() => {
           }
         : null;
 });
-
-const latestGrades = recentGrades(4);
 
 type ProgressView = 'semester' | 'year';
 
@@ -205,7 +209,7 @@ const progress = computed(() =>
         </CardHeader>
         <CardContent>
             <ul class="divide-y">
-                <li v-for="grade in latestGrades" :key="grade.id">
+                <li v-for="grade in recentGrades" :key="grade.id">
                     <Link
                         :href="grades.show(grade.id)"
                         class="hover:bg-muted/50 focus-visible:ring-ring/50 -mx-2 flex items-center gap-4 rounded-md px-2 py-3 transition-colors focus-visible:ring-[3px] focus-visible:outline-none"

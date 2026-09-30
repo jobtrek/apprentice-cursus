@@ -8,23 +8,14 @@ import {
     SectionHeader,
     StatItem,
 } from '@/components/page';
-import {
-    Empty,
-    EmptyContent,
-    EmptyDescription,
-    EmptyHeader,
-    EmptyMedia,
-    EmptyTitle,
-} from '@/components/ui/empty';
 import { findApprentice } from '@/composables/useApprentices';
 import { useNavigation } from '@/composables/useNavigation';
 import { apprentisdashboard } from '@/routes';
 import apprentices from '@/routes/apprentices';
 import grades from '@/routes/grades';
-import { findGrade } from '@/data/gradebook';
 import type { UserRole } from '@/types';
-import { Head, Link } from '@inertiajs/vue3';
-import { FileXIcon } from '@lucide/vue';
+import type { Grade } from '@/types/grade';
+import { Head } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
 
 type Comment = {
@@ -35,30 +26,31 @@ type Comment = {
 };
 
 const props = defineProps<{
-    gradeId: number;
-    pdfUrl?: string;
+    grade: Grade;
+    pdfUrl?: string | null;
     comments?: Comment[];
     /** Présent quand un coach ou formateur consulte la note d'un·e apprenti·e. */
     apprenticeId?: number;
+    /** Décisions d'autorisation calculées côté serveur. */
+    can: { comment: boolean };
 }>();
-
-const grade = computed(() => findGrade(props.gradeId));
 
 const comments = ref<Comment[]>(props.comments ?? []);
 const newComment = ref('');
 
 const { role } = useNavigation();
 
-/** Libellé de l'auteur d'un commentaire, selon les rôles autorisés à commenter. */
+/** Libellé de l'auteur d'un commentaire : purement cosmétique, ne décide d'aucun droit. */
 const COMMENTER_LABELS: Partial<Record<UserRole, string>> = {
     coach: 'Coach',
     trainer: 'Formateur',
 };
 
-const commenterLabel = computed(() =>
-    role.value ? COMMENTER_LABELS[role.value] : undefined,
+const commenterLabel = computed(
+    () =>
+        (role.value ? COMMENTER_LABELS[role.value] : undefined) ??
+        'Intervenant',
 );
-const canComment = computed(() => commenterLabel.value !== undefined);
 
 const roleStyles: Record<string, { dot: string; text: string }> = {
     Coach: { dot: 'bg-info', text: 'text-info' },
@@ -88,11 +80,8 @@ const breadcrumbs = computed(() =>
         : [{ label: 'Carnet de notes', href: grades.dashboard() }],
 );
 
-/** Page à laquelle revenir : le dernier niveau du fil d'Ariane. */
-const backHref = computed(() => breadcrumbs.value.at(-1)!.href);
-
 const submitComment = () => {
-    if (!newComment.value.trim() || !commenterLabel.value) return;
+    if (!props.can.comment || !newComment.value.trim()) return;
 
     comments.value.push({
         author: 'Vous',
@@ -109,30 +98,9 @@ const submitComment = () => {
 </script>
 
 <template>
-    <Head :title="grade?.title ?? 'Note introuvable'" />
+    <Head :title="grade.title" />
 
-    <PageContainer v-if="!grade">
-        <PageHeader title="Note introuvable" :breadcrumbs="breadcrumbs" />
-
-        <Empty class="border">
-            <EmptyHeader>
-                <EmptyMedia variant="icon">
-                    <FileXIcon />
-                </EmptyMedia>
-                <EmptyTitle>Aucune note ne correspond</EmptyTitle>
-                <EmptyDescription>
-                    Cette note n'existe pas ou a été supprimée.
-                </EmptyDescription>
-            </EmptyHeader>
-            <EmptyContent>
-                <Button as-child variant="outline">
-                    <Link :href="backHref">Retour</Link>
-                </Button>
-            </EmptyContent>
-        </Empty>
-    </PageContainer>
-
-    <PageContainer v-else>
+    <PageContainer>
         <PageHeader
             :title="grade.title"
             :description="`${grade.subject} · Semestre ${grade.semester}`"
@@ -203,7 +171,7 @@ const submitComment = () => {
                 Aucun commentaire pour le moment.
             </p>
 
-            <div v-if="canComment" class="flex flex-col gap-2 pt-2">
+            <div v-if="can.comment" class="flex flex-col gap-2 pt-2">
                 <Textarea
                     v-model="newComment"
                     placeholder="Écrire un commentaire…"

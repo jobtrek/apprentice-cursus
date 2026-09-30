@@ -3,26 +3,67 @@
 namespace Database\Seeders;
 
 use App\Enums\UserRole;
+use App\Models\Apprenticeship;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 
 class UserSeeder extends Seeder
 {
     /**
-     * Seed a local email/password account for accessing the app without Azure SSO.
+     * Seed local email/password accounts for accessing the app without Azure SSO.
      *
-     * Local dev/test credentials only: admin@example.com / password
+     * LOCAL ONLY (password login is disabled elsewhere): never run outside the
+     * local environment. All accounts use the password "password":
+     * - admin@example.com (local admin: bypasses every check in the local environment)
+     * - coach@example.com (coach of the local apprentices)
+     * - trainer@example.com (IT trainer)
+     * - apprentice-it@example.com (IT apprentice)
+     * - apprentice-ec@example.com (EC apprentice)
      */
     public function run(): void
     {
-        User::query()->updateOrCreate(
-            ['email' => 'admin@example.com'],
-            [
-                'name' => 'Local Admin',
-                'password' => 'password',
-                'role' => UserRole::SuperAdmin,
-                'is_active' => true,
-            ],
+        if (! app()->environment('local')) {
+            return;
+        }
+
+        $this->seed('admin@example.com', 'Local Admin', UserRole::Admin, null);
+        $coach = $this->seed('coach@example.com', 'Local Coach', UserRole::Coach, null);
+        $this->seed(
+            'trainer@example.com',
+            'Local Trainer',
+            UserRole::Trainer,
+            Apprenticeship::where('name', ApprenticeshipSeeder::IT)->value('id'),
         );
+        $this->seed(
+            'apprentice-it@example.com',
+            'Local Apprentice IT',
+            UserRole::Apprentice,
+            Apprenticeship::where('name', ApprenticeshipSeeder::IT)->value('id'),
+            $coach->id,
+        );
+        $this->seed(
+            'apprentice-ec@example.com',
+            'Local Apprentice EC',
+            UserRole::Apprentice,
+            Apprenticeship::where('name', ApprenticeshipSeeder::EC)->value('id'),
+            $coach->id,
+        );
+    }
+
+    private function seed(string $email, string $name, UserRole $role, ?int $apprenticeshipId, ?int $coachId = null): User
+    {
+        // is_active, apprenticeship_id and coach_id are not mass assignable.
+        $user = User::query()->firstOrNew(['email' => $email]);
+        $user->forceFill([
+            'name' => $name,
+            'password' => 'password',
+            'is_active' => true,
+            'apprenticeship_id' => $apprenticeshipId,
+            'coach_id' => $coachId,
+        ])->save();
+
+        $user->syncRoles($role->value);
+
+        return $user;
     }
 }
