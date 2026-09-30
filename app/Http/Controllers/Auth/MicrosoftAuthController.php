@@ -101,7 +101,7 @@ class MicrosoftAuthController extends Controller
             'role' => $mapping['role'],
             'apprenticeship_id' => $mapping['apprenticeship'] === null
                 ? null
-                : Apprenticeship::where('code', $mapping['apprenticeship'])->value('id'),
+                : Apprenticeship::firstOrCreate(['name' => $mapping['apprenticeship']])->id,
         ])->save();
 
         if ($isNew) {

@@ -10,13 +10,13 @@ use RuntimeException;
 class MappingRolesService
 {
     /**
-     * Keys are the values of config('services.azure.group_roles'); apprenticeship is apprenticeships.code.
+     * Keys are the values of config('services.azure.group_roles'); apprenticeship is apprenticeships.name.
      *
      * @var array<string, array{role: UserRole, apprenticeship: string|null}>
      */
     private const GROUP_ROLES = [
-        'apprentices_IT' => ['role' => UserRole::Apprentice, 'apprenticeship' => 'it'],
-        'apprentices_EC' => ['role' => UserRole::Apprentice, 'apprenticeship' => 'ec'],
+        'apprentices_IT' => ['role' => UserRole::Apprentice, 'apprenticeship' => 'IT'],
+        'apprentices_EC' => ['role' => UserRole::Apprentice, 'apprenticeship' => 'EC'],
         'trainer' => ['role' => UserRole::Trainer, 'apprenticeship' => null],
     ];
 

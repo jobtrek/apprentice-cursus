@@ -9,9 +9,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 /**
  * @property int $id
  * @property string $name
- * @property string|null $code it | ec, the key Azure group mapping resolves to
  */
-#[Fillable(['name', 'code'])]
+#[Fillable(['name'])]
 class Apprenticeship extends Model
 {
     public function users(): HasMany
