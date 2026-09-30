@@ -20,6 +20,9 @@ class RolesAndPermissionsSeeder extends Seeder
             Permission::findOrCreate($permission->value);
         }
 
+        // DatabaseSeeder uses WithoutModelEvents, so Spatie's cache-flush hooks don't fire on create.
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
+
         foreach (UserRole::cases() as $userRole) {
             $role = Role::findOrCreate($userRole->value);
             $role->syncPermissions(
