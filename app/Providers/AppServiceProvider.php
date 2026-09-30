@@ -4,11 +4,13 @@ namespace App\Providers;
 
 use App\Models\Grade;
 use App\Models\Project;
+use App\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
 use SocialiteProviders\Azure\Provider;
@@ -30,12 +32,24 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->configureDefaults();
+        $this->configureGates();
         Event::listen(function (SocialiteWasCalled $event) {
             $event->extendSocialite(
                 'azure',
                 Provider::class
             );
         });
+    }
+
+    /**
+     * Abilities not tied to a model. Model abilities live in app/Policies, discovered
+     * by name (App\Models\Grade → App\Policies\GradePolicy).
+     */
+    protected function configureGates(): void
+    {
+        // There is no admin role (docs/adr/ADR.md, 2026-09-23): the subjects page is
+        // limited to trainers and coaches until its fate is decided.
+        Gate::define('viewAdministration', fn (User $user): bool => $user->isTrainer() || $user->isCoach());
     }
 
     /**
