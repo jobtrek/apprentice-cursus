@@ -15,8 +15,10 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // Roles must exist before any user is saved: User syncs its Spatie role on save.
-        $this->call(RolesAndPermissionsSeeder::class);
+        $this->call(ApprenticeshipSeeder::class);
+
+        // Explicit ids 1..n, so they must be created before any other user.
+        $this->call(DemoApprenticeSeeder::class);
 
         // User::factory(10)->create();
 
@@ -26,10 +28,17 @@ class DatabaseSeeder extends Seeder
         ]);
 
         $this->call([
-            ApprenticeshipSeeder::class,
             SkillSeeder::class,
             EvaluationTreeSeeder::class,
             UserSeeder::class,
         ]);
+
+        User::query()
+            ->whereBetween('id', [1, DemoApprenticeSeeder::COUNT])
+            ->whereNull('coach_id')
+            ->update(['coach_id' => User::query()->where('email', 'admin@example.com')->value('id')]);
+
+        // Runs last: WithoutModelEvents disables User's role-sync hook, so the seeded users get their Spatie roles here.
+        $this->call(RolesAndPermissionsSeeder::class);
     }
 }

@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\Apprenticeship;
 use App\Services\MappingRolesService;
 use App\Services\Microsoft\MicrosoftGraphService;
 use Closure;
@@ -60,8 +61,25 @@ class EnsureAzureAccountIsActive
             return $this->endSession($request, 'Your Microsoft account no longer has access to this application. Please contact an administrator.');
         }
 
-        if ($user->role !== $mapping['role']) {
-            $user->forceFill(['role' => $mapping['role']])->save();
+        $apprenticeshipId = $mapping['apprenticeship'] === null
+            ? $user->apprenticeship_id
+            : Apprenticeship::where('name', $mapping['apprenticeship'])->value('id');
+
+        if ($user->apprenticeship_id !== null && $apprenticeshipId !== $user->apprenticeship_id) {
+            Log::warning('Microsoft group re-check: section change requires confirmation, session ended.', [
+                'user_id' => $user->id,
+                'from' => $user->apprenticeship_id,
+                'to' => $apprenticeshipId,
+            ]);
+
+            return $this->endSession($request, 'Your section has changed. Please contact an administrator.');
+        }
+
+        if ($user->role !== $mapping['role'] || $user->apprenticeship_id !== $apprenticeshipId) {
+            $user->forceFill([
+                'role' => $mapping['role'],
+                'apprenticeship_id' => $apprenticeshipId,
+            ])->save();
         }
 
         Cache::put($cacheKey, true, $interval);

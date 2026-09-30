@@ -133,7 +133,11 @@ class User extends Authenticatable
             return false;
         }
 
-        return $apprentice->coach_id === $this->id
-            || ($this->apprenticeship_id !== null && $apprentice->apprenticeship_id === $this->apprenticeship_id);
+        return match ($this->role) {
+            UserRole::Coach => $apprentice->coach_id === $this->id,
+            UserRole::Trainer => $this->apprenticeship_id !== null
+                && $apprentice->apprenticeship_id === $this->apprenticeship_id,
+            default => false,
+        };
     }
 }
