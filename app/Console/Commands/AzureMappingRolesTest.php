@@ -7,7 +7,7 @@ use Illuminate\Console\Command;
 
 class AzureMappingRolesTest extends Command
 {
-    protected $signature = 'azure:roles {role? : it, ec or trainer (defaults to all)}';
+    protected $signature = 'azure:roles {role? : it, ec, trainer or coach (defaults to all)}';
 
     protected $description = 'List the members mapped to each role via MappingRolesService';
 
@@ -16,7 +16,8 @@ class AzureMappingRolesTest extends Command
         $lookups = [
             'it' => ['apprentices_IT', fn () => $roles->getITApprentices()],
             'ec' => ['apprentices_EC', fn () => $roles->getECApprentices()],
-            'trainer' => ['trainer', fn () => $roles->getCollaborators()],
+            'trainer' => ['trainer', fn () => $roles->getTrainers()],
+            'coach' => ['coach', fn () => $roles->getCoaches()],
         ];
 
         $selected = $this->argument('role');

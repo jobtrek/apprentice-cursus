@@ -31,11 +31,19 @@ class AzureGraphService
             return null;
         }
 
-        $response = Http::withToken($token)
-            ->acceptJson()
-            ->get("https://graph.microsoft.com/v1.0/users/{$azureId}/transitiveMemberOf", [
-                '$select' => 'id,displayName',
+        try {
+            $response = Http::withToken($token)
+                ->acceptJson()
+                ->get("https://graph.microsoft.com/v1.0/users/{$azureId}/transitiveMemberOf", [
+                    '$select' => 'id,displayName',
+                ]);
+        } catch (ConnectionException $e) {
+            Log::error('Microsoft Graph group lookup connection failed.', [
+                'message' => $e->getMessage(),
             ]);
+
+            return null;
+        }
 
         if (! $response->successful()) {
             Log::error('Microsoft Graph group lookup failed.', [
@@ -58,12 +66,20 @@ class AzureGraphService
             return null;
         }
 
-        $response = Http::withToken($token)
-            ->acceptJson()
-            ->get("https://graph.microsoft.com/v1.0/groups/{$groupId}/transitiveMembers", [
-                '$select' => 'id,displayName,mail',
-                '$top' => 999,
+        try {
+            $response = Http::withToken($token)
+                ->acceptJson()
+                ->get("https://graph.microsoft.com/v1.0/groups/{$groupId}/transitiveMembers", [
+                    '$select' => 'id,displayName,mail',
+                    '$top' => 999,
+                ]);
+        } catch (ConnectionException $e) {
+            Log::error('Microsoft Graph group members lookup connection failed.', [
+                'message' => $e->getMessage(),
             ]);
+
+            return null;
+        }
 
         if (! $response->successful()) {
             Log::error('Microsoft Graph group members lookup failed.', [

@@ -39,11 +39,13 @@ return [
             'group_members' => 'https://graph.microsoft.com/v1.0/groups/{group}/transitiveMembers',
         ],
 
-        'group_roles' => array_filter([
-            env('MICROSOFT_GROUP_APPRENTICES_IT') => 'apprentices_IT',
-            env('MICROSOFT_GROUP_APPRENTICES_EC') => 'apprentices_EC',
-            env('MICROSOFT_GROUP_TRAINER') => 'trainer',
-        ], fn ($role, $id) => filled($id), ARRAY_FILTER_USE_BOTH),
+        // Group Object ID => role key (see App\Services\Microsoft\MappingRolesService).
+        'group_roles' => array_flip(array_filter([
+            'apprentices_IT' => env('MICROSOFT_GROUP_APPRENTICES_IT'),
+            'apprentices_EC' => env('MICROSOFT_GROUP_APPRENTICES_EC'),
+            'trainer' => env('MICROSOFT_GROUP_TRAINER'),
+            'coach' => env('MICROSOFT_GROUP_COACH'),
+        ], fn ($id) => is_string($id) && $id !== '')),
     ],
 
     'ses' => [
