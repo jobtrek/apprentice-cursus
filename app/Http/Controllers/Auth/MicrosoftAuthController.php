@@ -4,9 +4,11 @@ namespace App\Http\Controllers\Auth;
 
 use App\Exceptions\SsoLoginException;
 use App\Http\Controllers\Controller;
+use App\Services\AzureAccountSync;
 use App\Services\MicrosoftLoginService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Laravel\Socialite\Facades\Socialite;
 use Laravel\Socialite\Two\AbstractProvider;
 use Laravel\Socialite\Two\InvalidStateException;
@@ -41,7 +43,15 @@ class MicrosoftAuthController extends Controller
             throw SsoLoginException::unusableProviderUser($azureUser::class);
         }
 
-        Auth::login($login->resolveUser($azureUser));
+        $user = $login->resolveUser($azureUser);
+
+        Auth::login($user);
+
+        Cache::put(
+            AzureAccountSync::checkCacheKey($user),
+            true,
+            (int) config('services.azure.account_check_interval', 900),
+        );
 
         return redirect()->route('home');
     }

@@ -2,7 +2,6 @@
 
 namespace App\Exceptions;
 
-use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -84,15 +83,6 @@ class SsoLoginException extends RuntimeException
             'Microsoft SSO login refused: apprenticeship is not seeded.',
             ['apprenticeship' => $name],
             'error',
-        );
-    }
-
-    public static function deactivated(User $user): self
-    {
-        return new self(
-            'Your account has been deactivated. Please contact an administrator.',
-            'Microsoft SSO login attempted for a deactivated account.',
-            ['user_id' => $user->id],
         );
     }
 

@@ -2,9 +2,9 @@
 
 namespace App\Http\Middleware;
 
-use App\Models\Apprenticeship;
-use App\Services\MappingRolesService;
-use App\Services\Microsoft\MicrosoftGraphService;
+use App\Exceptions\ApprenticeshipNotSeededException;
+use App\Exceptions\AzureAccessRevokedException;
+use App\Services\AzureAccountSync;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -15,10 +15,7 @@ use Symfony\Component\HttpFoundation\Response;
 
 class EnsureAzureAccountIsActive
 {
-    public function __construct(
-        private readonly MicrosoftGraphService $graph,
-        private readonly MappingRolesService $mappingRoles,
-    ) {}
+    public function __construct(private readonly AzureAccountSync $sync) {}
 
     public function handle(Request $request, Closure $next): Response
     {
@@ -36,53 +33,38 @@ class EnsureAzureAccountIsActive
             return $next($request);
         }
 
-        $cacheKey = "azure-account-check:{$user->id}";
-        $interval = (int) config('services.azure.account_check_interval', 900);
+        $cacheKey = AzureAccountSync::checkCacheKey($user);
 
         if (Cache::has($cacheKey)) {
             return $next($request);
         }
 
-        $enabled = $this->graph->isAccountEnabled($user->azure_id);
-
-        if ($enabled === false) {
-            return $this->endSession($request, 'Your Microsoft account is no longer active. Please contact an administrator.');
-        }
-
         try {
-            $mapping = $this->mappingRoles->resolveRole($user->azure_id);
+            $group = $this->sync->check($user);
+        } catch (AzureAccessRevokedException $e) {
+            $this->sync->deactivate($user);
+
+            return $this->endSession($request, $e->getMessage());
         } catch (RuntimeException $e) {
             Log::error('Microsoft group re-check failed.', ['exception' => $e]);
+            Cache::put($cacheKey, true, AzureAccountSync::BACKOFF_SECONDS);
 
             return $next($request);
         }
 
-        if ($mapping === null) {
-            return $this->endSession($request, 'Your Microsoft account no longer has access to this application. Please contact an administrator.');
-        }
-
-        $apprenticeshipId = $mapping['apprenticeship'] === null
-            ? $user->apprenticeship_id
-            : Apprenticeship::where('name', $mapping['apprenticeship'])->value('id');
-
-        if ($user->apprenticeship_id !== null && $apprenticeshipId !== $user->apprenticeship_id) {
-            Log::warning('Microsoft group re-check: section change requires confirmation, session ended.', [
+        try {
+            $this->sync->apply($user, $group);
+        } catch (ApprenticeshipNotSeededException $e) {
+            Log::error('Microsoft group re-check: apprenticeship is not seeded.', [
                 'user_id' => $user->id,
-                'from' => $user->apprenticeship_id,
-                'to' => $apprenticeshipId,
+                'apprenticeship' => $e->apprenticeship,
             ]);
+            Cache::put($cacheKey, true, AzureAccountSync::BACKOFF_SECONDS);
 
-            return $this->endSession($request, 'Your section has changed. Please contact an administrator.');
+            return $next($request);
         }
 
-        if ($user->role !== $mapping['role'] || $user->apprenticeship_id !== $apprenticeshipId) {
-            $user->forceFill([
-                'role' => $mapping['role'],
-                'apprenticeship_id' => $apprenticeshipId,
-            ])->save();
-        }
-
-        Cache::put($cacheKey, true, $interval);
+        Cache::put($cacheKey, true, (int) config('services.azure.account_check_interval', 900));
 
         return $next($request);
     }

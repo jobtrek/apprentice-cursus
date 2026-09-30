@@ -2,72 +2,22 @@
 
 namespace App\Services;
 
-use App\Enums\UserRole;
-use App\Services\Microsoft\AzureGraphService;
+use App\Enums\AzureGroup;
+use App\Services\Microsoft\MicrosoftGraphService;
 use Illuminate\Support\Facades\Log;
 use RuntimeException;
 
 class MappingRolesService
 {
-    /** @var array<string, array{role: UserRole, apprenticeship: string|null}> */
-    private const GROUP_ROLES = [
-        'apprentices_IT' => ['role' => UserRole::Apprentice, 'apprenticeship' => 'Informaticien·ne CFC'],
-        'apprentices_EC' => ['role' => UserRole::Apprentice, 'apprenticeship' => 'Employé·e de commerce CFC'],
-        'trainer' => ['role' => UserRole::Trainer, 'apprenticeship' => 'Informaticien·ne CFC'],
-    ];
-
-    public function __construct(private readonly AzureGraphService $graph) {}
-
-    /** @return list<array{id: string, mail: string|null}>|null */
-    public function getITApprentices(): ?array
-    {
-        return $this->membersOf('apprentices_IT');
-    }
-
-    /** @return list<array{id: string, mail: string|null}>|null */
-    public function getECApprentices(): ?array
-    {
-        return $this->membersOf('apprentices_EC');
-    }
-
-    /** @return list<array{id: string, mail: string|null}>|null */
-    public function getCollaborators(): ?array
-    {
-        return $this->membersOf('trainer');
-    }
-
-    /** @return list<array{id: string, mail: string|null}>|null */
-    private function membersOf(string $role): ?array
-    {
-        $groupId = array_search($role, config('services.azure.group_roles'), true);
-
-        if ($groupId === false) {
-            return null;
-        }
-
-        $members = $this->graph->getGroupMembers((string) $groupId);
-
-        if ($members === null) {
-            return null;
-        }
-
-        $mapped = [];
-
-        foreach ($members as $member) {
-            if (isset($member['id'])) {
-                $mapped[] = ['id' => $member['id'], 'mail' => $member['mail'] ?? null];
-            }
-        }
-
-        return $mapped;
-    }
+    public function __construct(private readonly MicrosoftGraphService $graph) {}
 
     /**
-     * @return array{role: UserRole, apprenticeship: string|null}|null
+     * Resolve the single mapped Entra group of an account, or null when the
+     * account is in no mapped group or in several of them.
      *
-     * @throws RuntimeException
+     * @throws RuntimeException when the Graph lookup fails
      */
-    public function resolveRole(string $azureId): ?array
+    public function resolveGroup(string $azureId): ?AzureGroup
     {
         $groups = $this->graph->getGroups($azureId);
 
@@ -75,29 +25,23 @@ class MappingRolesService
             throw new RuntimeException('Microsoft Graph group lookup failed.');
         }
 
-        $groupRoles = config('services.azure.group_roles');
-
         $matched = [];
 
         foreach ($groups as $group) {
-            if (isset($group['id'], $groupRoles[$group['id']])) {
-                $matched[] = $groupRoles[$group['id']];
+            $mapped = isset($group['id']) ? AzureGroup::fromGroupId($group['id']) : null;
+
+            if ($mapped !== null) {
+                $matched[$mapped->value] = $mapped;
             }
         }
 
-        $matched = array_values(array_unique($matched));
-
-        if (count($matched) !== 1) {
-            if ($matched !== []) {
-                Log::warning('Azure account is in more than one role group, not mapped.', [
-                    'azure_id' => $azureId,
-                    'groups' => $matched,
-                ]);
-            }
-
-            return null;
+        if (count($matched) > 1) {
+            Log::warning('Azure account is in more than one role group, not mapped.', [
+                'azure_id' => $azureId,
+                'groups' => array_keys($matched),
+            ]);
         }
 
-        return self::GROUP_ROLES[$matched[0]] ?? null;
+        return count($matched) === 1 ? reset($matched) : null;
     }
 }
