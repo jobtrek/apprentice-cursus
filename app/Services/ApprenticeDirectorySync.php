@@ -4,32 +4,28 @@ namespace App\Services;
 
 use App\Enums\AzureGroup;
 use App\Enums\UserRole;
-use App\Exceptions\ApprenticeshipNotSeededException;
 use App\Exceptions\ApprenticeSyncAbortedException;
 use App\Models\Apprenticeship;
 use App\Models\User;
 use App\Services\Microsoft\MicrosoftGraphService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use RuntimeException;
 
 /**
- * Pre-provisions apprentice accounts from the two Entra apprentice groups, so the
+ * Pre-provisions apprentice accounts from the Entra apprentice groups, so the
  * apprentices list is complete before anybody has logged in, and deactivates
- * apprentices who left the groups. Applies the same rules as the SSO login
- * (single mapped group, disabled account, e-mail conflict).
+ * apprentices who are no longer valid. The Graph ids of the mapped groups are
+ * diffed against the local `azure_id`s, with the sign-in rules: exactly one
+ * mapped group (`AzureGroup::resolveFrom`), enabled account, no e-mail conflict.
  *
  * All Graph calls happen first, then every write runs in one transaction: a
  * missing group id or any Graph failure aborts without touching the database.
- * Trainers are never touched: they are created at their first login.
+ * Only apprentices are deactivated; trainers are left to the sign-in re-check.
  */
 class ApprenticeDirectorySync
 {
-    private const GROUPS = [AzureGroup::ApprenticesIt, AzureGroup::ApprenticesEc];
-
     public function __construct(
         private readonly MicrosoftGraphService $graph,
-        private readonly MappingRolesService $mappingRoles,
         private readonly AzureAccountSync $sync,
     ) {}
 
@@ -38,194 +34,151 @@ class ApprenticeDirectorySync
      */
     public function run(): ApprenticeSyncResult
     {
-        [$upserts, $deactivations, $memberIds, $emptyGroups, $skipped] = $this->collect();
+        $apprenticeships = $this->apprenticeshipIds();
+        [$members, $groupIdsByMember, $emptyGroups] = $this->fetchMembers();
 
-        try {
-            return DB::transaction(
-                fn (): ApprenticeSyncResult => $this->write($upserts, $deactivations, $memberIds, $emptyGroups, $skipped),
-            );
-        } catch (ApprenticeshipNotSeededException $e) {
-            Log::error('Apprentice sync aborted: apprenticeship is not seeded.', ['apprenticeship' => $e->apprenticeship]);
+        /** @var array<string, array{member: array<string, mixed>, group: AzureGroup}> $valid */
+        $valid = [];
 
-            throw ApprenticeSyncAbortedException::apprenticeshipMissing($e->apprenticeship, $e);
+        foreach ($groupIdsByMember as $azureId => $groupIds) {
+            $group = AzureGroup::resolveFrom($groupIds);
+
+            if ($group === null) {
+                MappingRolesService::warnIfAmbiguous($azureId, $groupIds);
+            }
+
+            if ($group?->role() === UserRole::Apprentice && ($members[$azureId]['accountEnabled'] ?? true) !== false) {
+                $valid[$azureId] = ['member' => $members[$azureId], 'group' => $group];
+            }
         }
+
+        $guarded = array_map(fn (AzureGroup $g) => $apprenticeships[$g->apprenticeship()], $emptyGroups);
+
+        return DB::transaction(fn (): ApprenticeSyncResult => new ApprenticeSyncResult(
+            ...$this->upsert($valid),
+            deactivated: $this->deactivateInvalid(array_keys($valid), $guarded, $emptyGroups),
+        ));
     }
 
     /**
-     * Phase 1: read Entra ID, write nothing.
+     * Seeded apprenticeship id by name, checked before any write.
+     *
+     * @return array<string, int>
+     */
+    private function apprenticeshipIds(): array
+    {
+        $ids = Apprenticeship::pluck('id', 'name')->map(fn ($id) => (int) $id)->all();
+
+        foreach (AzureGroup::cases() as $group) {
+            if (! isset($ids[$group->apprenticeship()])) {
+                $this->abort(ApprenticeSyncAbortedException::apprenticeshipMissing($group->apprenticeship()));
+            }
+        }
+
+        return $ids;
+    }
+
+    /**
+     * Read the members of every mapped group, with every mapped group they are in; write nothing.
      *
      * @return array{
-     *     0: array<string, array{member: array{id: string, displayName?: string|null, userPrincipalName?: string|null}, group: AzureGroup}>,
-     *     1: list<string>,
-     *     2: list<string>,
-     *     3: list<AzureGroup>,
-     *     4: int,
-     * } upserts by azure id, azure ids to deactivate if they exist locally, every member id, groups with no member, skipped count
+     *     0: array<string, array<string, mixed>>,
+     *     1: array<string, list<string>>,
+     *     2: list<AzureGroup>,
+     * } member by azure id, group ids by azure id, apprentice groups with no member
      */
-    private function collect(): array
+    private function fetchMembers(): array
     {
         $members = [];
+        $groupIdsByMember = [];
         $emptyGroups = [];
 
-        foreach (self::GROUPS as $group) {
-            $groupId = $group->groupId();
+        foreach (AzureGroup::cases() as $group) {
+            $groupId = $group->groupId() ?? $this->abort(ApprenticeSyncAbortedException::groupNotConfigured($group));
+            $groupMembers = $this->graph->getGroupMembers($groupId)
+                ?? $this->abort(ApprenticeSyncAbortedException::graphFailed("members lookup for [{$group->value}]"));
 
-            if ($groupId === null) {
-                $this->abort(ApprenticeSyncAbortedException::groupNotConfigured($group));
-            }
-
-            $groupMembers = $this->graph->getGroupMembers($groupId);
-
-            if ($groupMembers === null) {
-                $this->abort(ApprenticeSyncAbortedException::graphFailed("members lookup for [{$group->value}]"));
-            }
-
-            if ($groupMembers === []) {
+            if ($groupMembers === [] && $group->role() === UserRole::Apprentice) {
                 $emptyGroups[] = $group;
             }
 
             foreach ($groupMembers as $member) {
                 $members[$member['id']] ??= $member;
+                $groupIdsByMember[$member['id']][] = $groupId;
             }
         }
 
-        $upserts = [];
-        $deactivations = [];
+        return [$members, $groupIdsByMember, $emptyGroups];
+    }
+
+    /**
+     * @param  array<string, array{member: array<string, mixed>, group: AzureGroup}>  $valid
+     * @return array{created: int, skipped: int}
+     */
+    private function upsert(array $valid): array
+    {
+        $created = 0;
         $skipped = 0;
+        $users = User::whereIn('azure_id', array_keys($valid))->get()->keyBy('azure_id');
 
-        foreach ($members as $id => $member) {
-            if (($member['accountEnabled'] ?? true) === false) {
-                $deactivations[] = $id;
+        foreach ($valid as $azureId => ['member' => $member, 'group' => $group]) {
+            $user = $users->get($azureId);
 
-                continue;
-            }
-
-            try {
-                $group = $this->mappingRoles->resolveGroup($id);
-            } catch (RuntimeException $e) {
-                $this->abort(ApprenticeSyncAbortedException::graphFailed("group lookup for [{$id}]", $e), $e);
-            }
-
-            if ($group === null) {
-                $deactivations[] = $id;
+            if ($user !== null) {
+                $this->sync->apply($user, $group);
 
                 continue;
             }
 
-            if ($group->role() !== UserRole::Apprentice) {
-                Log::warning('Apprentice sync: member resolved to a non-apprentice group, skipped.', [
-                    'azure_id' => $id,
-                    'group' => $group->value,
-                ]);
+            $email = $member['userPrincipalName'] ?? null;
+
+            if (! is_string($email) || $email === '') {
+                Log::warning('Apprentice sync: member without userPrincipalName skipped.', ['azure_id' => $azureId]);
                 $skipped++;
 
                 continue;
             }
 
-            $upserts[$id] = ['member' => $member, 'group' => $group];
-        }
-
-        return [$upserts, $deactivations, array_map('strval', array_keys($members)), $emptyGroups, $skipped];
-    }
-
-    /**
-     * Phase 2: apply the plan in the caller's transaction.
-     *
-     * @param  array<string, array{member: array{id: string, displayName?: string|null, userPrincipalName?: string|null}, group: AzureGroup}>  $upserts
-     * @param  list<string>  $deactivations
-     * @param  list<string>  $memberIds
-     * @param  list<AzureGroup>  $emptyGroups
-     */
-    private function write(array $upserts, array $deactivations, array $memberIds, array $emptyGroups, int $skipped): ApprenticeSyncResult
-    {
-        $created = 0;
-        $updated = 0;
-        $deactivated = 0;
-
-        foreach ($upserts as $azureId => ['member' => $member, 'group' => $group]) {
-            $user = User::where('azure_id', $azureId)->first();
-            $email = $member['userPrincipalName'] ?? null;
-
-            if ($user === null) {
-                if ($email === null || $email === '') {
-                    Log::warning('Apprentice sync: member without userPrincipalName skipped.', ['azure_id' => $azureId]);
-                    $skipped++;
-
-                    continue;
-                }
-
-                if (User::where('email', $email)->exists()) {
-                    Log::warning('Apprentice sync: email already belongs to another account, skipped.', ['azure_id' => $azureId]);
-                    $skipped++;
-
-                    continue;
-                }
-
-                $this->sync->apply($this->sync->newAccount($azureId, ($member['displayName'] ?? null) ?: $email, $email), $group);
-                $created++;
+            if (User::where('email', $email)->exists()) {
+                Log::warning('Apprentice sync: email already belongs to another account, skipped.', ['azure_id' => $azureId]);
+                $skipped++;
 
                 continue;
             }
 
-            $before = [$user->is_active, $user->apprenticeship_id, $user->role];
-            $this->sync->apply($user, $group);
-
-            if ($before !== [$user->is_active, $user->apprenticeship_id, $user->role]) {
-                $updated++;
-            }
+            $this->sync->apply($this->sync->newAccount((string) $azureId, ($member['displayName'] ?? null) ?: $email, $email), $group);
+            $created++;
         }
 
-        foreach ($deactivations as $azureId) {
-            $user = User::where('azure_id', $azureId)->first();
-
-            if ($user !== null && $user->is_active) {
-                $this->sync->deactivate($user);
-                $deactivated++;
-            }
-        }
-
-        return new ApprenticeSyncResult($created, $updated, $deactivated + $this->deactivateRemoved($memberIds, $emptyGroups), $skipped);
+        return ['created' => $created, 'skipped' => $skipped];
     }
 
     /**
-     * Deactivate active apprentices that are in no apprentice group any more. An
-     * apprenticeship whose group came back empty is left alone: that is far more
-     * likely a wrong group id or a Graph hiccup than everybody leaving at once.
+     * Deactivate active apprentices that are not valid any more. An apprenticeship
+     * whose group came back empty is left alone: that is far more likely a wrong
+     * group id or a Graph hiccup than everybody leaving at once.
      *
-     * @param  list<string>  $memberIds
+     * @param  list<string|int>  $validIds
+     * @param  list<int>  $guarded  apprenticeship ids
      * @param  list<AzureGroup>  $emptyGroups
      */
-    private function deactivateRemoved(array $memberIds, array $emptyGroups): int
+    private function deactivateInvalid(array $validIds, array $guarded, array $emptyGroups): int
     {
-        $guarded = Apprenticeship::whereIn('name', array_map(fn (AzureGroup $g) => $g->apprenticeship(), $emptyGroups))
-            ->pluck('id')
-            ->all();
+        foreach ($emptyGroups as $group) {
+            Log::warning('Apprentice sync: group has no members, deactivations skipped.', ['group' => $group->value]);
+        }
 
-        $deactivated = 0;
-
-        $candidates = User::role(UserRole::Apprentice->value)
-            ->whereNotNull('azure_id')
+        return User::role(UserRole::Apprentice->value)
             ->where('is_active', true)
-            ->whereNotIn('azure_id', $memberIds)
-            ->get();
-
-        foreach ($candidates as $user) {
-            if (in_array($user->apprenticeship_id, $guarded, true)) {
-                Log::warning('Apprentice sync: group has no members, removal deactivation skipped.', ['user_id' => $user->id]);
-
-                continue;
-            }
-
-            $this->sync->deactivate($user);
-            $deactivated++;
-        }
-
-        return $deactivated;
+            ->whereNotNull('azure_id')
+            ->whereNotIn('azure_id', array_map('strval', $validIds))
+            ->whereNotIn('apprenticeship_id', $guarded)
+            ->update(['is_active' => false]);
     }
 
-    private function abort(ApprenticeSyncAbortedException $e, ?RuntimeException $cause = null): never
+    private function abort(ApprenticeSyncAbortedException $e): never
     {
-        Log::error($e->getMessage(), $cause === null ? [] : ['message' => $cause->getMessage()]);
+        Log::error($e->getMessage());
 
         throw $e;
     }

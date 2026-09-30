@@ -25,23 +25,28 @@ class MappingRolesService
             throw new RuntimeException('Microsoft Graph group lookup failed.');
         }
 
-        $matched = [];
+        $groupIds = array_values(array_filter(array_column($groups, 'id'), 'is_string'));
+        $group = AzureGroup::resolveFrom($groupIds);
 
-        foreach ($groups as $group) {
-            $mapped = isset($group['id']) ? AzureGroup::fromGroupId($group['id']) : null;
-
-            if ($mapped !== null) {
-                $matched[$mapped->value] = $mapped;
-            }
+        if ($group === null) {
+            self::warnIfAmbiguous($azureId, $groupIds);
         }
+
+        return $group;
+    }
+
+    /**
+     * @param  list<string>  $groupIds
+     */
+    public static function warnIfAmbiguous(string $azureId, array $groupIds): void
+    {
+        $matched = AzureGroup::matching($groupIds);
 
         if (count($matched) > 1) {
             Log::warning('Azure account is in more than one role group, not mapped.', [
                 'azure_id' => $azureId,
-                'groups' => array_keys($matched),
+                'groups' => array_map(fn (AzureGroup $g) => $g->value, $matched),
             ]);
         }
-
-        return count($matched) === 1 ? reset($matched) : null;
     }
 }
