@@ -2,44 +2,13 @@
 
 use App\Enums\Permission;
 use App\Enums\UserRole;
-use App\Models\Apprenticeship;
 use App\Models\Comment;
-use App\Models\EvaluationNode;
 use App\Models\Grade;
 use App\Models\Project;
 use App\Models\User;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Testing\AssertableInertia as Assert;
 use Spatie\Permission\Models\Role;
-
-function makeGrade(User $apprentice): Grade
-{
-    $node = EvaluationNode::query()->firstOrCreate(['name' => 'Test node', 'period_scope' => 'semester']);
-
-    return Grade::query()->create([
-        'user_id' => $apprentice->id,
-        'evaluation_node_id' => $node->id,
-        'value' => 5.0,
-        'test_date' => '2026-01-15',
-        'semester' => 1,
-    ]);
-}
-
-function makeApprentice(?Apprenticeship $section = null, ?User $coach = null): User
-{
-    $apprentice = User::factory()->create();
-    $apprentice->forceFill([
-        'apprenticeship_id' => $section?->id,
-        'coach_id' => $coach?->id,
-    ])->save();
-
-    return $apprentice;
-}
-
-function section(string $name): Apprenticeship
-{
-    return Apprenticeship::query()->create(['name' => $name]);
-}
 
 test('roles map to the expected permissions', function () {
     expect(Role::findByName('apprentice')->permissions->pluck('name')->sort()->values()->all())
@@ -77,6 +46,12 @@ test('a migrated database without seeders has roles and permissions', function (
     $this->actingAs(User::factory()->coach()->create())
         ->get(route('apprentisdashboard'))
         ->assertOk();
+
+    $coach = User::factory()->coach()->create();
+    $grade = makeGrade(makeApprentice(coach: $coach));
+
+    $this->actingAs($coach)->get(route('grades.show', $grade))->assertOk();
+    $this->actingAs(User::factory()->coach()->create())->get(route('grades.show', $grade))->assertForbidden();
 });
 
 describe('apprentice', function () {
@@ -294,6 +269,38 @@ describe('commenting', function () {
         $apprentice->forceFill(['is_active' => false])->save();
 
         expect($coach->fresh()->can('comment', $grade->fresh()))->toBeFalse();
+    });
+
+    test('a coach can comment only on the grades of its own apprentices', function () {
+        $coach = User::factory()->coach()->create();
+        $mine = makeGrade(makeApprentice(coach: $coach));
+        $notMine = makeGrade(makeApprentice(coach: User::factory()->coach()->create()));
+        $unassigned = makeGrade(makeApprentice());
+
+        expect($coach->can('comment', $mine))->toBeTrue()
+            ->and($coach->can('comment', $notMine))->toBeFalse()
+            ->and($coach->can('comment', $unassigned))->toBeFalse();
+    });
+
+    test('a trainer can view and comment only within its own section, never on a trainer', function () {
+        $it = section('IT');
+        $ec = section('EC');
+        $trainer = User::factory()->trainer()->create();
+        $trainer->forceFill(['apprenticeship_id' => $it->id])->save();
+
+        $itGrade = makeGrade(makeApprentice($it));
+        $ecGrade = makeGrade(makeApprentice($ec));
+
+        expect($trainer->can('view', $itGrade))->toBeTrue()
+            ->and($trainer->can('comment', $itGrade))->toBeTrue()
+            ->and($trainer->can('view', $ecGrade))->toBeFalse()
+            ->and($trainer->can('comment', $ecGrade))->toBeFalse();
+
+        $otherTrainer = User::factory()->trainer()->create();
+        $otherTrainer->forceFill(['apprenticeship_id' => $it->id])->save();
+
+        expect($trainer->supervises($otherTrainer))->toBeFalse()
+            ->and($trainer->supervises($trainer))->toBeFalse();
     });
 
     function makeComment(Grade $grade, User $author): Comment
