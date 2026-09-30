@@ -71,4 +71,12 @@ class UserFactory extends Factory
     {
         return $this->afterCreating(fn (User $user) => $user->syncRoles(UserRole::Trainer->value));
     }
+
+    /**
+     * Indicate that the user is an admin (local-only dev role).
+     */
+    public function admin(): static
+    {
+        return $this->afterCreating(fn (User $user) => $user->syncRoles(UserRole::Admin->value));
+    }
 }

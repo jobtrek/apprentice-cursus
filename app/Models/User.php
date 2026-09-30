@@ -133,12 +133,22 @@ class User extends Authenticatable
     }
 
     /**
+     * The admin role only grants anything in the local environment; elsewhere
+     * this is always false.
+     */
+    public function isLocalAdmin(): bool
+    {
+        return app()->environment('local') && $this->hasRole(UserRole::Admin->value);
+    }
+
+    /**
      * Named route a user lands on after signing in, chosen by permission
      * rather than by role so new roles only need permissions.
      */
     public function homeRoute(): string
     {
         return match (true) {
+            $this->isLocalAdmin() => 'apprentisdashboard',
             $this->hasPermissionTo(Permission::GradesViewOwn->value) => 'grades.dashboard',
             $this->hasPermissionTo(Permission::ApprenticesViewList->value) => 'apprentisdashboard',
             default => 'home',
@@ -149,6 +159,10 @@ class User extends Authenticatable
     {
         if ($apprentice->id === $this->id || ! $apprentice->hasRole(UserRole::Apprentice->value)) {
             return false;
+        }
+
+        if ($this->isLocalAdmin()) {
+            return true;
         }
 
         return match ($this->role) {

@@ -14,7 +14,8 @@ class UserSeeder extends Seeder
      *
      * LOCAL ONLY (password login is disabled elsewhere): never run outside the
      * local environment. All accounts use the password "password":
-     * - admin@example.com (coach, coach of the local apprentices)
+     * - admin@example.com (local admin: bypasses every check in the local environment)
+     * - coach@example.com (coach of the local apprentices)
      * - trainer@example.com (IT trainer)
      * - apprentice-it@example.com (IT apprentice)
      * - apprentice-ec@example.com (EC apprentice)
@@ -25,7 +26,8 @@ class UserSeeder extends Seeder
             return;
         }
 
-        $coach = $this->seed('admin@example.com', 'Local Admin', UserRole::Coach, null);
+        $this->seed('admin@example.com', 'Local Admin', UserRole::Admin, null);
+        $coach = $this->seed('coach@example.com', 'Local Coach', UserRole::Coach, null);
         $this->seed(
             'trainer@example.com',
             'Local Trainer',

@@ -32,6 +32,6 @@ class DatabaseSeeder extends Seeder
         User::query()
             ->whereIn('email', array_map(DemoApprenticeSeeder::email(...), range(1, DemoApprenticeSeeder::COUNT)))
             ->whereNull('coach_id')
-            ->update(['coach_id' => User::query()->where('email', 'admin@example.com')->value('id')]);
+            ->update(['coach_id' => User::query()->where('email', 'coach@example.com')->value('id')]);
     }
 }

@@ -20,8 +20,8 @@ test('demo coach backfill skips pre-existing accounts at demo ids', function () 
 
     $this->seed(DatabaseSeeder::class);
 
-    $adminId = User::query()->where('email', 'admin@example.com')->value('id');
-    expect($adminId)->not->toBeNull();
+    $coachId = User::query()->where('email', 'coach@example.com')->value('id');
+    expect($coachId)->not->toBeNull();
 
     $existing = User::query()->findOrFail(1);
     expect($existing->email)->toBe('someone@example.com');
@@ -31,6 +31,6 @@ test('demo coach backfill skips pre-existing accounts at demo ids', function () 
         $demo = User::query()->where('email', DemoApprenticeSeeder::email($id))->first();
 
         expect($demo)->not->toBeNull();
-        expect($demo->coach_id)->toBe($adminId);
+        expect($demo->coach_id)->toBe($coachId);
     }
 });

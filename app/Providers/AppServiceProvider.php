@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
 use SocialiteProviders\Azure\Provider;
@@ -31,6 +32,14 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->configureDefaults();
+
+        // Spatie's documented super-admin pattern. The environment is checked at
+        // call time inside isLocalAdmin(), so outside local the callback always
+        // returns null and the admin role grants nothing. Registered unconditionally
+        // so tests can switch the environment after boot. Typed as User so the Gate
+        // skips it for guests.
+        Gate::before(fn (User $user): ?bool => $user->isLocalAdmin() ? true : null);
+
         Event::listen(function (SocialiteWasCalled $event) {
             $event->extendSocialite(
                 'azure',

@@ -1,5 +1,5 @@
 /** Miroir de `App\Enums\UserRole`. */
-export type UserRole = 'apprentice' | 'coach' | 'trainer';
+export type UserRole = 'apprentice' | 'coach' | 'trainer' | 'admin';
 
 /** Utilisateur connecté, champs partagés par `HandleInertiaRequests` (`auth.user`). */
 export type User = {

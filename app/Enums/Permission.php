@@ -35,6 +35,9 @@ enum Permission: string
                 self::PortfolioViewSupervised,
                 self::ApprenticesViewList,
             ],
+            // No explicit permissions: in local the Gate::before bypass grants everything,
+            // so new permissions are covered automatically.
+            UserRole::Admin->value => [],
         ];
     }
 }

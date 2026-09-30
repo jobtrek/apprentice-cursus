@@ -37,6 +37,7 @@ export const ROLE_LABELS: Record<UserRole, string> = {
     apprentice: 'Apprenti·e',
     coach: 'Coach',
     trainer: 'Formateur·rice',
+    admin: 'Admin',
 };
 
 /**
