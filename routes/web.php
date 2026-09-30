@@ -15,7 +15,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::inertia('/create', 'CreateGrade')
             ->middleware('can:create,'.Grade::class)
             ->name('create');
-        Route::inertia('/dashboard', 'GradesDashboard')
+        Route::get('/dashboard', [GradeController::class, 'dashboard'])
             ->middleware('can:'.Permission::GradesViewOwn->value)
             ->name('dashboard');
         Route::get('/{grade}', [GradeController::class, 'show'])

@@ -2,12 +2,16 @@
 import { Head } from '@inertiajs/vue3';
 import GradeBook from '@/components/gradeList/GradeBook.vue';
 import { PageContainer, PageHeader } from '@/components/page';
-import grades from '@/routes/grades';
+import gradeRoutes from '@/routes/grades';
 import type { Grade } from '@/types/grade';
+
+defineProps<{
+    grades: Grade[];
+}>();
 
 const pageTitle = 'Carnet de notes';
 
-const gradeHref = (grade: Grade) => grades.show(grade.id);
+const gradeHref = (grade: Grade) => gradeRoutes.show(grade.id);
 </script>
 
 <template>
@@ -16,6 +20,6 @@ const gradeHref = (grade: Grade) => grades.show(grade.id);
     <PageContainer size="lg">
         <PageHeader :title="pageTitle" />
 
-        <GradeBook :grade-href="gradeHref" />
+        <GradeBook :grades="grades" :grade-href="gradeHref" />
     </PageContainer>
 </template>

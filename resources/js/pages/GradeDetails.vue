@@ -8,23 +8,14 @@ import {
     SectionHeader,
     StatItem,
 } from '@/components/page';
-import {
-    Empty,
-    EmptyContent,
-    EmptyDescription,
-    EmptyHeader,
-    EmptyMedia,
-    EmptyTitle,
-} from '@/components/ui/empty';
 import { findApprentice } from '@/composables/useApprentices';
 import { useNavigation } from '@/composables/useNavigation';
 import { apprentisdashboard } from '@/routes';
 import apprentices from '@/routes/apprentices';
 import grades from '@/routes/grades';
-import { findGrade } from '@/data/gradebook';
 import type { UserRole } from '@/types';
-import { Head, Link } from '@inertiajs/vue3';
-import { FileXIcon } from '@lucide/vue';
+import type { Grade } from '@/types/grade';
+import { Head } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
 
 type Comment = {
@@ -35,7 +26,7 @@ type Comment = {
 };
 
 const props = defineProps<{
-    gradeId: number;
+    grade: Grade;
     pdfUrl?: string | null;
     comments?: Comment[];
     /** Présent quand un coach ou formateur consulte la note d'un·e apprenti·e. */
@@ -43,8 +34,6 @@ const props = defineProps<{
     /** Décisions d'autorisation calculées côté serveur. */
     can: { comment: boolean };
 }>();
-
-const grade = computed(() => findGrade(props.gradeId));
 
 const comments = ref<Comment[]>(props.comments ?? []);
 const newComment = ref('');
@@ -91,9 +80,6 @@ const breadcrumbs = computed(() =>
         : [{ label: 'Carnet de notes', href: grades.dashboard() }],
 );
 
-/** Page à laquelle revenir : le dernier niveau du fil d'Ariane. */
-const backHref = computed(() => breadcrumbs.value.at(-1)!.href);
-
 const submitComment = () => {
     if (!props.can.comment || !newComment.value.trim()) return;
 
@@ -112,30 +98,9 @@ const submitComment = () => {
 </script>
 
 <template>
-    <Head :title="grade?.title ?? 'Note introuvable'" />
+    <Head :title="grade.title" />
 
-    <PageContainer v-if="!grade">
-        <PageHeader title="Note introuvable" :breadcrumbs="breadcrumbs" />
-
-        <Empty class="border">
-            <EmptyHeader>
-                <EmptyMedia variant="icon">
-                    <FileXIcon />
-                </EmptyMedia>
-                <EmptyTitle>Aucune note ne correspond</EmptyTitle>
-                <EmptyDescription>
-                    Cette note n'existe pas ou a été supprimée.
-                </EmptyDescription>
-            </EmptyHeader>
-            <EmptyContent>
-                <Button as-child variant="outline">
-                    <Link :href="backHref">Retour</Link>
-                </Button>
-            </EmptyContent>
-        </Empty>
-    </PageContainer>
-
-    <PageContainer v-else>
+    <PageContainer>
         <PageHeader
             :title="grade.title"
             :description="`${grade.subject} · Semestre ${grade.semester}`"

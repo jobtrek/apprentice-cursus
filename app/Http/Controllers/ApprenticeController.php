@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Resources\GradeResource;
 use App\Models\Grade;
 use App\Models\User;
 use App\Support\Demo\DemoGrade;
@@ -18,6 +19,13 @@ class ApprenticeController extends Controller
 
         return Inertia::render('ApprenticeShow', [
             'apprenticeId' => $apprentice->id,
+            'grades' => GradeResource::collection(
+                $apprentice->grades()
+                    ->with('evaluationNode.parents')
+                    ->orderBy('test_date')
+                    ->orderBy('id')
+                    ->get(),
+            )->resolve(),
         ]);
     }
 
@@ -31,7 +39,7 @@ class ApprenticeController extends Controller
         return Inertia::render('GradeDetails', [
             ...DemoGrade::props(),
             'apprenticeId' => $apprentice->id,
-            'gradeId' => $grade->id,
+            'grade' => (new GradeResource($grade->load('evaluationNode.parents')))->resolve(),
             'can' => [
                 'comment' => request()->user()->can('comment', $grade),
             ],

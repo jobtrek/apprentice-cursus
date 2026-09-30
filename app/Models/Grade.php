@@ -59,6 +59,9 @@ class Grade extends Model
         return $this->belongsTo(User::class);
     }
 
+    /**
+     * @return BelongsTo<EvaluationNode, $this>
+     */
     public function evaluationNode(): BelongsTo
     {
         return $this->belongsTo(EvaluationNode::class);

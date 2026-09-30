@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Resources\GradeResource;
 use App\Models\Grade;
 use App\Support\Demo\DemoGrade;
 use Illuminate\Http\Request;
@@ -11,6 +12,22 @@ use Inertia\Response;
 class GradeController extends Controller
 {
     /**
+     * Access is enforced by the route's `can:grades.view-own` permission middleware.
+     */
+    public function dashboard(Request $request): Response
+    {
+        return Inertia::render('GradesDashboard', [
+            'grades' => GradeResource::collection(
+                $request->user()->grades()
+                    ->with('evaluationNode.parents')
+                    ->orderBy('test_date')
+                    ->orderBy('id')
+                    ->get(),
+            )->resolve(),
+        ]);
+    }
+
+    /**
      * Access is enforced by the `can:view,grade` route middleware.
      * TODO: replace the demo payload once grade files and comments are served from the database.
      */
@@ -18,7 +35,7 @@ class GradeController extends Controller
     {
         return Inertia::render('GradeDetails', [
             ...DemoGrade::props(),
-            'gradeId' => $grade->id,
+            'grade' => (new GradeResource($grade->load('evaluationNode.parents')))->resolve(),
             'can' => [
                 'comment' => $request->user()->can('comment', $grade),
             ],
