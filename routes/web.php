@@ -7,7 +7,6 @@ use Inertia\Inertia;
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::inertia('/', 'Home')->name('home');
-    Route::inertia('/grades/create', 'CreateGrade')->name('grades.create');
     Route::inertia('/grades/dashboard', 'GradesDashboard')->name('grades.dashboard');
     // Le portfolio appartient à l'apprenti ; la ProjectPolicy vérifie en plus la propriété du projet.
     Route::middleware('role:apprentice')->group(function () {
