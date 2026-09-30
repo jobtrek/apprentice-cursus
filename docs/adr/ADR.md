@@ -122,99 +122,41 @@ the table for the weight of each grade inside of EC's program. MP = Maturité
 
 ## 2026-09-30 — Roles and permissions
 
-**Decision:** Entra ID groups are the only source of a user's role and apprenticeship, and the Spatie role is the only place the role is stored. A migration creates the roles and permissions from `Permission::byRole()`, backfills `model_has_roles` from `users.role`, then drops `users.role`. `User::role` is a read-only accessor that derives a `UserRole` from the Spatie role; there is no `saved` hook, and writers (SSO sync, seeders) call `syncRoles()`. `RolesAndPermissionsSeeder` re-syncs roles and permissions idempotently through the same `RolesAndPermissions::sync()`. Code checks `App\Enums\Permission` values (policies, routes), never role names; `Permission::byRole()` holds the role to permission matrix from `role_permissions.md`.
+What each role can do and how the sync behaves: `docs/project-docs/role_permissions.md`. Below are only the choices and why.
 
-**Why:** A single source avoids role drift between Entra, a column and the Spatie tables, and permission-based checks let the matrix change without touching policies. Creating roles in a migration means a migrated database is always usable, even without seeding. `role_has_permissions.role_id` is indexed explicitly because PostgreSQL does not index foreign keys.
+**Entra groups are the only source of the role; the Spatie role is the only place it is stored.** `users.role` was dropped by migration; `User::role` is a read-only accessor, writers call `syncRoles()`. Roles and permissions are created by a migration from `Permission::byRole()`. Code checks permissions, never role names. *Why:* one source means no drift between Entra, a column and Spatie, and the matrix can change without touching policies. A migrated database is usable without seeding.
 
-### Role and track are not mass-assignable
+**Groups, not Entra app roles or the `groups` token claim.** Membership is read from Graph (`transitiveMemberOf`) through one resolver (`MappingRolesService::resolveGroup`). *Why:* the mail groups already exist; app roles would need Entra admin work first.
 
-**Decision:** Only self-service profile fields are fillable on `User`. `is_active`, `is_mp`, `apprenticeship_id`, `coach_id` and `trainer_id` are set explicitly via `forceFill` by the flow that owns them (SSO sync, administration); the role is only changed through `syncRoles()`.
+**Match on `azure_id` only.** An existing account with the same email is refused, not adopted. *Why:* an email is not proof of identity; adopting by email allows account takeover.
 
-**Why:** These fields decide what a user may do or who they are attached to; they must never be filled from a request payload.
+**No group or several groups refuses access.** *Why:* overlapping groups make the role ambiguous; the admin fixes it in Entra.
 
-### SSO identity and group mapping
+**Role and track fields are not mass-assignable.** `is_active`, `is_mp`, `apprenticeship_id`, `coach_id`, `trainer_id` are set with `forceFill` by the flow that owns them. *Why:* they decide what a user may do.
 
-**Decision:** A user is matched on `azure_id` only. An existing account with the same email but no `azure_id` is refused, not adopted. The `AzureGroup` enum lists the mapped Entra groups; its backing value is the key under `services.azure.groups` that holds the Graph group object id, and it knows its role and apprenticeship. `MappingRolesService::resolveGroup` returns the single mapped `AzureGroup`, or null when the account is in no mapped group or in more than one (an administrator fixes the conflict in Entra), and throws when Graph fails. A new `User` sets `is_active = true` explicitly. Pre-provisioning accounts before their first login is out of scope.
+**One sync, used by login and the re-check middleware** (`AzureAccountSync`, one Graph client `MicrosoftGraphService`). *Why:* two copies of the mapping logic had already diverged.
 
-**Why:** An email is not proof of identity, so adopting by email allows account takeover. Overlapping groups make the role ambiguous. The DB default is not loaded on an unsaved model, so without the explicit value the `is_active` check sees null.
+**Deactivate, never delete; no scheduled job.** Revoked access sets `is_active = false` at login or in `EnsureAzureAccountIsActive`; a later valid login reactivates. *Why:* history-bearing foreign keys forbid deletes, and the next request already detects the change.
 
-### One shared account sync
+**The re-check fails open, login fails closed.** If Graph is down, signed-in users keep working and the check retries after 60 s; a new login is refused. `is_active` itself is checked on every request, uncached. *Why:* failing closed would log everyone out during a Microsoft outage; at login there is no known state to fall back on.
 
-**Decision:** `AzureAccountSync` is the single implementation of "keep the local user in line with Entra", used by `MicrosoftLoginService` and by `EnsureAzureAccountIsActive`. `check()` asks Graph whether the account is enabled and which group it is in; `apply()` sets the role (`syncRoles`), the apprenticeship and `is_active = true`; `deactivate()` sets `is_active = false`. There is one Graph client, `MicrosoftGraphService`. A successful login primes the `azure-account-check:{id}` cache key, so the middleware does not repeat the check straight after login.
+**Trainers are mapped to the IT apprenticeship.** *Why:* `User::supervises()` needs a section, and all trainers are IT until an EC trainer group exists.
 
-**Why:** Login and re-check used to hold two copies of the mapping logic and two Graph clients that could diverge.
+**Groups map to apprenticeships by seeded name** (`ApprenticeshipSeeder::IT` / `::EC`), no `apprenticeships.code` column. *Why:* a second identifier for two rows adds a migration and a value to keep in sync.
 
-### Deactivation and reactivation
+**Apprenticeship kept on section change**, with a logged warning. *Why:* the user story requires the apprentice to confirm before grades move; that page does not exist yet.
 
-**Decision:** Access is revoked when the account has no mapped group, several mapped groups, is disabled in Entra, or returns 404 there. Revoking sets `is_active = false` and ends the session (middleware) or refuses the login. A later login with a valid single-group mapping sets `is_active = true` again. A refused new user gets no `users` row. Both happen at login and in the re-check middleware only; there is no command or scheduler.
+**Supervision requires the target to be an apprentice and never oneself.** *Why:* otherwise a supervisor could "supervise" another supervisor.
 
-**Why:** Users are never deleted (history-bearing foreign keys), so the flag is the record of revoked access, and it must be reversible without an administrator when Entra is fixed. A scheduled job would add infrastructure for a state that the next request already detects.
+**Coaches keep `coaching.assign-self` without a route.** *Why:* it is part of the matrix; the route comes with the coaching feature.
 
-### Trainers are mapped to the IT apprenticeship
+**Landing page is chosen by permission** (`User::homeRoute()`). *Why:* a new role only needs permissions.
 
-**Decision:** The `trainer` group maps to the IT apprenticeship.
+**Password login is local only** (`POST /login` registered only in `local`). *Why:* a password path in production would bypass group-based access and deactivation; it stays as a test tool because SSO needs a real tenant.
 
-**Why:** `User::supervises()` needs a section to match apprentices against, and all trainers are IT until an EC trainer group exists.
+**Demo data only in local** (`DemoGrade`, `DemoApprenticeSeeder`, test users). *Why:* grade files and comments are not stored yet, and demo people and passwords must never exist in a real environment.
 
-### Groups map to apprenticeships by seeded name
-
-**Decision:** `apprenticeships.code` is not restored. `AzureGroup::apprenticeship()` returns the seeded display name through the `ApprenticeshipSeeder::IT` and `::EC` constants, so the string lives once in code. If the apprenticeship is not seeded, the login is refused, and the middleware logs an error and fails open.
-
-**Why:** A second identifier column for two rows adds a migration and a value to keep in sync for no gain; the constants give one place to change the name.
-
-### Apprenticeship kept on section change
-
-**Decision:** When the Entra group maps a user to a different apprenticeship than their current one, the current one is kept and a warning is logged, both at login and in the middleware. The user is not logged out.
-
-**Why:** A section change needs the apprentice's confirmation before grades move (user story); that flow does not exist yet.
-
-### Supervision rule
-
-**Decision:** `User::supervises($apprentice)` requires the target to hold the apprentice role and is never true for oneself. For a coach it is true when the apprentice's `coach_id` is theirs (self-assignment system, EC and IT); for a trainer, when the apprentice is in the trainer's own apprenticeship section. It backs the "supervised" permissions (`UserPolicy::view`, `ProjectPolicy::view`, `GradePolicy::view` and `comment`). The apprentices list page still lists every apprentice (static page for now); access to a given apprentice goes through the policy.
-
-**Why:** Supervisors get read-only access to the apprentices they follow (`role_permissions.md`, Training Portfolio); only the apprentice adds, edits or deletes their own projects. Without the role check a coach or trainer could be "supervised" by another supervisor.
-
-### Coaches: self-assign permission without a route
-
-**Decision:** `Permission::CoachingAssignSelf` stays granted to coaches although no route uses it yet.
-
-**Why:** The permission belongs to the matrix (`role_permissions.md`); the assignment route and UI come with the coaching feature, and coaches only see apprentices whose `coach_id` is theirs until then.
-
-### Commenting rules
-
-**Decision:** Commenting on a grade requires `grades.comment`, supervision of the apprentice, and an active apprentice (`GradePolicy::comment`). `CommentPolicy` lets only the author update or delete a comment, and only while the apprentice it is attached to is active.
-
-**Why:** A deactivated apprentice's record is read-only for supervisors, and no one can edit another person's comment.
-
-### Landing page after login
-
-**Decision:** `User::homeRoute()` picks the landing route from permissions: `grades.view-own` goes to `grades.dashboard`, `apprentices.view-list` to `apprentisdashboard`, otherwise `home`. The SSO callback and the local password login both use it.
-
-**Why:** Keying on permissions rather than role names means a new role only needs permissions.
-
-### Password login is local only
-
-**Decision:** `POST /login` is registered only when `app()->environment('local')`. The login page shows the password form only when the server passes its URL (`passwordLoginUrl`). Local seeding creates a coach `admin@example.com` and an IT trainer `trainer@example.com`, both with the password `password`. Everywhere else, Microsoft SSO is the only way in.
-
-**Why:** Credentials live in Entra; a password path in production would bypass group-based access control and deactivation. It stays as a testing tool because SSO needs a real tenant.
-
-### Demo data only in local
-
-**Decision:** `App\Support\Demo\DemoGrade` is merged into the `GradeDetails` props only in the local environment; elsewhere the props are `pdfUrl: null` and `comments: []`. `DemoApprenticeSeeder`, the Test User, `UserSeeder` and the demo `coach_id` update run only in local.
-
-**Why:** Grade files and comments are not served from the database yet, and demo people and passwords must never exist in a real environment.
-
-### Screenshot route sits outside `portfolio.manage-own`
-
-**Decision:** `portfolio.screenshots.show` is not behind the `portfolio.manage-own` permission; `ProjectPolicy::view` authorizes it.
-
-**Why:** Supervisors load screenshots too, and they do not hold the manage permission.
-
-### Account re-validation fails open
-
-**Decision:** `EnsureAzureAccountIsActive` checks `is_active` on every request for all users, outside the cache. For SSO users it re-checks account status and group-derived role through `AzureAccountSync` at most once per `account_check_interval`. If Graph is unreachable (`AzureAccountSync::check()` throws a `RuntimeException`), the request proceeds and the check is retried after a back-off (`AzureAccountSync::BACKOFF_SECONDS`, 60 s). A disabled or unmapped account is deactivated and its session ended. At login, a Graph failure refuses the login instead.
-
-**Why:** Failing closed would log out every SSO user during a Microsoft outage, whereas at login there is no session to protect and no known state to fall back on. The back-off avoids calling a failing Graph on every request. The local deactivation flag is cheap, so it is never cached.
+**`portfolio.screenshots.show` is outside `portfolio.manage-own`**, authorized by `ProjectPolicy::view`. *Why:* supervisors load screenshots too.
 
 ### Users have no timestamps
 
