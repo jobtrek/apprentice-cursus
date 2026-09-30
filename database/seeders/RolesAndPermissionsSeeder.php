@@ -27,7 +27,6 @@ class RolesAndPermissionsSeeder extends Seeder
             );
         }
 
-        // users.role stays the Entra-synced source; mirror it for accounts created before this seeder ran.
         User::query()->each(fn (User $user) => $user->syncRoles($user->role->value));
     }
 }

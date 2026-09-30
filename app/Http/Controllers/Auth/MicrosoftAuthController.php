@@ -71,8 +71,6 @@ class MicrosoftAuthController extends Controller
 
         $user = User::where('azure_id', $azureUser->getId())->first();
 
-        // Match on azure_id only: an email is not proof of identity, so a pre-existing
-        // account without this azure_id is never adopted.
         if (! $user && User::where('email', $azureUser->getEmail())->exists()) {
             Log::warning('Microsoft SSO login refused: email already belongs to another account.', [
                 'azure_id' => $azureUser->getId(),
@@ -91,7 +89,6 @@ class MicrosoftAuthController extends Controller
                 'tenant_id' => $tenantId,
             ]);
 
-            // The DB default is not loaded on an unsaved model; without this the check below sees null.
             $user->is_active = true;
         }
 
@@ -109,8 +106,6 @@ class MicrosoftAuthController extends Controller
             }
         }
 
-        // A section change needs the apprentice's confirmation before grades move (user story):
-        // keep the current apprenticeship until that flow exists.
         if ($user->apprenticeship_id !== null && $apprenticeshipId !== null && $user->apprenticeship_id !== $apprenticeshipId) {
             Log::warning('Microsoft SSO: section change pending confirmation, apprenticeship kept.', [
                 'user_id' => $user->id,
@@ -120,7 +115,6 @@ class MicrosoftAuthController extends Controller
             $apprenticeshipId = $user->apprenticeship_id;
         }
 
-        // Role and track are not mass-assignable (see User): Entra groups are their only source.
         $user->forceFill([
             'role' => $mapping['role'],
             'apprenticeship_id' => $apprenticeshipId,

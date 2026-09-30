@@ -6,11 +6,6 @@ use App\Enums\Permission;
 use App\Models\Project;
 use App\Models\User;
 
-/**
- * Apprentices own their portfolio: only they add, edit or delete its projects;
- * supervisors get read-only access to the portfolios they follow
- * (role_permissions.md, Training Portfolio).
- */
 class ProjectPolicy
 {
     public function view(User $user, Project $project): bool

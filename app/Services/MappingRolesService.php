@@ -9,15 +9,7 @@ use RuntimeException;
 
 class MappingRolesService
 {
-    /**
-     * Keys are the values of config('services.azure.group_roles'); apprenticeship is apprenticeships.name.
-     *
-     * @var array<string, array{role: UserRole, apprenticeship: string|null}>
-     */
-    /*
-     * Trainers get the IT apprenticeship for now (all trainers are IT until an EC trainer
-     * group exists): User::supervises() needs a section to match apprentices against.
-     */
+    /** @var array<string, array{role: UserRole, apprenticeship: string|null}> */
     private const GROUP_ROLES = [
         'apprentices_IT' => ['role' => UserRole::Apprentice, 'apprenticeship' => 'Informaticien·ne CFC'],
         'apprentices_EC' => ['role' => UserRole::Apprentice, 'apprenticeship' => 'Employé·e de commerce CFC'],
@@ -71,14 +63,9 @@ class MappingRolesService
     }
 
     /**
-     * Resolve the app role of an Entra account from the mapped groups it belongs to.
-     *
-     * Returns null when the account is in no mapped group, or in more than one
-     * (a conflict an administrator has to fix in Entra).
-     *
      * @return array{role: UserRole, apprenticeship: string|null}|null
      *
-     * @throws RuntimeException when Graph could not be queried
+     * @throws RuntimeException
      */
     public function resolveRole(string $azureId): ?array
     {

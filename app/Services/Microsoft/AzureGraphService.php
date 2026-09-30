@@ -7,21 +7,10 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
-/**
- * App-only (client credentials) access to Microsoft Graph, used to re-validate
- * that a user's Entra ID account is still enabled and present in the tenant.
- */
 class AzureGraphService
 {
     private const TOKEN_CACHE_KEY = 'microsoft-graph.app-token';
 
-    /**
-     * Determine whether the given Azure/Entra account is still enabled in the tenant.
-     *
-     * Returns null when the check could not be performed (e.g. Graph/token
-     * endpoint unreachable) so callers can fail open rather than mass-logout
-     * every SSO user during a Microsoft outage.
-     */
     /** @return list<array{id?: string, displayName?: string, mail?: string|null}>|null */
     public function getGroups(string $azureId): ?array
     {
@@ -57,8 +46,6 @@ class AzureGraphService
     }
 
     /**
-     * Follow @odata.nextLink until exhausted; null if any page fails.
-     *
      * @param  array<string, mixed>  $query
      * @return list<array{id?: string, displayName?: string, mail?: string|null}>|null
      */
@@ -86,26 +73,12 @@ class AzureGraphService
 
             array_push($items, ...($response->json('value') ?? []));
 
-            // nextLink already carries the query string.
             $url = $response->json('@odata.nextLink');
             $query = [];
         }
 
         return $items;
     }
-
-    // public function getRolesAndPermissions()
-    // {
-
-    //     $userId = auth()->user()->id();
-
-    //     $response = Http::withToken($token)->get('https://graph.microsoft.com/v1.0/${userId}/appRoleAssignments');
-
-    //     $reponseInJson = $response->json('value') ?? null;
-
-    //     return $reponseInJson;
-
-    // }
 
     public function isAccountEnabled(string $azureId): ?bool
     {

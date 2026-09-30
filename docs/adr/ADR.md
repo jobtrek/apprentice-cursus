@@ -119,3 +119,57 @@ the table for the weight of each grade inside of EC's program. MP = Maturité
 **Decision:** Portfolio projects are sent to the pages as `ProjectResource::collection(...)->resolve()` / `(new ProjectResource(...))->resolve()`, never as raw models. The resource is the single mapping to the `PortfolioProject` type in `resources/js/types/portfolio.ts`. `->resolve()` drops the `{ data: ... }` wrapper, since Inertia props are not a JSON API response.
 
 **Why:** Passing the model straight to `Inertia::render()` serializes it with `toArray()`, which leaks columns the page must not see (`user_id`, timestamps, the private storage `path` of each screenshot) and emits the wrong shapes: dates as full ISO timestamps where `<input type="date">` needs `Y-m-d`, skills as full objects with pivot data where the form needs `skill_ids`, and screenshots as rows where the page needs an authorized `url`. The same shape is needed by `index`, `preview` and `edit`, so mapping inline in each controller method would triplicate it. Model-level `$hidden` / `date:` casts / appended accessors were rejected: they apply to every serialization of the model app-wide and would split the page contract across `Project` and `ProjectScreenshot`.
+
+## 2026-09-30 — Roles and permissions
+
+**Decision:** Entra ID groups are the only source of a user's role and apprenticeship. `users.role` holds the synced role and a `User::saved` hook mirrors it into the Spatie role (`syncRoles`), so every write path (SSO login, periodic re-check, seeders) keeps permission checks in step. `RolesAndPermissionsSeeder` also mirrors `users.role` for accounts created before it ran. Code checks `App\Enums\Permission` values (policies, routes), never role names; `Permission::byRole()` holds the role → permission matrix from `role_permissions.md`.
+
+**Why:** A single source avoids role drift between Entra and the app, and permission-based checks let the matrix change without touching policies.
+
+### Role and track are not mass-assignable
+
+**Decision:** Only self-service profile fields are fillable on `User`. `role`, `is_active`, `is_mp`, `apprenticeship_id`, `coach_id` and `trainer_id` are set explicitly via `forceFill` by the flow that owns them (SSO sync, administration).
+
+**Why:** These fields decide what a user may do or who they are attached to; they must never be filled from a request payload.
+
+### SSO identity and group mapping
+
+**Decision:** A user is matched on `azure_id` only. An existing account with the same email but no `azure_id` is refused, not adopted. A login is refused when the account is in no mapped group or in more than one (`MappingRolesService::resolveRole` returns null; an administrator fixes the conflict in Entra). A new `User` sets `is_active = true` explicitly.
+
+**Why:** An email is not proof of identity, so adopting by email allows account takeover. Overlapping groups make the role ambiguous. The DB default is not loaded on an unsaved model, so without the explicit value the `is_active` check sees null.
+
+### Trainers are mapped to the IT apprenticeship
+
+**Decision:** The `trainer` group maps to the IT apprenticeship.
+
+**Why:** `User::supervises()` needs a section to match apprentices against, and all trainers are IT until an EC trainer group exists.
+
+### Apprenticeship kept on section change
+
+**Decision:** When the Entra group maps a user to a different apprenticeship than their current one, the current one is kept and a warning is logged.
+
+**Why:** A section change needs the apprentice's confirmation before grades move (user story); that flow does not exist yet.
+
+### Supervision rule
+
+**Decision:** `User::supervises($apprentice)` is true for the apprentice's coach or a supervisor of the same apprenticeship section, never for oneself. It backs the "supervised" permissions (`UserPolicy::view`, `ProjectPolicy::view`).
+
+**Why:** Supervisors get read-only access to the apprentices they follow (`role_permissions.md`, Training Portfolio); only the apprentice adds, edits or deletes their own projects.
+
+### Screenshot route sits outside `portfolio.manage-own`
+
+**Decision:** `portfolio.screenshots.show` is not behind the `portfolio.manage-own` permission; `ProjectPolicy::view` authorizes it.
+
+**Why:** Supervisors load screenshots too, and they do not hold the manage permission.
+
+### Account re-validation fails open
+
+**Decision:** `EnsureAzureAccountIsActive` checks `is_active` on every request for all users, outside the cache. For SSO users it re-checks account status and group-derived role against Graph at most once per `account_check_interval`. If Graph is unreachable (`isAccountEnabled` returns null, `resolveRole` throws), the request proceeds. A disabled or unmapped account ends the session.
+
+**Why:** Failing closed would log out every SSO user during a Microsoft outage. The local deactivation flag is cheap, so it is never cached.
+
+### Users have no timestamps
+
+**Decision:** `User::$timestamps = false`.
+
+**Why:** The columns were dropped (`2026_09_17_083508_drop_default_columns_from_users_table`); Azure SSO is the sole write path and does not need them.

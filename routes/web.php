@@ -36,7 +36,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
                 ->middlewareFor(['store', 'update'], HandlePrecognitiveRequests::class);
         });
 
-    // Outside portfolio.manage-own: supervisors load screenshots too; ProjectPolicy::view decides.
     Route::get('/portfolio/screenshots/{screenshot}', [DossierController::class, 'screenshot'])
         ->name('portfolio.screenshots.show');
 

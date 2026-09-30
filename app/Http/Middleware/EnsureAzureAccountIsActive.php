@@ -12,11 +12,6 @@ use Illuminate\Support\Facades\Log;
 use RuntimeException;
 use Symfony\Component\HttpFoundation\Response;
 
-/**
- * Ends the session of deactivated users on every request, and re-validates SSO users against Entra ID at most once per check interval.
- * If the account was disabled or removed from the tenant since the last
- * login, the current session is terminated on its next request.
- */
 class EnsureAzureAccountIsActive
 {
     public function __construct(
@@ -32,7 +27,6 @@ class EnsureAzureAccountIsActive
             return $next($request);
         }
 
-        // Every request, outside the Graph cache, for password and SSO users alike.
         if (! $user->is_active) {
             return $this->endSession($request, 'Your account has been deactivated. Please contact an administrator.');
         }
@@ -54,7 +48,6 @@ class EnsureAzureAccountIsActive
             return $this->endSession($request, 'Your Microsoft account is no longer active. Please contact an administrator.');
         }
 
-        // Re-check the group-derived role; fail open if Graph is unreachable.
         try {
             $mapping = $this->mappingRoles->resolveRole($user->azure_id);
         } catch (RuntimeException $e) {

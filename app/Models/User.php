@@ -37,12 +37,6 @@ use Spatie\Permission\Traits\HasRoles;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
-/*
- * Only self-service profile fields are mass-assignable. Everything that decides what a
- * user is allowed to do or who they are attached to — role, is_active, is_mp,
- * apprenticeship_id, coach_id, trainer_id — must be assigned explicitly by the
- * administration flow that owns it, never filled from a request payload.
- */
 #[Fillable(['name', 'email', 'password', 'azure_id', 'tenant_id'])]
 #[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
 class User extends Authenticatable
@@ -57,10 +51,6 @@ class User extends Authenticatable
      */
     public $timestamps = false;
 
-    /**
-     * `users.role` is the Entra-synced source of truth; keep the Spatie role in step
-     * so permission checks follow every write path (SSO, re-check, seeders).
-     */
     protected static function booted(): void
     {
         static::saved(function (self $user): void {
@@ -137,10 +127,6 @@ class User extends Authenticatable
         return $this->hasMany(Project::class);
     }
 
-    /**
-     * Relationship check behind the "supervised" permissions: the apprentice's
-     * coach, or a supervisor of the same apprenticeship section.
-     */
     public function supervises(self $apprentice): bool
     {
         if ($apprentice->id === $this->id) {

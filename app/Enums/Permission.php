@@ -2,10 +2,6 @@
 
 namespace App\Enums;
 
-/**
- * Every permission the app checks. Rows are created by RolesAndPermissionsSeeder;
- * policies and routes must reference these instead of role names.
- */
 enum Permission: string
 {
     case GradesCreate = 'grades.create';
@@ -17,11 +13,7 @@ enum Permission: string
     case ApprenticesViewList = 'apprentices.view-list';
     case CoachingAssignSelf = 'coaching.assign-self';
 
-    /**
-     * Role → permissions mapping (role_permissions.md).
-     *
-     * @return array<string, list<self>>
-     */
+    /** @return array<string, list<self>> */
     public static function byRole(): array
     {
         return [
