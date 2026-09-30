@@ -72,4 +72,4 @@ Other rules:
 - "Supervised" means `User::supervises($apprentice)`: trainer = same section, coach = apprentice's `coach_id` is theirs.
 - Policies (`GradePolicy`, `ProjectPolicy`, `CommentPolicy`, `UserPolicy`) add the per-record checks: supervision, author only, active apprentice only.
 - Routes use `can:` middleware. The frontend reads the `auth.can` flags shared by `HandleInertiaRequests` and never re-derives rules.
-- Local login: `admin@example.com` (coach) and `trainer@example.com` (IT trainer), password `password`.
+- Local login (password `password`): `admin@example.com` (coach), `trainer@example.com` (IT trainer), `apprentice-it@example.com` (IT apprentice), `apprentice-ec@example.com` (EC apprentice).
