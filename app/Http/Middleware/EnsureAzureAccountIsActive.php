@@ -42,7 +42,7 @@ class EnsureAzureAccountIsActive
         $enabled = $this->graph->isAccountEnabled($user->azure_id);
 
         if ($enabled === false) {
-            return $this->terminate($request, 'Your Microsoft account is no longer active. Please contact an administrator.');
+            return $this->endSession($request, 'Your Microsoft account is no longer active. Please contact an administrator.');
         }
 
         // Re-check the group-derived role; fail open if Graph is unreachable.
@@ -55,7 +55,7 @@ class EnsureAzureAccountIsActive
         }
 
         if ($mapping === null) {
-            return $this->terminate($request, 'Your Microsoft account no longer has access to this application. Please contact an administrator.');
+            return $this->endSession($request, 'Your Microsoft account no longer has access to this application. Please contact an administrator.');
         }
 
         if ($user->role !== $mapping['role']) {
@@ -67,7 +67,7 @@ class EnsureAzureAccountIsActive
         return $next($request);
     }
 
-    private function terminate(Request $request, string $message): Response
+    private function endSession(Request $request, string $message): Response
     {
         Auth::logout();
         $request->session()->invalidate();

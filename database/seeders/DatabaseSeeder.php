@@ -15,6 +15,9 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
+        // Roles must exist before any user is saved: User syncs its Spatie role on save.
+        $this->call(RolesAndPermissionsSeeder::class);
+
         // User::factory(10)->create();
 
         User::factory()->create([

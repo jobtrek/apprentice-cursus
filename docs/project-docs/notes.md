@@ -18,6 +18,9 @@ mercredi possible. mercredi prochain -> see what's possible see what is not poss
 people with important tasks -> do them
 people with extra tasks -> research see what's possible how hard is it to implement how much will it cost. any other stuff.
 
+
+
+
 ## Accessing a user's role and apprenticeship
 
 Set at every Microsoft login by `MicrosoftAuthController@callback`, from the user's Azure group (`MappingRolesService::resolveRole`):

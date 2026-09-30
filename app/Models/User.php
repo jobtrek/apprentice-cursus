@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Carbon;
+use Spatie\Permission\Traits\HasRoles;
 
 /**
  * @property int $id
@@ -47,7 +48,7 @@ use Illuminate\Support\Carbon;
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
-    use HasFactory, Notifiable;
+    use HasFactory, HasRoles, Notifiable;
 
     /**
      * Timestamps were dropped from the users table (see
@@ -55,6 +56,19 @@ class User extends Authenticatable
      * the sole write path and doesn't need them.
      */
     public $timestamps = false;
+
+    /**
+     * `users.role` is the Entra-synced source of truth; keep the Spatie role in step
+     * so permission checks follow every write path (SSO, re-check, seeders).
+     */
+    protected static function booted(): void
+    {
+        static::saved(function (self $user): void {
+            if ($user->wasRecentlyCreated || $user->wasChanged('role')) {
+                $user->syncRoles($user->role->value);
+            }
+        });
+    }
 
     /**
      * Get the attributes that should be cast.
@@ -121,5 +135,19 @@ class User extends Authenticatable
     public function projects(): HasMany
     {
         return $this->hasMany(Project::class);
+    }
+
+    /**
+     * Relationship check behind the "supervised" permissions: the apprentice's
+     * coach, or a supervisor of the same apprenticeship section.
+     */
+    public function supervises(self $apprentice): bool
+    {
+        if ($apprentice->id === $this->id) {
+            return false;
+        }
+
+        return $apprentice->coach_id === $this->id
+            || ($this->apprenticeship_id !== null && $apprentice->apprenticeship_id === $this->apprenticeship_id);
     }
 }

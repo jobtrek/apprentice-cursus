@@ -20,7 +20,7 @@ class UserSeeder extends Seeder
             [
                 'name' => 'Local Admin',
                 'password' => 'password',
-                'role' => UserRole::SuperAdmin,
+                'role' => UserRole::Coach,
                 'is_active' => true,
             ],
         );

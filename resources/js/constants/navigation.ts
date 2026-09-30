@@ -9,7 +9,7 @@ import type { Component } from 'vue';
 import { apprentisdashboard, home } from '@/routes';
 import grades from '@/routes/grades';
 import portfolio from '@/routes/portfolio';
-import type { UserRole } from '@/types';
+import type { Can, UserRole } from '@/types';
 import type { RouteDefinition } from '@/wayfinder';
 
 export type NavItem = {
@@ -25,10 +25,11 @@ export type NavItem = {
      */
     matches?: string[];
     /**
-     * Rôles qui voient l'élément. Absent : visible par tous. Ce filtre ne fait
-     * que masquer l'interface, l'accès est contrôlé côté serveur.
+     * Permission (`auth.can`) requise pour voir l'élément. Absent : visible par
+     * tous. Ce filtre ne fait que masquer l'interface, l'accès est contrôlé
+     * côté serveur.
      */
-    roles?: UserRole[];
+    can?: keyof Can;
 };
 
 /** Libellés affichés dans l'interface pour chaque rôle. */
@@ -36,16 +37,11 @@ export const ROLE_LABELS: Record<UserRole, string> = {
     apprentice: 'Apprenti·e',
     coach: 'Coach',
     trainer: 'Formateur·rice',
-    admin: 'Administrateur·rice',
-    super_admin: 'Super-administrateur·rice',
 };
-
-/** Rôles qui suivent des apprentis (voir role_permissions.md). */
-const SUPERVISORS: UserRole[] = ['coach', 'trainer', 'admin', 'super_admin'];
 
 /**
  * Source unique de la navigation principale : la barre de navigation et les
- * raccourcis de l'accueil en dérivent, filtrés par `navItemsForRole`.
+ * raccourcis de l'accueil en dérivent, filtrés par `navItemsFor`.
  * L'ordre va du commun (Accueil) au plus spécifique.
  */
 export const NAV_ITEMS: NavItem[] = [
@@ -60,21 +56,21 @@ export const NAV_ITEMS: NavItem[] = [
         href: grades.dashboard(),
         icon: BookOpenIcon,
         matches: ['/grades'],
-        roles: ['apprentice'],
+        can: 'viewOwnGrades',
     },
     {
         label: 'Ajouter une note',
         description: 'Saisissez une nouvelle note et déposez le justificatif.',
         href: grades.create(),
         icon: PlusCircleIcon,
-        roles: ['apprentice'],
+        can: 'createGrade',
     },
     {
         label: 'Portfolio',
         description: 'Gérez vos projets et exportez votre portfolio.',
         href: portfolio.index(),
         icon: FolderKanbanIcon,
-        roles: ['apprentice'],
+        can: 'managePortfolio',
     },
     {
         label: 'Apprentis',
@@ -82,18 +78,15 @@ export const NAV_ITEMS: NavItem[] = [
         href: apprentisdashboard(),
         icon: UsersIcon,
         matches: ['/apprentices'],
-        roles: SUPERVISORS,
+        can: 'viewApprentices',
     },
 ];
 
-/** Éléments visibles pour `role`. Sans rôle connu, seuls les communs restent. */
-export const navItemsForRole = (
+/** Éléments visibles avec les permissions `can`. Sans permissions, seuls les communs restent. */
+export const navItemsFor = (
     items: NavItem[],
-    role: UserRole | null | undefined,
-): NavItem[] =>
-    items.filter(
-        (item) => !item.roles || (role != null && item.roles.includes(role)),
-    );
+    can: Can | null | undefined,
+): NavItem[] => items.filter((item) => !item.can || can?.[item.can] === true);
 
 const stripQuery = (url: string): string => url.split(/[?#]/)[0];
 

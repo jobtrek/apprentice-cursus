@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Models\Grade;
 use App\Models\Project;
+use App\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Facades\Date;
@@ -50,6 +51,7 @@ class AppServiceProvider extends ServiceProvider
         Relation::enforceMorphMap([
             'grade' => Grade::class,
             'project' => Project::class,
+            'user' => User::class,
         ]);
 
         Date::use(CarbonImmutable::class);

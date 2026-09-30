@@ -3,7 +3,7 @@ import { computed } from 'vue';
 import {
     findActiveNavItem,
     NAV_ITEMS,
-    navItemsForRole,
+    navItemsFor,
 } from '@/constants/navigation';
 
 /** Navigation principale de l'utilisateur connecté et élément actif. */
@@ -12,9 +12,11 @@ export const useNavigation = () => {
 
     const role = computed(() => page.props.auth?.user?.role ?? null);
 
-    const items = computed(() => navItemsForRole(NAV_ITEMS, role.value));
+    const can = computed(() => page.props.auth?.can ?? null);
+
+    const items = computed(() => navItemsFor(NAV_ITEMS, can.value));
 
     const activeItem = computed(() => findActiveNavItem(items.value, page.url));
 
-    return { role, items, activeItem };
+    return { role, can, items, activeItem };
 };

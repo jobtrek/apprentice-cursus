@@ -1,10 +1,5 @@
 /** Miroir de `App\Enums\UserRole`. */
-export type UserRole =
-    | 'apprentice'
-    | 'coach'
-    | 'trainer'
-    | 'admin'
-    | 'super_admin';
+export type UserRole = 'apprentice' | 'coach' | 'trainer';
 
 /** Utilisateur connecté, tel que sérialisé par `App\Models\User`. */
 export type User = {
@@ -23,6 +18,16 @@ export type User = {
     [key: string]: unknown;
 };
 
+/** Booléens de permission partagés par `HandleInertiaRequests` (`auth.can`). */
+export type Can = {
+    createGrade: boolean;
+    viewOwnGrades: boolean;
+    viewSupervisedGrades: boolean;
+    managePortfolio: boolean;
+    viewApprentices: boolean;
+};
+
 export type Auth = {
     user: User;
+    can: Can;
 };
