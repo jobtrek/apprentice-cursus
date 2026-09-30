@@ -23,10 +23,8 @@ use Illuminate\Support\Carbon;
  * @property bool|null $is_mp Maturité professionnelle track. NULL = not applicable (non-apprentice roles).
  * @property bool $is_active Deactivation flag. Users are never deleted, only deactivated.
  * @property UserRole $role
- * @property string|null $apprenticeship_name
  * @property int|null $apprenticeship_id
  * @property int|null $coach_id
- * @property int|null $trainer_id
  * @property Carbon|null $email_verified_at
  * @property string $password
  * @property string|null $two_factor_secret
@@ -39,8 +37,9 @@ use Illuminate\Support\Carbon;
 /*
  * Only self-service profile fields are mass-assignable. Everything that decides what a
  * user is allowed to do or who they are attached to — role, is_active, is_mp,
- * apprenticeship_id, coach_id, trainer_id — must be assigned explicitly by the
- * administration flow that owns it, never filled from a request payload.
+ * apprenticeship_id, coach_id — must be assigned explicitly by the
+ * Entra role sync (App\Actions\SyncEntraRole) or the flow that owns it, never
+ * filled from a request payload.
  */
 #[Fillable(['name', 'email', 'password', 'azure_id', 'tenant_id'])]
 #[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
@@ -72,6 +71,40 @@ class User extends Authenticatable
         ];
     }
 
+    public function isApprentice(): bool
+    {
+        return $this->role === UserRole::Apprentice;
+    }
+
+    public function isTrainer(): bool
+    {
+        return $this->role === UserRole::Trainer;
+    }
+
+    public function isCoach(): bool
+    {
+        return $this->role === UserRole::Coach;
+    }
+
+    /**
+     * Whether this user may see the given apprentice's data: apprentices only themselves,
+     * trainers every apprentice of their own section, coaches every apprentice.
+     */
+    public function canSeeApprentice(self $apprentice): bool
+    {
+        if (! $apprentice->isApprentice()) {
+            return false;
+        }
+
+        return match ($this->role) {
+            UserRole::Apprentice => $this->is($apprentice),
+            UserRole::Trainer => $this->apprenticeship_id !== null
+                && $this->apprenticeship_id === $apprentice->apprenticeship_id,
+            UserRole::Coach => true,
+        };
+    }
+
+    /** @return BelongsTo<Apprenticeship, $this> */
     public function apprenticeship(): BelongsTo
     {
         return $this->belongsTo(Apprenticeship::class);
@@ -82,19 +115,9 @@ class User extends Authenticatable
         return $this->belongsTo(self::class, 'coach_id');
     }
 
-    public function trainer(): BelongsTo
-    {
-        return $this->belongsTo(self::class, 'trainer_id');
-    }
-
     public function coachees(): HasMany
     {
         return $this->hasMany(self::class, 'coach_id');
-    }
-
-    public function trainees(): HasMany
-    {
-        return $this->hasMany(self::class, 'trainer_id');
     }
 
     public function grades(): HasMany

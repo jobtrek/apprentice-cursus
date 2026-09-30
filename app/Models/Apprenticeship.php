@@ -8,11 +8,16 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * @property int $id
+ * @property string $code
  * @property string $name
  */
-#[Fillable(['name'])]
+#[Fillable(['code', 'name'])]
 class Apprenticeship extends Model
 {
+    public const IT = 'it';
+
+    public const EC = 'ec';
+
     public function users(): HasMany
     {
         return $this->hasMany(User::class);
