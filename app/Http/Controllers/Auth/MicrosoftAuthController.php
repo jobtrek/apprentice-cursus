@@ -2,8 +2,12 @@
 
 namespace App\Http\Controllers\Auth;
 
+use App\Actions\SyncEntraRole;
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Services\Microsoft\GraphUnavailableException;
+use App\Services\Microsoft\MappingRolesService;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
@@ -27,7 +31,7 @@ class MicrosoftAuthController extends Controller
         return $driver->with(['prompt' => 'login'])->redirect();
     }
 
-    public function callback(): RedirectResponse
+    public function callback(MappingRolesService $roles, SyncEntraRole $sync): RedirectResponse
     {
         try {
             $azureUser = Socialite::driver('azure')->user();
@@ -47,41 +51,48 @@ class MicrosoftAuthController extends Controller
 
             return $this->loginError('Could not sign in with Microsoft. Please try again.');
         }
-        $tenantId = config('services.azure.tenant');
-
         $user = User::where('azure_id', $azureUser->getId())->first();
 
-        if (! $user) {
-            $user = User::where('email', $azureUser->getEmail())->first();
-
-            if ($user) {
-                $user->forceFill([
-                    'azure_id' => $azureUser->getId(),
-                    'tenant_id' => $tenantId,
-                ])->save();
+        try {
+            $assignment = $roles->forUser($azureUser->getId());
+        } catch (GraphUnavailableException) {
+            // Fail open for known, active users; a new user cannot be let in without a role.
+            if (! $user || ! $user->is_active) {
+                return $this->loginError('Could not verify your access with Microsoft. Please try again later.');
             }
+
+            Auth::login($user);
+
+            return redirect()->route('home');
+        }
+
+        if (! $assignment) {
+            if ($user) {
+                $sync->revoke($user);
+            }
+
+            return $this->loginError('Your Microsoft account has no access to this application. Please contact your trainer.');
         }
 
         if (! $user) {
-            $user = User::create([
+            $user = new User([
                 'name' => $azureUser->getName() ?: $azureUser->getNickname() ?: $azureUser->getEmail(),
                 'email' => $azureUser->getEmail(),
                 'azure_id' => $azureUser->getId(),
-                'tenant_id' => $tenantId,
-            ]);
-
-            Log::info('Microsoft SSO auto-provisioned a new account.', [
-                'user_id' => $user->id,
-                'email' => $user->email,
+                'tenant_id' => config('services.azure.tenant'),
             ]);
         }
 
-        if (! $user->is_active) {
-            Log::warning('Microsoft SSO login attempted for a deactivated account.', [
-                'user_id' => $user->id,
+        try {
+            $sync->apply($user, $assignment);
+        } catch (UniqueConstraintViolationException) {
+            // Users are matched on azure_id only; an existing row with this email but
+            // another azure_id is never linked automatically.
+            Log::warning('Microsoft SSO email already belongs to another account.', [
+                'azure_id' => $azureUser->getId(),
             ]);
 
-            return $this->loginError('Your account has been deactivated. Please contact an administrator.');
+            return $this->loginError('This email is already linked to another account. Please contact your trainer.');
         }
 
         Auth::login($user);
