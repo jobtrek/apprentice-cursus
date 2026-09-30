@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Models\Apprenticeship;
 use App\Models\User;
+use App\Services\MappingRolesService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
@@ -16,6 +18,8 @@ use Throwable;
 
 class MicrosoftAuthController extends Controller
 {
+    public function __construct(private readonly MappingRolesService $mappingRoles) {}
+
     public function redirectToProvider(): RedirectResponse
     {
         $driver = Socialite::driver('azure');
@@ -47,6 +51,22 @@ class MicrosoftAuthController extends Controller
 
             return $this->loginError('Could not sign in with Microsoft. Please try again.');
         }
+        try {
+            $mapping = $this->mappingRoles->resolveRole($azureUser->getId());
+        } catch (RuntimeException $e) {
+            Log::error('Microsoft SSO role lookup failed.', ['exception' => $e]);
+
+            return $this->loginError('Could not verify your Microsoft groups. Please try again later.');
+        }
+
+        if ($mapping === null) {
+            Log::warning('Microsoft SSO login refused: account is not in exactly one role group.', [
+                'azure_id' => $azureUser->getId(),
+            ]);
+
+            return $this->loginError('Your Microsoft account has no access to this application. Please contact an administrator.');
+        }
+
         $tenantId = config('services.azure.tenant');
 
         $user = User::where('azure_id', $azureUser->getId())->first();
@@ -62,17 +82,33 @@ class MicrosoftAuthController extends Controller
             }
         }
 
+        $isNew = ! $user;
+
         if (! $user) {
-            $user = User::create([
+            $user = new User([
                 'name' => $azureUser->getName() ?: $azureUser->getNickname() ?: $azureUser->getEmail(),
                 'email' => $azureUser->getEmail(),
                 'azure_id' => $azureUser->getId(),
                 'tenant_id' => $tenantId,
             ]);
 
+            // The DB default is not loaded on an unsaved model; without this the check below sees null.
+            $user->is_active = true;
+        }
+
+        // Role and track are not mass-assignable (see User): Entra groups are their only source.
+        $user->forceFill([
+            'role' => $mapping['role'],
+            'apprenticeship_id' => $mapping['apprenticeship'] === null
+                ? null
+                : Apprenticeship::where('code', $mapping['apprenticeship'])->value('id'),
+        ])->save();
+
+        if ($isNew) {
             Log::info('Microsoft SSO auto-provisioned a new account.', [
                 'user_id' => $user->id,
                 'email' => $user->email,
+                'role' => $user->role->value,
             ]);
         }
 

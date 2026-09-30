@@ -2,7 +2,7 @@
 
 namespace App\Console\Commands;
 
-use App\Services\Microsoft\MappingRolesService;
+use App\Services\MappingRolesService;
 use Illuminate\Console\Command;
 
 class AzureMappingRolesTest extends Command
