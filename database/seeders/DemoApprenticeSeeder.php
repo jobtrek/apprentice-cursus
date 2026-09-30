@@ -17,6 +17,11 @@ class DemoApprenticeSeeder extends Seeder
 {
     public const COUNT = 8;
 
+    public static function email(int|string $id): string
+    {
+        return "demo-apprentice-{$id}@example.com";
+    }
+
     public function run(): void
     {
         /** @var list<array{id: string, name: string, track: string}> $demo */
@@ -36,7 +41,7 @@ class DemoApprenticeSeeder extends Seeder
             $user = User::query()->forceCreate([
                 'id' => (int) $row['id'],
                 'name' => $row['name'],
-                'email' => "demo-apprentice-{$row['id']}@example.com",
+                'email' => self::email($row['id']),
                 // Random, unknown password: demo accounts have no usable local credentials.
                 'password' => Str::password(32),
                 'is_active' => true,

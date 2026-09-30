@@ -33,8 +33,9 @@ class DatabaseSeeder extends Seeder
 
         $this->call(UserSeeder::class);
 
+        // Only accounts the demo seeder created, not pre-existing users at those ids.
         User::query()
-            ->whereBetween('id', [1, DemoApprenticeSeeder::COUNT])
+            ->whereIn('email', array_map(DemoApprenticeSeeder::email(...), range(1, DemoApprenticeSeeder::COUNT)))
             ->whereNull('coach_id')
             ->update(['coach_id' => User::query()->where('email', 'admin@example.com')->value('id')]);
     }
