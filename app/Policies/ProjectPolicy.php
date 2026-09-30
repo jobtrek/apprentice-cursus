@@ -25,7 +25,8 @@ class ProjectPolicy
 
     public function create(User $user): bool
     {
-        return $user->hasPermissionTo(Permission::PortfolioManageOwn->value);
+        return $user->is_active
+            && $user->hasPermissionTo(Permission::PortfolioManageOwn->value);
     }
 
     public function update(User $user, Project $project): bool

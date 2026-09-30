@@ -4,7 +4,9 @@ use App\Enums\Permission;
 use App\Models\Apprenticeship;
 use App\Models\EvaluationNode;
 use App\Models\Grade;
+use App\Models\Project;
 use App\Models\User;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Testing\AssertableInertia as Assert;
 use Spatie\Permission\Models\Role;
 
@@ -74,7 +76,7 @@ describe('apprentice', function () {
         $grade = makeGrade($apprentice);
 
         $this->actingAs($apprentice)->get(route('apprentisdashboard'))->assertForbidden();
-        $this->actingAs($apprentice)->get(route('apprentices.show', 1))->assertForbidden();
+        $this->actingAs($apprentice)->get(route('apprentices.show', $apprentice))->assertForbidden();
         $this->actingAs($apprentice)->get(route('apprentices.grades.show', [$apprentice, $grade]))->assertForbidden();
     });
 
@@ -165,4 +167,78 @@ test('auth.can exposes permission booleans per role', function () {
             ->where('auth.can.createGrade', false)
             ->where('auth.can.viewApprentices', true)
             ->where('auth.can.viewSupervisedGrades', true));
+});
+
+describe('apprentice pages', function () {
+    test('a coach cannot open the page of an apprentice it does not coach', function () {
+        $coach = User::factory()->coach()->create();
+        $other = makeApprentice(coach: User::factory()->coach()->create());
+
+        $this->actingAs($coach)->get(route('apprentices.show', $other))->assertForbidden();
+    });
+
+    test('the grade must belong to the apprentice in the URL', function () {
+        $coach = User::factory()->coach()->create();
+        $mine = makeApprentice(coach: $coach);
+        $alsoMine = makeApprentice(coach: $coach);
+        $grade = makeGrade($alsoMine);
+
+        $this->actingAs($coach)->get(route('apprentices.grades.show', [$mine, $grade]))->assertNotFound();
+    });
+
+    test('a trainer cannot open an apprentice of another section', function () {
+        $it = section('IT');
+        $trainer = User::factory()->trainer()->create();
+        $trainer->forceFill(['apprenticeship_id' => $it->id])->save();
+        $ec = makeApprentice(section('EC'));
+
+        $this->actingAs($trainer)->get(route('apprentices.show', $ec))->assertForbidden();
+        $this->actingAs($trainer)->get(route('apprentices.show', makeApprentice($it)))->assertOk();
+    });
+});
+
+test('the grades dashboard requires the own-grades permission', function () {
+    $this->actingAs(User::factory()->create())->get(route('grades.dashboard'))->assertOk();
+    $this->actingAs(User::factory()->coach()->create())->get(route('grades.dashboard'))->assertForbidden();
+});
+
+test('a supervisor can load a followed apprentice\'s portfolio screenshot', function () {
+    Storage::fake();
+    $coach = User::factory()->coach()->create();
+    $apprentice = makeApprentice(coach: $coach);
+    $project = Project::factory()->create(['user_id' => $apprentice->id]);
+    Storage::put('projects/x/a.png', 'img');
+    $screenshot = $project->screenshots()->create(['path' => 'projects/x/a.png']);
+
+    $this->actingAs($coach)->get(route('portfolio.screenshots.show', $screenshot))->assertOk();
+    $this->actingAs(User::factory()->coach()->create())
+        ->get(route('portfolio.screenshots.show', $screenshot))->assertForbidden();
+});
+
+test('deactivated users are logged out on the next request', function () {
+    $user = User::factory()->create();
+    $this->actingAs($user)->get(route('home'))->assertOk();
+
+    $user->forceFill(['is_active' => false])->save();
+
+    $this->get(route('home'))->assertRedirect(route('login'));
+    $this->assertGuest();
+});
+
+test('deactivated users cannot create or change projects', function () {
+    $user = User::factory()->create();
+    $project = Project::factory()->create(['user_id' => $user->id]);
+    $user->forceFill(['is_active' => false])->save();
+
+    expect($user->fresh()->can('create', Project::class))->toBeFalse()
+        ->and($user->fresh()->can('update', $project))->toBeFalse()
+        ->and($user->fresh()->can('delete', $project))->toBeFalse();
+});
+
+test('auth.user only exposes explicit fields', function () {
+    $this->actingAs(User::factory()->create())
+        ->get(route('home'))
+        ->assertInertia(fn (Assert $page) => $page
+            ->has('auth.user', fn (Assert $user) => $user
+                ->hasAll(['id', 'name', 'email', 'role', 'apprenticeship_id'])));
 });

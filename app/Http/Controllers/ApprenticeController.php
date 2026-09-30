@@ -3,29 +3,33 @@
 namespace App\Http\Controllers;
 
 use App\Models\Grade;
+use App\Models\User;
+use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class ApprenticeController extends Controller
 {
-    /**
-     * Access is enforced by the `can:apprentices.view-list` route middleware.
-     * TODO: limit trainers to their section once apprentices come from the database
-     * (today the id is demo data on the frontend).
-     */
-    public function show(int $apprentice): Response
+    /** Route middleware gates the permission; UserPolicy::view limits it to supervised apprentices. */
+    public function show(User $apprentice): Response
     {
+        Gate::authorize('view', $apprentice);
+
         return Inertia::render('ApprenticeShow', [
-            'apprenticeId' => $apprentice,
+            'apprenticeId' => $apprentice->id,
         ]);
     }
 
-    /** Access to the grade is enforced by the `can:view,grade` route middleware. */
-    public function grade(int $apprentice, Grade $grade): Response
+    /** The grade must belong to the apprentice in the URL and be viewable by the user. */
+    public function grade(User $apprentice, Grade $grade): Response
     {
+        Gate::authorize('view', $apprentice);
+        abort_unless($grade->user_id === $apprentice->id, 404);
+        Gate::authorize('view', $grade);
+
         return Inertia::render('GradeDetails', [
             ...DemoGrade::payload(),
-            'apprenticeId' => $apprentice,
+            'apprenticeId' => $apprentice->id,
             'gradeId' => $grade->id,
             'can' => [
                 'comment' => request()->user()->can('comment', $grade),

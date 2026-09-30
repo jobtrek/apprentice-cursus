@@ -69,7 +69,7 @@ const open = defineModel<boolean>('open', { required: true });
 
             <SheetFooter v-if="apprentice" class="border-t">
                 <Button as-child>
-                    <Link :href="apprentices.show(apprentice.id)">
+                    <Link :href="apprentices.show(Number(apprentice.id))">
                         Voir le carnet de notes
                         <ArrowRightIcon aria-hidden="true" />
                     </Link>

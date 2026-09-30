@@ -1,21 +1,13 @@
 /** Miroir de `App\Enums\UserRole`. */
 export type UserRole = 'apprentice' | 'coach' | 'trainer';
 
-/** Utilisateur connecté, tel que sérialisé par `App\Models\User`. */
+/** Utilisateur connecté, champs partagés par `HandleInertiaRequests` (`auth.user`). */
 export type User = {
     id: number;
     name: string;
     email: string;
-    avatar?: string;
-    email_verified_at: string | null;
     role: UserRole;
-    is_active: boolean;
-    /** Maturité professionnelle. `null` hors apprentis. */
-    is_mp: boolean | null;
     apprenticeship_id: number | null;
-    coach_id: number | null;
-    trainer_id: number | null;
-    [key: string]: unknown;
 };
 
 /** Booléens de permission partagés par `HandleInertiaRequests` (`auth.can`). */

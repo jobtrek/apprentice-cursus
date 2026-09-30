@@ -42,7 +42,13 @@ class HandleInertiaRequests extends Middleware
             ...parent::share($request),
             'name' => config('app.name'),
             'auth' => [
-                'user' => $user,
+                'user' => $user === null ? null : [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'role' => $user->role->value,
+                    'apprenticeship_id' => $user->apprenticeship_id,
+                ],
                 'can' => [
                     'createGrade' => $user?->can(Permission::GradesCreate->value) ?? false,
                     'viewOwnGrades' => $user?->can(Permission::GradesViewOwn->value) ?? false,

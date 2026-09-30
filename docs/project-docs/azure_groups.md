@@ -8,7 +8,7 @@ Access is decided by **membership in mapped security groups**, read from Microso
 |---|---|---|---|
 | IT apprentices | `MICROSOFT_GROUP_APPRENTICES_IT` | Apprentice | Informaticien·ne CFC |
 | EC apprentices | `MICROSOFT_GROUP_APPRENTICES_EC` | Apprentice | Employé·e de commerce CFC |
-| Trainers | `MICROSOFT_GROUP_TRAINER` | Trainer | none |
+| Trainers | `MICROSOFT_GROUP_TRAINER` | Trainer | Informaticien·ne CFC (see note) |
 
 Coach has no mapped group yet: coach accounts cannot be resolved and are refused at login until one is added.
 
@@ -26,6 +26,8 @@ Coach has no mapped group yet: coach accounts cannot be resolved and are refused
 
 ## Notes
 
+- **All trainers are IT for now.** Trainer supervision is section-based (`User::supervises()`), so trainers receive the `Informaticien·ne CFC` apprenticeship at login. This changes once an EC trainer group exists.
+- **Accounts are matched on the Entra object id only.** An existing local account with the same email but no matching `azure_id` is not adopted; the login is refused.
 - **Exactly one mapped group per person.** No group, or several, refuses the login.
 - **Changes are picked up at the next login**, and for a signed-in user within 15 minutes (role re-checked; access ended if no group remains or the account is disabled).
 - **Moving an apprentice between the IT and EC groups** does not change their apprenticeship until they confirm the section change; until then their current apprenticeship is kept.

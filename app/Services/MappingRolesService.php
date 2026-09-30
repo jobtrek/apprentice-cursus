@@ -14,10 +14,14 @@ class MappingRolesService
      *
      * @var array<string, array{role: UserRole, apprenticeship: string|null}>
      */
+    /*
+     * Trainers get the IT apprenticeship for now (all trainers are IT until an EC trainer
+     * group exists): User::supervises() needs a section to match apprentices against.
+     */
     private const GROUP_ROLES = [
         'apprentices_IT' => ['role' => UserRole::Apprentice, 'apprenticeship' => 'Informaticien·ne CFC'],
         'apprentices_EC' => ['role' => UserRole::Apprentice, 'apprenticeship' => 'Employé·e de commerce CFC'],
-        'trainer' => ['role' => UserRole::Trainer, 'apprenticeship' => null],
+        'trainer' => ['role' => UserRole::Trainer, 'apprenticeship' => 'Informaticien·ne CFC'],
     ];
 
     public function __construct(private readonly AzureGraphService $graph) {}

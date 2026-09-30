@@ -71,15 +71,14 @@ class MicrosoftAuthController extends Controller
 
         $user = User::where('azure_id', $azureUser->getId())->first();
 
-        if (! $user) {
-            $user = User::where('email', $azureUser->getEmail())->first();
+        // Match on azure_id only: an email is not proof of identity, so a pre-existing
+        // account without this azure_id is never adopted.
+        if (! $user && User::where('email', $azureUser->getEmail())->exists()) {
+            Log::warning('Microsoft SSO login refused: email already belongs to another account.', [
+                'azure_id' => $azureUser->getId(),
+            ]);
 
-            if ($user) {
-                $user->forceFill([
-                    'azure_id' => $azureUser->getId(),
-                    'tenant_id' => $tenantId,
-                ])->save();
-            }
+            return $this->loginError('Could not sign in with Microsoft. Please contact an administrator.');
         }
 
         $isNew = ! $user;

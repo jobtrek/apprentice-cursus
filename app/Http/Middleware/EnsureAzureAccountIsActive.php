@@ -13,7 +13,7 @@ use RuntimeException;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * Re-validates SSO users against Entra ID at most once per check interval.
+ * Ends the session of deactivated users on every request, and re-validates SSO users against Entra ID at most once per check interval.
  * If the account was disabled or removed from the tenant since the last
  * login, the current session is terminated on its next request.
  */
@@ -28,7 +28,16 @@ class EnsureAzureAccountIsActive
     {
         $user = Auth::user();
 
-        if (! $user || ! $user->azure_id) {
+        if (! $user) {
+            return $next($request);
+        }
+
+        // Every request, outside the Graph cache, for password and SSO users alike.
+        if (! $user->is_active) {
+            return $this->endSession($request, 'Your account has been deactivated. Please contact an administrator.');
+        }
+
+        if (! $user->azure_id) {
             return $next($request);
         }
 

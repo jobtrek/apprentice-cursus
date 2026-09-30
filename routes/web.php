@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\Permission;
 use App\Http\Controllers\ApprenticeController;
 use App\Http\Controllers\DossierController;
 use App\Http\Controllers\GradeController;
@@ -14,7 +15,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::inertia('/create', 'CreateGrade')
             ->middleware('can:create,'.Grade::class)
             ->name('create');
-        Route::inertia('/dashboard', 'GradesDashboard')->name('dashboard');
+        Route::inertia('/dashboard', 'GradesDashboard')
+            ->middleware('can:'.Permission::GradesViewOwn->value)
+            ->name('dashboard');
         Route::get('/{grade}', [GradeController::class, 'show'])
             ->whereNumber('grade')
             ->middleware('can:view,grade')
@@ -28,11 +31,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->group(function () {
             Route::get('/', 'index')->name('index');
             Route::get('/preview', 'preview')->name('preview');
-            Route::get('/screenshots/{screenshot}', 'screenshot')->name('screenshots.show');
             Route::resource('projects', DossierController::class)
                 ->except(['index', 'show'])
                 ->middlewareFor(['store', 'update'], HandlePrecognitiveRequests::class);
         });
+
+    // Outside portfolio.manage-own: supervisors load screenshots too; ProjectPolicy::view decides.
+    Route::get('/portfolio/screenshots/{screenshot}', [DossierController::class, 'screenshot'])
+        ->name('portfolio.screenshots.show');
 
     Route::middleware('can:apprentices.view-list')->group(function () {
         Route::inertia('/apprentisdashboard', 'ApprentisDashboard')->name('apprentisdashboard');
@@ -45,7 +51,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
                 Route::get('/', 'show')->name('show');
                 Route::get('/grades/{grade}', 'grade')
                     ->whereNumber('grade')
-                    ->middleware('can:view,grade')
                     ->name('grades.show');
             });
     });
