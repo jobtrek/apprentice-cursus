@@ -40,6 +40,8 @@ const props = defineProps<{
     comments?: Comment[];
     /** Présent quand un coach ou formateur consulte la note d'un·e apprenti·e. */
     apprenticeId?: number;
+    /** Décisions d'autorisation calculées côté serveur. */
+    can: { comment: boolean };
 }>();
 
 const grade = computed(() => findGrade(props.gradeId));
@@ -49,16 +51,17 @@ const newComment = ref('');
 
 const { role } = useNavigation();
 
-/** Libellé de l'auteur d'un commentaire, selon les rôles autorisés à commenter. */
+/** Libellé de l'auteur d'un commentaire : purement cosmétique, ne décide d'aucun droit. */
 const COMMENTER_LABELS: Partial<Record<UserRole, string>> = {
     coach: 'Coach',
     trainer: 'Formateur',
 };
 
-const commenterLabel = computed(() =>
-    role.value ? COMMENTER_LABELS[role.value] : undefined,
+const commenterLabel = computed(
+    () =>
+        (role.value ? COMMENTER_LABELS[role.value] : undefined) ??
+        'Intervenant',
 );
-const canComment = computed(() => commenterLabel.value !== undefined);
 
 const roleStyles: Record<string, { dot: string; text: string }> = {
     Coach: { dot: 'bg-info', text: 'text-info' },
@@ -92,7 +95,7 @@ const breadcrumbs = computed(() =>
 const backHref = computed(() => breadcrumbs.value.at(-1)!.href);
 
 const submitComment = () => {
-    if (!newComment.value.trim() || !commenterLabel.value) return;
+    if (!props.can.comment || !newComment.value.trim()) return;
 
     comments.value.push({
         author: 'Vous',
@@ -203,7 +206,7 @@ const submitComment = () => {
                 Aucun commentaire pour le moment.
             </p>
 
-            <div v-if="canComment" class="flex flex-col gap-2 pt-2">
+            <div v-if="can.comment" class="flex flex-col gap-2 pt-2">
                 <Textarea
                     v-model="newComment"
                     placeholder="Écrire un commentaire…"
