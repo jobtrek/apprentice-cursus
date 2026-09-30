@@ -21,7 +21,7 @@ class ApprenticeController extends Controller
             'apprenticeId' => $apprentice->id,
             'grades' => GradeResource::collection(
                 $apprentice->grades()
-                    ->with('evaluationNode.parents')
+                    ->with(GradeResource::RELATIONS)
                     ->orderBy('test_date')
                     ->orderBy('id')
                     ->get(),
@@ -39,7 +39,7 @@ class ApprenticeController extends Controller
         return Inertia::render('GradeDetails', [
             ...DemoGrade::props(),
             'apprenticeId' => $apprentice->id,
-            'grade' => (new GradeResource($grade->load('evaluationNode.parents')))->resolve(),
+            'grade' => (new GradeResource($grade->load(GradeResource::RELATIONS)))->resolve(),
             'can' => [
                 'comment' => request()->user()->can('comment', $grade),
             ],

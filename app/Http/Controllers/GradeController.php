@@ -19,7 +19,7 @@ class GradeController extends Controller
         return Inertia::render('GradesDashboard', [
             'grades' => GradeResource::collection(
                 $request->user()->grades()
-                    ->with('evaluationNode.parents')
+                    ->with(GradeResource::RELATIONS)
                     ->orderBy('test_date')
                     ->orderBy('id')
                     ->get(),
@@ -35,7 +35,7 @@ class GradeController extends Controller
     {
         return Inertia::render('GradeDetails', [
             ...DemoGrade::props(),
-            'grade' => (new GradeResource($grade->load('evaluationNode.parents')))->resolve(),
+            'grade' => (new GradeResource($grade->load(GradeResource::RELATIONS)))->resolve(),
             'can' => [
                 'comment' => $request->user()->can('comment', $grade),
             ],

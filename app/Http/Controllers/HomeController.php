@@ -18,7 +18,7 @@ class HomeController extends Controller
             'recentGrades' => $user->can(Permission::GradesViewOwn->value)
                 ? GradeResource::collection(
                     $user->grades()
-                        ->with('evaluationNode.parents')
+                        ->with(GradeResource::RELATIONS)
                         ->latest('test_date')
                         ->latest('id')
                         ->limit(4)
