@@ -21,7 +21,6 @@ import {
     CardHeader,
     CardTitle,
 } from '@/components/ui/card';
-import { useApprentices } from '@/composables/useApprentices';
 import {
     APPRENTICE_AVERAGES,
     PASSING_GRADE,
@@ -29,17 +28,22 @@ import {
 } from '@/data/dashboard';
 import { apprentisdashboard } from '@/routes';
 import apprenticesRoutes from '@/routes/apprentices';
+import type { Apprentice } from '@/types/apprentice';
+
+const props = defineProps<{
+    apprentices: Apprentice[];
+}>();
 
 const YEARS = ['1ère', '2ème', '3ème', '4ème'] as const;
 
-const { apprentices } = useApprentices();
-
 /** Apprentis suivis, chacun avec sa moyenne et sa tendance. */
 const rows = computed(() =>
-    apprentices.value.flatMap((apprentice) => {
-        const scores = APPRENTICE_AVERAGES.find(
-            (entry) => entry.apprenticeId === apprentice.id,
-        );
+    props.apprentices.flatMap((apprentice) => {
+        const scores = apprentice.canView
+            ? APPRENTICE_AVERAGES.find(
+                  (entry) => entry.apprenticeId === String(apprentice.id),
+              )
+            : undefined;
 
         return scores
             ? [
@@ -65,7 +69,7 @@ const atRisk = computed(() =>
 );
 
 const withoutCoach = computed(
-    () => apprentices.value.filter((apprentice) => !apprentice.coach).length,
+    () => props.apprentices.filter((apprentice) => !apprentice.coach).length,
 );
 
 const byYear = computed<YearAverage[]>(() =>
@@ -151,7 +155,7 @@ const byYear = computed<YearAverage[]>(() =>
                 <ul v-if="atRisk.length" class="divide-y">
                     <li v-for="row in atRisk" :key="row.id">
                         <Link
-                            :href="apprenticesRoutes.show(Number(row.id))"
+                            :href="apprenticesRoutes.show(row.id)"
                             class="hover:bg-muted/50 focus-visible:ring-ring/50 -mx-2 flex items-center gap-3 rounded-md px-2 py-3 transition-colors focus-visible:ring-[3px] focus-visible:outline-none"
                         >
                             <div class="min-w-0 flex-1">
@@ -172,7 +176,14 @@ const byYear = computed<YearAverage[]>(() =>
                                     />
                                     {{ row.delta >= 0 ? '+' : ''
                                     }}{{ row.delta.toFixed(1) }} ·
-                                    {{ row.track }} · {{ row.year }} année
+                                    {{
+                                        [
+                                            row.track,
+                                            row.year && `${row.year} année`,
+                                        ]
+                                            .filter(Boolean)
+                                            .join(' · ')
+                                    }}
                                 </p>
                             </div>
                             <span class="text-lg font-semibold tabular-nums">

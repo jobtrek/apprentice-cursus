@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { TableCell, TableRow } from '@/components/ui/table';
 import { getInitials } from '@/composables/useInitials';
-import type { Apprentice } from '@/composables/useApprentices';
+import type { Apprentice } from '@/types/apprentice';
 import AssignmentBadge from './AssignmentBadge.vue';
 
 defineProps<{
@@ -25,7 +25,6 @@ defineEmits<{
         <TableCell>
             <div class="flex items-center gap-3">
                 <Avatar>
-                    <AvatarImage :src="apprentice.avatarUrl ?? ''" />
                     <AvatarFallback class="text-xs">
                         {{ getInitials(apprentice.name) }}
                     </AvatarFallback>
@@ -34,15 +33,11 @@ defineEmits<{
             </div>
         </TableCell>
 
-        <TableCell>{{ apprentice.track }}</TableCell>
-        <TableCell>{{ apprentice.year }}</TableCell>
+        <TableCell>{{ apprentice.track ?? '—' }}</TableCell>
+        <TableCell>{{ apprentice.year ?? '—' }}</TableCell>
 
         <TableCell>
             <AssignmentBadge :value="apprentice.coach" />
-        </TableCell>
-
-        <TableCell>
-            <AssignmentBadge :value="apprentice.trainer" />
         </TableCell>
     </TableRow>
 </template>
