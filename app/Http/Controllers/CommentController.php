@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\CommentRequest;
+use App\Http\Requests\UpdateCommentRequest;
 use App\Models\Comment;
 use App\Models\Grade;
 use Illuminate\Http\RedirectResponse;
@@ -22,9 +23,9 @@ class CommentController extends Controller
     }
 
     /**
-     * Authorization (CommentPolicy::update) and validation live in CommentRequest.
+     * Authorization (CommentPolicy::update) is the `can:update,comment` route middleware, validation lives in UpdateCommentRequest.
      */
-    public function update(CommentRequest $request, Comment $comment): RedirectResponse
+    public function update(UpdateCommentRequest $request, Comment $comment): RedirectResponse
     {
         $comment->update($request->validated());
 

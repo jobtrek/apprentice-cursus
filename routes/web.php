@@ -27,6 +27,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::put('/comments/{comment}', [CommentController::class, 'update'])
         ->whereNumber('comment')
+        ->middleware('can:update,comment')
         ->name('comments.update');
 
     Route::middleware('can:'.Permission::PortfolioManageOwn->value)

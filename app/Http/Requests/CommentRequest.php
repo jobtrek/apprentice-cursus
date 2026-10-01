@@ -2,7 +2,6 @@
 
 namespace App\Http\Requests;
 
-use App\Models\Comment;
 use App\Models\Grade;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
@@ -10,18 +9,11 @@ use Illuminate\Foundation\Http\FormRequest;
 class CommentRequest extends FormRequest
 {
     /**
-     * Editing: CommentPolicy::update requires the author and an active apprentice.
-     * Creating: GradePolicy::comment requires the permission, supervision of the
-     * apprentice and an active apprentice account.
+     * GradePolicy::comment requires the permission, supervision of the apprentice
+     * and an active apprentice account.
      */
     public function authorize(): bool
     {
-        $comment = $this->route('comment');
-
-        if ($comment instanceof Comment) {
-            return $this->user()?->can('update', $comment) === true;
-        }
-
         $grade = $this->route('grade');
 
         return $grade instanceof Grade
