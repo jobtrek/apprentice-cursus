@@ -8,7 +8,6 @@ import {
     UserPlusIcon,
     UsersIcon,
 } from '@lucide/vue';
-import { Temporal } from 'temporal-polyfill';
 import { computed } from 'vue';
 import AverageValue from '@/components/apprentice/AverageValue.vue';
 import ApprenticeAveragesChart, {
@@ -33,7 +32,7 @@ import {
     EmptyTitle,
 } from '@/components/ui/empty';
 import { PASSING_GRADE } from '@/data/dashboard';
-import { sortableDate } from '@/lib/apprentice';
+import { hasNoRecentGrade, STALE_AFTER_DAYS } from '@/lib/apprentice';
 import { apprentisdashboard } from '@/routes';
 import apprenticesRoutes from '@/routes/apprentices';
 import type { ApprenticeListItem } from '@/types/apprentice';
@@ -44,9 +43,6 @@ const props = defineProps<{
     /** Apprentis que l'utilisateur peut encore ajouter. */
     assignableCount: number;
 }>();
-
-/** Au-delà, un·e apprenti·e suivi·e sans nouvelle note est signalé·e. */
-const STALE_AFTER_DAYS = 90;
 
 const graded = computed(() =>
     props.apprentices.filter(({ stats }) => stats.average !== null),
@@ -68,18 +64,11 @@ const atRisk = computed(() =>
         .sort((a, b) => averageOf(a) - averageOf(b)),
 );
 
-/** Aucune note, ou la dernière date de plus de STALE_AFTER_DAYS jours. */
-const stale = computed(() => {
-    const limit = Temporal.Now.plainDateISO()
-        .subtract({ days: STALE_AFTER_DAYS })
-        .toString();
-
-    return props.apprentices.filter(
-        ({ stats }) =>
-            stats.last_grade_date === null ||
-            sortableDate(stats.last_grade_date) < limit,
-    );
-});
+const stale = computed(() =>
+    props.apprentices.filter(({ stats }) =>
+        hasNoRecentGrade(stats.last_grade_date),
+    ),
+);
 
 const chartData = computed<ApprenticeAverage[]>(() =>
     graded.value.map((row, index) => ({

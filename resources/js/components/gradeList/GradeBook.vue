@@ -3,6 +3,7 @@ import { useRemember } from '@inertiajs/vue3';
 import { computed, reactive, ref } from 'vue';
 import DataTable from '@/components/DataTable.vue';
 import DomainCards from '@/components/DomainCards.vue';
+import FilterSelect from '@/components/FilterSelect.vue';
 import GradeListElement from '@/components/gradeList/GradeListElement.vue';
 import { SectionHeader } from '@/components/page';
 import SearchInput from '@/components/SearchInput.vue';
@@ -19,6 +20,7 @@ import {
     GRADE_COLUMNS,
     gradeTables,
 } from '@/data/gradebook';
+import { PASSING_GRADE } from '@/data/dashboard';
 import type { Grade, GradeMenu } from '@/types/grade';
 import type { RouteDefinition } from '@/wayfinder';
 
@@ -35,13 +37,60 @@ const ALL = 'all';
  * Domaine et sous-filtre choisis, gardés dans l'historique Inertia : en
  * revenant d'une note, on retrouve le carnet tel qu'on l'avait laissé.
  */
-type GradeBookView = { tab: string; sub: string };
+type ResultFilter = 'all' | 'insufficient' | 'commented';
+
+type GradeBookView = {
+    tab: string;
+    sub: string;
+    semester: string;
+    result: ResultFilter;
+};
 
 // Avec un objet reactive, useRemember renvoie ce même objet (pas un Ref).
 const view = useRemember(
-    reactive<GradeBookView>({ tab: ALL, sub: ALL }),
+    reactive<GradeBookView>({
+        tab: ALL,
+        sub: ALL,
+        semester: ALL,
+        result: 'all',
+    }),
     'GradeBook',
 ) as GradeBookView;
+// Un état mémorisé avant l'ajout de ces filtres n'a pas ces champs.
+view.semester ??= ALL;
+view.result ??= 'all';
+
+/** Semestres ayant au moins une note. */
+const semesterOptions = computed(() => [
+    { value: ALL, label: 'Tous les semestres' },
+    ...[...new Set(props.grades.map((grade) => grade.semester))]
+        .sort((a, b) => a - b)
+        .map((semester) => ({
+            value: String(semester),
+            label: `Semestre ${semester}`,
+        })),
+]);
+
+const RESULT_OPTIONS: { value: ResultFilter; label: string }[] = [
+    { value: 'all', label: 'Tous les résultats' },
+    { value: 'insufficient', label: `Insuffisantes (< ${PASSING_GRADE})` },
+    { value: 'commented', label: 'Commentées' },
+];
+
+function matchesFilters(grade: Grade): boolean {
+    if (view.semester !== ALL && String(grade.semester) !== view.semester) {
+        return false;
+    }
+
+    switch (view.result) {
+        case 'insufficient':
+            return grade.value < PASSING_GRADE;
+        case 'commented':
+            return (grade.comments_count ?? 0) > 0;
+        default:
+            return true;
+    }
+}
 
 const search = ref('');
 
@@ -73,12 +122,15 @@ const visibleGrades = computed(() => {
         activeSubMenu.value?.grades ?? activeMenu.value?.grades ?? props.grades;
     const query = search.value.trim().toLowerCase();
 
-    return query ? source.filter((grade) => matches(grade, query)) : source;
+    return source.filter(
+        (grade) =>
+            matchesFilters(grade) && (query === '' || matches(grade, query)),
+    );
 });
 
 const emptyMessage = computed(() =>
-    search.value.trim()
-        ? 'Aucune note ne correspond à la recherche.'
+    search.value.trim() || view.semester !== ALL || view.result !== 'all'
+        ? 'Aucune note ne correspond à ces critères.'
         : 'Aucune note pour l’instant.',
 );
 
@@ -159,6 +211,19 @@ const gridCols = computed(() => {
                     </SelectItem>
                 </SelectContent>
             </Select>
+
+            <FilterSelect
+                v-model="view.semester"
+                :options="semesterOptions"
+                :neutral="ALL"
+                label="Filtrer par semestre"
+            />
+            <FilterSelect
+                v-model="view.result"
+                :options="RESULT_OPTIONS"
+                neutral="all"
+                label="Filtrer par résultat"
+            />
 
             <SearchInput
                 v-model="search"

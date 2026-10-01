@@ -1,6 +1,10 @@
 <script setup lang="ts">
 import { ExternalLinkIcon, FolderOpenIcon } from '@lucide/vue';
+import { computed, ref } from 'vue';
+import FilterSelect from '@/components/FilterSelect.vue';
+import SearchInput from '@/components/SearchInput.vue';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import {
     Card,
     CardContent,
@@ -18,19 +22,119 @@ import {
 import { formatPeriod, skillNames } from '@/composables/usePortfolio';
 import type { SupervisedPortfolio } from '@/types/portfolio';
 
-defineProps<{
+const props = defineProps<{
     portfolio: SupervisedPortfolio;
 }>();
+
+const ALL = 'all';
+
+const search = ref('');
+const technology = ref(ALL);
+const skill = ref(ALL);
+
+/** Valeurs réellement utilisées par les projets, triées. */
+const technologyOptions = computed(() => [
+    { value: ALL, label: 'Toutes les technologies' },
+    ...[
+        ...new Set(
+            props.portfolio.projects.flatMap(
+                ({ technologies }) => technologies,
+            ),
+        ),
+    ]
+        .sort((a, b) => a.localeCompare(b, 'fr'))
+        .map((name) => ({ value: name, label: name })),
+]);
+
+const skillOptions = computed(() => {
+    const used = new Set(
+        props.portfolio.projects.flatMap(({ skill_ids }) => skill_ids),
+    );
+
+    return [
+        { value: ALL, label: 'Toutes les compétences' },
+        ...props.portfolio.skills
+            .filter(({ id }) => used.has(id))
+            .map(({ id, name }) => ({ value: String(id), label: name })),
+    ];
+});
+
+const isFiltered = computed(
+    () =>
+        search.value.trim() !== '' ||
+        technology.value !== ALL ||
+        skill.value !== ALL,
+);
+
+const projects = computed(() => {
+    const query = search.value.trim().toLocaleLowerCase('fr');
+
+    return props.portfolio.projects.filter(
+        (project) =>
+            (query === '' ||
+                [project.title, project.organization, project.description].some(
+                    (text) => text?.toLocaleLowerCase('fr').includes(query),
+                )) &&
+            (technology.value === ALL ||
+                project.technologies.includes(technology.value)) &&
+            (skill.value === ALL ||
+                project.skill_ids.includes(Number(skill.value))),
+    );
+});
+
+function reset(): void {
+    search.value = '';
+    technology.value = ALL;
+    skill.value = ALL;
+}
 </script>
 
 <template>
     <!-- Lecture seule : le coach et le formateur ne modifient jamais le portfolio. -->
-    <div v-if="portfolio.projects.length > 0" class="grid gap-4 lg:grid-cols-2">
-        <Card
-            v-for="project in portfolio.projects"
-            :key="project.id"
-            class="gap-4"
+    <div
+        v-if="portfolio.projects.length > 0"
+        class="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center"
+    >
+        <SearchInput
+            v-model="search"
+            placeholder="Rechercher un projet"
+            class="sm:max-w-xs"
+        />
+        <FilterSelect
+            v-if="technologyOptions.length > 2"
+            v-model="technology"
+            :options="technologyOptions"
+            :neutral="ALL"
+            label="Filtrer par technologie"
+        />
+        <FilterSelect
+            v-if="skillOptions.length > 2"
+            v-model="skill"
+            :options="skillOptions"
+            :neutral="ALL"
+            label="Filtrer par compétence"
+        />
+        <Button
+            v-if="isFiltered"
+            variant="link"
+            size="sm"
+            class="h-auto px-0"
+            @click="reset"
         >
+            {{ projects.length }} sur {{ portfolio.projects.length }} · Effacer
+            les filtres
+        </Button>
+    </div>
+
+    <p
+        v-if="portfolio.projects.length > 0 && projects.length === 0"
+        class="text-muted-foreground py-8 text-center text-sm"
+    >
+        Aucun projet ne correspond à ces critères.
+    </p>
+
+    <div v-if="projects.length > 0" class="grid gap-4 lg:grid-cols-2">
+        <Card v-for="project in projects" :key="project.id" class="gap-4">
             <CardHeader>
                 <CardTitle>{{ project.title }}</CardTitle>
                 <CardDescription>
@@ -125,7 +229,7 @@ defineProps<{
         </Card>
     </div>
 
-    <Empty v-else class="border">
+    <Empty v-else-if="portfolio.projects.length === 0" class="border">
         <EmptyHeader>
             <EmptyMedia variant="icon">
                 <FolderOpenIcon />

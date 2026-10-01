@@ -84,6 +84,8 @@ class ApprenticeController extends Controller
             'grades' => GradeResource::collection(
                 $apprentice->grades()
                     ->with(GradeResource::RELATIONS)
+                    // Lets the gradebook filter the commented grades.
+                    ->withCount('comments')
                     ->orderBy('test_date')
                     ->orderBy('id')
                     ->get(),
