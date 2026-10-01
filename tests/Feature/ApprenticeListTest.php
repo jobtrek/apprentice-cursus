@@ -131,3 +131,25 @@ test('the list query count does not depend on the number of apprentices', functi
 
     expect(count(DB::getQueryLog()))->toBe($few);
 });
+
+test('each apprentice carries the configured trainer of its section', function () {
+    config()->set('apprenticeships.trainers', ['IT' => 'Bastien Nicoud', 'EC' => 'Gone']);
+    $coach = User::factory()->coach()->create();
+    foreach (['Zoé', 'Bastien Nicoud'] as $name) {
+        User::factory()->trainer()->create(['name' => $name])
+            ->forceFill(['apprenticeship_id' => $this->it->id])->save();
+    }
+    User::factory()->trainer()->create(['name' => 'Gone'])
+        ->forceFill(['apprenticeship_id' => $this->ec->id, 'is_active' => false])->save();
+    $it = makeApprentice($this->it);
+    $ec = makeApprentice($this->ec);
+
+    $this->actingAs($coach)
+        ->get(route('apprentisdashboard'))
+        ->assertInertia(function (Assert $page) use ($it, $ec) {
+            $rows = collect($page->toArray()['props']['apprentices'])->keyBy('id');
+
+            expect($rows[$it->id]['trainer'])->toBe('Bastien Nicoud')
+                ->and($rows[$ec->id]['trainer'])->toBeNull();
+        });
+});
