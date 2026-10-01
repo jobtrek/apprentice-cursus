@@ -174,6 +174,42 @@ test('an email conflict creates no row and leaves the other account untouched', 
         ->and($other->synced_at)->toBeNull();
 });
 
+test('it follows a UPN rename and frees the old email', function () {
+    $user = User::factory()->create(['azure_id' => 'a-10', 'email' => 'old@example.test']);
+    fakeDirectory(['g-it' => [member('a-10')]]);
+
+    $this->artisan('azure:sync')->assertExitCode(0);
+
+    expect($user->fresh()->email)->toBe('a-10@example.test');
+    $this->assertDatabaseMissing('users', ['email' => 'old@example.test']);
+});
+
+test('a UPN rename onto an email held by another account keeps the old email', function () {
+    User::factory()->create(['email' => 'a-11@example.test', 'azure_id' => null]);
+    $user = User::factory()->create(['azure_id' => 'a-11', 'email' => 'old@example.test']);
+    fakeDirectory(['g-it' => [member('a-11')]]);
+
+    $this->artisan('azure:sync')->assertExitCode(0);
+
+    $user = $user->fresh();
+    expect($user->email)->toBe('old@example.test')
+        ->and($user->is_active)->toBeTrue();
+});
+
+test('a member page without a value list fails the sync without changes', function () {
+    $stale = User::factory()->create(['azure_id' => 'a-12']);
+    Http::fake([
+        'login.microsoftonline.com/*' => Http::response(['access_token' => 'token']),
+        'graph.microsoft.com/v1.0/groups/g-trainer/transitiveMembers/*' => Http::response(['unexpected' => true]),
+        'graph.microsoft.com/*' => Http::response(['value' => [member('a-12')]]),
+    ]);
+
+    expect(fn () => app(AzureDirectorySync::class)->run())
+        ->toThrow(AzureSyncFailedException::class);
+
+    expect($stale->fresh()->is_active)->toBeTrue();
+});
+
 test('it follows @odata.nextLink paging', function () {
     Http::fake([
         'login.microsoftonline.com/*' => Http::response(['access_token' => 'token']),

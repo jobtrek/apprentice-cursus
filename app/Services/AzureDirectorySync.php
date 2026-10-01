@@ -119,15 +119,17 @@ class AzureDirectorySync
                 $this->sync->apply($user, $group);
                 $created++;
             } else {
-                $before = [$user->name, $user->is_active, $user->apprenticeship_id, $user->role];
+                $before = [$user->name, $user->email, $user->is_active, $user->apprenticeship_id, $user->role];
 
                 if ($member['name'] !== '') {
                     $user->name = $member['name'];
                 }
 
+                $this->syncEmail($user, $member['email']);
+
                 $this->sync->apply($user, $group);
 
-                if ($before !== [$user->name, $user->is_active, $user->apprenticeship_id, $user->role]) {
+                if ($before !== [$user->name, $user->email, $user->is_active, $user->apprenticeship_id, $user->role]) {
                     $updated++;
                 }
             }
@@ -145,5 +147,26 @@ class AzureDirectorySync
         }
 
         return new AzureSyncResult($created, $updated, $deactivated, $skipped);
+    }
+
+    /**
+     * Follows a UPN rename, so the old address is freed for whoever gets it next.
+     * An address held by another account is left alone: `users.email` is unique.
+     */
+    private function syncEmail(User $user, ?string $email): void
+    {
+        if ($email === null || $email === $user->email) {
+            return;
+        }
+
+        if (User::where('email', $email)->whereKeyNot($user->getKey())->exists()) {
+            Log::warning('Azure account sync kept the old email: the new one belongs to another account.', [
+                'azure_id' => $user->azure_id,
+            ]);
+
+            return;
+        }
+
+        $user->email = $email;
     }
 }

@@ -110,7 +110,20 @@ class MicrosoftGraphService
                 return null;
             }
 
-            array_push($members, ...($response->json('value') ?? []));
+            // A page without a `value` list is a failed lookup, not an empty group:
+            // treating it as empty would deactivate every member of the group.
+            $page = $response->json('value');
+
+            if (! is_array($page) || ! array_is_list($page)) {
+                Log::error('Microsoft Graph group members lookup returned no member list.', [
+                    'group_id' => $groupId,
+                    'body' => $response->body(),
+                ]);
+
+                return null;
+            }
+
+            array_push($members, ...$page);
 
             $url = $response->json()['@odata.nextLink'] ?? null;
             $query = [];
