@@ -14,9 +14,10 @@ return new class extends Migration
     {
         Schema::drop('evaluation_node_connections');
         Schema::create('domain_links', function (Blueprint $table) {
+            $table->id();
             $table->foreignId('parent_id')->constrained('domains');
             $table->foreignId('child_id')->constrained('domains');
-            $table->primary(['parent_id', 'child_id']);
+            $table->unique(['parent_id', 'child_id']);
         });
 
     }
