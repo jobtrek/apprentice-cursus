@@ -12,6 +12,8 @@ enum Permission: string
     case PortfolioViewSupervised = 'portfolio.view-supervised';
     case ApprenticesViewList = 'apprentices.view-list';
     case CoachingAssignSelf = 'coaching.assign-self';
+    /** Assign any coach to any apprentice. No production role has it: only the local admin (Gate::before). */
+    case SupervisionManage = 'supervision.manage';
 
     /** @return array<string, list<self>> */
     public static function byRole(): array

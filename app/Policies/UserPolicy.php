@@ -22,4 +22,11 @@ class UserPolicy
             && $apprentice->is_active
             && $apprentice->coach_id === null;
     }
+
+    /** Assign or remove the coach of any apprentice (local admin only). */
+    public function assignCoach(User $user, User $apprentice): bool
+    {
+        return $user->hasPermissionTo(Permission::SupervisionManage->value)
+            && $apprentice->hasRole(UserRole::Apprentice->value);
+    }
 }

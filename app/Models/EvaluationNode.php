@@ -47,6 +47,8 @@ class EvaluationNode extends Model
 
     /**
      * The child nodes that feed into this node's value, keyed by their weight within this parent.
+     *
+     * @return BelongsToMany<EvaluationNode, $this, EvaluationNodeConnection, 'pivot'>
      */
     public function children(): BelongsToMany
     {

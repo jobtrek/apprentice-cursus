@@ -1,39 +1,53 @@
 <script setup lang="ts">
 import { Head } from '@inertiajs/vue3';
-import AddActionButton from '@/components/AddActionButton.vue';
+import { PlusIcon } from '@lucide/vue';
+import { computed } from 'vue';
 import AddGradeDialog from '@/components/grade/AddGradeDialog.vue';
-import GradeBook from '@/components/gradeList/GradeBook.vue';
+import GradebookSummary from '@/components/gradebook/GradebookSummary.vue';
+import GradeList from '@/components/gradebook/GradeList.vue';
 import { PageContainer, PageHeader } from '@/components/page';
+import { Button } from '@/components/ui/button';
 import { useAddGradeDialog } from '@/composables/useAddGradeDialog';
-import gradeRoutes from '@/routes/grades';
+import { createGradebook, type GradeTree } from '@/lib/gradebook';
 import type { Grade } from '@/types/grade';
 
-defineProps<{
+const props = defineProps<{
     grades: Grade[];
+    /** Null si l'apprenti·e n'a pas encore de filière. */
+    tree: GradeTree | null;
 }>();
 
-const pageTitle = 'Carnet de notes';
-
-const gradeHref = (grade: Grade) => gradeRoutes.show(grade.id);
+const gradebook = computed(() =>
+    props.tree ? createGradebook(props.tree, props.grades) : null,
+);
 
 const { open: openAddGrade } = useAddGradeDialog();
 </script>
 
 <template>
-    <Head :title="pageTitle" />
+    <Head title="Carnet de notes" />
 
     <PageContainer size="lg">
-        <PageHeader :title="pageTitle">
+        <PageHeader
+            title="Carnet de notes"
+            description="Vos notes et vos moyennes par domaine, pondérées comme pour le CFC."
+        >
             <template #actions>
-                <AddActionButton
-                    label="Ajouter une note"
-                    data-test="add-grade-button"
-                    @click="openAddGrade"
-                />
+                <Button data-test="add-grade-button" @click="openAddGrade">
+                    <PlusIcon aria-hidden="true" />
+                    Ajouter une note
+                </Button>
             </template>
         </PageHeader>
 
-        <GradeBook :grades="grades" :grade-href="gradeHref" />
+        <template v-if="gradebook">
+            <GradebookSummary :gradebook="gradebook" />
+            <GradeList :gradebook="gradebook" :grades="grades" />
+        </template>
+        <p v-else class="text-muted-foreground text-sm">
+            Aucune filière n'est encore attribuée à votre compte : le carnet
+            apparaîtra dès qu'elle le sera.
+        </p>
 
         <AddGradeDialog />
     </PageContainer>

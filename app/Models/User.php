@@ -101,6 +101,9 @@ class User extends Authenticatable
         return $this->belongsTo(self::class, 'coach_id');
     }
 
+    /**
+     * @return BelongsTo<self, $this>
+     */
     public function trainer(): BelongsTo
     {
         return $this->belongsTo(self::class, 'trainer_id');

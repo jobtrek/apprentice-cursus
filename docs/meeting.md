@@ -11,7 +11,6 @@
 - Discussed the team's current tasks.
 - Went into more detail about the database structure.
 
-
 # 03/09/2026
 
 ## Daily Meeting to Define Tasks for the First Half of the Day
@@ -24,4 +23,3 @@
 - Reviewed the work completed yesterday.
 - Discussed and defined the tasks for the first half of today.
 - Agreed on the main priorities for each team member.
-

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Link } from '@inertiajs/vue3';
 import { ArrowRightIcon } from '@lucide/vue';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import {
@@ -13,7 +13,6 @@ import {
     SheetTitle,
 } from '@/components/ui/sheet';
 import { getInitials } from '@/composables/useInitials';
-import type { Apprentice } from '@/composables/useApprentices';
 import {
     AVERAGE_SCORE,
     BRANCH_SCORES,
@@ -23,6 +22,7 @@ import ApprenticeMetaRow from './ApprenticeMetaRow.vue';
 import ApprenticeScoreSummary from './ApprenticeScoreSummary.vue';
 import ApprenticeScoreTable from './ApprenticeScoreTable.vue';
 import apprentices from '@/routes/apprentices';
+import type { Apprentice } from '@/types/apprentice';
 
 defineProps<{
     apprentice: Apprentice | null;
@@ -37,7 +37,6 @@ const open = defineModel<boolean>('open', { required: true });
             <SheetHeader>
                 <div class="flex items-center gap-3">
                     <Avatar class="size-10">
-                        <AvatarImage :src="apprentice?.avatarUrl ?? ''" />
                         <AvatarFallback>
                             {{ getInitials(apprentice?.name) }}
                         </AvatarFallback>
@@ -45,7 +44,7 @@ const open = defineModel<boolean>('open', { required: true });
                     <div>
                         <SheetTitle>{{ apprentice?.name }}</SheetTitle>
                         <SheetDescription>
-                            {{ apprentice?.track }} · {{ apprentice?.year }}
+                            {{ apprentice?.track ?? 'Sans filière' }}
                         </SheetDescription>
                     </div>
                 </div>
@@ -55,8 +54,8 @@ const open = defineModel<boolean>('open', { required: true });
                 <Separator />
 
                 <ApprenticeMetaRow
-                    :coach="apprentice.coach"
-                    :formateur="apprentice.trainer"
+                    :coach="apprentice.coach ?? undefined"
+                    :formateur="apprentice.trainer ?? undefined"
                 />
 
                 <ApprenticeScoreSummary
@@ -67,11 +66,28 @@ const open = defineModel<boolean>('open', { required: true });
                 <ApprenticeScoreTable :branches="BRANCH_SCORES" />
             </div>
 
-            <SheetFooter v-if="apprentice" class="border-t">
+            <SheetFooter v-if="apprentice?.canView" class="border-t">
                 <Button as-child>
-                    <Link :href="apprentices.show(Number(apprentice.id))">
+                    <Link
+                        :href="
+                            apprentices.show(apprentice.id, {
+                                query: { tab: 'grades' },
+                            })
+                        "
+                    >
                         Voir le carnet de notes
                         <ArrowRightIcon aria-hidden="true" />
+                    </Link>
+                </Button>
+                <Button as-child variant="outline">
+                    <Link
+                        :href="
+                            apprentices.show(apprentice.id, {
+                                query: { tab: 'portfolio' },
+                            })
+                        "
+                    >
+                        Voir le portfolio
                     </Link>
                 </Button>
             </SheetFooter>

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { Link, router } from '@inertiajs/vue3';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import {
@@ -12,11 +13,24 @@ import {
     useNotifications,
 } from '@/composables/useNotifications';
 import { cn } from '@/lib/utils';
+import notificationsRoutes from '@/routes/notifications';
 import { BellIcon } from '@lucide/vue';
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 
 const { notifications, unreadCount, markAsRead, markAllAsRead } =
     useNotifications();
+
+/**
+ * Contrôlé : la navbar vit dans le layout persistant, le popover resterait
+ * ouvert après la visite Inertia vers la boîte de réception.
+ */
+const open = ref(false);
+
+function openInInbox(id: number): void {
+    markAsRead(id);
+    open.value = false;
+    router.visit(notificationsRoutes.index({ query: { notification: id } }));
+}
 
 const triggerLabel = computed(() =>
     unreadCount.value > 0
@@ -26,7 +40,7 @@ const triggerLabel = computed(() =>
 </script>
 
 <template>
-    <Popover>
+    <Popover v-model:open="open">
         <PopoverTrigger as-child>
             <Button
                 variant="ghost"
@@ -80,7 +94,7 @@ const triggerLabel = computed(() =>
                         type="button"
                         class="hover:bg-accent/60 flex w-full items-start gap-3 px-4 py-3 text-left transition-colors"
                         :class="cn(!notification.read && 'bg-accent/40')"
-                        @click="markAsRead(notification.id)"
+                        @click="openInInbox(notification.id)"
                     >
                         <span
                             class="mt-2 size-1.5 shrink-0 rounded-full"
@@ -129,6 +143,16 @@ const triggerLabel = computed(() =>
                     </button>
                 </li>
             </ul>
+
+            <div class="border-t">
+                <Link
+                    :href="notificationsRoutes.index()"
+                    class="text-primary hover:bg-accent/60 block px-4 py-2.5 text-center text-sm font-medium transition-colors"
+                    @click="open = false"
+                >
+                    Voir toutes les notifications
+                </Link>
+            </div>
         </PopoverContent>
     </Popover>
 </template>

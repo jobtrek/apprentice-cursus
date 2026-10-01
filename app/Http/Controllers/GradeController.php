@@ -6,6 +6,7 @@ use App\Http\Resources\CommentResource;
 use App\Http\Resources\GradeResource;
 use App\Models\Grade;
 use App\Support\Demo\DemoGrade;
+use App\Support\Gradebook\GradebookTree;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -17,14 +18,18 @@ class GradeController extends Controller
      */
     public function dashboard(Request $request): Response
     {
+        $user = $request->user()->load('apprenticeship');
+
         return Inertia::render('GradesDashboard', [
             'grades' => GradeResource::collection(
-                $request->user()->grades()
+                $user->grades()
                     ->with(GradeResource::RELATIONS)
+                    ->withCount('comments')
                     ->orderBy('test_date')
                     ->orderBy('id')
                     ->get(),
             )->resolve(),
+            'tree' => GradebookTree::for($user),
         ]);
     }
 

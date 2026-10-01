@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\UserRole;
+use Database\Seeders\ApprenticeshipSeeder;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -24,6 +25,16 @@ class Apprenticeship extends Model
     public function evaluationTree(): BelongsTo
     {
         return $this->belongsTo(EvaluationNode::class, 'evaluation_node_id');
+    }
+
+    /** Short label of the section: "IT", "EC", or the full name for another one. */
+    public function shortName(): string
+    {
+        return match ($this->name) {
+            ApprenticeshipSeeder::IT => 'IT',
+            ApprenticeshipSeeder::EC => 'EC',
+            default => $this->name,
+        };
     }
 
     /**

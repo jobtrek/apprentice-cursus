@@ -65,6 +65,13 @@ export const formatNotificationDate = (date: string): string => {
     return `${pad(createdDay.day)}.${pad(createdDay.month)}.${createdDay.year}`;
 };
 
+/** Date complète pour le détail d'une notification : « 16.09.2026 à 08:15 ». */
+export const formatNotificationFullDate = (date: string): string => {
+    const created = toLocalDateTime(date);
+
+    return `${pad(created.day)}.${pad(created.month)}.${created.year} à ${created.toPlainTime().toString({ smallestUnit: 'minute' })}`;
+};
+
 export const useNotifications = () => {
     const unreadCount = computed(
         () => notifications.value.filter((item) => !item.read).length,
@@ -78,6 +85,14 @@ export const useNotifications = () => {
         }
     };
 
+    const markAsUnread = (id: number): void => {
+        const notification = notifications.value.find((item) => item.id === id);
+
+        if (notification) {
+            notification.read = false;
+        }
+    };
+
     const markAllAsRead = (): void => {
         notifications.value.forEach((item) => {
             item.read = true;
@@ -88,6 +103,7 @@ export const useNotifications = () => {
         notifications,
         unreadCount,
         markAsRead,
+        markAsUnread,
         markAllAsRead,
     };
 };

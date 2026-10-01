@@ -24,7 +24,7 @@ export const DOMAIN_GRADES: DomainGrade[] = [
     { title: 'Culture générale', weight: '30%', grade: 5.5 },
 ];
 
-const columns = [
+export const GRADE_COLUMNS = [
     { key: 'module', label: 'Module', class: 'w-[30%]' },
     { key: 'subject', label: 'Matière', class: 'w-[30%]' },
     { key: 'value', label: 'Note', class: 'w-[12%]' },
@@ -54,30 +54,34 @@ const under = (grades: Grade[], path: string[]): Grade[] =>
 export const gradeTables = (grades: Grade[]): GradeMenu[] => [
     {
         title: 'Compétences en informatique',
-        columns,
+        columns: GRADE_COLUMNS,
         grades: under(grades, [NODES.informatique]),
         subMenu: [
             {
                 title: 'Modules école pro',
-                columns,
+                columns: GRADE_COLUMNS,
                 grades: under(grades, [NODES.informatique, NODES.modulesEcole]),
             },
             {
                 title: 'Modules CIE',
-                columns,
+                columns: GRADE_COLUMNS,
                 grades: under(grades, [NODES.informatique, NODES.modulesCie]),
             },
         ],
     },
     {
         title: 'Compétences de base élargies',
-        columns,
+        columns: GRADE_COLUMNS,
         grades: under(grades, [NODES.baseElargies]),
     },
     {
         title: 'Culture générale',
-        columns,
+        columns: GRADE_COLUMNS,
         grades: under(grades, [NODES.cultureGenerale]),
     },
-    { title: 'TPI', columns, grades: under(grades, [NODES.tpi]) },
+    {
+        title: 'TPI',
+        columns: GRADE_COLUMNS,
+        grades: under(grades, [NODES.tpi]),
+    },
 ];

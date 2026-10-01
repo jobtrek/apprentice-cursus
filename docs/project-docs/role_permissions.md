@@ -11,11 +11,11 @@ The only document on who can do what, and how people get their role. Design deci
 
 ## The roles
 
-| Role       | How you get it             | Who you supervise                                              |
-| ---------- | -------------------------- | -------------------------------------------------------------- |
-| Apprentice | IT or EC apprentices group | Nobody. You only see your own data                             |
-| Trainer    | IT or EC trainers group    | Every apprentice of your section                               |
-| Coach      | Coaches group (no section) | Apprentices whose coach you are (IT and EC)                    |
+| Role       | How you get it             | Who you supervise                           |
+| ---------- | -------------------------- | ------------------------------------------- |
+| Apprentice | IT or EC apprentices group | Nobody. You only see your own data          |
+| Trainer    | IT or EC trainers group    | Every apprentice of your section            |
+| Coach      | Coaches group (no section) | Apprentices whose coach you are (IT and EC) |
 
 Accounts are created by the daily account sync (`azure:sync`), not at login. A person not synced yet is refused until the next run.
 
@@ -76,6 +76,7 @@ Other rules:
 
 - Code checks **permissions, never role names**. The list of permissions per role is `App\Enums\Permission::byRole()`. To change what a role can do, edit it there and re-run `RolesAndPermissionsSeeder`.
 - "Supervised" means `User::supervises($apprentice)`: trainer = same section, coach = apprentice's `coach_id` is theirs.
+- Assigning a coach: a coach takes an active apprentice with no coach (`coaching.assign-self`, `ApprenticeController::assign`). Setting, changing or removing any apprentice's coach needs `supervision.manage`, which no production role has: only the local admin can do it, from the coach select of the apprentices list (`SupervisionController`).
 - Policies (`GradePolicy`, `ProjectPolicy`, `CommentPolicy`, `UserPolicy`) add the per-record checks: supervision, author only, active apprentice only.
 - Routes use `can:` middleware. The frontend reads the `auth.can` flags shared by `HandleInertiaRequests` and never re-derives rules.
 - Local login (password `password`): `admin@example.com` (local-only admin, everything), `coach@example.com` (coach), `trainer@example.com` (IT trainer, Bastien Nicoud), `trainer-ec@example.com` (EC trainer), `apprentice-it@example.com` (IT apprentice), `apprentice-ec@example.com` (EC apprentice).

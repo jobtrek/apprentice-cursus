@@ -40,6 +40,20 @@ const chartConfig = {
 const x = (d: ProgressPoint) => d.position;
 const y = (d: ProgressPoint) => d.average;
 
+/**
+ * « Line Chart - Dots Colors » (shadcn) : chaque point prend la couleur de son
+ * niveau, la ligne garde la couleur de la série.
+ */
+const LEVELS = [
+    { label: 'Insuffisant (< 4)', color: 'var(--chart-5)', min: 0 },
+    { label: 'Suffisant (4 – 5)', color: 'var(--chart-3)', min: PASSING_GRADE },
+    { label: 'Bon (≥ 5)', color: 'var(--chart-2)', min: 5 },
+] as const;
+
+const dotColor = (d: ProgressPoint) =>
+    LEVELS.findLast((level) => d.average >= level.min)?.color ??
+    LEVELS[0].color;
+
 const periodAt = (position: number | Date) =>
     props.periods.find((period) => period.position === position);
 
@@ -90,8 +104,8 @@ const isMounted = useMounted();
                 <VisScatter
                     :x="x"
                     :y="y"
-                    :size="8"
-                    :color="chartConfig.average.color"
+                    :size="12"
+                    :color="dotColor"
                     stroke-color="var(--card)"
                     :stroke-width="2"
                 />
@@ -116,12 +130,29 @@ const isMounted = useMounted();
                     :x="x"
                     :y="y"
                     :template="tooltip"
-                    :color="chartConfig.average.color"
+                    :color="dotColor"
                 />
             </VisXYContainer>
         </ChartContainer>
         <div v-else class="bg-muted/50 h-full animate-pulse rounded-lg" />
     </div>
+
+    <ul
+        class="text-muted-foreground mt-3 flex flex-wrap justify-center gap-x-4 gap-y-1 text-xs"
+        aria-hidden="true"
+    >
+        <li
+            v-for="level in LEVELS"
+            :key="level.label"
+            class="flex items-center gap-1.5"
+        >
+            <span
+                class="size-2.5 rounded-full"
+                :style="{ backgroundColor: level.color }"
+            />
+            {{ level.label }}
+        </li>
+    </ul>
 
     <table class="sr-only">
         <caption>

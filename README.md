@@ -55,7 +55,7 @@ cp .env.example .env
 You can safely ignore the build script for vue-demi, it's not needed in this version of the project.
 
 6. Run the app in your web browser
-Launch the local server using
+   Launch the local server using
 
 ```bash
 ./vendor/bin/sail pnpm dev

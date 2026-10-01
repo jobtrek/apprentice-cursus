@@ -11,6 +11,7 @@ Guidance for building and reusing UI components in this project.
 5. when adding fake data, create a new json file inside of `resources/js/data` call it whatever you want to call it, and use either objects or arrays.
 
 ## shadcn/vue best practices
+
 - load the shadncn/vue skill.
 - Treat `resources/js/components/ui/*` as vendored: add/update via the shadcn-vue CLI, don't hand-edit internals.
 - Build feature UI in `resources/js/components/` or `resources/js/pages/`, composed on top of `ui/*` primitives — don't duplicate what a primitive already does.
@@ -23,4 +24,4 @@ Guidance for building and reusing UI components in this project.
 - Use the Composition API with `<script setup lang="ts">` — no Options API.
 - Style with modern Tailwind CSS v4 utility classes; avoid custom CSS unless a utility genuinely can't express it.
 - Keep components typed (TypeScript props/emits) and consistent with neighboring components' structure.
-- 
+-

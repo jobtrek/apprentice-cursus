@@ -36,6 +36,7 @@ class GradeResource extends JsonResource
 
         return [
             'id' => $this->id,
+            'node_id' => $this->evaluation_node_id,
             'title' => $this->evaluationNode->name,
             // First parent by connection id; empty when the node has none.
             'subject' => $parent === null ? '' : $parent->name,
@@ -45,6 +46,8 @@ class GradeResource extends JsonResource
             'value' => (float) $this->value,
             'semester' => $this->semester,
             'date' => $this->test_date->format('d.m.Y'),
+            // Only when the query used withCount('comments').
+            'comments_count' => $this->whenCounted('comments'),
         ];
     }
 

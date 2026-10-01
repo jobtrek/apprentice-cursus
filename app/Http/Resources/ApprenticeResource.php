@@ -35,7 +35,10 @@ class ApprenticeResource extends JsonResource
             'track' => $track,
             // Derived from the grades once the grade calculation lands; null until then.
             'year' => null,
+            'isActive' => $this->is_active,
             'coach' => $this->coach?->name,
+            // Lets the local admin's coach select show the current coach.
+            'coachId' => $this->coach_id,
             // The section's configured trainer (config/apprenticeships.php), if active.
             'trainer' => $track === null ? null : $this->apprenticeship->trainers
                 ->firstWhere('name', config("apprenticeships.trainers.{$track}"))?->name,
