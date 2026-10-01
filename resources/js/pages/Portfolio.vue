@@ -1,18 +1,17 @@
 <script setup lang="ts">
-import { Head, Link } from "@inertiajs/vue3";
+import { Head, Link } from '@inertiajs/vue3';
 import {
     EyeIcon,
     FolderOpenIcon,
     GripVerticalIcon,
-    ImageIcon,
     PencilIcon,
     PlusIcon,
-} from "@lucide/vue";
-import { ref, watch } from "vue";
-import { formatPeriod } from "@/composables/usePortfolio";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+} from '@lucide/vue';
+import { ref, watch } from 'vue';
+import { formatPeriod } from '@/composables/usePortfolio';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
 import {
     Empty,
     EmptyContent,
@@ -20,13 +19,13 @@ import {
     EmptyHeader,
     EmptyMedia,
     EmptyTitle,
-} from "@/components/ui/empty";
-import portfolio from "@/routes/portfolio";
-import AddActionButton from "@/components/AddActionButton.vue";
-import { PageContainer, PageHeader } from "@/components/page";
-import ProjectDialog from "@/components/portfolio/ProjectDialog.vue";
-import { useProjectDialog } from "@/composables/useProjectDialog";
-import type { PortfolioProject, Skill } from "@/types/portfolio";
+} from '@/components/ui/empty';
+import portfolio from '@/routes/portfolio';
+import AddActionButton from '@/components/AddActionButton.vue';
+import { PageContainer, PageHeader } from '@/components/page';
+import ProjectDialog from '@/components/portfolio/ProjectDialog.vue';
+import { useProjectDialog } from '@/composables/useProjectDialog';
+import type { PortfolioProject, Skill } from '@/types/portfolio';
 
 const props = defineProps<{
     projects: PortfolioProject[];
@@ -90,7 +89,7 @@ function onDragEnd(): void {
 /** Équivalent clavier du glisser-déposer, requis pour l'accessibilité. */
 function onHandleKeydown(event: KeyboardEvent, index: number): void {
     const offset =
-        event.key === "ArrowUp" ? -1 : event.key === "ArrowDown" ? 1 : 0;
+        event.key === 'ArrowUp' ? -1 : event.key === 'ArrowDown' ? 1 : 0;
 
     if (offset === 0) {
         return;
