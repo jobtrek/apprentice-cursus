@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { FieldError } from '@/components/ui/field';
 import { Textarea } from '@/components/ui/textarea';
 import {
     PageContainer,
@@ -9,16 +10,15 @@ import {
     StatItem,
 } from '@/components/page';
 import { findApprentice } from '@/composables/useApprentices';
-import { useNavigation } from '@/composables/useNavigation';
 import { apprentisdashboard } from '@/routes';
 import apprentices from '@/routes/apprentices';
 import grades from '@/routes/grades';
-import type { UserRole } from '@/types';
 import type { Grade } from '@/types/grade';
-import { Head } from '@inertiajs/vue3';
-import { computed, ref } from 'vue';
+import { Head, useForm } from '@inertiajs/vue3';
+import { computed } from 'vue';
 
 type Comment = {
+    id: number;
     author: string;
     role: string;
     date: string;
@@ -28,29 +28,14 @@ type Comment = {
 const props = defineProps<{
     grade: Grade;
     pdfUrl?: string | null;
-    comments?: Comment[];
+    comments: Comment[];
     /** Présent quand un coach ou formateur consulte la note d'un·e apprenti·e. */
     apprenticeId?: number;
     /** Décisions d'autorisation calculées côté serveur. */
     can: { comment: boolean };
 }>();
 
-const comments = ref<Comment[]>(props.comments ?? []);
-const newComment = ref('');
-
-const { role } = useNavigation();
-
-/** Libellé de l'auteur d'un commentaire : purement cosmétique, ne décide d'aucun droit. */
-const COMMENTER_LABELS: Partial<Record<UserRole, string>> = {
-    coach: 'Coach',
-    trainer: 'Formateur',
-};
-
-const commenterLabel = computed(
-    () =>
-        (role.value ? COMMENTER_LABELS[role.value] : undefined) ??
-        'Intervenant',
-);
+const form = useForm({ body: '' });
 
 const roleStyles: Record<string, { dot: string; text: string }> = {
     Coach: { dot: 'bg-info', text: 'text-info' },
@@ -81,19 +66,12 @@ const breadcrumbs = computed(() =>
 );
 
 const submitComment = () => {
-    if (!props.can.comment || !newComment.value.trim()) return;
+    if (!props.can.comment || !form.body.trim() || form.processing) return;
 
-    comments.value.push({
-        author: 'Vous',
-        role: commenterLabel.value,
-        date: new Date().toLocaleDateString('fr-CH', {
-            day: '2-digit',
-            month: 'short',
-            year: 'numeric',
-        }),
-        text: newComment.value.trim(),
+    form.post(grades.comments.store(props.grade.id).url, {
+        preserveScroll: true,
+        onSuccess: () => form.reset(),
     });
-    newComment.value = '';
 };
 </script>
 
@@ -144,8 +122,8 @@ const submitComment = () => {
                 <div class="bg-border absolute inset-y-2 left-[5px] w-px" />
 
                 <div
-                    v-for="(comment, index) in comments"
-                    :key="index"
+                    v-for="comment in comments"
+                    :key="comment.id"
                     class="relative flex flex-col gap-1 py-4 pl-6 first:pt-0 last:pb-0"
                 >
                     <span
@@ -173,17 +151,19 @@ const submitComment = () => {
 
             <div v-if="can.comment" class="flex flex-col gap-2 pt-2">
                 <Textarea
-                    v-model="newComment"
+                    v-model="form.body"
                     placeholder="Écrire un commentaire…"
+                    maxlength="2000"
                     class="min-h-20 resize-none"
                     @keydown.meta.enter="submitComment"
                     @keydown.ctrl.enter="submitComment"
                     @keydown.enter.exact.prevent="submitComment"
                 />
+                <FieldError :errors="[form.errors.body]" />
                 <div class="flex justify-end">
                     <Button
                         size="sm"
-                        :disabled="!newComment.trim()"
+                        :disabled="!form.body.trim() || form.processing"
                         @click="submitComment"
                     >
                         Publier

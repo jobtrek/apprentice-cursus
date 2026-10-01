@@ -363,7 +363,7 @@ describe('routing and landing', function () {
 });
 
 describe('demo data', function () {
-    test('grade pages carry no demo payload outside local', function () {
+    test('grade pages carry no demo PDF outside local', function () {
         $apprentice = makeApprentice();
         $grade = makeGrade($apprentice);
 
@@ -376,7 +376,7 @@ describe('demo data', function () {
                 ->where('comments', []));
     });
 
-    test('grade pages carry the demo payload in local', function () {
+    test('grade pages carry the demo PDF in local', function () {
         app()->detectEnvironment(fn () => 'local');
 
         $apprentice = makeApprentice();
@@ -386,6 +386,6 @@ describe('demo data', function () {
             ->assertInertia(fn (Assert $page) => $page
                 ->component('GradeDetails')
                 ->where('pdfUrl', '/demo/sample-grade-test.pdf')
-                ->has('comments', 2));
+                ->where('comments', []));
     });
 });
