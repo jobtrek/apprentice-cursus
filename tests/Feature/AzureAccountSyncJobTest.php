@@ -17,7 +17,8 @@ use Illuminate\Support\Facades\Log;
 const SYNC_GROUPS = [
     'apprentices_IT' => 'g-it',
     'apprentices_EC' => 'g-ec',
-    'trainer' => 'g-trainer',
+    'trainer_IT' => 'g-trainer-it',
+    'trainer_EC' => 'g-trainer-ec',
     'coach' => 'g-coach',
 ];
 
@@ -62,7 +63,8 @@ test('it creates a user for each mapped group with the right role and section', 
     fakeDirectory([
         'g-it' => [member('a-it')],
         'g-ec' => [member('a-ec')],
-        'g-trainer' => [member('a-trainer')],
+        'g-trainer-it' => [member('a-trainer')],
+        'g-trainer-ec' => [member('a-trainer-ec')],
         'g-coach' => [member('a-coach')],
     ]);
 
@@ -80,6 +82,10 @@ test('it creates a user for each mapped group with the right role and section', 
     $trainer = User::where('azure_id', 'a-trainer')->firstOrFail();
     expect($trainer->role)->toBe(UserRole::Trainer)
         ->and($trainer->apprenticeship_id)->toBe($this->it->id);
+
+    $trainerEc = User::where('azure_id', 'a-trainer-ec')->firstOrFail();
+    expect($trainerEc->role)->toBe(UserRole::Trainer)
+        ->and($trainerEc->apprenticeship_id)->toBe($this->ec->id);
 
     $coach = User::where('azure_id', 'a-coach')->firstOrFail();
     expect($coach->role)->toBe(UserRole::Coach)
@@ -103,14 +109,26 @@ test('it updates the role and name of an existing user and keeps the section on 
         ->with('Microsoft SSO: section change pending confirmation, apprenticeship kept.', Mockery::type('array'))
         ->once();
 
-    fakeDirectory(['g-trainer' => [member('a-1', 'New Name')]]);
+    fakeDirectory(['g-trainer-it' => [member('a-1', 'New Name')]]);
     $this->artisan('azure:sync')->assertExitCode(0);
 
     expect($user->fresh()->role)->toBe(UserRole::Trainer);
 });
 
+test('a trainer moved to the other trainer group follows the new section', function () {
+    Log::spy();
+    $user = User::factory()->trainer()->create(['azure_id' => 'a-3']);
+    $user->forceFill(['apprenticeship_id' => $this->it->id])->save();
+    fakeDirectory(['g-trainer-ec' => [member('a-3')]]);
+
+    $this->artisan('azure:sync')->assertExitCode(0);
+
+    expect($user->fresh()->apprenticeship_id)->toBe($this->ec->id);
+    Log::shouldNotHaveReceived('warning', ['Microsoft SSO: section change pending confirmation, apprenticeship kept.', Mockery::type('array')]);
+});
+
 test('an account in several groups is not created', function () {
-    fakeDirectory(['g-it' => [member('a-2')], 'g-trainer' => [member('a-2')]]);
+    fakeDirectory(['g-it' => [member('a-2')], 'g-trainer-it' => [member('a-2')]]);
 
     $this->artisan('azure:sync')->assertExitCode(0);
 
@@ -233,7 +251,7 @@ test('a member page without a value list fails the sync without changes', functi
     $stale = User::factory()->create(['azure_id' => 'a-12']);
     Http::fake([
         'login.microsoftonline.com/*' => Http::response(['access_token' => 'token']),
-        'graph.microsoft.com/v1.0/groups/g-trainer/transitiveMembers/*' => Http::response(['unexpected' => true]),
+        'graph.microsoft.com/v1.0/groups/g-trainer-it/transitiveMembers/*' => Http::response(['unexpected' => true]),
         'graph.microsoft.com/*' => Http::response(['value' => [member('a-12')]]),
     ]);
 
@@ -261,7 +279,7 @@ test('it follows @odata.nextLink paging', function () {
 
 test('it is all or nothing when a group lookup fails', function () {
     $stale = User::factory()->create(['azure_id' => 'a-8']);
-    fakeDirectory(['g-it' => [member('a-9')], 'g-trainer' => 503]);
+    fakeDirectory(['g-it' => [member('a-9')], 'g-trainer-it' => 503]);
 
     expect(fn () => app(AzureDirectorySync::class)->run())
         ->toThrow(AzureSyncFailedException::class);

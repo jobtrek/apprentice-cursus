@@ -12,14 +12,15 @@ enum AzureGroup: string
 {
     case ApprenticesIt = 'apprentices_IT';
     case ApprenticesEc = 'apprentices_EC';
-    case Trainer = 'trainer';
+    case TrainerIt = 'trainer_IT';
+    case TrainerEc = 'trainer_EC';
     case Coach = 'coach';
 
     public function role(): UserRole
     {
         return match ($this) {
             self::ApprenticesIt, self::ApprenticesEc => UserRole::Apprentice,
-            self::Trainer => UserRole::Trainer,
+            self::TrainerIt, self::TrainerEc => UserRole::Trainer,
             self::Coach => UserRole::Coach,
         };
     }
@@ -28,8 +29,8 @@ enum AzureGroup: string
     public function apprenticeship(): ?string
     {
         return match ($this) {
-            self::ApprenticesIt, self::Trainer => ApprenticeshipSeeder::IT,
-            self::ApprenticesEc => ApprenticeshipSeeder::EC,
+            self::ApprenticesIt, self::TrainerIt => ApprenticeshipSeeder::IT,
+            self::ApprenticesEc, self::TrainerEc => ApprenticeshipSeeder::EC,
             self::Coach => null,
         };
     }

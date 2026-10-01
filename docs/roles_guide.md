@@ -10,7 +10,8 @@ Microsoft group → role + section → permissions. **Code only checks permissio
 | ---------------- | ---------- | ------- |
 | `apprentices_IT` | apprentice | IT      |
 | `apprentices_EC` | apprentice | EC      |
-| `trainer`        | trainer    | IT      |
+| `trainer_IT`     | trainer    | IT      |
+| `trainer_EC`     | trainer    | EC      |
 | `coach`          | coach      | —       |
 
 Roles are Spatie roles (no `users.role` column). Accounts are created, updated and deactivated by the daily account sync (`php artisan azure:sync` runs it on demand); logging in never creates an account. Access is re-checked against Microsoft every 15 min.
@@ -39,7 +40,8 @@ All passwords are `password` (password login is local only).
 | --------------------------- | --------------------------------------- |
 | `admin@example.com`         | admin (bypasses everything, local only) |
 | `coach@example.com`         | coach                                   |
-| `trainer@example.com`       | trainer, IT                             |
+| `trainer@example.com`       | trainer, IT (Bastien Nicoud)            |
+| `trainer-ec@example.com`    | trainer, EC                             |
 | `apprentice-it@example.com` | apprentice, IT                          |
 | `apprentice-ec@example.com` | apprentice, EC                          |
 

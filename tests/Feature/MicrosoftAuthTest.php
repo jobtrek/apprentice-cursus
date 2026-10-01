@@ -13,14 +13,16 @@ use Laravel\Socialite\Facades\Socialite;
 use Laravel\Socialite\Two\User as SocialiteUser;
 
 const IT_GROUP = 'group-it';
-const TRAINER_GROUP = 'group-trainer';
+const TRAINER_GROUP = 'group-trainer-it';
+const TRAINER_EC_GROUP = 'group-trainer-ec';
 const COACH_GROUP = 'group-coach';
 
 beforeEach(function () {
     Cache::flush();
     config()->set('services.azure.groups', [
         AzureGroup::ApprenticesIt->value => IT_GROUP,
-        AzureGroup::Trainer->value => TRAINER_GROUP,
+        AzureGroup::TrainerIt->value => TRAINER_GROUP,
+        AzureGroup::TrainerEc->value => TRAINER_EC_GROUP,
         AzureGroup::Coach->value => COACH_GROUP,
     ]);
     Apprenticeship::query()->create(['name' => ApprenticeshipSeeder::IT]);
@@ -345,6 +347,22 @@ test('an account missing from Entra (Graph 404) is deactivated and logged out by
 
     $this->assertGuest();
     expect($user->fresh()->is_active)->toBeFalse();
+});
+
+test('an EC trainer logs in with the EC apprenticeship and cannot view an IT apprentice grade', function () {
+    $ec = Apprenticeship::query()->create(['name' => ApprenticeshipSeeder::EC]);
+    $it = Apprenticeship::query()->where('name', ApprenticeshipSeeder::IT)->firstOrFail();
+    User::factory()->create(['azure_id' => 'azure-trainer-ec', 'email' => 'trainer-ec@example.test']);
+    fakeSso('azure-trainer-ec', 'trainer-ec@example.test', TRAINER_EC_GROUP);
+
+    $this->get(route('microsoft.callback'))->assertRedirect(route('apprentisdashboard'));
+
+    $trainer = User::where('azure_id', 'azure-trainer-ec')->firstOrFail();
+    expect($trainer->role)->toBe(UserRole::Trainer)
+        ->and($trainer->apprenticeship_id)->toBe($ec->id);
+
+    $this->get(route('grades.show', makeGrade(makeApprentice($ec))))->assertOk();
+    $this->get(route('grades.show', makeGrade(makeApprentice($it))))->assertForbidden();
 });
 
 test('an apprentice moved to the trainer group mid-session gets the trainer role and the IT apprenticeship', function () {

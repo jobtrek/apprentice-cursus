@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Enums\AzureGroup;
+use App\Enums\UserRole;
 use App\Exceptions\ApprenticeshipNotSeededException;
 use App\Exceptions\AzureAccessRevokedException;
 use App\Models\Apprenticeship;
@@ -60,7 +61,8 @@ class AzureAccountSync
     /**
      * Apply the group's role (Spatie) and apprenticeship to the user and (re)activate it.
      * A group without a section (coach) clears the apprenticeship.
-     * A user whose role is unchanged keeps a different existing apprenticeship.
+     * An apprentice keeps a different existing apprenticeship (moving grades needs
+     * a confirmation); a trainer follows its group's section.
      *
      * @throws ApprenticeshipNotSeededException before anything is modified
      */
@@ -81,7 +83,7 @@ class AzureAccountSync
 
         $roleUnchanged = $user->role === $group->role();
 
-        if ($apprenticeshipId !== null && $roleUnchanged && $user->apprenticeship_id !== null && $user->apprenticeship_id !== $apprenticeshipId) {
+        if ($apprenticeshipId !== null && $roleUnchanged && $group->role() === UserRole::Apprentice && $user->apprenticeship_id !== null && $user->apprenticeship_id !== $apprenticeshipId) {
             Log::warning('Microsoft SSO: section change pending confirmation, apprenticeship kept.', [
                 'user_id' => $user->id,
                 'from' => $user->apprenticeship_id,

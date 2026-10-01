@@ -14,7 +14,7 @@ The only document on who can do what, and how people get their role. Design deci
 | Role       | How you get it             | Who you supervise                                              |
 | ---------- | -------------------------- | -------------------------------------------------------------- |
 | Apprentice | IT or EC apprentices group | Nobody. You only see your own data                             |
-| Trainer    | Trainers group             | Every apprentice of your section (all trainers are IT for now) |
+| Trainer    | IT or EC trainers group    | Every apprentice of your section                               |
 | Coach      | Coaches group (no section) | Apprentices whose coach you are (IT and EC)                    |
 
 Accounts are created by the daily account sync (`azure:sync`), not at login. A person not synced yet is refused until the next run.
@@ -55,6 +55,7 @@ Other rules:
 - Accounts are matched on the Microsoft account id, never on email.
 - An account only exists after its first login.
 - Adding the person back to one group reactivates their account at the next login.
+- Moving a trainer to the other trainers group changes their section at the next sync or login.
 - Moving an apprentice from IT to EC (or back) does not change their section yet: that needs a confirmation page that is not built. A warning is logged.
 
 ## Entra setup (for the Microsoft administrator)
@@ -63,9 +64,10 @@ Other rules:
 | -------------- | -------------------------------- | ---------- | ------------------------- |
 | IT apprentices | `MICROSOFT_GROUP_APPRENTICES_IT` | Apprentice | Informaticien·ne CFC      |
 | EC apprentices | `MICROSOFT_GROUP_APPRENTICES_EC` | Apprentice | Employé·e de commerce CFC |
-| Trainers       | `MICROSOFT_GROUP_TRAINER`        | Trainer    | Informaticien·ne CFC      |
+| IT trainers    | `MICROSOFT_GROUP_TRAINER_IT`     | Trainer    | Informaticien·ne CFC      |
+| EC trainers    | `MICROSOFT_GROUP_TRAINER_EC`     | Trainer    | Employé·e de commerce CFC |
 
-- [ ] The three groups exist (nested members count).
+- [ ] Each group above exists (nested members count).
 - [ ] App registration has Graph permissions `User.Read.All` and `GroupMember.Read.All`, **with admin consent**.
 - [ ] Redirect URIs: `http://localhost/auth/microsoft/callback` (dev) and the production callback.
 - [ ] Send the maintainers, securely: tenant id, client id, client secret and its expiry, and the object id of each group.
@@ -76,5 +78,5 @@ Other rules:
 - "Supervised" means `User::supervises($apprentice)`: trainer = same section, coach = apprentice's `coach_id` is theirs.
 - Policies (`GradePolicy`, `ProjectPolicy`, `CommentPolicy`, `UserPolicy`) add the per-record checks: supervision, author only, active apprentice only.
 - Routes use `can:` middleware. The frontend reads the `auth.can` flags shared by `HandleInertiaRequests` and never re-derives rules.
-- Local login (password `password`): `admin@example.com` (local-only admin, everything), `coach@example.com` (coach), `trainer@example.com` (IT trainer), `apprentice-it@example.com` (IT apprentice), `apprentice-ec@example.com` (EC apprentice).
+- Local login (password `password`): `admin@example.com` (local-only admin, everything), `coach@example.com` (coach), `trainer@example.com` (IT trainer, Bastien Nicoud), `trainer-ec@example.com` (EC trainer), `apprentice-it@example.com` (IT apprentice), `apprentice-ec@example.com` (EC apprentice).
 - The local admin comes from Spatie's `Gate::before` in `AppServiceProvider`, not from `byRole()`. Direct `hasPermissionTo()` calls bypass the Gate, so `User::homeRoute()` and `User::supervises()` handle it explicitly. Guide: `docs/permissions_guide.md`.

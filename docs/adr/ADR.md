@@ -140,11 +140,11 @@ What each role can do and how the sync behaves: `docs/project-docs/role_permissi
 
 **The re-check fails open, login fails closed.** If Graph is down, signed-in users keep working and the check retries after 60 s; a new login is refused. `is_active` itself is checked on every request, uncached. *Why:* failing closed would log everyone out during a Microsoft outage; at login there is no known state to fall back on.
 
-**Trainers are mapped to the IT apprenticeship.** *Why:* `User::supervises()` needs a section, and all trainers are IT until an EC trainer group exists.
+**Trainers have one group per section** (`trainer_IT`, `trainer_EC`). *Why:* `User::supervises()` needs a section, and IT and EC have their own trainers. *(Supersedes "trainers are mapped to the IT apprenticeship".)*
 
 **Groups map to apprenticeships by seeded name** (`ApprenticeshipSeeder::IT` / `::EC`), no `apprenticeships.code` column. *Why:* a second identifier for two rows adds a migration and a value to keep in sync.
 
-**Apprenticeship kept on section change**, with a logged warning. *Why:* the user story requires the apprentice to confirm before grades move; that page does not exist yet.
+**Apprenticeship kept on an apprentice's section change**, with a logged warning. *Why:* the user story requires the apprentice to confirm before grades move; that page does not exist yet. A trainer has no grades, so it follows its group's section.
 
 **Supervision requires the target to be an apprentice and never oneself.** *Why:* otherwise a supervisor could "supervise" another supervisor.
 

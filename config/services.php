@@ -35,7 +35,8 @@ return [
         'groups' => [
             AzureGroup::ApprenticesIt->value => env('MICROSOFT_GROUP_APPRENTICES_IT'),
             AzureGroup::ApprenticesEc->value => env('MICROSOFT_GROUP_APPRENTICES_EC'),
-            AzureGroup::Trainer->value => env('MICROSOFT_GROUP_TRAINER'),
+            AzureGroup::TrainerIt->value => env('MICROSOFT_GROUP_TRAINER_IT'),
+            AzureGroup::TrainerEc->value => env('MICROSOFT_GROUP_TRAINER_EC'),
             AzureGroup::Coach->value => env('MICROSOFT_GROUP_COACH'),
         ],
     ],
