@@ -4,7 +4,6 @@ import {
     EyeIcon,
     FolderOpenIcon,
     GripVerticalIcon,
-    ImageIcon,
     PencilIcon,
     PlusIcon,
 } from '@lucide/vue';
@@ -149,12 +148,6 @@ function onHandleKeydown(event: KeyboardEvent, index: number): void {
                     >
                         <GripVerticalIcon class="size-4" aria-hidden="true" />
                     </button>
-
-                    <div
-                        class="bg-muted text-muted-foreground flex size-12 shrink-0 items-center justify-center rounded-md"
-                    >
-                        <ImageIcon class="size-4" aria-hidden="true" />
-                    </div>
 
                     <div class="min-w-0 flex-1 space-y-1">
                         <p class="truncate font-medium">{{ project.title }}</p>

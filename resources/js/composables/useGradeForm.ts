@@ -19,9 +19,10 @@ type Subject = (typeof normalSubjects)[number];
 type ModuleEntry = (typeof modulesData)[number];
 
 const useDateParts = () => {
-    const dateDay = ref('');
-    const dateMonth = ref('');
-    const dateYear = ref('');
+    const today = new Date();
+    const dateDay = ref(String(today.getDate()));
+    const dateMonth = ref(String(today.getMonth() + 1));
+    const dateYear = ref(String(today.getFullYear()));
 
     const isoDate = computed(() => {
         if (!dateDay.value || !dateMonth.value || !dateYear.value) return '';
