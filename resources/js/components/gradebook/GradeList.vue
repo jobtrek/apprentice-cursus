@@ -2,6 +2,7 @@
 import { useRemember } from '@inertiajs/vue3';
 import { ChevronDownIcon, SearchIcon } from '@lucide/vue';
 import { computed, reactive } from 'vue';
+import { PASSING_GRADE } from '@/data/dashboard';
 import { fmt, fmtWeight, type Gradebook, plural } from '@/lib/gradebook';
 import type { Grade } from '@/types/grade';
 import GradeTable from './GradeTable.vue';
@@ -9,13 +10,29 @@ import Segmented from './Segmented.vue';
 
 const props = defineProps<{ gradebook: Gradebook; grades: Grade[] }>();
 
-type View = { q: string; semester: number; closed: Record<number, boolean> };
+/** Toutes les notes, celles sous le seuil, ou celles qui ont des commentaires. */
+type ResultFilter = 'all' | 'insufficient' | 'commented';
 
-// Recherche, semestre et groupes repliés gardés au retour d'une note.
+type View = {
+    q: string;
+    semester: number;
+    result: ResultFilter;
+    closed: Record<number, boolean>;
+};
+
+// Recherche, filtres et groupes repliés gardés au retour d'une note.
 const view = useRemember(
-    reactive<View>({ q: '', semester: 0, closed: {} }),
+    reactive<View>({ q: '', semester: 0, result: 'all', closed: {} }),
     'GradeList',
 ) as View;
+// Un état mémorisé avant l'ajout du filtre de résultat n'a pas ce champ.
+view.result ??= 'all';
+
+const RESULT_OPTIONS: { value: ResultFilter; label: string }[] = [
+    { value: 'all', label: 'Toutes' },
+    { value: 'insufficient', label: 'Insuffisantes' },
+    { value: 'commented', label: 'Commentées' },
+];
 
 const semesterOptions = computed(() => [
     { value: 0, label: 'Tous' },
@@ -25,10 +42,24 @@ const semesterOptions = computed(() => [
 ]);
 
 const query = computed(() => view.q.trim().toLowerCase());
-const filtering = computed(() => Boolean(query.value || view.semester));
+const filtering = computed(() =>
+    Boolean(query.value || view.semester || view.result !== 'all'),
+);
+
+const matchesResult = (grade: Grade): boolean => {
+    switch (view.result) {
+        case 'insufficient':
+            return grade.value < PASSING_GRADE;
+        case 'commented':
+            return (grade.comments_count ?? 0) > 0;
+        default:
+            return true;
+    }
+};
 
 const matches = (grade: Grade): boolean =>
     (!view.semester || grade.semester === view.semester) &&
+    matchesResult(grade) &&
     (!query.value ||
         `${grade.title} ${grade.subject}`.toLowerCase().includes(query.value));
 
@@ -79,6 +110,7 @@ const shown = computed(() =>
 function reset(): void {
     view.q = '';
     view.semester = 0;
+    view.result = 'all';
 }
 
 function onToggle(id: number, event: Event): void {
@@ -120,13 +152,21 @@ function onToggle(id: number, event: Event): void {
                     :options="semesterOptions"
                     label="Semestre"
                 />
+                <Segmented
+                    v-model="view.result"
+                    :options="RESULT_OPTIONS"
+                    label="Résultat"
+                />
             </div>
         </div>
 
         <div class="gb-list">
             <div v-if="!shown && filtering" class="gb-empty">
                 <p class="gb-empty__title">Aucune note trouvée</p>
-                <p>Essayez un autre terme ou un autre semestre.</p>
+                <p>
+                    Essayez un autre terme, un autre semestre ou un autre
+                    résultat.
+                </p>
                 <button type="button" class="gb-link" @click="reset">
                     Réinitialiser les filtres
                 </button>

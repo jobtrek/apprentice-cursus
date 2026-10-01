@@ -156,7 +156,11 @@ function selectTab(tab: string | number): void {
                 <GradeBook :grades="grades" :grade-href="gradeHref" />
             </TabsContent>
 
-            <TabsContent v-if="portfolio" value="portfolio">
+            <TabsContent
+                v-if="portfolio"
+                value="portfolio"
+                class="flex flex-col gap-4"
+            >
                 <ApprenticePortfolio :portfolio="portfolio" />
             </TabsContent>
         </Tabs>

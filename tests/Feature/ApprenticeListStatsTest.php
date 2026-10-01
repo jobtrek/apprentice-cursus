@@ -54,3 +54,20 @@ test('the supervisor home carries the same grade stats as the apprentice list', 
             // The apprentice without a coach is one the coach could take on.
             ->where('assignableCount', 1));
 });
+
+test('the list derives the apprenticeship year from the latest semester graded and flags MP apprentices', function () {
+    $coach = User::factory()->coach()->create();
+    $third = makeApprentice(coach: $coach);
+    $third->forceFill(['name' => 'A', 'is_mp' => true])->save();
+    makeGrade($third)->forceFill(['semester' => 2])->save();
+    makeGrade($third)->forceFill(['semester' => 5])->save();
+    makeApprentice(coach: $coach)->forceFill(['name' => 'B'])->save();
+
+    $this->actingAs($coach)
+        ->get(route('apprentisdashboard'))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('apprentices.0.year', 3)
+            ->where('apprentices.0.isMp', true)
+            ->where('apprentices.1.year', null)
+            ->where('apprentices.1.isMp', false));
+});

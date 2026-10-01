@@ -6,6 +6,7 @@ use App\Http\Resources\ApprenticeResource;
 use App\Models\Grade;
 use App\Models\User;
 use Carbon\CarbonImmutable;
+use Illuminate\Support\Arr;
 
 /**
  * Rows of the apprentice list, shared by the apprentices page and the
@@ -27,7 +28,11 @@ class ApprenticeList
         $stats = self::gradeStats($apprentices->modelKeys());
 
         return collect(ApprenticeResource::collection($apprentices)->resolve())
-            ->map(fn (array $row): array => [...$row, 'stats' => $stats[$row['id']]])
+            ->map(fn (array $row): array => [
+                ...$row,
+                'year' => $stats[$row['id']]['year'],
+                'stats' => Arr::except($stats[$row['id']], 'year'),
+            ])
             ->values()
             ->all();
     }
@@ -56,7 +61,7 @@ class ApprenticeList
      * One grouped query for every apprentice, instead of one per row.
      *
      * @param  array<int, int>  $apprenticeIds
-     * @return array<int, array{grades_count: int, average: float|null, last_grade_date: string|null}>
+     * @return array<int, array{grades_count: int, average: float|null, last_grade_date: string|null, year: int|null}>
      */
     private static function gradeStats(array $apprenticeIds): array
     {
@@ -64,7 +69,7 @@ class ApprenticeList
             ->toBase()
             ->whereIn('user_id', $apprenticeIds)
             ->groupBy('user_id')
-            ->selectRaw('user_id, count(*) as grades_count, avg(value) as average, max(test_date) as last_grade_date')
+            ->selectRaw('user_id, count(*) as grades_count, avg(value) as average, max(test_date) as last_grade_date, max(semester) as last_semester')
             ->get()
             ->keyBy('user_id');
 
@@ -79,6 +84,9 @@ class ApprenticeList
                 'last_grade_date' => isset($row->last_grade_date)
                     ? CarbonImmutable::parse($row->last_grade_date)->format('d.m.Y')
                     : null,
+                // No start date is stored yet: the year of the latest semester graded
+                // (S1-S2 → 1, …, S7-S8 → 4) stands in for the year of apprenticeship.
+                'year' => isset($row->last_semester) ? (int) ceil($row->last_semester / 2) : null,
             ];
         }
 
