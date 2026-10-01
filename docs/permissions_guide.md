@@ -98,7 +98,7 @@ Example: `reports.export` for coaches.
 
 ## 4. Give or take a role from a person
 
-**Production.** Nobody sets roles in the app. The role comes from the person's Microsoft Entra group. Move them to another group in Entra; the change applies at their next login or within 15 minutes. See `docs/roles_guide.md` (section 1 and "Add a new Azure group").
+**Production.** Nobody sets roles in the app. The role comes from the person's Microsoft Entra group. Move them to another group in Entra; the change applies at the next account sync (daily, or `azure:sync`), at their next login or within 15 minutes. See `docs/roles_guide.md` (section 1 and "Add a new Azure group").
 
 **Local.**
 

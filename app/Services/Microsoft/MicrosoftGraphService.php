@@ -54,11 +54,82 @@ class MicrosoftGraphService
 
             array_push($groups, ...($response->json('value') ?? []));
 
-            $url = $response->json('@odata.nextLink');
+            $url = $response->json()['@odata.nextLink'] ?? null;
             $query = [];
         }
 
         return $groups;
+    }
+
+    /**
+     * Transitive members of a group that are users, following `@odata.nextLink`
+     * paging. The OData cast and `$select` are advanced queries on directory
+     * objects, hence `ConsistencyLevel: eventual` with `$count=true`. Returns
+     * null when the lookup could not be performed.
+     *
+     * @return list<array{id?: string, displayName?: string, mail?: string|null, userPrincipalName?: string|null, accountEnabled?: bool|null}>|null
+     */
+    public function getGroupMembers(string $groupId): ?array
+    {
+        $token = $this->getAppToken();
+
+        if (! $token) {
+            return null;
+        }
+
+        $url = "https://graph.microsoft.com/v1.0/groups/{$groupId}/transitiveMembers/microsoft.graph.user";
+        $query = [
+            '$select' => 'id,displayName,mail,userPrincipalName,accountEnabled',
+            '$count' => 'true',
+            '$top' => 999,
+        ];
+        $members = [];
+
+        while ($url !== null) {
+            try {
+                $response = Http::withToken($token)
+                    ->withHeaders(['ConsistencyLevel' => 'eventual'])
+                    ->acceptJson()
+                    ->get($url, $query);
+            } catch (ConnectionException $e) {
+                Log::error('Microsoft Graph group members lookup failed.', [
+                    'group_id' => $groupId,
+                    'message' => $e->getMessage(),
+                ]);
+
+                return null;
+            }
+
+            if (! $response->successful()) {
+                Log::error('Microsoft Graph group members lookup failed.', [
+                    'group_id' => $groupId,
+                    'status' => $response->status(),
+                    'body' => $response->body(),
+                ]);
+
+                return null;
+            }
+
+            // A page without a `value` list is a failed lookup, not an empty group:
+            // treating it as empty would deactivate every member of the group.
+            $page = $response->json('value');
+
+            if (! is_array($page) || ! array_is_list($page)) {
+                Log::error('Microsoft Graph group members lookup returned no member list.', [
+                    'group_id' => $groupId,
+                    'body' => $response->body(),
+                ]);
+
+                return null;
+            }
+
+            array_push($members, ...$page);
+
+            $url = $response->json()['@odata.nextLink'] ?? null;
+            $query = [];
+        }
+
+        return $members;
     }
 
     /**
