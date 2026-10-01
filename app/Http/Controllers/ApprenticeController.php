@@ -7,6 +7,7 @@ use App\Http\Resources\GradeResource;
 use App\Models\Grade;
 use App\Models\User;
 use App\Support\Demo\DemoGrade;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
@@ -43,6 +44,24 @@ class ApprenticeController extends Controller
                     ->get(),
             )->resolve(),
         ]);
+    }
+
+    /**
+     * The coach_id guard makes two coaches assigning themselves at once safe:
+     * the slower one updates no row and is refused.
+     */
+    public function assign(Request $request, User $apprentice): RedirectResponse
+    {
+        Gate::authorize('assignSelf', $apprentice);
+
+        $assigned = User::query()
+            ->whereKey($apprentice->id)
+            ->whereNull('coach_id')
+            ->update(['coach_id' => $request->user()->id]);
+
+        abort_if($assigned === 0, 409);
+
+        return back();
     }
 
     /** The grade must belong to the apprentice in the URL and be viewable by the user. */

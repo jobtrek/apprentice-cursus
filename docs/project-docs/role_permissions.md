@@ -37,7 +37,7 @@ Y = yes, N = no, RO = read-only. Anything on a **deactivated** apprentice is rea
 | Manage own portfolio (projects, skills, PDF export)            | Y                 | N                 | N                 |
 | See a supervised apprentice's portfolio                        | N                 | RO                | RO                |
 | See the apprentices list                                       | N                 | Y                 | Y                 |
-| Assign self as coach of an apprentice with no coach            | N                 | N                 | Y (not built yet) |
+| Assign self as coach of an apprentice with no coach            | N                 | N                 | Y                 |
 | Get an email when a supervised apprentice adds/deletes a grade | –                 | Y (not built yet) | Y (not built yet) |
 | Get an email when someone comments on own grade                | Y (not built yet) | –                 | –                 |
 

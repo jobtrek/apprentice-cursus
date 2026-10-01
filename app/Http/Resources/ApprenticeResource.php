@@ -36,6 +36,7 @@ class ApprenticeResource extends JsonResource
             'coach' => $this->coach?->name,
             // Coaches list apprentices they do not coach yet but cannot open them.
             'canView' => $request->user()?->can('view', $this->resource) ?? false,
+            'canAssign' => $request->user()?->can('assignSelf', $this->resource) ?? false,
         ];
     }
 }

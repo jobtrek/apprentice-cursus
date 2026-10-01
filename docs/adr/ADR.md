@@ -148,7 +148,7 @@ What each role can do and how the sync behaves: `docs/project-docs/role_permissi
 
 **Supervision requires the target to be an apprentice and never oneself.** *Why:* otherwise a supervisor could "supervise" another supervisor.
 
-**Coaches keep `coaching.assign-self` without a route.** *Why:* it is part of the matrix; the route comes with the coaching feature.
+**`coaching.assign-self` is served by `POST /apprentices/{apprentice}/assign`** (`UserPolicy::assignSelf`). Only an active apprentice with no coach; the update is guarded on `coach_id IS NULL`, so two coaches at once cannot overwrite each other. *Why:* another coach must never silently lose an apprentice.
 
 **Landing page is chosen by permission** (`User::homeRoute()`). *Why:* a new role only needs permissions.
 

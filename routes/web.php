@@ -50,6 +50,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
                 Route::get('/grades/{grade}', 'grade')
                     ->whereNumber('grade')
                     ->name('grades.show');
+                Route::post('/assign', 'assign')
+                    ->middleware('can:'.Permission::CoachingAssignSelf->value)
+                    ->name('assign');
             });
     });
 });
