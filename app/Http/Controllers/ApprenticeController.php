@@ -46,6 +46,10 @@ class ApprenticeController extends Controller
             'coaches' => $canManage
                 ? User::role(UserRole::Coach->value)->orderBy('name')->get(['id', 'name'])
                 : [],
+            // Who a coach can ask to validate a self-assignment: the other coaches.
+            'validators' => $user->can(Permission::CoachingAssignSelf->value)
+                ? User::role(UserRole::Coach->value)->whereKeyNot($user->id)->orderBy('name')->get(['id', 'name'])
+                : [],
             'can' => [
                 'manageSupervision' => $canManage,
             ],

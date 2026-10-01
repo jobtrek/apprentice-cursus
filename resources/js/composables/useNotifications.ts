@@ -93,6 +93,21 @@ export const useNotifications = () => {
         }
     };
 
+    /** Ajoute une notification non lue en tête de liste. */
+    const notify = (
+        notification: Pick<AppNotification, 'author' | 'action' | 'target'>,
+    ): void => {
+        const nextId =
+            Math.max(0, ...notifications.value.map((item) => item.id)) + 1;
+
+        notifications.value.unshift({
+            ...notification,
+            id: nextId,
+            created_at: Temporal.Now.instant().toString(),
+            read: false,
+        });
+    };
+
     const markAllAsRead = (): void => {
         notifications.value.forEach((item) => {
             item.read = true;
@@ -105,5 +120,6 @@ export const useNotifications = () => {
         markAsRead,
         markAsUnread,
         markAllAsRead,
+        notify,
     };
 };

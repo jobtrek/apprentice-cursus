@@ -2,15 +2,17 @@
 import { Link, router } from '@inertiajs/vue3';
 import {
     BookOpenIcon,
+    ClockIcon,
     EyeIcon,
     FolderOpenIcon,
     UserPlusIcon,
 } from '@lucide/vue';
-import { computed, ref } from 'vue';
+import { computed } from 'vue';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { TableCell, TableRow } from '@/components/ui/table';
+import { useAssignmentRequests } from '@/composables/useAssignmentRequests';
 import { getInitials } from '@/composables/useInitials';
 import { PASSING_GRADE } from '@/data/dashboard';
 import apprentices from '@/routes/apprentices';
@@ -27,6 +29,8 @@ const props = defineProps<{
 defineEmits<{
     /** Aperçu rapide dans le panneau latéral, sans quitter la liste. */
     preview: [apprentice: ApprenticeListItem];
+    /** Ouvre la demande d'attribution auprès d'un validateur. */
+    assign: [apprentice: ApprenticeListItem];
 }>();
 
 const profile = (tab?: 'grades' | 'portfolio') =>
@@ -47,20 +51,10 @@ const currentCoach = computed<SupervisorOption | null>(() =>
         : { id: props.apprentice.coachId, name: props.apprentice.coach },
 );
 
-const assigning = ref(false);
+const { pendingFor } = useAssignmentRequests();
 
-/** Le coach connecté devient le coach de cet·te apprenti·e sans coach. */
-function assignSelf(): void {
-    router.post(
-        apprentices.assign.url(props.apprentice.id),
-        {},
-        {
-            preserveScroll: true,
-            onStart: () => (assigning.value = true),
-            onFinish: () => (assigning.value = false),
-        },
-    );
-}
+/** Demande déjà envoyée, en attente du validateur. */
+const pendingRequest = computed(() => pendingFor(props.apprentice.id));
 </script>
 
 <template>
@@ -148,17 +142,26 @@ function assignSelf(): void {
 
         <TableCell @click.stop>
             <div class="flex justify-end gap-1">
-                <Button
-                    v-if="apprentice.canAssign"
-                    size="sm"
-                    variant="outline"
-                    :disabled="assigning"
-                    :data-test="`assign-apprentice-${apprentice.id}`"
-                    @click="assignSelf"
-                >
-                    <UserPlusIcon aria-hidden="true" />
-                    M'attribuer
-                </Button>
+                <template v-if="apprentice.canAssign">
+                    <Badge
+                        v-if="pendingRequest"
+                        variant="secondary"
+                        :title="`En attente de ${pendingRequest.validator.name}`"
+                    >
+                        <ClockIcon aria-hidden="true" />
+                        En attente
+                    </Badge>
+                    <Button
+                        v-else
+                        size="sm"
+                        variant="outline"
+                        :data-test="`assign-apprentice-${apprentice.id}`"
+                        @click="$emit('assign', apprentice)"
+                    >
+                        <UserPlusIcon aria-hidden="true" />
+                        M'attribuer
+                    </Button>
+                </template>
                 <template v-if="apprentice.canView">
                     <Button
                         variant="ghost"
