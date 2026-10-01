@@ -11,7 +11,6 @@ use App\Models\Skill;
 use App\Models\User;
 use App\Support\Demo\DemoGrade;
 use Carbon\CarbonImmutable;
-use Database\Seeders\ApprenticeshipSeeder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -175,12 +174,7 @@ class ApprenticeController extends Controller
     /** Short label of the apprentice's section: "IT", "EC", or null if none. */
     private function track(User $apprentice): ?string
     {
-        return match ($apprentice->apprenticeship?->name) {
-            ApprenticeshipSeeder::IT => 'IT',
-            ApprenticeshipSeeder::EC => 'EC',
-            null => null,
-            default => $apprentice->apprenticeship->name,
-        };
+        return $apprentice->apprenticeship?->shortName();
     }
 
     /**
