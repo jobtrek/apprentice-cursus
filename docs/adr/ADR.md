@@ -123,3 +123,58 @@ the table for the weight of each grade inside of EC's program. MP = Maturité
 ## 2026-09-24 — MCD of the actual database (from live dump)
 
 **Source:** live PostgreSQL dump (owner `sail`). Diagram lives in `../db/schemas/history/V2/mcd_actual.mmd` — faithful readout, not a redesign.
+
+## 2026-09-30 — Roles and permissions
+
+What each role can do and how the sync behaves: `docs/project-docs/role_permissions.md`. Below are only the choices and why.
+
+**Entra groups are the only source of the role; the Spatie role is the only place it is stored.** `users.role` was dropped by migration; `User::role` is a read-only accessor, writers call `syncRoles()`. Roles and permissions are created by a migration from `Permission::byRole()`. Code checks permissions, never role names. *Why:* one source means no drift between Entra, a column and Spatie, and the matrix can change without touching policies. A migrated database is usable without seeding.
+
+**Groups, not Entra app roles or the `groups` token claim.** Membership is read from Graph (`transitiveMemberOf`) through one resolver (`MappingRolesService::resolveGroup`). *Why:* the mail groups already exist; app roles would need Entra admin work first.
+
+**Match on `azure_id` only.** An existing account with the same email is refused, not adopted. *Why:* an email is not proof of identity; adopting by email allows account takeover.
+
+**No group or several groups refuses access.** *Why:* overlapping groups make the role ambiguous; the admin fixes it in Entra.
+
+**Role and track fields are not mass-assignable.** `is_active`, `is_mp`, `apprenticeship_id`, `coach_id`, `trainer_id` are set with `forceFill` by the flow that owns them. *Why:* they decide what a user may do.
+
+**One sync, used by login and the re-check middleware** (`AzureAccountSync`, one Graph client `MicrosoftGraphService`). *Why:* two copies of the mapping logic had already diverged.
+
+**Deactivate, never delete; no scheduled job.** Revoked access sets `is_active = false` at login or in `EnsureAzureAccountIsActive`; a later valid login reactivates. *Why:* history-bearing foreign keys forbid deletes, and the next request already detects the change.
+
+**The re-check fails open, login fails closed.** If Graph is down, signed-in users keep working and the check retries after 60 s; a new login is refused. `is_active` itself is checked on every request, uncached. *Why:* failing closed would log everyone out during a Microsoft outage; at login there is no known state to fall back on.
+
+**Trainers are mapped to the IT apprenticeship.** *Why:* `User::supervises()` needs a section, and all trainers are IT until an EC trainer group exists.
+
+**Groups map to apprenticeships by seeded name** (`ApprenticeshipSeeder::IT` / `::EC`), no `apprenticeships.code` column. *Why:* a second identifier for two rows adds a migration and a value to keep in sync.
+
+**Apprenticeship kept on section change**, with a logged warning. *Why:* the user story requires the apprentice to confirm before grades move; that page does not exist yet.
+
+**Supervision requires the target to be an apprentice and never oneself.** *Why:* otherwise a supervisor could "supervise" another supervisor.
+
+**Coaches keep `coaching.assign-self` without a route.** *Why:* it is part of the matrix; the route comes with the coaching feature.
+
+**Landing page is chosen by permission** (`User::homeRoute()`). *Why:* a new role only needs permissions.
+
+**Password login is local only** (`POST /login` registered only in `local`). *Why:* a password path in production would bypass group-based access and deactivation; it stays as a test tool because SSO needs a real tenant.
+
+**Demo data only in local** (`DemoGrade`, `DemoApprenticeSeeder`, test users). *Why:* grade files and comments are not stored yet, and demo people and passwords must never exist in a real environment.
+
+**`portfolio.screenshots.show` is outside `portfolio.manage-own`**, authorized by `ProjectPolicy::view`. *Why:* supervisors load screenshots too.
+
+### Users have no timestamps
+
+**Decision:** `User::$timestamps = false`.
+
+**Why:** The columns were dropped (`2026_09_17_083508_drop_default_columns_from_users_table`); Azure SSO is the sole write path and does not need them.
+
+## 2026-09-30 — Local-only admin role
+
+**Decision:** An `admin` role (`UserRole::Admin`) exists as a development tool only: access to everything, so developers can build a feature without switching accounts. It is implemented with Spatie's documented super-admin pattern, a `Gate::before` in `AppServiceProvider` that returns `true` when `User::isLocalAdmin()`, else `null`. `Permission::byRole()` gives admin an empty list. `isLocalAdmin()` is `app()->environment('local') && hasRole('admin')`, evaluated at call time. No `AzureGroup` maps to admin. `User::homeRoute()` and `User::supervises()` handle it explicitly. A migration calls `RolesAndPermissions::sync()` so the role exists on already-migrated databases.
+
+**Why:**
+- An empty `byRole()` list plus the Gate bypass means a new permission is covered automatically; a full list would need an edit for every permission and drift.
+- Checking the environment at call time, not at registration, means outside `local` the role grants nothing (every protected route returns 403) even if a row reaches production, and a test can switch the environment after boot.
+- No Entra group maps to it, so it can never come from Microsoft.
+- `hasPermissionTo()` does not go through the Gate, so a bypass there is not automatic: `homeRoute()` (lands on `apprentisdashboard`) and `supervises()` (supervises every apprentice) check `isLocalAdmin()` themselves. Code should prefer `$user->can()`.
+- Guide: `docs/permissions_guide.md`.
