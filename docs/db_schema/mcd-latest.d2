@@ -131,6 +131,54 @@ project_skill: {
   project_id: bigint {constraint: [primary_key; foreign_key]}
   skill_id: bigint {constraint: [primary_key; foreign_key]}
 }
+permissions: {
+  label: "permissions (Spatie)"
+  shape: sql_table
+  id: bigint {constraint: primary_key}
+  name: varchar
+  guard_name: varchar
+  created_at: timestamp
+  updated_at: timestamp
+  # UNIQUE (name, guard_name)
+}
+
+roles: {
+  label: "roles (Spatie)"
+  shape: sql_table
+  id: bigint {constraint: primary_key}
+  name: varchar
+  guard_name: varchar
+  created_at: timestamp
+  updated_at: timestamp
+  # UNIQUE (name, guard_name)
+}
+
+model_has_permissions: {
+  label: "model_has_permissions (Spatie)"
+  shape: sql_table
+  permission_id: bigint {constraint: [primary_key; foreign_key]}
+  model_type: varchar {constraint: primary_key}
+  model_id: bigint {constraint: primary_key}
+  # INDEX (model_id, model_type), cascadeOnDelete sur permission_id
+}
+
+model_has_roles: {
+  label: "model_has_roles (Spatie)"
+  shape: sql_table
+  role_id: bigint {constraint: [primary_key; foreign_key]}
+  model_type: varchar {constraint: primary_key}
+  model_id: bigint {constraint: primary_key}
+  # INDEX (model_id, model_type), cascadeOnDelete sur role_id
+}
+
+role_has_permissions: {
+  label: "role_has_permissions (Spatie)"
+  shape: sql_table
+  permission_id: bigint {constraint: [primary_key; foreign_key]}
+  role_id: bigint {constraint: [primary_key; foreign_key]}
+  # cascadeOnDelete sur les deux FK
+}3
+
 
 apprenticeships -> apprenticeship_context: contexts {
   source-arrowhead: {shape: cf-one-required}
@@ -233,6 +281,40 @@ domains -> grades: domains-grade {
 }
 
 domains -> apprenticeship_context: root {
+  source-arrowhead: {shape: cf-one-required}
+  target-arrowhead: {shape: cf-many}
+}
+
+permissions -> model_has_permissions: permission {
+  source-arrowhead: {shape: cf-one-required}
+  target-arrowhead: {shape: cf-many}
+}
+
+roles -> model_has_roles: role {
+  source-arrowhead: {shape: cf-one-required}
+  target-arrowhead: {shape: cf-many}
+}
+
+permissions -> role_has_permissions: permission {
+  source-arrowhead: {shape: cf-one-required}
+  target-arrowhead: {shape: cf-many}
+}
+
+roles -> role_has_permissions: role {
+  source-arrowhead: {shape: cf-one-required}
+  target-arrowhead: {shape: cf-many}
+}
+
+# Relation polymorphe : model_type = App\Models\User, model_id = users.id
+# Aucune FK en base, donc ligne en pointillés
+users -> model_has_roles: model {
+  style.stroke-dash: 3
+  source-arrowhead: {shape: cf-one-required}
+  target-arrowhead: {shape: cf-many}
+}
+
+users -> model_has_permissions: model {
+  style.stroke-dash: 3
   source-arrowhead: {shape: cf-one-required}
   target-arrowhead: {shape: cf-many}
 }
