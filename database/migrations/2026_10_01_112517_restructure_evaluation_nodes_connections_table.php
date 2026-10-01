@@ -16,6 +16,7 @@ return new class extends Migration
         Schema::create('domain_links', function (Blueprint $table) {
             $table->foreignId('parent_id')->constrained('domains');
             $table->foreignId('child_id')->constrained('domains');
+            $table->primary(['parent_id', 'child_id']);
         });
 
     }
