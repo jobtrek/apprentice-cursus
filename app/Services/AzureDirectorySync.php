@@ -7,6 +7,7 @@ use App\Exceptions\ApprenticeshipNotSeededException;
 use App\Exceptions\AzureSyncFailedException;
 use App\Models\User;
 use App\Services\Microsoft\MicrosoftGraphService;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -86,6 +87,7 @@ class AzureDirectorySync
         $created = $updated = $deactivated = $skipped = 0;
         $synced = [];
         $existing = User::whereNotNull('azure_id')->get()->keyBy('azure_id');
+        $renamed = $this->moveEmails($members, $existing);
 
         foreach ($members as $azureId => $member) {
             if (count($member['groups']) > 1) {
@@ -119,17 +121,15 @@ class AzureDirectorySync
                 $this->sync->apply($user, $group);
                 $created++;
             } else {
-                $before = [$user->name, $user->email, $user->is_active, $user->apprenticeship_id, $user->role];
+                $before = [$user->name, $user->is_active, $user->apprenticeship_id, $user->role];
 
                 if ($member['name'] !== '') {
                     $user->name = $member['name'];
                 }
 
-                $this->syncEmail($user, $member['email']);
-
                 $this->sync->apply($user, $group);
 
-                if ($before !== [$user->name, $user->email, $user->is_active, $user->apprenticeship_id, $user->role]) {
+                if (isset($renamed[$azureId]) || $before !== [$user->name, $user->is_active, $user->apprenticeship_id, $user->role]) {
                     $updated++;
                 }
             }
@@ -150,23 +150,71 @@ class AzureDirectorySync
     }
 
     /**
-     * Follows a UPN rename, so the old address is freed for whoever gets it next.
-     * An address held by another account is left alone: `users.email` is unique.
+     * Follows UPN renames of existing accounts, so an old address is freed for
+     * whoever gets it next. Runs before any account is created, so a newcomer
+     * can take an address renamed away in the same run.
+     *
+     * Renames are applied together: accounts that exchange UPNs, or rename in a
+     * chain, each take an address the other one is giving up. A rename onto an
+     * address held by an account that keeps it is skipped (`users.email` is
+     * unique), and so is any rename waiting on a skipped one.
+     *
+     * @param  array<string, array{groups: list<AzureGroup>, name: string, email: string|null}>  $members
+     * @param  Collection<string, User>  $existing  keyed by azure id
+     * @return array<string, true> azure ids whose email changed
      */
-    private function syncEmail(User $user, ?string $email): void
+    private function moveEmails(array $members, Collection $existing): array
     {
-        if ($email === null || $email === $user->email) {
-            return;
+        /** @var array<int, array{user: User, email: string}> $moves keyed by user id */
+        $moves = [];
+
+        foreach ($members as $azureId => $member) {
+            $user = $existing->get($azureId);
+
+            // Accounts in several groups are not synced, so their email is not either.
+            if ($user === null || count($member['groups']) > 1 || $member['email'] === null || $member['email'] === $user->email) {
+                continue;
+            }
+
+            $moves[$user->id] = ['user' => $user, 'email' => $member['email']];
         }
 
-        if (User::where('email', $email)->whereKeyNot($user->getKey())->exists()) {
-            Log::warning('Azure account sync kept the old email: the new one belongs to another account.', [
-                'azure_id' => $user->azure_id,
-            ]);
-
-            return;
+        if ($moves === []) {
+            return [];
         }
 
-        $user->email = $email;
+        $holders = User::whereIn('email', array_column($moves, 'email'))->pluck('id', 'email');
+
+        // Drop renames onto an address whose holder is not moving away, until none is left.
+        do {
+            $dropped = false;
+
+            foreach ($moves as $userId => $move) {
+                $holder = $holders->get($move['email']);
+
+                if ($holder !== null && $holder !== $userId && ! isset($moves[$holder])) {
+                    Log::warning('Azure account sync kept the old email: the new one belongs to another account.', [
+                        'azure_id' => $move['user']->azure_id,
+                    ]);
+                    unset($moves[$userId]);
+                    $dropped = true;
+                }
+            }
+        } while ($dropped);
+
+        // The unique index is checked per statement: park every moving address on a
+        // placeholder first, so an exchange never holds the same address twice.
+        foreach ($moves as $userId => $move) {
+            $move['user']->forceFill(['email' => "{$userId}.email-rename@sync.invalid"])->save();
+        }
+
+        $renamed = [];
+
+        foreach ($moves as $move) {
+            $move['user']->forceFill(['email' => $move['email']])->save();
+            $renamed[(string) $move['user']->azure_id] = true;
+        }
+
+        return $renamed;
     }
 }

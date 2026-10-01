@@ -196,6 +196,39 @@ test('a UPN rename onto an email held by another account keeps the old email', f
         ->and($user->is_active)->toBeTrue();
 });
 
+test('two accounts that exchange UPNs exchange emails', function () {
+    $first = User::factory()->create(['azure_id' => 'a-13', 'email' => 'a-14@example.test']);
+    $second = User::factory()->create(['azure_id' => 'a-14', 'email' => 'a-13@example.test']);
+    fakeDirectory(['g-it' => [member('a-13'), member('a-14')]]);
+
+    $this->artisan('azure:sync')->assertExitCode(0);
+
+    expect($first->fresh()->email)->toBe('a-13@example.test')
+        ->and($second->fresh()->email)->toBe('a-14@example.test');
+});
+
+test('a newcomer takes an address renamed away in the same run', function () {
+    $renamed = User::factory()->create(['azure_id' => 'a-15', 'email' => 'a-16@example.test']);
+    fakeDirectory(['g-it' => [member('a-15'), member('a-16')]]);
+
+    $this->artisan('azure:sync')->assertExitCode(0);
+
+    expect($renamed->fresh()->email)->toBe('a-15@example.test');
+    $this->assertDatabaseHas('users', ['azure_id' => 'a-16', 'email' => 'a-16@example.test']);
+});
+
+test('a rename waiting on a blocked rename keeps the old email', function () {
+    User::factory()->create(['email' => 'a-17@example.test', 'azure_id' => null]);
+    $blocked = User::factory()->create(['azure_id' => 'a-17', 'email' => 'a-18@example.test']);
+    $waiting = User::factory()->create(['azure_id' => 'a-18', 'email' => 'old-18@example.test']);
+    fakeDirectory(['g-it' => [member('a-17'), member('a-18')]]);
+
+    $this->artisan('azure:sync')->assertExitCode(0);
+
+    expect($blocked->fresh()->email)->toBe('a-18@example.test')
+        ->and($waiting->fresh()->email)->toBe('old-18@example.test');
+});
+
 test('a member page without a value list fails the sync without changes', function () {
     $stale = User::factory()->create(['azure_id' => 'a-12']);
     Http::fake([
