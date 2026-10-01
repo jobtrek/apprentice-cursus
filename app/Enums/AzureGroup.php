@@ -13,20 +13,24 @@ enum AzureGroup: string
     case ApprenticesIt = 'apprentices_IT';
     case ApprenticesEc = 'apprentices_EC';
     case Trainer = 'trainer';
+    case Coach = 'coach';
 
     public function role(): UserRole
     {
         return match ($this) {
             self::ApprenticesIt, self::ApprenticesEc => UserRole::Apprentice,
             self::Trainer => UserRole::Trainer,
+            self::Coach => UserRole::Coach,
         };
     }
 
-    public function apprenticeship(): string
+    /** Coaches belong to no section. */
+    public function apprenticeship(): ?string
     {
         return match ($this) {
             self::ApprenticesIt, self::Trainer => ApprenticeshipSeeder::IT,
             self::ApprenticesEc => ApprenticeshipSeeder::EC,
+            self::Coach => null,
         };
     }
 

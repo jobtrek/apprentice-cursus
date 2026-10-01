@@ -14,12 +14,14 @@ use Laravel\Socialite\Two\User as SocialiteUser;
 
 const IT_GROUP = 'group-it';
 const TRAINER_GROUP = 'group-trainer';
+const COACH_GROUP = 'group-coach';
 
 beforeEach(function () {
     Cache::flush();
     config()->set('services.azure.groups', [
         AzureGroup::ApprenticesIt->value => IT_GROUP,
         AzureGroup::Trainer->value => TRAINER_GROUP,
+        AzureGroup::Coach->value => COACH_GROUP,
     ]);
     Apprenticeship::query()->create(['name' => ApprenticeshipSeeder::IT]);
 });
@@ -76,28 +78,48 @@ function fakeGraphRecheck(string $azureId, array $groupIds, array $account = ['a
     ]);
 }
 
-test('an existing account with the same email is not adopted', function () {
+const NOT_SYNCED_MESSAGE = 'Your account has not been synced yet. Please try again tomorrow or ask an administrator to run the account sync.';
+
+test('an existing account with the same email is not adopted and the login is refused as not synced', function () {
     $existing = User::factory()->create(['email' => 'same@example.test']);
     fakeSso('azure-1', 'same@example.test', IT_GROUP);
 
-    $this->get(route('microsoft.callback'))->assertRedirect(route('login'));
+    $this->get(route('microsoft.callback'))
+        ->assertRedirect(route('login'))
+        ->assertSessionHas('error', NOT_SYNCED_MESSAGE);
 
     expect($existing->fresh()->azure_id)->toBeNull();
     $this->assertGuest();
 });
 
-test('an unknown azure id provisions a new account', function () {
+test('an unknown azure id is refused as not synced and no account is created', function () {
     fakeSso('azure-2', 'new@example.test', IT_GROUP);
 
-    $this->get(route('microsoft.callback'))->assertRedirect(route('grades.dashboard'));
+    $this->get(route('microsoft.callback'))
+        ->assertRedirect(route('login'))
+        ->assertSessionHas('error', NOT_SYNCED_MESSAGE);
 
-    $user = User::where('azure_id', 'azure-2')->first();
-    expect($user)->not->toBeNull()
-        ->and($user->role)->toBe(UserRole::Apprentice);
+    $this->assertGuest();
+    $this->assertDatabaseMissing('users', ['azure_id' => 'azure-2']);
+    $this->assertDatabaseMissing('users', ['email' => 'new@example.test']);
+});
+
+test('a synced coach logs in with the coach role and no section', function () {
+    $it = Apprenticeship::query()->where('name', ApprenticeshipSeeder::IT)->firstOrFail();
+    $user = User::factory()->create(['azure_id' => 'azure-coach']);
+    $user->forceFill(['apprenticeship_id' => $it->id])->save();
+    fakeSso('azure-coach', $user->email, COACH_GROUP);
+
+    $this->get(route('microsoft.callback'))->assertRedirect(route('apprentisdashboard'));
+
     $this->assertAuthenticatedAs($user);
+    $user = $user->fresh();
+    expect($user->role)->toBe(UserRole::Coach)
+        ->and($user->apprenticeship_id)->toBeNull();
 });
 
 test('a trainer logs in with the IT apprenticeship and can view an IT apprentice grade', function () {
+    User::factory()->create(['azure_id' => 'azure-trainer', 'email' => 'trainer@example.test']);
     fakeSso('azure-trainer', 'trainer@example.test', TRAINER_GROUP);
 
     $this->get(route('microsoft.callback'))->assertRedirect(route('apprentisdashboard'));
@@ -114,6 +136,7 @@ test('a trainer logs in with the IT apprenticeship and can view an IT apprentice
 });
 
 test('login primes the periodic account re-check cache', function () {
+    User::factory()->create(['azure_id' => 'azure-3', 'email' => 'cache@example.test']);
     fakeSso('azure-3', 'cache@example.test', IT_GROUP);
 
     $this->get(route('microsoft.callback'))->assertRedirect(route('grades.dashboard'));

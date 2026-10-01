@@ -58,6 +58,7 @@ erDiagram
         bigint apprenticeship_id FK "nullable, -> apprenticeships (track), nullOnDelete"
         bigint coach_id FK "nullable, self-ref, nullOnDelete"
         bigint trainer_id FK "nullable, self-ref, nullOnDelete"
+        timestamp synced_at "nullable, last Entra account sync that touched this row"
     }
 
     grades {

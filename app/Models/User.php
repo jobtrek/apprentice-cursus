@@ -5,6 +5,7 @@ namespace App\Models;
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use App\Enums\Permission;
 use App\Enums\UserRole;
+use Carbon\CarbonImmutable;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
@@ -35,6 +36,7 @@ use Spatie\Permission\Traits\HasRoles;
  * @property string|null $two_factor_recovery_codes
  * @property Carbon|null $two_factor_confirmed_at
  * @property string|null $remember_token
+ * @property CarbonImmutable|null $synced_at Last time the Entra account sync confirmed this user. NULL = never synced (local accounts).
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
@@ -64,6 +66,7 @@ class User extends Authenticatable
             'password' => 'hashed',
             'is_mp' => 'boolean',
             'is_active' => 'boolean',
+            'synced_at' => 'datetime',
         ];
     }
 

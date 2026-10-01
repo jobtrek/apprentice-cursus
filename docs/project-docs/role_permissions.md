@@ -11,11 +11,13 @@ The only document on who can do what, and how people get their role. Design deci
 
 ## The roles
 
-| Role       | How you get it                        | Who you supervise                                          |
-| ---------- | ------------------------------------- | ---------------------------------------------------------- |
-| Apprentice | IT or EC apprentices group            | Nobody. You only see your own data                         |
-| Trainer    | Trainers group                        | Every apprentice of your section (all trainers are IT for now) |
-| Coach      | No group yet, so coaches cannot log in | Apprentices whose coach you are (IT and EC)                |
+| Role       | How you get it             | Who you supervise                                              |
+| ---------- | -------------------------- | -------------------------------------------------------------- |
+| Apprentice | IT or EC apprentices group | Nobody. You only see your own data                             |
+| Trainer    | Trainers group             | Every apprentice of your section (all trainers are IT for now) |
+| Coach      | Coaches group (no section) | Apprentices whose coach you are (IT and EC)                    |
+
+Accounts are created by the daily account sync (`azure:sync`), not at login. A person not synced yet is refused until the next run.
 
 The table lists the production roles. The `admin` role (local development only) is not one of them: it passes every check when `APP_ENV=local`, grants nothing elsewhere, and no Entra group maps to it.
 
@@ -25,19 +27,19 @@ IT and EC apprentices have the same permissions. Only their grade tree differs (
 
 Y = yes, N = no, RO = read-only. Anything on a **deactivated** apprentice is read-only.
 
-| Action                                              | Apprentice | Trainer     | Coach       |
-| --------------------------------------------------- | ---------- | ----------- | ----------- |
-| Submit, edit, delete own grades and PDF scans       | Y          | N           | N           |
-| See own grades, averages and comments               | Y          | –           | –           |
-| See a supervised apprentice's grades and scans      | N          | RO          | RO          |
-| Comment on a supervised apprentice's grade/project  | N          | Y           | Y           |
-| Edit or delete a comment                            | N          | Own only    | Own only    |
-| Manage own portfolio (projects, skills, PDF export) | Y          | N           | N           |
-| See a supervised apprentice's portfolio             | N          | RO          | RO          |
-| See the apprentices list                            | N          | Y           | Y           |
-| Assign self as coach of an apprentice with no coach | N          | N           | Y (not built yet) |
-| Get an email when a supervised apprentice adds/deletes a grade | – | Y (not built yet) | Y (not built yet) |
-| Get an email when someone comments on own grade     | Y (not built yet) | –    | –           |
+| Action                                                         | Apprentice        | Trainer           | Coach             |
+| -------------------------------------------------------------- | ----------------- | ----------------- | ----------------- |
+| Submit, edit, delete own grades and PDF scans                  | Y                 | N                 | N                 |
+| See own grades, averages and comments                          | Y                 | –                 | –                 |
+| See a supervised apprentice's grades and scans                 | N                 | RO                | RO                |
+| Comment on a supervised apprentice's grade/project             | N                 | Y                 | Y                 |
+| Edit or delete a comment                                       | N                 | Own only          | Own only          |
+| Manage own portfolio (projects, skills, PDF export)            | Y                 | N                 | N                 |
+| See a supervised apprentice's portfolio                        | N                 | RO                | RO                |
+| See the apprentices list                                       | N                 | Y                 | Y                 |
+| Assign self as coach of an apprentice with no coach            | N                 | N                 | Y (not built yet) |
+| Get an email when a supervised apprentice adds/deletes a grade | –                 | Y (not built yet) | Y (not built yet) |
+| Get an email when someone comments on own grade                | Y (not built yet) | –                 | –                 |
 
 After login, apprentices land on their grades, trainers and coaches on the apprentices list.
 
