@@ -4,6 +4,7 @@ import {
     BookOpenIcon,
     EyeIcon,
     FolderOpenIcon,
+    LockIcon,
     UserPlusIcon,
 } from '@lucide/vue';
 import { computed, ref } from 'vue';
@@ -12,10 +13,10 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { TableCell, TableRow } from '@/components/ui/table';
 import { getInitials } from '@/composables/useInitials';
-import { PASSING_GRADE } from '@/data/dashboard';
 import apprentices from '@/routes/apprentices';
 import type { ApprenticeListItem, SupervisorOption } from '@/types/apprentice';
 import AssignmentBadge from './AssignmentBadge.vue';
+import AverageValue from './AverageValue.vue';
 import SupervisorSelect from './SupervisorSelect.vue';
 
 const props = defineProps<{
@@ -67,10 +68,12 @@ function assignSelf(): void {
     <!-- Toute la ligne ouvre le profil ; les boutons mènent droit à une section. -->
     <TableRow
         :class="
-            apprentice.canView &&
-            'group focus-visible:bg-muted/50 cursor-pointer focus-visible:outline-none'
+            apprentice.canView
+                ? 'group focus-visible:bg-muted/50 cursor-pointer focus-visible:outline-none'
+                : 'hover:bg-transparent'
         "
         :tabindex="apprentice.canView ? 0 : undefined"
+        :data-test="`apprentice-row-${apprentice.id}`"
         @click="openProfile"
         @keydown.enter.self.prevent="openProfile"
         @keydown.space.self.prevent="openProfile"
@@ -84,7 +87,11 @@ function assignSelf(): void {
                 </Avatar>
                 <span
                     class="font-medium"
-                    :class="apprentice.canView && 'group-hover:underline'"
+                    :class="
+                        apprentice.canView
+                            ? 'group-hover:underline'
+                            : 'text-muted-foreground'
+                    "
                 >
                     {{ apprentice.name }}
                 </span>
@@ -94,39 +101,35 @@ function assignSelf(): void {
             </div>
         </TableCell>
 
-        <TableCell>{{ apprentice.track ?? '—' }}</TableCell>
+        <TableCell>
+            <Badge v-if="apprentice.track" variant="outline">
+                {{ apprentice.track }}
+            </Badge>
+            <span v-else class="text-muted-foreground">—</span>
+        </TableCell>
 
         <template v-if="apprentice.stats">
             <TableCell class="text-right tabular-nums">
                 {{ apprentice.stats.grades_count }}
             </TableCell>
-            <TableCell class="text-right font-semibold tabular-nums">
-                <span
-                    v-if="apprentice.stats.average !== null"
-                    :class="{
-                        'text-destructive':
-                            apprentice.stats.average < PASSING_GRADE,
-                    }"
-                    :title="
-                        apprentice.stats.average < PASSING_GRADE
-                            ? 'Moyenne insuffisante'
-                            : undefined
-                    "
-                >
-                    {{ apprentice.stats.average.toFixed(1) }}
-                </span>
-                <span v-else class="text-muted-foreground font-normal">—</span>
+            <TableCell class="text-right">
+                <AverageValue :average="apprentice.stats.average" />
             </TableCell>
             <TableCell class="text-muted-foreground tabular-nums">
                 {{ apprentice.stats.last_grade_date ?? '—' }}
             </TableCell>
         </template>
-        <!-- Apprenti·e d'un autre coach : notes non accessibles. -->
-        <template v-else>
-            <TableCell class="text-muted-foreground text-right">—</TableCell>
-            <TableCell class="text-muted-foreground text-right">—</TableCell>
-            <TableCell class="text-muted-foreground">—</TableCell>
-        </template>
+        <!-- Apprenti·e d'un autre coach ou sans coach : notes non accessibles. -->
+        <TableCell v-else colspan="3" class="text-muted-foreground text-sm">
+            <span class="flex items-center justify-center gap-1.5">
+                <LockIcon class="size-3.5" aria-hidden="true" />
+                {{
+                    apprentice.canAssign
+                        ? 'Attribuez-vous cet apprenti pour voir ses notes'
+                        : 'Notes visibles par son coach uniquement'
+                }}
+            </span>
+        </TableCell>
 
         <TableCell v-if="coaches" @click.stop @keydown.stop>
             <SupervisorSelect
@@ -142,7 +145,7 @@ function assignSelf(): void {
             <AssignmentBadge :value="apprentice.coach ?? undefined" />
         </TableCell>
 
-        <TableCell class="hidden lg:table-cell">
+        <TableCell class="hidden xl:table-cell">
             <AssignmentBadge :value="apprentice.trainer ?? undefined" />
         </TableCell>
 
@@ -151,7 +154,6 @@ function assignSelf(): void {
                 <Button
                     v-if="apprentice.canAssign"
                     size="sm"
-                    variant="outline"
                     :disabled="assigning"
                     :data-test="`assign-apprentice-${apprentice.id}`"
                     @click="assignSelf"

@@ -40,7 +40,9 @@ defineProps<{
                         :colspan="columns.length"
                         class="text-muted-foreground h-24 text-center"
                     >
-                        {{ emptyMessage || 'Aucune donnée trouvée.' }}
+                        <slot name="empty">
+                            {{ emptyMessage || 'Aucune donnée trouvée.' }}
+                        </slot>
                     </TableCell>
                 </TableRow>
             </TableBody>

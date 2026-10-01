@@ -9,11 +9,11 @@ import {
     SectionHeader,
     StatItem,
 } from '@/components/page';
-import { findApprentice } from '@/composables/useApprentices';
 import { apprentisdashboard } from '@/routes';
 import apprentices from '@/routes/apprentices';
 import commentRoutes from '@/routes/comments';
 import grades from '@/routes/grades';
+import type { Apprentice } from '@/types/apprentice';
 import type { Grade } from '@/types/grade';
 import { Head, useForm } from '@inertiajs/vue3';
 import { PencilIcon } from '@lucide/vue';
@@ -35,6 +35,8 @@ const props = defineProps<{
     comments: Comment[];
     /** Présent quand un coach ou formateur consulte la note d'un·e apprenti·e. */
     apprenticeId?: number;
+    /** L'apprenti·e de la note, avec `apprenticeId`. */
+    apprentice?: Apprentice;
     /** Décisions d'autorisation calculées côté serveur. */
     can: { comment: boolean };
 }>();
@@ -55,16 +57,12 @@ const roleStyle = (role: string) =>
         text: 'text-muted-foreground',
     };
 
-const apprentice = computed(() =>
-    props.apprenticeId ? findApprentice(props.apprenticeId) : undefined,
-);
-
 const breadcrumbs = computed(() =>
     props.apprenticeId
         ? [
               { label: 'Apprentis', href: apprentisdashboard() },
               {
-                  label: apprentice.value?.name ?? 'Apprenti·e',
+                  label: props.apprentice?.name ?? 'Apprenti·e',
                   href: apprentices.show(props.apprenticeId),
               },
           ]

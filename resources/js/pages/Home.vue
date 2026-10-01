@@ -78,7 +78,6 @@ const shortcuts: Shortcut[] = [
     <PageContainer size="lg">
         <template v-if="isApprentice">
             <PageHeader
-                class="home-hero"
                 :title="firstName ? `Bonjour ${firstName}` : 'Accueil'"
                 description="Voici où vous en êtes dans votre formation."
             >
