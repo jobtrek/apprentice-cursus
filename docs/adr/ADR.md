@@ -6,19 +6,16 @@
 
 **Why:** MP only changes one branch's weights (Note d'expérience), while the rest of the tree (Travail pratique, Connaissances professionnelles) is identical — duplicating a whole second tree would just copy those shared branches for no reason.
 
-
-
 the table for the weight of each grade inside of EC's program. MP = Maturité
 ┌───────────────────────────────────────────────────────┬──────────────┬─────────────────┐
-│                                                       │ Standard (B) │ MP variant (E)  │
+│ │ Standard (B) │ MP variant (E) │
 ├───────────────────────────────────────────────────────┼──────────────┼─────────────────┤
-│ Enseignement des connaissances pro + culture générale │ 50%          │ (doesn't exist) │
+│ Enseignement des connaissances pro + culture générale │ 50% │ (doesn't exist) │
 ├───────────────────────────────────────────────────────┼──────────────┼─────────────────┤
-│ Cours interentreprises                                │ 25%          │ 50%             │
+│ Cours interentreprises │ 25% │ 50% │
 ├───────────────────────────────────────────────────────┼──────────────┼─────────────────┤
-│ Formation à la pratique professionnelle               │ 25%          │ 50%             │
+│ Formation à la pratique professionnelle │ 25% │ 50% │
 └───────────────────────────────────────────────────────┴──────────────┴─────────────────┘
-
 
 ## 2026-09-09 — Migrations & models derived from the MCD
 
@@ -88,7 +85,7 @@ the table for the weight of each grade inside of EC's program. MP = Maturité
 
 **Decision:** `grades.user_id`, `grades.evaluation_node_id`, `evaluation_results.user_id`, `evaluation_results.evaluation_node_id`, `projects.user_id` and `comments.author_id` are `restrictOnDelete()`. `users` carries an `is_active` flag.
 
-**Why:** The user stories are explicit that apprentices, coaches, trainers and admins are *deactivated*, never deleted, and that grade history stays archived (`docs/user_stories/user_story_final.md`, `docs/project-docs/role_permissions.md`). A cascade would silently wipe someone's academic record. `is_active` is the deactivation mechanism; `restrictOnDelete()` is the schema-level backstop that makes an accidental hard delete impossible rather than merely discouraged.
+**Why:** The user stories are explicit that apprentices, coaches, trainers and admins are _deactivated_, never deleted, and that grade history stays archived (`docs/user_stories/user_story_final.md`, `docs/project-docs/role_permissions.md`). A cascade would silently wipe someone's academic record. `is_active` is the deactivation mechanism; `restrictOnDelete()` is the schema-level backstop that makes an accidental hard delete impossible rather than merely discouraged.
 
 ### Comments are cleaned up in the application layer
 
@@ -100,7 +97,7 @@ the table for the weight of each grade inside of EC's program. MP = Maturité
 
 **Decision:** `grades.value` and `evaluation_results.rounded_value` are constrained to 1.0–6.0, `grades.semester` to 1–8, `evaluation_results.semester` to 0–8, `comments.body` to 2000 characters. `evaluation_results.semester` uses sentinel `0` for `cursus`-scoped rows.
 
-**Why:** The MCD specifies these ranges, and a CHECK holds even against a raw `DB::table()->insert()` that bypasses every FormRequest. The sentinel keeps the `(user_id, evaluation_node_id, semester)` unique index null-safe so recompute upserts update in place. The MCD's `test_date <= today` is *not* implemented: `CURRENT_DATE` is `STABLE`, not `IMMUTABLE`, and PostgreSQL rejects it in a CHECK — that rule belongs to the FormRequest.
+**Why:** The MCD specifies these ranges, and a CHECK holds even against a raw `DB::table()->insert()` that bypasses every FormRequest. The sentinel keeps the `(user_id, evaluation_node_id, semester)` unique index null-safe so recompute upserts update in place. The MCD's `test_date <= today` is _not_ implemented: `CURRENT_DATE` is `STABLE`, not `IMMUTABLE`, and PostgreSQL rejects it in a CHECK — that rule belongs to the FormRequest.
 
 ### Foreign keys are indexed explicitly
 
@@ -124,39 +121,39 @@ the table for the weight of each grade inside of EC's program. MP = Maturité
 
 What each role can do and how the sync behaves: `docs/project-docs/role_permissions.md`. Below are only the choices and why.
 
-**Entra groups are the only source of the role; the Spatie role is the only place it is stored.** `users.role` was dropped by migration; `User::role` is a read-only accessor, writers call `syncRoles()`. Roles and permissions are created by a migration from `Permission::byRole()`. Code checks permissions, never role names. *Why:* one source means no drift between Entra, a column and Spatie, and the matrix can change without touching policies. A migrated database is usable without seeding.
+**Entra groups are the only source of the role; the Spatie role is the only place it is stored.** `users.role` was dropped by migration; `User::role` is a read-only accessor, writers call `syncRoles()`. Roles and permissions are created by a migration from `Permission::byRole()`. Code checks permissions, never role names. _Why:_ one source means no drift between Entra, a column and Spatie, and the matrix can change without touching policies. A migrated database is usable without seeding.
 
-**Groups, not Entra app roles or the `groups` token claim.** Membership is read from Graph (`transitiveMemberOf`) through one resolver (`MappingRolesService::resolveGroup`). *Why:* the mail groups already exist; app roles would need Entra admin work first.
+**Groups, not Entra app roles or the `groups` token claim.** Membership is read from Graph (`transitiveMemberOf`) through one resolver (`MappingRolesService::resolveGroup`). _Why:_ the mail groups already exist; app roles would need Entra admin work first.
 
-**Match on `azure_id` only.** An existing account with the same email is refused, not adopted. *Why:* an email is not proof of identity; adopting by email allows account takeover.
+**Match on `azure_id` only.** An existing account with the same email is refused, not adopted. _Why:_ an email is not proof of identity; adopting by email allows account takeover.
 
-**No group or several groups refuses access.** *Why:* overlapping groups make the role ambiguous; the admin fixes it in Entra.
+**No group or several groups refuses access.** _Why:_ overlapping groups make the role ambiguous; the admin fixes it in Entra.
 
-**Role and track fields are not mass-assignable.** `is_active`, `is_mp`, `apprenticeship_id`, `coach_id`, `trainer_id` are set with `forceFill` by the flow that owns them. *Why:* they decide what a user may do.
+**Role and track fields are not mass-assignable.** `is_active`, `is_mp`, `apprenticeship_id`, `coach_id`, `trainer_id` are set with `forceFill` by the flow that owns them. _Why:_ they decide what a user may do.
 
-**One sync, used by login and the re-check middleware** (`AzureAccountSync`, one Graph client `MicrosoftGraphService`). *Why:* two copies of the mapping logic had already diverged.
+**One sync, used by login and the re-check middleware** (`AzureAccountSync`, one Graph client `MicrosoftGraphService`). _Why:_ two copies of the mapping logic had already diverged.
 
-**Deactivate, never delete; no scheduled job.** *(The "no scheduled job" part is superseded by 2026-10-01 — Entra account sync.)* Revoked access sets `is_active = false` at login or in `EnsureAzureAccountIsActive`; a later valid login reactivates. *Why:* history-bearing foreign keys forbid deletes, and the next request already detects the change.
+**Deactivate, never delete; no scheduled job.** _(The "no scheduled job" part is superseded by 2026-10-01 — Entra account sync.)_ Revoked access sets `is_active = false` at login or in `EnsureAzureAccountIsActive`; a later valid login reactivates. _Why:_ history-bearing foreign keys forbid deletes, and the next request already detects the change.
 
-**The re-check fails open, login fails closed.** If Graph is down, signed-in users keep working and the check retries after 60 s; a new login is refused. `is_active` itself is checked on every request, uncached. *Why:* failing closed would log everyone out during a Microsoft outage; at login there is no known state to fall back on.
+**The re-check fails open, login fails closed.** If Graph is down, signed-in users keep working and the check retries after 60 s; a new login is refused. `is_active` itself is checked on every request, uncached. _Why:_ failing closed would log everyone out during a Microsoft outage; at login there is no known state to fall back on.
 
-**Trainers have one group per section** (`trainer_IT`, `trainer_EC`). *Why:* `User::supervises()` needs a section, and IT and EC have their own trainers. *(Supersedes "trainers are mapped to the IT apprenticeship".)*
+**Trainers have one group per section** (`trainer_IT`, `trainer_EC`). _Why:_ `User::supervises()` needs a section, and IT and EC have their own trainers. _(Supersedes "trainers are mapped to the IT apprenticeship".)_
 
-**Groups map to apprenticeships by seeded name** (`ApprenticeshipSeeder::IT` / `::EC`), no `apprenticeships.code` column. *Why:* a second identifier for two rows adds a migration and a value to keep in sync.
+**Groups map to apprenticeships by seeded name** (`ApprenticeshipSeeder::IT` / `::EC`), no `apprenticeships.code` column. _Why:_ a second identifier for two rows adds a migration and a value to keep in sync.
 
-**Apprenticeship kept on an apprentice's section change**, with a logged warning. *Why:* the user story requires the apprentice to confirm before grades move; that page does not exist yet. A trainer has no grades, so it follows its group's section.
+**Apprenticeship kept on an apprentice's section change**, with a logged warning. _Why:_ the user story requires the apprentice to confirm before grades move; that page does not exist yet. A trainer has no grades, so it follows its group's section.
 
-**Supervision requires the target to be an apprentice and never oneself.** *Why:* otherwise a supervisor could "supervise" another supervisor.
+**Supervision requires the target to be an apprentice and never oneself.** _Why:_ otherwise a supervisor could "supervise" another supervisor.
 
-**`coaching.assign-self` is served by `POST /apprentices/{apprentice}/assign`** (`UserPolicy::assignSelf`). Only an active apprentice with no coach; the update is guarded on `coach_id IS NULL`, so two coaches at once cannot overwrite each other. *Why:* another coach must never silently lose an apprentice.
+**`coaching.assign-self` is served by `POST /apprentices/{apprentice}/assign`** (`UserPolicy::assignSelf`). Only an active apprentice with no coach; the update is guarded on `coach_id IS NULL`, so two coaches at once cannot overwrite each other. _Why:_ another coach must never silently lose an apprentice.
 
-**Landing page is chosen by permission** (`User::homeRoute()`). *Why:* a new role only needs permissions.
+**Landing page is chosen by permission** (`User::homeRoute()`). _Why:_ a new role only needs permissions.
 
-**Password login is local only** (`POST /login` registered only in `local`). *Why:* a password path in production would bypass group-based access and deactivation; it stays as a test tool because SSO needs a real tenant.
+**Password login is local only** (`POST /login` registered only in `local`). _Why:_ a password path in production would bypass group-based access and deactivation; it stays as a test tool because SSO needs a real tenant.
 
-**Demo data only in local** (`DemoGrade`, `DemoApprenticeSeeder`, test users). *Why:* grade files and comments are not stored yet, and demo people and passwords must never exist in a real environment.
+**Demo data only in local** (`DemoGrade`, `DemoApprenticeSeeder`, test users). _Why:_ grade files and comments are not stored yet, and demo people and passwords must never exist in a real environment.
 
-**`portfolio.screenshots.show` is outside `portfolio.manage-own`**, authorized by `ProjectPolicy::view`. *Why:* supervisors load screenshots too.
+**`portfolio.screenshots.show` is outside `portfolio.manage-own`**, authorized by `ProjectPolicy::view`. _Why:_ supervisors load screenshots too.
 
 ### Users have no timestamps
 
@@ -169,6 +166,7 @@ What each role can do and how the sync behaves: `docs/project-docs/role_permissi
 **Decision:** An `admin` role (`UserRole::Admin`) exists as a development tool only: access to everything, so developers can build a feature without switching accounts. It is implemented with Spatie's documented super-admin pattern, a `Gate::before` in `AppServiceProvider` that returns `true` when `User::isLocalAdmin()`, else `null`. `Permission::byRole()` gives admin an empty list. `isLocalAdmin()` is `app()->environment('local') && hasRole('admin')`, evaluated at call time. No `AzureGroup` maps to admin. `User::homeRoute()` and `User::supervises()` handle it explicitly. A migration calls `RolesAndPermissions::sync()` so the role exists on already-migrated databases.
 
 **Why:**
+
 - An empty `byRole()` list plus the Gate bypass means a new permission is covered automatically; a full list would need an edit for every permission and drift.
 - Checking the environment at call time, not at registration, means outside `local` the role grants nothing (every protected route returns 403) even if a row reaches production, and a test can switch the environment after boot.
 - No Entra group maps to it, so it can never come from Microsoft.
@@ -183,9 +181,9 @@ What each role can do and how the sync behaves: `docs/project-docs/role_permissi
 
 **Considered options:**
 
-- *Create at login* (previous behaviour): no job, but unsynced apprentices are invisible to their supervisors.
-- *Group mapping in an `azure_groups` table*: rejected. The four groups only change with a new section, which needs a deploy anyway. The `AzureGroup` enum stays.
-- *Sync at login on a miss*: rejected. New apprentices get their Microsoft account and group before they arrive, so the daily run covers them. A manual `azure:sync` handles the exceptions.
+- _Create at login_ (previous behaviour): no job, but unsynced apprentices are invisible to their supervisors.
+- _Group mapping in an `azure_groups` table_: rejected. The four groups only change with a new section, which needs a deploy anyway. The `AzureGroup` enum stays.
+- _Sync at login on a miss_: rejected. New apprentices get their Microsoft account and group before they arrive, so the daily run covers them. A manual `azure:sync` handles the exceptions.
 
 **Consequences:**
 

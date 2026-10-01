@@ -11,11 +11,11 @@ The only document on who can do what, and how people get their role. Design deci
 
 ## The roles
 
-| Role       | How you get it             | Who you supervise                                              |
-| ---------- | -------------------------- | -------------------------------------------------------------- |
-| Apprentice | IT or EC apprentices group | Nobody. You only see your own data                             |
-| Trainer    | IT or EC trainers group    | Every apprentice of your section                               |
-| Coach      | Coaches group (no section) | Apprentices whose coach you are (IT and EC)                    |
+| Role       | How you get it             | Who you supervise                           |
+| ---------- | -------------------------- | ------------------------------------------- |
+| Apprentice | IT or EC apprentices group | Nobody. You only see your own data          |
+| Trainer    | IT or EC trainers group    | Every apprentice of your section            |
+| Coach      | Coaches group (no section) | Apprentices whose coach you are (IT and EC) |
 
 Accounts are created by the daily account sync (`azure:sync`), not at login. A person not synced yet is refused until the next run.
 

@@ -74,7 +74,6 @@ As an apprentice,
 I want to choose which subject my test belongs to,
 so that it is classified under the correct subject.
 
-
 As an apprentice,
 I want to enter the grade I received (between 1 and 6, in 0.5 increments),
 so that it is recorded alongside the scanned PDF.
@@ -82,7 +81,6 @@ so that it is recorded alongside the scanned PDF.
 As an apprentice,
 I want to enter the test date,
 so that the application can determine which semester it belongs to.
-
 
 As an apprentice,
 I want a grade outside the allowed range to be rejected when submitted,
@@ -93,7 +91,6 @@ I want the application to automatically derive the year and semester from the te
 so that I do not have to know which semester a date belongs to.
 (Semester boundaries are fixed: August–December = semester 1, January–July = semester 2.)
 
-
 As an apprentice,
 I want my uploaded PDF to be automatically renamed according to the company's naming convention,
 so that coaches and trainers can identify files consistently outside the application.
@@ -102,26 +99,21 @@ As an apprentice,
 I want the renamed scan to be stored by the application,
 so that my coach and trainer can open the original file later.
 
-
 As an apprentice,
 I want the URL of the stored file to be protected by the same access rules as the grade page,
 so that knowing the file name is not enough for someone else to access my test.
-
 
 As an apprentice,
 I want a file that is not a PDF to be rejected on both the client and server sides,
 so that only valid scans are stored.
 
-
 As an apprentice,
 I want the file size to be limited to 10 MB,
 so that excessively large files cannot be uploaded.
 
-
 As an apprentice,
 I want a future date to be rejected,
 so that I cannot submit a test that has not taken place yet.
-
 
 As an apprentice,
 I want to see a clear error message if the upload fails,
@@ -194,6 +186,7 @@ I want existing comments to remain attached to a grade when I edit it,
 so that feedback from my coach or trainer is not lost.
 
 ---
+
 ## Review by Coach/Trainer
 
 As a coach,
@@ -223,7 +216,6 @@ so that the apprentice's record remains theirs and there is no confusion about w
 As a coach or trainer,
 I want to be able to see comments left by the other role,
 so that I have a complete view of the feedback given to the apprentice.
-
 
 As a coach or trainer,
 I want a deactivated apprentice to disappear from my active list while their grades remain read-only under an "Archived" filter,
@@ -266,7 +258,6 @@ As a coach or trainer,
 I want deleting someone else's comment to be refused,
 so that feedback from others stays on the record.
 
-
 As a coach or trainer,
 I want the comment body to be limited to 2,000 characters,
 so that excessively long comments are avoided.
@@ -299,16 +290,13 @@ As a coach or trainer,
 I want to be able to disable email notifications,
 so that I am not flooded with emails if I prefer to check the application manually.
 
-
 As a coach or trainer,
 I want to receive an email when a grade is deleted by an apprentice I coach or of my section,
 so that I know the test is no longer in the system.
 
-
 As a coach or trainer,
 I want a grade edited by the apprentice not to trigger a new email notification,
 so that I do not receive a second email for the same grade.
-
 
 As a coach or trainer,
 I want the notification email to contain the apprentice's name, subject, grade, date, and a direct link to the grade page,
@@ -370,7 +358,6 @@ As an IT apprentice,
 I want to see comments left on the projects in my portfolio,
 so that I can understand the feedback I have received.
 
-
 As an IT apprentice,
 I want each project to contain a title, organization, start and end dates, description, technologies used, role, demo link, source code link, and screenshots,
 so that my portfolio is complete and detailed.
@@ -378,7 +365,6 @@ so that my portfolio is complete and detailed.
 As an IT apprentice,
 I want projects to be displayed chronologically by start date,
 so that I can track the evolution of my work over time.
-
 
 As an IT apprentice,
 I want existing projects referencing a skill to keep that skill if it is removed from the catalog,

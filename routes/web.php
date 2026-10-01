@@ -65,5 +65,4 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->name('apprentices.coach.update');
 });
 
-require __DIR__.'/profile.php';
 require __DIR__.'/auth.php';

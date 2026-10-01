@@ -1,11 +1,11 @@
 packages:
-  - '.'
+    - '.'
 
 allowBuilds:
-  vue-demi: true
+    vue-demi: true
 
 minimumReleaseAgeExclude:
-  - '@lucide/vue@1.44.0 || 1.47.0'
+    - '@lucide/vue@1.44.0 || 1.47.0'
 
 publicHoistPattern:
-  - '@inertiajs/core'
+    - '@inertiajs/core'

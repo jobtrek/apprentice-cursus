@@ -39,7 +39,6 @@ Standard Spatie tables, no custom logic:
 - `model_has_roles`, `model_has_permissions` (polymorphic via `model_type` + `model_id`, only `User` used)
 - `role_has_permissions`
 
-
 # Decision breakdown
 
 ## Apprenticeship context

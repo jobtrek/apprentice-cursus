@@ -87,13 +87,13 @@ checked against `mcd_actual.mmd` and `db_schema/mcd.mmd`). Newest entries at the
   through shared nodes.
 - **Pending user decisions**:
   a. Remove `domains.parent_domain_id` now that `domain_connections` exists? (Weight
-     then lives only on edges.)
+  then lives only on edges.)
   b. Variant selection: (a) whole-tree-per-variant strict roots vs (b) one root with
-     variant-tagged edges (`domain_connections.variant_id → maturities`, NULL = all).
+  variant-tagged edges (`domain_connections.variant_id → maturities`, NULL = all).
   c. Factual check: does any real bulletin feed the same grades into two CFC blocks
-     (e.g. MP math → CBE, CI → two places)? A single "yes" forces (b).
+  (e.g. MP math → CBE, CI → two places)? A single "yes" forces (b).
   d. Frozen `evaluation_results`-equivalent: parked until a published final must
-     survive a later tree edit (trigger, not a task).
+  survive a later tree edit (trigger, not a task).
 
 ## 8. Suggestions (assistant, not yet ruled)
 
@@ -106,4 +106,3 @@ checked against `mcd_actual.mmd` and `db_schema/mcd.mmd`). Newest entries at the
   rounding then feeds upper averages — accepted by user).
 - Subjects remain the true leaves (grades attach to subjects, never directly to
   domains) — currently implicit; consider writing it as a stated rule.
-
