@@ -1,28 +1,27 @@
 <script setup lang="ts">
 import { Link, router } from '@inertiajs/vue3';
-import {
-    BookOpenIcon,
-    EyeIcon,
-    FolderOpenIcon,
-    LockIcon,
-    UserPlusIcon,
-} from '@lucide/vue';
-import { computed, ref } from 'vue';
+import { BookOpenIcon, EyeIcon, FolderOpenIcon } from '@lucide/vue';
+import { computed } from 'vue';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { TableCell, TableRow } from '@/components/ui/table';
 import { getInitials } from '@/composables/useInitials';
 import apprentices from '@/routes/apprentices';
-import type { ApprenticeListItem, SupervisorOption } from '@/types/apprentice';
+import type {
+    ApprenticeListItem,
+    SupervisorOption,
+    TrainerOption,
+} from '@/types/apprentice';
 import AssignmentBadge from './AssignmentBadge.vue';
 import AverageValue from './AverageValue.vue';
 import SupervisorSelect from './SupervisorSelect.vue';
 
 const props = defineProps<{
     apprentice: ApprenticeListItem;
-    /** Admin local : coachs proposés dans la cellule. Null sinon. */
+    /** Admin local : coachs et formateurs proposés dans les cellules. Null sinon. */
     coaches: SupervisorOption[] | null;
+    trainers: TrainerOption[] | null;
 }>();
 
 defineEmits<{
@@ -35,44 +34,29 @@ const profile = (tab?: 'grades' | 'portfolio') =>
         query: tab ? { tab } : undefined,
     });
 
-/** Un coach voit tous les apprentis mais n'ouvre que les siens. */
-const openProfile = () => {
-    if (props.apprentice.canView) {
-        router.visit(profile());
-    }
-};
+const openProfile = () => router.visit(profile());
 
-const currentCoach = computed<SupervisorOption | null>(() =>
-    props.apprentice.coachId === null || props.apprentice.coach === null
-        ? null
-        : { id: props.apprentice.coachId, name: props.apprentice.coach },
+/** Superviseur actuel au format des options du select. */
+const current = (
+    id: number | null,
+    name: string | null,
+): SupervisorOption | null =>
+    id === null || name === null ? null : { id, name };
+
+/** Seuls les formateurs de la filière de l'apprenti·e peuvent le suivre. */
+const trainerOptions = computed(
+    () =>
+        props.trainers?.filter(
+            (trainer) => trainer.track === props.apprentice.track,
+        ) ?? null,
 );
-
-const assigning = ref(false);
-
-/** Le coach connecté devient le coach de cet·te apprenti·e sans coach. */
-function assignSelf(): void {
-    router.post(
-        apprentices.assign.url(props.apprentice.id),
-        {},
-        {
-            preserveScroll: true,
-            onStart: () => (assigning.value = true),
-            onFinish: () => (assigning.value = false),
-        },
-    );
-}
 </script>
 
 <template>
     <!-- Toute la ligne ouvre le profil ; les boutons mènent droit à une section. -->
     <TableRow
-        :class="
-            apprentice.canView
-                ? 'group focus-visible:bg-muted/50 cursor-pointer focus-visible:outline-none'
-                : 'hover:bg-transparent'
-        "
-        :tabindex="apprentice.canView ? 0 : undefined"
+        class="group focus-visible:bg-muted/50 cursor-pointer focus-visible:outline-none"
+        tabindex="0"
         :data-test="`apprentice-row-${apprentice.id}`"
         @click="openProfile"
         @keydown.enter.self.prevent="openProfile"
@@ -85,14 +69,7 @@ function assignSelf(): void {
                         {{ getInitials(apprentice.name) }}
                     </AvatarFallback>
                 </Avatar>
-                <span
-                    class="font-medium"
-                    :class="
-                        apprentice.canView
-                            ? 'group-hover:underline'
-                            : 'text-muted-foreground'
-                    "
-                >
+                <span class="font-medium group-hover:underline">
                     {{ apprentice.name }}
                 </span>
                 <Badge v-if="!apprentice.isActive" variant="outline">
@@ -108,32 +85,19 @@ function assignSelf(): void {
             <span v-else class="text-muted-foreground">—</span>
         </TableCell>
 
-        <template v-if="apprentice.stats">
-            <TableCell class="text-right tabular-nums">
-                {{ apprentice.stats.grades_count }}
-            </TableCell>
-            <TableCell class="text-right">
-                <AverageValue :average="apprentice.stats.average" />
-            </TableCell>
-            <TableCell class="text-muted-foreground tabular-nums">
-                {{ apprentice.stats.last_grade_date ?? '—' }}
-            </TableCell>
-        </template>
-        <!-- Apprenti·e d'un autre coach ou sans coach : notes non accessibles. -->
-        <TableCell v-else colspan="3" class="text-muted-foreground text-sm">
-            <span class="flex items-center justify-center gap-1.5">
-                <LockIcon class="size-3.5" aria-hidden="true" />
-                {{
-                    apprentice.canAssign
-                        ? 'Attribuez-vous cet apprenti pour voir ses notes'
-                        : 'Notes visibles par son coach uniquement'
-                }}
-            </span>
+        <TableCell class="text-right tabular-nums">
+            {{ apprentice.stats.grades_count }}
+        </TableCell>
+        <TableCell class="text-right">
+            <AverageValue :average="apprentice.stats.average" />
+        </TableCell>
+        <TableCell class="text-muted-foreground tabular-nums">
+            {{ apprentice.stats.last_grade_date ?? '—' }}
         </TableCell>
 
         <TableCell v-if="coaches" @click.stop @keydown.stop>
             <SupervisorSelect
-                :current="currentCoach"
+                :current="current(apprentice.coachId, apprentice.coach)"
                 :options="coaches"
                 :url="apprentices.coach.update.url(apprentice.id)"
                 field="coach_id"
@@ -145,51 +109,54 @@ function assignSelf(): void {
             <AssignmentBadge :value="apprentice.coach ?? undefined" />
         </TableCell>
 
-        <TableCell class="hidden xl:table-cell">
+        <TableCell
+            v-if="trainerOptions"
+            class="hidden lg:table-cell"
+            @click.stop
+            @keydown.stop
+        >
+            <SupervisorSelect
+                :current="current(apprentice.trainerId, apprentice.trainer)"
+                :options="trainerOptions"
+                :url="apprentices.trainer.update.url(apprentice.id)"
+                field="trainer_id"
+                none-label="Aucun formateur"
+                :label="`Formateur de ${apprentice.name}`"
+            />
+        </TableCell>
+        <TableCell v-else class="hidden lg:table-cell">
             <AssignmentBadge :value="apprentice.trainer ?? undefined" />
         </TableCell>
 
         <TableCell @click.stop>
             <div class="flex justify-end gap-1">
                 <Button
-                    v-if="apprentice.canAssign"
-                    size="sm"
-                    :disabled="assigning"
-                    :data-test="`assign-apprentice-${apprentice.id}`"
-                    @click="assignSelf"
+                    variant="ghost"
+                    size="icon-sm"
+                    :aria-label="`Aperçu de ${apprentice.name}`"
+                    :title="`Aperçu de ${apprentice.name}`"
+                    @click="$emit('preview', apprentice)"
                 >
-                    <UserPlusIcon aria-hidden="true" />
-                    M'attribuer
+                    <EyeIcon aria-hidden="true" />
                 </Button>
-                <template v-if="apprentice.canView">
-                    <Button
-                        variant="ghost"
-                        size="icon-sm"
-                        :aria-label="`Aperçu de ${apprentice.name}`"
-                        :title="`Aperçu de ${apprentice.name}`"
-                        @click="$emit('preview', apprentice)"
+                <Button as-child variant="ghost" size="icon-sm">
+                    <Link
+                        :href="profile('grades')"
+                        :aria-label="`Carnet de notes de ${apprentice.name}`"
+                        :title="`Carnet de notes de ${apprentice.name}`"
                     >
-                        <EyeIcon aria-hidden="true" />
-                    </Button>
-                    <Button as-child variant="ghost" size="icon-sm">
-                        <Link
-                            :href="profile('grades')"
-                            :aria-label="`Carnet de notes de ${apprentice.name}`"
-                            :title="`Carnet de notes de ${apprentice.name}`"
-                        >
-                            <BookOpenIcon aria-hidden="true" />
-                        </Link>
-                    </Button>
-                    <Button as-child variant="ghost" size="icon-sm">
-                        <Link
-                            :href="profile('portfolio')"
-                            :aria-label="`Portfolio de ${apprentice.name}`"
-                            :title="`Portfolio de ${apprentice.name}`"
-                        >
-                            <FolderOpenIcon aria-hidden="true" />
-                        </Link>
-                    </Button>
-                </template>
+                        <BookOpenIcon aria-hidden="true" />
+                    </Link>
+                </Button>
+                <Button as-child variant="ghost" size="icon-sm">
+                    <Link
+                        :href="profile('portfolio')"
+                        :aria-label="`Portfolio de ${apprentice.name}`"
+                        :title="`Portfolio de ${apprentice.name}`"
+                    >
+                        <FolderOpenIcon aria-hidden="true" />
+                    </Link>
+                </Button>
             </div>
         </TableCell>
     </TableRow>

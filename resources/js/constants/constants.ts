@@ -10,11 +10,3 @@ export const TRACK_FILTER_OPTIONS = [
     { label: 'IT', value: 'IT' },
     { label: 'EC', value: 'EC' },
 ] as const;
-
-export const YEAR_FILTER_OPTIONS = [
-    { label: 'Toutes', value: 'All' },
-    { label: '1ère', value: '1ère' },
-    { label: '2ème', value: '2ème' },
-    { label: '3ème', value: '3ème' },
-    { label: '4ème', value: '4ème' },
-] as const;

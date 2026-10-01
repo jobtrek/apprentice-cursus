@@ -62,9 +62,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
                 Route::get('/grades/{grade}', 'grade')
                     ->whereNumber('grade')
                     ->name('grades.show');
-                Route::post('/assign', 'assign')
-                    ->middleware('can:'.Permission::CoachingAssignSelf->value)
-                    ->name('assign');
+                // ApprenticeController::assign() checks the coach or trainer permission.
+                Route::post('/assign', 'assign')->name('assign');
             });
     });
 
@@ -72,6 +71,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->whereNumber('apprentice')
         ->middleware('can:'.Permission::SupervisionManage->value)
         ->name('apprentices.coach.update');
+    Route::put('/apprentices/{apprentice}/trainer', [SupervisionController::class, 'updateTrainer'])
+        ->whereNumber('apprentice')
+        ->middleware('can:'.Permission::SupervisionManage->value)
+        ->name('apprentices.trainer.update');
 });
 
 require __DIR__.'/auth.php';

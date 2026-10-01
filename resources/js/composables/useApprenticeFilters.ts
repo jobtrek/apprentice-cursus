@@ -5,9 +5,6 @@ import type { ApprenticeListItem } from '@/types/apprentice';
 
 export type TrackFilter = 'All' | 'IT' | 'EC';
 
-/** Coach : ses apprentis, ceux sans coach, ou tous. */
-export type ScopeFilter = 'mine' | 'unassigned' | 'all';
-
 export type ApprenticeSort = 'name' | 'average' | 'recent';
 
 export const SORT_OPTIONS: { value: ApprenticeSort; label: string }[] = [
@@ -19,7 +16,6 @@ export const SORT_OPTIONS: { value: ApprenticeSort; label: string }[] = [
 type Filters = {
     search: string;
     track: TrackFilter;
-    scope: ScopeFilter;
     sort: ApprenticeSort;
 };
 
@@ -30,25 +26,11 @@ const compare: Record<
 > = {
     name: (a, b) => a.name.localeCompare(b.name, 'fr'),
     average: (a, b) =>
-        (a.stats?.average ?? Infinity) - (b.stats?.average ?? Infinity),
+        (a.stats.average ?? Infinity) - (b.stats.average ?? Infinity),
     recent: (a, b) =>
-        sortableDate(b.stats?.last_grade_date ?? '').localeCompare(
-            sortableDate(a.stats?.last_grade_date ?? ''),
+        sortableDate(b.stats.last_grade_date ?? '').localeCompare(
+            sortableDate(a.stats.last_grade_date ?? ''),
         ),
-};
-
-const matchesScope = (
-    apprentice: ApprenticeListItem,
-    scope: ScopeFilter,
-): boolean => {
-    switch (scope) {
-        case 'mine':
-            return apprentice.canView;
-        case 'unassigned':
-            return apprentice.coach === null;
-        default:
-            return true;
-    }
 };
 
 /**
@@ -58,19 +40,9 @@ const matchesScope = (
 export const useApprenticeFilters = (
     apprentices: Ref<ApprenticeListItem[]>,
 ) => {
-    /** Un coach voit tous les apprentis mais n'en ouvre qu'une partie. */
-    const hasScope = computed(() =>
-        apprentices.value.some((apprentice) => !apprentice.canView),
-    );
-
     const defaults = (): Filters => ({
         search: '',
         track: 'All',
-        // Un coach arrive sur les siens, s'il en suit déjà.
-        scope:
-            hasScope.value && apprentices.value.some(({ canView }) => canView)
-                ? 'mine'
-                : 'all',
         sort: 'name',
     });
 
@@ -94,8 +66,7 @@ export const useApprenticeFilters = (
                             ?.toLocaleLowerCase('fr')
                             .includes(query)) &&
                     (filters.track === 'All' ||
-                        apprentice.track === filters.track) &&
-                    matchesScope(apprentice, filters.scope),
+                        apprentice.track === filters.track),
             )
             .sort(compare[filters.sort]);
     });
@@ -105,15 +76,9 @@ export const useApprenticeFilters = (
         () => new Set(apprentices.value.map(({ track }) => track)).size > 1,
     );
 
-    const isFiltered = computed(() => {
-        const initial = defaults();
-
-        return (
-            filters.search.trim() !== '' ||
-            filters.track !== initial.track ||
-            filters.scope !== initial.scope
-        );
-    });
+    const isFiltered = computed(
+        () => filters.search.trim() !== '' || filters.track !== 'All',
+    );
 
     const reset = (): void => {
         Object.assign(filters, { ...defaults(), sort: filters.sort });
@@ -122,7 +87,6 @@ export const useApprenticeFilters = (
     return {
         filters,
         results,
-        hasScope,
         hasTrackFilter,
         isFiltered,
         reset,

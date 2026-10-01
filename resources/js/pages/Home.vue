@@ -22,12 +22,17 @@ import { createGradebook, SEMESTERS, type GradeTree } from '@/lib/gradebook';
 import { trainingPeriod } from '@/lib/semester';
 import gradeRoutes from '@/routes/grades';
 import portfolio from '@/routes/portfolio';
+import type { ApprenticeListItem } from '@/types/apprentice';
 import type { Grade } from '@/types/grade';
 
 const props = defineProps<{
     grades: Grade[];
     tree: GradeTree | null;
     profile: { track: string | null; variant: 'standard' | 'mp' } | null;
+    /** Coach, formateur, admin : lignes de la liste des apprentis. */
+    apprentices: ApprenticeListItem[];
+    /** Apprentis qu'un coach ou formateur peut encore ajouter. */
+    assignableCount: number;
 }>();
 
 const page = usePage();
@@ -148,7 +153,10 @@ const shortcuts: Shortcut[] = [
                 :title="firstName ? `Bonjour ${firstName}` : 'Accueil'"
                 description="Voici où en sont les apprentis que vous suivez."
             />
-            <SupervisorDashboard />
+            <SupervisorDashboard
+                :apprentices="apprentices"
+                :assignable-count="assignableCount"
+            />
         </template>
     </PageContainer>
 </template>

@@ -16,7 +16,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  */
 class ApprenticeResource extends JsonResource
 {
-    public const RELATIONS = ['apprenticeship.trainers', 'coach', 'roles'];
+    public const RELATIONS = ['apprenticeship', 'coach', 'trainer', 'roles'];
 
     /**
      * @return array<string, mixed>
@@ -37,14 +37,11 @@ class ApprenticeResource extends JsonResource
             'year' => null,
             'isActive' => $this->is_active,
             'coach' => $this->coach?->name,
-            // Lets the local admin's coach select show the current coach.
+            'trainer' => $this->trainer?->name,
+            // Let the local admin's selects show the current coach and trainer.
             'coachId' => $this->coach_id,
-            // The section's configured trainer (config/apprenticeships.php), if active.
-            'trainer' => $track === null ? null : $this->apprenticeship->trainers
-                ->firstWhere('name', config("apprenticeships.trainers.{$track}"))?->name,
-            // Coaches list apprentices they do not coach yet but cannot open them.
+            'trainerId' => $this->trainer_id,
             'canView' => $request->user()?->can('view', $this->resource) ?? false,
-            'canAssign' => $request->user()?->can('assignSelf', $this->resource) ?? false,
         ];
     }
 }

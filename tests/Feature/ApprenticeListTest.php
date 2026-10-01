@@ -16,47 +16,48 @@ beforeEach(function () {
     $this->ec = section(ApprenticeshipSeeder::EC);
 });
 
-test('a coach lists every active apprentice of both sections, assigned or not', function () {
+test('a coach lists only the active apprentices it coaches, in both sections', function () {
     $coach = User::factory()->coach()->create();
     $otherCoach = User::factory()->coach()->create(['name' => 'Other coach']);
-    makeApprentice($this->it, $coach)->forceFill(['name' => 'A mine'])->save();
-    makeApprentice($this->ec, $otherCoach)->forceFill(['name' => 'B other'])->save();
-    makeApprentice($this->ec)->forceFill(['name' => 'C none'])->save();
-    makeApprentice($this->it)->forceFill(['name' => 'D gone', 'is_active' => false])->save();
+    makeApprentice($this->it, $coach)->forceFill(['name' => 'A mine IT'])->save();
+    makeApprentice($this->ec, $coach)->forceFill(['name' => 'B mine EC'])->save();
+    makeApprentice($this->ec, $otherCoach)->forceFill(['name' => 'C other'])->save();
+    makeApprentice($this->ec)->forceFill(['name' => 'D none'])->save();
+    makeApprentice($this->it, $coach)->forceFill(['name' => 'E gone', 'is_active' => false])->save();
 
     $this->actingAs($coach)
         ->get(route('apprentisdashboard'))
         ->assertOk()
         ->assertInertia(function (Assert $page) {
             $page->component('ApprentisDashboard');
-            expect(listedNames($page))->toBe(['A mine', 'B other', 'C none']);
+            expect(listedNames($page))->toBe(['A mine IT', 'B mine EC']);
         });
 });
 
-test('a coach can open only its coachees from the list', function () {
+test('each listed apprentice carries its coach and can be opened', function () {
     $coach = User::factory()->coach()->create(['name' => 'My coach']);
     $mine = makeApprentice($this->it, $coach);
-    $notMine = makeApprentice($this->ec);
 
     $this->actingAs($coach)
         ->get(route('apprentisdashboard'))
-        ->assertInertia(function (Assert $page) use ($mine, $notMine) {
+        ->assertInertia(function (Assert $page) use ($mine) {
             $rows = collect($page->toArray()['props']['apprentices'])->keyBy('id');
 
             expect($rows[$mine->id])->toMatchArray(['track' => 'IT', 'year' => null, 'coach' => 'My coach', 'canView' => true]);
-            expect($rows[$notMine->id])->toMatchArray(['track' => 'EC', 'coach' => null, 'canView' => false]);
         });
 });
 
-test('a trainer lists only the apprentices of its own section', function () {
+test('a trainer lists only its own apprentices of its own section', function () {
     $trainer = User::factory()->trainer()->create();
     $trainer->forceFill(['apprenticeship_id' => $this->it->id])->save();
-    makeApprentice($this->it)->forceFill(['name' => 'IT one'])->save();
-    makeApprentice($this->ec)->forceFill(['name' => 'EC one'])->save();
+    makeApprentice($this->it, trainer: $trainer)->forceFill(['name' => 'IT mine'])->save();
+    makeApprentice($this->it)->forceFill(['name' => 'IT none'])->save();
+    // Assigned but moved to another section: no longer followed.
+    makeApprentice($this->ec, trainer: $trainer)->forceFill(['name' => 'EC moved'])->save();
 
     $this->actingAs($trainer)
         ->get(route('apprentisdashboard'))
-        ->assertInertia(fn (Assert $page) => expect(listedNames($page))->toBe(['IT one']))
+        ->assertInertia(fn (Assert $page) => expect(listedNames($page))->toBe(['IT mine']))
         ->assertInertia(fn (Assert $page) => $page->where('apprentices.0.canView', true));
 });
 
@@ -70,7 +71,8 @@ test('a trainer without a section lists nobody', function () {
 
 test('supervisors are never listed as apprentices', function () {
     $coach = User::factory()->coach()->create();
-    User::factory()->trainer()->create()->forceFill(['apprenticeship_id' => $this->it->id])->save();
+    // Even with this coach as coach_id, a trainer is not an apprentice.
+    User::factory()->trainer()->create()->forceFill(['apprenticeship_id' => $this->it->id, 'coach_id' => $coach->id])->save();
 
     $this->actingAs($coach)
         ->get(route('apprentisdashboard'))
@@ -83,7 +85,7 @@ test('an apprentice cannot open the list', function () {
 
 test('the supervisor home receives the same list, apprentices receive none', function () {
     $coach = User::factory()->coach()->create();
-    $apprentice = makeApprentice($this->it);
+    $apprentice = makeApprentice($this->it, $coach);
 
     $this->actingAs($coach)
         ->get(route('home'))
@@ -113,7 +115,10 @@ test('the apprentice and grade pages carry the apprentice', function () {
 
 test('the list query count does not depend on the number of apprentices', function () {
     $coach = User::factory()->coach()->create();
-    makeApprentice($this->it, $coach);
+    // With a trainer already, so the eager load of `trainer` runs in both counts.
+    $trainer = User::factory()->trainer()->create();
+    $trainer->forceFill(['apprenticeship_id' => $this->it->id])->save();
+    makeApprentice($this->it, $coach, $trainer);
 
     // Warm-up request: the first one also loads Spatie's permission cache.
     $this->actingAs($coach)->get(route('apprentisdashboard'))->assertOk();
@@ -123,7 +128,9 @@ test('the list query count does not depend on the number of apprentices', functi
     $few = count(DB::getQueryLog());
 
     foreach (range(1, 5) as $_) {
-        makeApprentice($this->ec, User::factory()->coach()->create());
+        $trainer = User::factory()->trainer()->create();
+        $trainer->forceFill(['apprenticeship_id' => $this->ec->id])->save();
+        makeApprentice($this->ec, $coach, $trainer);
     }
 
     DB::flushQueryLog();
@@ -132,24 +139,19 @@ test('the list query count does not depend on the number of apprentices', functi
     expect(count(DB::getQueryLog()))->toBe($few);
 });
 
-test('each apprentice carries the configured trainer of its section', function () {
-    config()->set('apprenticeships.trainers', ['IT' => 'Bastien Nicoud', 'EC' => 'Gone']);
+test('each apprentice carries its own trainer', function () {
     $coach = User::factory()->coach()->create();
-    foreach (['Zoé', 'Bastien Nicoud'] as $name) {
-        User::factory()->trainer()->create(['name' => $name])
-            ->forceFill(['apprenticeship_id' => $this->it->id])->save();
-    }
-    User::factory()->trainer()->create(['name' => 'Gone'])
-        ->forceFill(['apprenticeship_id' => $this->ec->id, 'is_active' => false])->save();
-    $it = makeApprentice($this->it);
-    $ec = makeApprentice($this->ec);
+    $trainer = User::factory()->trainer()->create(['name' => 'Bastien Nicoud']);
+    $trainer->forceFill(['apprenticeship_id' => $this->it->id])->save();
+    $trained = makeApprentice($this->it, $coach, $trainer);
+    $untrained = makeApprentice($this->it, $coach);
 
     $this->actingAs($coach)
         ->get(route('apprentisdashboard'))
-        ->assertInertia(function (Assert $page) use ($it, $ec) {
+        ->assertInertia(function (Assert $page) use ($trained, $untrained, $trainer) {
             $rows = collect($page->toArray()['props']['apprentices'])->keyBy('id');
 
-            expect($rows[$it->id]['trainer'])->toBe('Bastien Nicoud')
-                ->and($rows[$ec->id]['trainer'])->toBeNull();
+            expect($rows[$trained->id])->toMatchArray(['trainer' => 'Bastien Nicoud', 'trainerId' => $trainer->id])
+                ->and($rows[$untrained->id]['trainer'])->toBeNull();
         });
 });

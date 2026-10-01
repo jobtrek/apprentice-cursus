@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { Head } from '@inertiajs/vue3';
-import { ArrowUpDownIcon, UsersIcon, XIcon } from '@lucide/vue';
+import { ArrowUpDownIcon, UserPlusIcon, UsersIcon, XIcon } from '@lucide/vue';
 import { computed, ref, toRef } from 'vue';
+import AddActionButton from '@/components/AddActionButton.vue';
 import ApprenticeDetailSheet from '@/components/apprentice/ApprenticeDetailSheet.vue';
 import ApprenticeRow from '@/components/apprentice/ApprenticeRow.vue';
+import AssignApprenticeDialog from '@/components/apprentice/AssignApprenticeDialog.vue';
 import DataTable from '@/components/DataTable.vue';
 import { PageContainer, PageHeader } from '@/components/page';
 import SearchInput from '@/components/SearchInput.vue';
@@ -11,6 +13,7 @@ import TabFilter from '@/components/TabFilter.vue';
 import { Button } from '@/components/ui/button';
 import {
     Empty,
+    EmptyContent,
     EmptyDescription,
     EmptyHeader,
     EmptyMedia,
@@ -26,46 +29,55 @@ import {
 import {
     SORT_OPTIONS,
     useApprenticeFilters,
-    type ScopeFilter,
 } from '@/composables/useApprenticeFilters';
 import { TRACK_FILTER_OPTIONS } from '@/constants/constants';
-import type { ApprenticeListItem, SupervisorOption } from '@/types/apprentice';
+import type {
+    ApprenticeListItem,
+    AssignableApprentice,
+    AssignSelfAs,
+    SupervisorOption,
+    TrainerOption,
+} from '@/types/apprentice';
 
 const props = defineProps<{
     /**
-     * Apprentis actifs listés (`User::listedApprentices()`) : coach → tous,
-     * formateur → sa filière, admin → tous. `canView` dit lesquels s'ouvrent.
+     * Apprentis actifs suivis (`User::listedApprentices()`) : coach → ses
+     * coachés, formateur → ses apprentis de sa filière, admin → tous.
      */
     apprentices: ApprenticeListItem[];
+    /** Proposés par « Ajouter un apprenti ». */
+    assignable: AssignableApprentice[];
     coaches: SupervisorOption[];
+    trainers: TrainerOption[];
     can: {
-        /** Admin local : choix du coach de chaque apprenti·e. */
+        /** Coach ou formateur : rôle pris en ajoutant un apprenti. */
+        assignSelfAs: AssignSelfAs | null;
+        /** Admin local : choix du coach et du formateur de chaque apprenti·e. */
         manageSupervision: boolean;
     };
 }>();
 
-const { filters, results, hasScope, hasTrackFilter, isFiltered, reset } =
+const { filters, results, hasTrackFilter, isFiltered, reset } =
     useApprenticeFilters(toRef(props, 'apprentices'));
 
 const plural = (count: number, word: string): string =>
     `${count} ${word}${count > 1 ? 's' : ''}`;
 
-const followedCount = computed(
-    () => props.apprentices.filter(({ canView }) => canView).length,
-);
-const unassignedCount = computed(
-    () => props.apprentices.filter(({ coach }) => coach === null).length,
-);
+const summary = computed(() => {
+    const count = props.apprentices.length;
+    const followed = `${plural(count, 'apprenti')} ${props.can.assignSelfAs ? 'suivi' : 'actif'}${count > 1 ? 's' : ''}`;
+    const available = props.assignable.length;
 
-const scopeOptions = computed<{ label: string; value: ScopeFilter }[]>(() => [
-    { label: `Mes apprentis (${followedCount.value})`, value: 'mine' },
-    { label: `Sans coach (${unassignedCount.value})`, value: 'unassigned' },
-    { label: `Tous (${props.apprentices.length})`, value: 'all' },
-]);
+    return props.can.assignSelfAs && available > 0
+        ? `${followed} · ${plural(available, 'disponible')} à ajouter`
+        : followed;
+});
 
 const sortLabel = computed(
     () => SORT_OPTIONS.find(({ value }) => value === filters.sort)?.label,
 );
+
+const assignOpen = ref(false);
 
 const selected = ref<ApprenticeListItem | null>(null);
 const sheetOpen = ref(false);
@@ -82,7 +94,7 @@ const columns = [
     { key: 'average', label: 'Moyenne', class: 'text-right' },
     { key: 'lastGrade', label: 'Dernière note' },
     { key: 'coach', label: 'Coach' },
-    { key: 'trainer', label: 'Formateur', class: 'hidden xl:table-cell' },
+    { key: 'trainer', label: 'Formateur', class: 'hidden lg:table-cell' },
     { key: 'actions', label: 'Actions', class: 'w-px text-right' },
 ];
 </script>
@@ -91,16 +103,16 @@ const columns = [
     <Head title="Apprentis" />
 
     <PageContainer size="lg">
-        <PageHeader title="Apprentis">
-            <template #description>
-                {{
-                    apprentices.length > 1
-                        ? `${apprentices.length} apprentis actifs`
-                        : `${apprentices.length} apprenti·e actif·ve`
-                }}
-                <template v-if="unassignedCount > 0">
-                    · {{ unassignedCount }} sans coach
-                </template>
+        <PageHeader
+            :title="can.assignSelfAs ? 'Mes apprentis' : 'Apprentis'"
+            :description="summary"
+        >
+            <template v-if="can.assignSelfAs" #actions>
+                <AddActionButton
+                    label="Ajouter un apprenti"
+                    data-test="assign-apprentice-button"
+                    @click="assignOpen = true"
+                />
             </template>
         </PageHeader>
 
@@ -109,12 +121,27 @@ const columns = [
                 <EmptyMedia variant="icon">
                     <UsersIcon />
                 </EmptyMedia>
-                <EmptyTitle>Aucun apprenti pour le moment</EmptyTitle>
+                <EmptyTitle>
+                    {{
+                        can.assignSelfAs
+                            ? 'Vous ne suivez encore aucun apprenti'
+                            : 'Aucun apprenti pour le moment'
+                    }}
+                </EmptyTitle>
                 <EmptyDescription>
-                    Les apprentis actifs que vous pouvez suivre apparaîtront ici
-                    dès leur synchronisation depuis Entra.
+                    {{
+                        can.assignSelfAs
+                            ? 'Ajoutez les apprentis que vous suivez pour voir leurs notes et leur portfolio.'
+                            : 'Les apprentis actifs apparaîtront ici dès leur synchronisation depuis Entra.'
+                    }}
                 </EmptyDescription>
             </EmptyHeader>
+            <EmptyContent v-if="can.assignSelfAs">
+                <Button @click="assignOpen = true">
+                    <UserPlusIcon aria-hidden="true" />
+                    Ajouter un apprenti
+                </Button>
+            </EmptyContent>
         </Empty>
 
         <template v-else>
@@ -125,12 +152,6 @@ const columns = [
                     v-model="filters.search"
                     placeholder="Rechercher un apprenti ou un coach"
                     class="lg:max-w-xs"
-                />
-                <TabFilter
-                    v-if="hasScope"
-                    v-model="filters.scope"
-                    :options="scopeOptions"
-                    label="Filtrer par suivi"
                 />
                 <TabFilter
                     v-if="hasTrackFilter"
@@ -184,6 +205,7 @@ const columns = [
                     <ApprenticeRow
                         :apprentice="item"
                         :coaches="can.manageSupervision ? coaches : null"
+                        :trainers="can.manageSupervision ? trainers : null"
                         @preview="openPreview"
                     />
                 </template>
@@ -202,6 +224,13 @@ const columns = [
         <ApprenticeDetailSheet
             v-model:open="sheetOpen"
             :apprentice="selected"
+        />
+
+        <AssignApprenticeDialog
+            v-if="can.assignSelfAs"
+            v-model:open="assignOpen"
+            :as="can.assignSelfAs"
+            :assignable="assignable"
         />
     </PageContainer>
 </template>

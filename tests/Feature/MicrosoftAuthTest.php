@@ -120,7 +120,7 @@ test('a synced coach logs in with the coach role and no section', function () {
         ->and($user->apprenticeship_id)->toBeNull();
 });
 
-test('a trainer logs in with the IT apprenticeship and can view an IT apprentice grade', function () {
+test('a trainer logs in with the IT apprenticeship and can view a grade of its IT apprentice', function () {
     User::factory()->create(['azure_id' => 'azure-trainer', 'email' => 'trainer@example.test']);
     fakeSso('azure-trainer', 'trainer@example.test', TRAINER_GROUP);
 
@@ -130,7 +130,7 @@ test('a trainer logs in with the IT apprenticeship and can view an IT apprentice
     expect($trainer->role)->toBe(UserRole::Trainer)
         ->and($trainer->apprenticeship->name)->toBe(ApprenticeshipSeeder::IT);
 
-    $apprentice = makeApprentice($trainer->apprenticeship);
+    $apprentice = makeApprentice($trainer->apprenticeship, trainer: $trainer);
     $grade = makeGrade($apprentice);
 
     $this->get(route('grades.show', $grade))->assertOk();
@@ -361,8 +361,8 @@ test('an EC trainer logs in with the EC apprenticeship and cannot view an IT app
     expect($trainer->role)->toBe(UserRole::Trainer)
         ->and($trainer->apprenticeship_id)->toBe($ec->id);
 
-    $this->get(route('grades.show', makeGrade(makeApprentice($ec))))->assertOk();
-    $this->get(route('grades.show', makeGrade(makeApprentice($it))))->assertForbidden();
+    $this->get(route('grades.show', makeGrade(makeApprentice($ec, trainer: $trainer))))->assertOk();
+    $this->get(route('grades.show', makeGrade(makeApprentice($it, trainer: $trainer))))->assertForbidden();
 });
 
 test('an apprentice moved to the trainer group mid-session gets the trainer role and the IT apprenticeship', function () {
