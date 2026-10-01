@@ -73,19 +73,13 @@ class AzureAccountSync
         }
 
         $apprenticeshipId = (int) $apprenticeshipId;
-        $context = ApprenticeshipContext::query()
-            ->where('apprenticeship_id', $apprenticeshipId)
-            ->where('is_mp', false)
-            ->first();
-
-        if ($context === null) {
-            throw new ApprenticeshipNotSeededException($name);
-        }
-
         $roleUnchanged = $user->role === $group->role();
         $currentContext = $user->apprenticeshipContext;
+        $context = null;
 
-        if ($roleUnchanged && $currentContext !== null && $currentContext->apprenticeship_id !== $apprenticeshipId) {
+        if ($roleUnchanged && $currentContext !== null && $currentContext->apprenticeship_id === $apprenticeshipId) {
+            $context = $currentContext;
+        } elseif ($roleUnchanged && $currentContext !== null) {
             Log::warning('Microsoft SSO: section change pending confirmation, apprenticeship kept.', [
                 'user_id' => $user->id,
                 'from' => $currentContext->apprenticeship_id,
@@ -93,6 +87,17 @@ class AzureAccountSync
             ]);
 
             $context = $currentContext;
+        }
+
+        if ($context === null) {
+            $context = ApprenticeshipContext::query()
+                ->where('apprenticeship_id', $apprenticeshipId)
+                ->where('is_mp', false)
+                ->first();
+        }
+
+        if ($context === null) {
+            throw new ApprenticeshipNotSeededException($name);
         }
 
         $user->forceFill([

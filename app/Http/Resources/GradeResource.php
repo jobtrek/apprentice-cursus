@@ -28,6 +28,7 @@ class GradeResource extends JsonResource
     public const array RELATIONS = [
         'domain.parents.parents.parents.parents',
         'subject.subjectCategory',
+        'apprenticeshipPeriod',
     ];
 
     /**
@@ -45,7 +46,7 @@ class GradeResource extends JsonResource
             'path' => $this->path(),
             // The decimal cast yields a string; the front formats a number.
             'value' => (float) $this->value,
-            'semester' => $this->semester,
+            'semester' => $this->apprenticeshipPeriod->semester,
             'date' => $this->test_date->format('d.m.Y'),
         ];
     }
