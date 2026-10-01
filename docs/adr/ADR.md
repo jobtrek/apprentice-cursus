@@ -22,7 +22,7 @@ the table for the weight of each grade inside of EC's program. MP = Maturité
 
 ## 2026-09-09 — Migrations & models derived from the MCD
 
-**Decision:** `../db_schema/V1/mcd.mmd` is turned into Laravel migrations and Eloquent models. Where the diagram was incomplete or ambiguous, the entries below record what was chosen instead.
+**Decision:** `../db/schemas/history/V1/mcd.mmd` is turned into Laravel migrations and Eloquent models. Where the diagram was incomplete or ambiguous, the entries below record what was chosen instead.
 
 ### Users: extended, not replaced
 
@@ -122,4 +122,4 @@ the table for the weight of each grade inside of EC's program. MP = Maturité
 
 ## 2026-09-24 — MCD of the actual database (from live dump)
 
-**Source:** live PostgreSQL dump (owner `sail`). Diagram lives in `../db_schema/V2/mcd_actual.mmd` — faithful readout, not a redesign.
+**Source:** live PostgreSQL dump (owner `sail`). Diagram lives in `../db/schemas/history/V2/mcd_actual.mmd` — faithful readout, not a redesign.
