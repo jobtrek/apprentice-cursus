@@ -22,11 +22,9 @@ use Spatie\Permission\Traits\HasRoles;
  * @property string|null $tenant_id
  * @property string $name
  * @property string $email
- * @property bool|null $is_mp Maturité professionnelle track. NULL = not applicable (non-apprentice roles).
  * @property bool $is_active Deactivation flag. Users are never deleted, only deactivated.
  * @property-read UserRole|null $role Derived from the Spatie role; use syncRoles() to change it.
- * @property string|null $apprenticeship_name
- * @property int|null $apprenticeship_id
+ * @property int|null $apprenticeship_context_id
  * @property int|null $coach_id
  * @property int|null $trainer_id
  * @property Carbon|null $email_verified_at
@@ -38,7 +36,7 @@ use Spatie\Permission\Traits\HasRoles;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
-#[Fillable(['name', 'email', 'password', 'azure_id', 'tenant_id'])]
+#[Fillable(['name', 'email', 'password', 'azure_id', 'tenant_id', 'apprenticeship_context_id'])]
 #[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
 class User extends Authenticatable
 {
@@ -62,7 +60,6 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
-            'is_mp' => 'boolean',
             'is_active' => 'boolean',
         ];
     }
@@ -81,12 +78,10 @@ class User extends Authenticatable
         return $name === null ? null : UserRole::tryFrom($name);
     }
 
-    /**
-     * @return BelongsTo<Apprenticeship, $this>
-     */
-    public function apprenticeship(): BelongsTo
+    /** @return BelongsTo<ApprenticeshipContext, $this> */
+    public function apprenticeshipContext(): BelongsTo
     {
-        return $this->belongsTo(Apprenticeship::class);
+        return $this->belongsTo(ApprenticeshipContext::class);
     }
 
     public function coach(): BelongsTo
@@ -109,14 +104,14 @@ class User extends Authenticatable
         return $this->hasMany(self::class, 'trainer_id');
     }
 
-    public function grades(): HasMany
+    public function apprenticeshipPeriods(): HasMany
     {
-        return $this->hasMany(Grade::class);
+        return $this->hasMany(ApprenticeshipPeriod::class, 'apprentice_id');
     }
 
-    public function evaluationResults(): HasMany
+    public function grades(): HasMany
     {
-        return $this->hasMany(EvaluationResult::class);
+        return $this->hasMany(Grade::class, 'apprentice_id');
     }
 
     public function comments(): HasMany
@@ -167,8 +162,8 @@ class User extends Authenticatable
 
         return match ($this->role) {
             UserRole::Coach => $apprentice->coach_id === $this->id,
-            UserRole::Trainer => $this->apprenticeship_id !== null
-                && $apprentice->apprenticeship_id === $this->apprenticeship_id,
+            UserRole::Trainer => $this->apprenticeship_context_id !== null
+                && $apprentice->apprenticeshipContext?->apprenticeship_id === $this->apprenticeshipContext?->apprenticeship_id,
             default => false,
         };
     }
