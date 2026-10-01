@@ -151,9 +151,16 @@ function onHandleKeydown(event: KeyboardEvent, index: number): void {
                     </button>
 
                     <div
-                        class="bg-muted text-muted-foreground flex size-12 shrink-0 items-center justify-center rounded-md"
+                        class="bg-muted text-muted-foreground flex size-12 shrink-0 items-center justify-center overflow-hidden rounded-md"
                     >
-                        <ImageIcon class="size-4" aria-hidden="true" />
+                        <img
+                            v-if="project.screenshots[0]"
+                            :src="project.screenshots[0].url"
+                            :alt="`${project.title} — capture 1`"
+                            loading="lazy"
+                            class="size-full object-cover"
+                        />
+                        <ImageIcon v-else class="size-4" aria-hidden="true" />
                     </div>
 
                     <div class="min-w-0 flex-1 space-y-1">
