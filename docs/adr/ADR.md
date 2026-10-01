@@ -22,7 +22,7 @@ the table for the weight of each grade inside of EC's program. MP = Maturité
 
 ## 2026-09-09 — Migrations & models derived from the MCD
 
-**Decision:** `db_schema/mcd.mmd` is turned into Laravel migrations and Eloquent models. Where the diagram was incomplete or ambiguous, the entries below record what was chosen instead.
+**Decision:** `../db/schemas/history/V1/mcd.mmd` is turned into Laravel migrations and Eloquent models. Where the diagram was incomplete or ambiguous, the entries below record what was chosen instead.
 
 ### Users: extended, not replaced
 
