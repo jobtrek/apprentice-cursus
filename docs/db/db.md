@@ -5,19 +5,19 @@ Source: `schemas/mcd_current.d2`
 ## 1. Training structure
 
 - `apprenticeships`: formation track (e.g. IT / EC).
-- `apprenticeship_context`: one variant per apprenticeship (`is_mp` true/false) + entry point `root_domain_id`.
-- `apprenticeship_periods`: stores the periods during which the apprenticeship takes place.
+- `apprenticeship_contexts` (implemented in `2026_10_01_114802_create_apprenticeship_context_table.php`): one row per variant of an apprenticeship — `is_mp` boolean (MP track or not) + `root_domain_id` entry point into `domains`. Columns: `id`, `is_mp` (boolean, NOT NULL, no default), `apprenticeship_id` FK → `apprenticeships.id`, `root_domain_id` FK → `domains.id` (both `constrained()`, cascade on delete). No timestamps, no unique constraint yet — so the “max 2 rows per apprenticeship (`is_mp` true/false)” rule is currently conventional, not DB-enforced.
+- `apprenticeship_periods`: planned, not yet migrated — stores the periods during which the apprenticeship takes place.
 - `domains`: training domain blocks, each holds `subjects`.
 - `domain_links`: parent → child links between domains (DAG).
 - `domain_edges`: weight of a domain node for a given context (`weight`).
 - `subject_category`: grouping for UI (CIE, modules, etc.).
 - `subjects`: exam subject, belongs to one `domain_id` + one `subject_category_id`.
 
-Flow: `apprenticeships` → `apprenticeship_context` → `domain_edges` (weighted) → `domain_links` → `domains`. `subjects` hang under leaf `domains`.
+Flow: `apprenticeships` → `apprenticeship_contexts` → `domain_edges` (weighted, planned) → `domain_links` → `domains`. `subjects` hang under leaf `domains`.
 
 ## 2. Users and grades
 
-- `users`: apprentice account (Azure SSO via `azure_id`, email unique). Belongs to one `apprenticeship_context_id`. Optional `coach_id` / `trainer_id` (self-ref).
+- `users`: apprentice account (Azure SSO via `azure_id`, email unique). Planned: belongs to one `apprenticeship_context_id` (not yet migrated; currently `is_mp` flag on `users`). Optional `coach_id` / `trainer_id` (self-ref).
 - `grades`: one row = one apprentice (`user_id`) + one leaf domain (`domain_id`) + one subject (`subject_id`). Swiss value `1.0–6.0`, `test_date`, `semester (1–8)`, optional proof file (`file_path`).
 
 ## 3. Portfolio (project file)
@@ -48,7 +48,9 @@ Answers two questions: which track the apprentice follows, and whether it includ
 
 MP changes how domains are wired, differently per track.
 To keep it simple, we store both pieces of information.
-Used later in `domain_edges`
+Used later in `domain_edges` (planned, not yet migrated).
+
+Implemented: `apprenticeship_contexts` (`2026_10_01_114802…`, `down()` = `dropIfExists`). Each row pins one (`apprenticeship_id`, `is_mp`) pair to a `root_domain_id` in `domains` — the root of that variant's grade tree. No model / `domain_edges` / `users.apprenticeship_context_id` wiring yet; `users.is_mp` remains the transitional per-user flag.
 
 ## Domain nodes
 
@@ -60,7 +62,7 @@ Used later in `domain_edges`
 
 This is the configuration / weight calculation table.
 
-It uses both `apprenticeship_context` and `domain_links` to determine a weight for a specific domain.
+It uses both `apprenticeship_contexts` and `domain_links` to determine a weight for a specific domain.
 
 ## Apprenticeship periods
 
