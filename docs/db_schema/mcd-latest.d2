@@ -46,8 +46,9 @@ apprenticeships: {
 apprenticeship_context: {
   shape: sql_table
   id: bigint {constraint: primary_key}
-  apprenticeship_id: bigint {constraint: foreign_key}
   is_mp: boolean
+  apprenticeship_id: bigint {constraint: foreign_key}
+  root_domain_id: bigint {constraint: foreign_key}
 }
 
 users: {
@@ -227,6 +228,11 @@ users -> grades: user-grade {
 }
 
 domains -> grades: domains-grade {
+  source-arrowhead: {shape: cf-one-required}
+  target-arrowhead: {shape: cf-many}
+}
+
+domains -> apprenticeship_context: root {
   source-arrowhead: {shape: cf-one-required}
   target-arrowhead: {shape: cf-many}
 }
