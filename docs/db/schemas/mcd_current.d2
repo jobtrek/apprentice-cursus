@@ -51,6 +51,16 @@ apprenticeship_context: {
   root_domain_id: bigint {constraint: foreign_key}
 }
 
+apprenticeship_periods: {
+  shape: sql_table
+  id: bigint {constraint: primary_key}
+  apprentice_id: bigint {constraint: foreign_key} # Reference user
+  semester: smallint # check
+  year: smallint # generated
+  start_date: date
+  end_date: date
+}
+
 users: {
   shape: sql_table
   id: bigint {constraint: primary_key}
@@ -62,6 +72,7 @@ users: {
   password: varchar
   is_active: boolean
   apprenticeship_context_id: bigint {constraint: foreign_key}
+  apprenticeship_periods: bigint {constraint: foreign_key}
   coach_id: bigint {constraint: foreign_key}
   trainer_id: bigint {constraint: foreign_key}
 }
@@ -69,12 +80,12 @@ users: {
 grades: {
   shape: sql_table
   id: bigint {constraint: primary_key}
-  user_id: bigint {constraint: foreign_key}
+  apprentice_id: bigint {constraint: foreign_key} # Reference users
   domain_id: bigint {constraint: foreign_key}
   subject_id: bigint {constraint: foreign_key}
+  apprenticeship_periods_id: bigint { constraint: foreign_key }
   value: "decimal(2,1)"
   test_date: date
-  semester: smallint
   file_path: varchar
   original_filename: varchar
   notified_at: timestamp
@@ -268,6 +279,16 @@ skills -> project_skill: skills {
 apprenticeship_context -> users: context {
   source-arrowhead: {shape: cf-one-required}
   target-arrowhead: {shape: cf-many}
+}
+
+users -> apprenticeship_periods: period {
+  source-arrowhead: {shape: cf-one-required}
+  target-arrowhead: {shape: cf-many}
+}
+
+grades -> apprenticeship_periods: period {
+  source-arrowhead: {shape: cf-many}
+  target-arrowhead: {shape: cf-one-required}
 }
 
 users -> grades: user-grade {
