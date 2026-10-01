@@ -319,6 +319,20 @@ describe('commenting', function () {
             ->and($other->can('delete', $comment))->toBeFalse();
     });
 
+    test('an author who lost supervision of the apprentice cannot change their comment', function () {
+        $coach = User::factory()->coach()->create();
+        $apprentice = makeApprentice(coach: $coach);
+        $comment = makeComment(makeGrade($apprentice), $coach);
+
+        expect($coach->can('update', $comment))->toBeTrue();
+
+        $apprentice->forceFill(['coach_id' => User::factory()->coach()->create()->id])->save();
+        $comment = Comment::query()->findOrFail($comment->id);
+
+        expect($coach->fresh()->can('update', $comment))->toBeFalse()
+            ->and($coach->fresh()->can('delete', $comment))->toBeFalse();
+    });
+
     test('comments on a deactivated apprentice cannot be changed', function () {
         $coach = User::factory()->coach()->create();
         $apprentice = makeApprentice(coach: $coach);
