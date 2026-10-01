@@ -33,7 +33,7 @@ class ApprenticeController extends Controller
     public function grade(User $apprentice, Grade $grade): Response
     {
         Gate::authorize('view', $apprentice);
-        abort_unless($grade->user_id === $apprentice->id, 404);
+        abort_unless($grade->apprentice_id === $apprentice->id, 404);
         Gate::authorize('view', $grade);
 
         return Inertia::render('GradeDetails', [

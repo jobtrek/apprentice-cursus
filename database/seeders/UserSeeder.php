@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Enums\UserRole;
 use App\Models\Apprenticeship;
+use App\Models\ApprenticeshipContext;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 
@@ -32,33 +33,42 @@ class UserSeeder extends Seeder
             'trainer@example.com',
             'Local Trainer',
             UserRole::Trainer,
-            Apprenticeship::where('name', ApprenticeshipSeeder::IT)->value('id'),
+            $this->contextId(ApprenticeshipSeeder::IT),
         );
         $this->seed(
             'apprentice-it@example.com',
             'Local Apprentice IT',
             UserRole::Apprentice,
-            Apprenticeship::where('name', ApprenticeshipSeeder::IT)->value('id'),
+            $this->contextId(ApprenticeshipSeeder::IT),
             $coach->id,
         );
         $this->seed(
             'apprentice-ec@example.com',
             'Local Apprentice EC',
             UserRole::Apprentice,
-            Apprenticeship::where('name', ApprenticeshipSeeder::EC)->value('id'),
+            $this->contextId(ApprenticeshipSeeder::EC),
             $coach->id,
         );
     }
 
-    private function seed(string $email, string $name, UserRole $role, ?int $apprenticeshipId, ?int $coachId = null): User
+    private function contextId(string $apprenticeshipName): ?int
     {
-        // is_active, apprenticeship_id and coach_id are not mass assignable.
+        $apprenticeshipId = Apprenticeship::where('name', $apprenticeshipName)->value('id');
+
+        return $apprenticeshipId === null
+            ? null
+            : ApprenticeshipContext::where('apprenticeship_id', $apprenticeshipId)->value('id');
+    }
+
+    private function seed(string $email, string $name, UserRole $role, ?int $contextId, ?int $coachId = null): User
+    {
+        // is_active and coach_id are not mass assignable.
         $user = User::query()->firstOrNew(['email' => $email]);
         $user->forceFill([
             'name' => $name,
             'password' => 'password',
             'is_active' => true,
-            'apprenticeship_id' => $apprenticeshipId,
+            'apprenticeship_context_id' => $contextId,
             'coach_id' => $coachId,
         ])->save();
 

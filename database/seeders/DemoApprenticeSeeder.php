@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Enums\UserRole;
 use App\Models\Apprenticeship;
+use App\Models\ApprenticeshipContext;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
@@ -27,9 +28,9 @@ class DemoApprenticeSeeder extends Seeder
         /** @var list<array{id: string, name: string, track: string}> $demo */
         $demo = json_decode((string) file_get_contents(resource_path('js/data/apprentices.json')), true);
 
-        $apprenticeships = [
-            'IT' => Apprenticeship::where('name', ApprenticeshipSeeder::IT)->value('id'),
-            'EC' => Apprenticeship::where('name', ApprenticeshipSeeder::EC)->value('id'),
+        $contexts = [
+            'IT' => $this->contextId(ApprenticeshipSeeder::IT),
+            'EC' => $this->contextId(ApprenticeshipSeeder::EC),
         ];
 
         foreach ($demo as $row) {
@@ -45,12 +46,21 @@ class DemoApprenticeSeeder extends Seeder
                 // Random, unknown password: demo accounts have no usable local credentials.
                 'password' => Str::password(32),
                 'is_active' => true,
-                'apprenticeship_id' => $apprenticeships[$row['track']] ?? null,
+                'apprenticeship_context_id' => $contexts[$row['track']] ?? null,
             ]);
 
             $user->assignRole(UserRole::Apprentice->value);
         }
 
         DB::statement("SELECT setval(pg_get_serial_sequence('users', 'id'), (SELECT MAX(id) FROM users))");
+    }
+
+    private function contextId(string $apprenticeshipName): ?int
+    {
+        $apprenticeshipId = Apprenticeship::where('name', $apprenticeshipName)->value('id');
+
+        return $apprenticeshipId === null
+            ? null
+            : ApprenticeshipContext::where('apprenticeship_id', $apprenticeshipId)->value('id');
     }
 }

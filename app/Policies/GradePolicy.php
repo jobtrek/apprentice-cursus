@@ -15,18 +15,18 @@ class GradePolicy
 
     public function view(User $user, Grade $grade): bool
     {
-        if ($user->hasPermissionTo(Permission::GradesViewOwn->value) && $grade->user_id === $user->id) {
+        if ($user->hasPermissionTo(Permission::GradesViewOwn->value) && $grade->apprentice_id === $user->id) {
             return true;
         }
 
         return $user->hasPermissionTo(Permission::GradesViewSupervised->value)
-            && $user->supervises($grade->user);
+            && $user->supervises($grade->apprentice);
     }
 
     public function comment(User $user, Grade $grade): bool
     {
         return $user->hasPermissionTo(Permission::GradesComment->value)
-            && $user->supervises($grade->user)
-            && $grade->user->is_active;
+            && $user->supervises($grade->apprentice)
+            && $grade->apprentice->is_active;
     }
 }

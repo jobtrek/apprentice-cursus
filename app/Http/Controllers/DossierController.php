@@ -34,12 +34,12 @@ class DossierController extends Controller
 
     public function preview(Request $request): Response
     {
-        $user = $request->user()->load('apprenticeship');
+        $user = $request->user()->load('apprenticeshipContext.apprenticeship');
 
         return Inertia::render('PortfolioPreview', [
             'owner' => [
                 'name' => $user->name,
-                'track' => $user->apprenticeship?->name,
+                'track' => $user->apprenticeshipContext?->apprenticeship?->name,
             ],
             'projects' => $this->portfolioProjects($user),
             'skills' => $this->skills(),

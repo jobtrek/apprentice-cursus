@@ -6,6 +6,7 @@ use App\Enums\AzureGroup;
 use App\Exceptions\ApprenticeshipNotSeededException;
 use App\Exceptions\AzureAccessRevokedException;
 use App\Models\Apprenticeship;
+use App\Models\ApprenticeshipContext;
 use App\Models\User;
 use App\Services\Microsoft\MicrosoftGraphService;
 use Illuminate\Support\Facades\Log;
@@ -57,8 +58,8 @@ class AzureAccountSync
     }
 
     /**
-     * Apply the group's role (Spatie) and apprenticeship to the user and (re)activate it.
-     * A user whose role is unchanged keeps a different existing apprenticeship.
+     * Apply the group's role (Spatie) and context to the user and (re)activate it.
+     * A user whose role is unchanged keeps a different existing context.
      *
      * @throws ApprenticeshipNotSeededException before anything is modified
      */
@@ -72,20 +73,30 @@ class AzureAccountSync
         }
 
         $apprenticeshipId = (int) $apprenticeshipId;
-        $roleUnchanged = $user->role === $group->role();
+        $context = ApprenticeshipContext::query()
+            ->where('apprenticeship_id', $apprenticeshipId)
+            ->where('is_mp', false)
+            ->first();
 
-        if ($roleUnchanged && $user->apprenticeship_id !== null && $user->apprenticeship_id !== $apprenticeshipId) {
+        if ($context === null) {
+            throw new ApprenticeshipNotSeededException($name);
+        }
+
+        $roleUnchanged = $user->role === $group->role();
+        $currentContext = $user->apprenticeshipContext;
+
+        if ($roleUnchanged && $currentContext !== null && $currentContext->apprenticeship_id !== $apprenticeshipId) {
             Log::warning('Microsoft SSO: section change pending confirmation, apprenticeship kept.', [
                 'user_id' => $user->id,
-                'from' => $user->apprenticeship_id,
+                'from' => $currentContext->apprenticeship_id,
                 'to' => $apprenticeshipId,
             ]);
 
-            $apprenticeshipId = $user->apprenticeship_id;
+            $context = $currentContext;
         }
 
         $user->forceFill([
-            'apprenticeship_id' => $apprenticeshipId,
+            'apprenticeship_context_id' => $context->id,
             'is_active' => true,
         ]);
 

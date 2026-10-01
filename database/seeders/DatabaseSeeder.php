@@ -16,7 +16,6 @@ class DatabaseSeeder extends Seeder
             ApprenticeshipSeeder::class,
             RolesAndPermissionsSeeder::class,
             SkillSeeder::class,
-            EvaluationTreeSeeder::class,
         ]);
 
         if (! app()->environment('local')) {
@@ -33,7 +32,5 @@ class DatabaseSeeder extends Seeder
             ->whereIn('email', array_map(DemoApprenticeSeeder::email(...), range(1, DemoApprenticeSeeder::COUNT)))
             ->whereNull('coach_id')
             ->update(['coach_id' => User::query()->where('email', 'coach@example.com')->value('id')]);
-
-        $this->call(DemoGradeSeeder::class);
     }
 }

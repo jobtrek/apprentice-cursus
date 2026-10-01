@@ -47,7 +47,7 @@ class HandleInertiaRequests extends Middleware
                     'name' => $user->name,
                     'email' => $user->email,
                     'role' => $user->role?->value,
-                    'apprenticeship_id' => $user->apprenticeship_id,
+                    'apprenticeship_context_id' => $user->apprenticeship_context_id,
                 ],
                 'can' => [
                     'createGrade' => $user?->can(Permission::GradesCreate->value) ?? false,

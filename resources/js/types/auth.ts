@@ -7,7 +7,7 @@ export type User = {
     name: string;
     email: string;
     role: UserRole | null;
-    apprenticeship_id: number | null;
+    apprenticeship_context_id: number | null;
 };
 
 /** Booléens de permission partagés par `HandleInertiaRequests` (`auth.can`). */

@@ -32,7 +32,7 @@ const columns = [
     { key: 'date', label: 'Date' },
 ];
 
-// Noms des nœuds de l'arbre : ils doivent correspondre à EvaluationTreeSeeder::itTree().
+// Domain names are supplied by the domain tree configuration.
 const NODES = {
     informatique: 'Compétences en informatique',
     modulesEcole: 'Modules école professionnelle',

@@ -2,7 +2,7 @@
 
 namespace App\Http\Resources;
 
-use App\Models\EvaluationNode;
+use App\Models\Domain;
 use App\Models\Grade;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -25,20 +25,22 @@ class GradeResource extends JsonResource
      * the top without lazy loading. A deeper tree still resolves correctly,
      * only through lazy loads.
      */
-    public const RELATIONS = 'evaluationNode.parents.parents.parents.parents';
+    public const array RELATIONS = [
+        'domain.parents.parents.parents.parents',
+        'subject.subjectCategory',
+    ];
 
     /**
      * @return array<string, mixed>
      */
     public function toArray(Request $request): array
     {
-        $parent = $this->firstParent($this->evaluationNode);
+        $parent = $this->firstParent($this->domain);
 
         return [
             'id' => $this->id,
-            'title' => $this->evaluationNode->name,
-            // First parent by connection id; empty when the node has none.
-            'subject' => $parent === null ? '' : $parent->name,
+            'title' => $this->domain->name,
+            'subject' => $this->subject->subjectCategory->name,
             // Ancestor names from the top-level domain (child of the root) down to the direct parent; the root itself is excluded; `[]` for a node without parents.
             'path' => $this->path(),
             // The decimal cast yields a string; the front formats a number.
@@ -54,8 +56,8 @@ class GradeResource extends JsonResource
     private function path(): array
     {
         $names = [];
-        $visited = [$this->evaluationNode->id => true];
-        $node = $this->firstParent($this->evaluationNode);
+        $visited = [$this->domain->id => true];
+        $node = $this->firstParent($this->domain);
 
         while ($node !== null && ! isset($visited[$node->id])) {
             $visited[$node->id] = true;
@@ -69,9 +71,9 @@ class GradeResource extends JsonResource
         return array_reverse($names);
     }
 
-    private function firstParent(EvaluationNode $node): ?EvaluationNode
+    private function firstParent(Domain $domain): ?Domain
     {
-        /** @var EvaluationNode|null */
-        return $node->parents->sortBy('pivot.id')->first();
+        /** @var Domain|null */
+        return $domain->parents->first();
     }
 }
