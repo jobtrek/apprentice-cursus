@@ -25,7 +25,7 @@ db/ [//]: # (Root)
         │   └── mcd.mmd [//]: # (mermaid implementation of the drawio)
         └── V2/ [//]: # (SECOND VERSION THAT EMERGED OF THE DB)
             ├── AI-db-dicussion-history.md [//]: # (Discussion with agent about the V2)
-            ├── grades_focus.mmd [//]: # (Concept, tried to understand and reimplement V2)
+            ├── grades_focus.mmd [//]: # (Concept, reimplementation try)
             ├── mcd_v2-1.mmd [//]: # (mcd BEFORE Migrations and decision with Agent)
             └── mcd_v2-2.mermaid [//]: # (LATEST V2 database model)
 
