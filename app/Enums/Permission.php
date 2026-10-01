@@ -12,7 +12,9 @@ enum Permission: string
     case PortfolioViewSupervised = 'portfolio.view-supervised';
     case ApprenticesViewList = 'apprentices.view-list';
     case CoachingAssignSelf = 'coaching.assign-self';
-    /** Assign any coach to any apprentice. No production role has it: only the local admin (Gate::before). */
+    /** A trainer takes an apprentice of their own section that has no trainer yet. */
+    case TrainingAssignSelf = 'training.assign-self';
+    /** Assign any coach or trainer to any apprentice. No production role has it: only the local admin (Gate::before). */
     case SupervisionManage = 'supervision.manage';
 
     /** @return array<string, list<self>> */
@@ -36,6 +38,7 @@ enum Permission: string
                 self::GradesComment,
                 self::PortfolioViewSupervised,
                 self::ApprenticesViewList,
+                self::TrainingAssignSelf,
             ],
             // No explicit permissions: in local the Gate::before bypass grants everything,
             // so new permissions are covered automatically.

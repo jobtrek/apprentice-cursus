@@ -14,22 +14,31 @@ import {
     componentToString,
     type ChartConfig,
 } from '@/components/ui/chart';
-import { PASSING_GRADE, type YearAverage } from '@/data/dashboard';
+import { PASSING_GRADE } from '@/data/dashboard';
+
+export interface ApprenticeAverage {
+    /** Position sur l'axe, à partir de 1. */
+    position: number;
+    name: string;
+    average: number;
+}
 
 const props = defineProps<{
-    data: YearAverage[];
+    data: ApprenticeAverage[];
 }>();
 
 const chartConfig = {
     average: { label: 'Moyenne', color: 'var(--chart-1)' },
-    count: { label: 'Apprentis', color: 'var(--muted-foreground)' },
 } satisfies ChartConfig;
 
-const x = (d: YearAverage) => d.year;
-const y = [(d: YearAverage) => d.average];
+const x = (d: ApprenticeAverage) => d.position;
+const y = [(d: ApprenticeAverage) => d.average];
 
-const yearLabel = (year: number | Date) =>
-    props.data.find((d) => d.year === year)?.label ?? String(year);
+const nameAt = (position: number | Date) =>
+    props.data.find((d) => d.position === position)?.name ?? '';
+
+/** Prénom sous la barre : le nom complet est dans l'infobulle. */
+const tickLabel = (position: number | Date) => nameAt(position).split(/\s+/)[0];
 
 // Unovis dessine dans le DOM : rien à rendre côté serveur (SSR).
 const isMounted = useMounted();
@@ -53,7 +62,7 @@ const isMounted = useMounted();
                     :y="y"
                     :color="chartConfig.average.color"
                     :rounded-corners="4"
-                    :group-max-width="56"
+                    :group-max-width="40"
                 />
                 <VisPlotline
                     axis="y"
@@ -65,7 +74,7 @@ const isMounted = useMounted();
                 <VisAxis
                     type="x"
                     :tick-values="data.map(x)"
-                    :tick-format="yearLabel"
+                    :tick-format="tickLabel"
                     :grid-line="false"
                     :domain-line="false"
                     :tick-line="false"
@@ -82,8 +91,7 @@ const isMounted = useMounted();
                     :y="y"
                     :template="
                         componentToString(chartConfig, ChartTooltipContent, {
-                            labelFormatter: (year) =>
-                                `${yearLabel(year)} année`,
+                            labelFormatter: nameAt,
                         })
                     "
                     color="#0000"
@@ -95,20 +103,18 @@ const isMounted = useMounted();
 
     <table class="sr-only">
         <caption>
-            Moyenne des apprentis par année d'apprentissage
+            Moyenne des notes de chaque apprenti·e suivi·e
         </caption>
         <thead>
             <tr>
-                <th scope="col">Année</th>
+                <th scope="col">Apprenti·e</th>
                 <th scope="col">Moyenne</th>
-                <th scope="col">Apprentis</th>
             </tr>
         </thead>
         <tbody>
-            <tr v-for="row in data" :key="row.year">
-                <td>{{ row.label }} année</td>
+            <tr v-for="row in data" :key="row.position">
+                <td>{{ row.name }}</td>
                 <td>{{ row.average.toFixed(1) }}</td>
-                <td>{{ row.count }}</td>
             </tr>
         </tbody>
     </table>

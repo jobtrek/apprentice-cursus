@@ -17,7 +17,7 @@ const props = defineProps<{
     /** Route PUT qui enregistre le choix. */
     url: string;
     /** Champ envoyé. */
-    field: 'coach_id';
+    field: 'coach_id' | 'trainer_id';
     /** Libellé de l'option vide, ex. « Aucun coach ». */
     noneLabel: string;
     /** Nom accessible du champ, ex. « Coach de Léa Dubois ». */

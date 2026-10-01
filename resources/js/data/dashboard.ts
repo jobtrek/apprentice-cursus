@@ -38,34 +38,5 @@ export interface ProgressPoint {
 /** Nombre de notes saisies pendant le semestre en cours. */
 export const GRADES_THIS_SEMESTER = 6;
 
-export interface ApprenticeAverage {
-    /** Identifiant dans `apprentices.json`. */
-    apprenticeId: string;
-    average: number;
-    /** Moyenne du semestre précédent, pour la tendance. */
-    previousAverage: number;
-}
-
-/** Moyenne générale de chaque apprenti·e suivi·e (coach / formateur). */
-export const APPRENTICE_AVERAGES: ApprenticeAverage[] = [
-    { apprenticeId: '1', average: 4.8, previousAverage: 4.5 },
-    { apprenticeId: '2', average: 3.7, previousAverage: 4.1 },
-    { apprenticeId: '3', average: 5.2, previousAverage: 5.0 },
-    { apprenticeId: '4', average: 4.4, previousAverage: 4.6 },
-    { apprenticeId: '5', average: 3.9, previousAverage: 3.6 },
-    { apprenticeId: '6', average: 5.5, previousAverage: 5.3 },
-    { apprenticeId: '7', average: 4.1, previousAverage: 4.3 },
-    { apprenticeId: '8', average: 4.9, previousAverage: 4.7 },
-];
-
-export interface YearAverage {
-    /** Année d'apprentissage, de 1 à 4. */
-    year: number;
-    label: string;
-    average: number;
-    /** Nombre d'apprentis dans cette année. */
-    count: number;
-}
-
 /** Note minimale de réussite (CFC). */
 export const PASSING_GRADE = 4;

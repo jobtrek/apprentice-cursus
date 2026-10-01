@@ -11,8 +11,8 @@ use App\Http\Resources\ProjectResource;
 use App\Models\Grade;
 use App\Models\Skill;
 use App\Models\User;
+use App\Support\ApprenticeList;
 use App\Support\Demo\DemoGrade;
-use Carbon\CarbonImmutable;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -26,27 +26,35 @@ class ApprenticeController extends Controller
     {
         $user = $request->user();
 
-        $apprentices = $user->listedApprentices()
-            ->with(ApprenticeResource::RELATIONS)
-            ->orderBy('name')
-            ->get();
-
-        // Grade statistics only for the apprentices the user may open.
-        $stats = $this->gradeStats(
-            $apprentices->filter(fn (User $apprentice): bool => $user->can('view', $apprentice))->modelKeys(),
-        );
-
         $canManage = $user->can(Permission::SupervisionManage->value);
+        $assignSelfAs = match ($user->selfAssignmentColumn()) {
+            'coach_id' => 'coach',
+            'trainer_id' => 'trainer',
+            default => null,
+        };
 
         return Inertia::render('ApprentisDashboard', [
-            'apprentices' => collect(ApprenticeResource::collection($apprentices)->resolve())
-                ->map(fn (array $row): array => [...$row, 'stats' => $stats[$row['id']] ?? null])
-                ->all(),
-            // Local admin: coaches offered in each row's select.
+            'apprentices' => ApprenticeList::for($user),
+            // Offered by the "Ajouter un apprenti" dialog.
+            'assignable' => ApprenticeList::assignable($user),
+            // Local admin: coaches and trainers offered in each row's selects.
             'coaches' => $canManage
                 ? User::role(UserRole::Coach->value)->orderBy('name')->get(['id', 'name'])
                 : [],
+            'trainers' => $canManage
+                ? User::role(UserRole::Trainer->value)
+                    ->with('apprenticeship')
+                    ->orderBy('name')
+                    ->get()
+                    ->map(fn (User $trainer): array => [
+                        'id' => $trainer->id,
+                        'name' => $trainer->name,
+                        'track' => $trainer->apprenticeship?->shortName(),
+                    ])
+                    ->all()
+                : [],
             'can' => [
+                'assignSelfAs' => $assignSelfAs,
                 'manageSupervision' => $canManage,
             ],
         ]);
@@ -85,17 +93,22 @@ class ApprenticeController extends Controller
     }
 
     /**
-     * The coach_id guard makes two coaches assigning themselves at once safe:
+     * The coach takes the apprentice as coach, the trainer as trainer. The
+     * whereNull guard makes two supervisors assigning themselves at once safe:
      * the slower one updates no row and is refused.
      */
     public function assign(Request $request, User $apprentice): RedirectResponse
     {
+        $user = $request->user();
+        // The local admin passes every Gate but has no column: it uses the selects.
+        $column = $user->selfAssignmentColumn();
+        abort_if($column === null, 403);
         Gate::authorize('assignSelf', $apprentice);
 
         $assigned = User::query()
             ->whereKey($apprentice->id)
-            ->whereNull('coach_id')
-            ->update(['coach_id' => $request->user()->id]);
+            ->whereNull($column)
+            ->update([$column => $user->id]);
 
         abort_if($assigned === 0, 409);
 
@@ -119,38 +132,5 @@ class ApprenticeController extends Controller
                 'comment' => request()->user()->can('comment', $grade),
             ],
         ]);
-    }
-
-    /**
-     * One grouped query for every apprentice, instead of one per row.
-     *
-     * @param  array<int, int>  $apprenticeIds
-     * @return array<int, array{grades_count: int, average: float|null, last_grade_date: string|null}>
-     */
-    private function gradeStats(array $apprenticeIds): array
-    {
-        $aggregates = Grade::query()
-            ->toBase()
-            ->whereIn('user_id', $apprenticeIds)
-            ->groupBy('user_id')
-            ->selectRaw('user_id, count(*) as grades_count, avg(value) as average, max(test_date) as last_grade_date')
-            ->get()
-            ->keyBy('user_id');
-
-        $stats = [];
-
-        foreach ($apprenticeIds as $id) {
-            $row = $aggregates->get($id);
-
-            $stats[$id] = [
-                'grades_count' => (int) ($row->grades_count ?? 0),
-                'average' => isset($row->average) ? round((float) $row->average, 1) : null,
-                'last_grade_date' => isset($row->last_grade_date)
-                    ? CarbonImmutable::parse($row->last_grade_date)->format('d.m.Y')
-                    : null,
-            ];
-        }
-
-        return $stats;
     }
 }

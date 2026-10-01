@@ -11,11 +11,11 @@ The only document on who can do what, and how people get their role. Design deci
 
 ## The roles
 
-| Role       | How you get it             | Who you supervise                           |
-| ---------- | -------------------------- | ------------------------------------------- |
-| Apprentice | IT or EC apprentices group | Nobody. You only see your own data          |
-| Trainer    | IT or EC trainers group    | Every apprentice of your section            |
-| Coach      | Coaches group (no section) | Apprentices whose coach you are (IT and EC) |
+| Role       | How you get it             | Who you supervise                            |
+| ---------- | -------------------------- | -------------------------------------------- |
+| Apprentice | IT or EC apprentices group | Nobody. You only see your own data           |
+| Trainer    | IT or EC trainers group    | Apprentices assigned to you, in your section |
+| Coach      | Coaches group (no section) | Apprentices whose coach you are (IT and EC)  |
 
 Accounts are created by the daily account sync (`azure:sync`), not at login. A person not synced yet is refused until the next run.
 
@@ -27,19 +27,20 @@ IT and EC apprentices have the same permissions. Only their grade tree differs (
 
 Y = yes, N = no, RO = read-only. Anything on a **deactivated** apprentice is read-only.
 
-| Action                                                         | Apprentice        | Trainer           | Coach             |
-| -------------------------------------------------------------- | ----------------- | ----------------- | ----------------- |
-| Submit, edit, delete own grades and PDF scans                  | Y                 | N                 | N                 |
-| See own grades, averages and comments                          | Y                 | –                 | –                 |
-| See a supervised apprentice's grades and scans                 | N                 | RO                | RO                |
-| Comment on a supervised apprentice's grade/project             | N                 | Y                 | Y                 |
-| Edit or delete a comment                                       | N                 | Own only          | Own only          |
-| Manage own portfolio (projects, skills, PDF export)            | Y                 | N                 | N                 |
-| See a supervised apprentice's portfolio                        | N                 | RO                | RO                |
-| See the apprentices list                                       | N                 | Y                 | Y                 |
-| Assign self as coach of an apprentice with no coach            | N                 | N                 | Y                 |
-| Get an email when a supervised apprentice adds/deletes a grade | –                 | Y (not built yet) | Y (not built yet) |
-| Get an email when someone comments on own grade                | Y (not built yet) | –                 | –                 |
+| Action                                                              | Apprentice        | Trainer           | Coach             |
+| ------------------------------------------------------------------- | ----------------- | ----------------- | ----------------- |
+| Submit, edit, delete own grades and PDF scans                       | Y                 | N                 | N                 |
+| See own grades, averages and comments                               | Y                 | –                 | –                 |
+| See a supervised apprentice's grades and scans                      | N                 | RO                | RO                |
+| Comment on a supervised apprentice's grade/project                  | N                 | Y                 | Y                 |
+| Edit or delete a comment                                            | N                 | Own only          | Own only          |
+| Manage own portfolio (projects, skills, PDF export)                 | Y                 | N                 | N                 |
+| See a supervised apprentice's portfolio                             | N                 | RO                | RO                |
+| See the apprentices list                                            | N                 | Y                 | Y                 |
+| Assign self as coach of an apprentice with no coach                 | N                 | N                 | Y                 |
+| Assign self as trainer of an own-section apprentice with no trainer | N                 | Y                 | N                 |
+| Get an email when a supervised apprentice adds/deletes a grade      | –                 | Y (not built yet) | Y (not built yet) |
+| Get an email when someone comments on own grade                     | Y (not built yet) | –                 | –                 |
 
 After login, apprentices land on their grades, trainers and coaches on the apprentices list.
 
@@ -75,9 +76,9 @@ Other rules:
 ## For developers
 
 - Code checks **permissions, never role names**. The list of permissions per role is `App\Enums\Permission::byRole()`. To change what a role can do, edit it there and re-run `RolesAndPermissionsSeeder`.
-- "Supervised" means `User::supervises($apprentice)`: trainer = same section, coach = apprentice's `coach_id` is theirs.
-- Assigning a coach: a coach takes an active apprentice with no coach (`coaching.assign-self`, `ApprenticeController::assign`). Setting, changing or removing any apprentice's coach needs `supervision.manage`, which no production role has: only the local admin can do it, from the coach select of the apprentices list (`SupervisionController`).
+- "Supervised" means `User::supervises($apprentice)`: trainer = apprentice's `trainer_id` is theirs **and** same section, coach = apprentice's `coach_id` is theirs. The apprentices list and the supervisor home show exactly the supervised apprentices (`User::listedApprentices()`).
+- Assignment (`ApprenticeController::assign`, "Ajouter un apprenti" button): a coach takes an active apprentice with no coach (`coaching.assign-self`); a trainer takes an active apprentice of their own section with no trainer (`training.assign-self`), so an IT trainer can only add IT apprentices and an EC trainer EC ones. Setting, changing or removing any apprentice's coach or trainer needs `supervision.manage`, which no production role has: only the local admin can do it, from the selects of the apprentices list (`SupervisionController`). Only a trainer of the apprentice's section can be picked.
 - Policies (`GradePolicy`, `ProjectPolicy`, `CommentPolicy`, `UserPolicy`) add the per-record checks: supervision, author only, active apprentice only.
 - Routes use `can:` middleware. The frontend reads the `auth.can` flags shared by `HandleInertiaRequests` and never re-derives rules.
-- Local login (password `password`): `admin@example.com` (local-only admin, everything), `coach@example.com` (coach), `trainer@example.com` (IT trainer, Bastien Nicoud), `trainer-ec@example.com` (EC trainer), `apprentice-it@example.com` (IT apprentice), `apprentice-ec@example.com` (EC apprentice).
+- Local login (password `password`): `admin@example.com` (local-only admin, everything), `coach@example.com` (coach), `trainer@example.com` (IT trainer, Bastien Nicoud, trains `apprentice-it` and demo apprentices 1–2), `trainer-ec@example.com` (EC trainer, trains `apprentice-ec` and demo apprentice 3), `apprentice-it@example.com` (IT apprentice), `apprentice-ec@example.com` (EC apprentice).
 - The local admin comes from Spatie's `Gate::before` in `AppServiceProvider`, not from `byRole()`. Direct `hasPermissionTo()` calls bypass the Gate, so `User::homeRoute()` and `User::supervises()` handle it explicitly. Guide: `docs/permissions_guide.md`.

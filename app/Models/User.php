@@ -166,9 +166,8 @@ class User extends Authenticatable
     }
 
     /**
-     * Active apprentices shown on this user's apprentice list. Coaches see both
-     * sections, assigned or not, so they can take on an apprentice; trainers
-     * only their own section. Opening one is still decided by supervises().
+     * Active apprentices this user follows: a coach its coachees, a trainer the
+     * apprentices assigned to it in its own section, the local admin everyone.
      *
      * @return Builder<self>
      */
@@ -181,8 +180,42 @@ class User extends Authenticatable
         }
 
         return match ($this->role) {
-            UserRole::Coach => $query,
-            UserRole::Trainer => $query->where('apprenticeship_id', $this->apprenticeship_id),
+            UserRole::Coach => $query->where('coach_id', $this->id),
+            UserRole::Trainer => $query->where('trainer_id', $this->id)
+                ->where('apprenticeship_id', $this->apprenticeship_id),
+            default => $query->whereRaw('false'),
+        };
+    }
+
+    /**
+     * Column this user fills when taking an apprentice on: `coach_id` for a
+     * coach, `trainer_id` for a trainer, null for anyone else (the local admin
+     * assigns from the list's selects instead).
+     */
+    public function selfAssignmentColumn(): ?string
+    {
+        return match (true) {
+            $this->hasPermissionTo(Permission::CoachingAssignSelf->value) => 'coach_id',
+            $this->hasPermissionTo(Permission::TrainingAssignSelf->value) => 'trainer_id',
+            default => null,
+        };
+    }
+
+    /**
+     * Active apprentices this user can take on (see UserPolicy::assignSelf()):
+     * no coach yet for a coach, no trainer yet and in its own section for a trainer.
+     *
+     * @return Builder<self>
+     */
+    public function assignableApprentices(): Builder
+    {
+        $query = self::role(UserRole::Apprentice->value)->where('is_active', true);
+
+        return match ($this->selfAssignmentColumn()) {
+            'coach_id' => $query->whereNull('coach_id'),
+            'trainer_id' => $query->whereNull('trainer_id')
+                ->whereNotNull('apprenticeship_id')
+                ->where('apprenticeship_id', $this->apprenticeship_id),
             default => $query->whereRaw('false'),
         };
     }
@@ -199,7 +232,9 @@ class User extends Authenticatable
 
         return match ($this->role) {
             UserRole::Coach => $apprentice->coach_id === $this->id,
-            UserRole::Trainer => $this->apprenticeship_id !== null
+            // Assigned to this trainer, and still in the trainer's section.
+            UserRole::Trainer => $apprentice->trainer_id === $this->id
+                && $this->apprenticeship_id !== null
                 && $apprentice->apprenticeship_id === $this->apprenticeship_id,
             default => false,
         };

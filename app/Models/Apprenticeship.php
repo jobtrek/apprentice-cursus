@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-use App\Enums\UserRole;
 use Database\Seeders\ApprenticeshipSeeder;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
@@ -43,20 +42,5 @@ class Apprenticeship extends Model
     public function users(): HasMany
     {
         return $this->hasMany(User::class);
-    }
-
-    /**
-     * Active trainers of the section. Trainers supervise a whole section
-     * (see User::supervises()); the one shown to apprentices is set in
-     * config/apprenticeships.php.
-     *
-     * @return HasMany<User, $this>
-     */
-    public function trainers(): HasMany
-    {
-        return $this->users()
-            ->role(UserRole::Trainer->value)
-            ->where('is_active', true)
-            ->orderBy('name');
     }
 }

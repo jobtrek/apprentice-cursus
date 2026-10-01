@@ -3,8 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Enums\Permission;
-use App\Http\Resources\ApprenticeResource;
 use App\Http\Resources\GradeResource;
+use App\Support\ApprenticeList;
 use App\Support\Gradebook\GradebookTree;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -34,14 +34,12 @@ class HomeController extends Controller
                 'track' => $user->apprenticeship?->shortName(),
                 'variant' => $user->is_mp ? 'mp' : 'standard',
             ] : null,
+            // Supervisor dashboard: the same rows as the apprentices page.
             'apprentices' => $user->can(Permission::ApprenticesViewList->value)
-                ? ApprenticeResource::collection(
-                    $user->listedApprentices()
-                        ->with(ApprenticeResource::RELATIONS)
-                        ->orderBy('name')
-                        ->get(),
-                )->resolve()
+                ? ApprenticeList::for($user)
                 : [],
+            // Apprentices the coach or trainer could still take on.
+            'assignableCount' => $user->assignableApprentices()->count(),
         ]);
     }
 }
