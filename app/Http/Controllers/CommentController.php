@@ -20,4 +20,14 @@ class CommentController extends Controller
 
         return back();
     }
+
+    /**
+     * Authorization (CommentPolicy::update) and validation live in CommentRequest.
+     */
+    public function update(CommentRequest $request, Comment $comment): RedirectResponse
+    {
+        $comment->update($request->validated());
+
+        return back();
+    }
 }

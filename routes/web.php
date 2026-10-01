@@ -25,6 +25,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
             ->name('comments.store');
     });
 
+    Route::put('/comments/{comment}', [CommentController::class, 'update'])
+        ->whereNumber('comment')
+        ->name('comments.update');
+
     Route::middleware('can:'.Permission::PortfolioManageOwn->value)
         ->prefix('portfolio')
         ->name('portfolio.')

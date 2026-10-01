@@ -17,8 +17,8 @@ use Illuminate\Http\Resources\Json\JsonResource;
  */
 class CommentResource extends JsonResource
 {
-    /** Eager-load path for the author and the Spatie role behind the role label. */
-    public const RELATIONS = 'author.roles';
+    /** Eager-load paths: the author and Spatie role behind the role label, the apprentice behind the policy. */
+    public const RELATIONS = ['author.roles', 'commentable.user'];
 
     /**
      * The grade's comments, oldest first, as the page payload.
@@ -44,6 +44,8 @@ class CommentResource extends JsonResource
             // Same format as GradeResource.
             'date' => $this->created_at->format('d.m.Y'),
             'text' => $this->body,
+            'edited' => $this->updated_at->gt($this->created_at),
+            'can' => ['update' => $request->user()?->can('update', $this->resource) === true],
         ];
     }
 
