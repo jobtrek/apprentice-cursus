@@ -6,7 +6,7 @@ Source: `schemas/mcd_current.d2`
 
 - `apprenticeships`: formation track (e.g. IT / EC).
 - `apprenticeship_context`: one variant per apprenticeship (`is_mp` true/false) + entry point `root_domain_id`.
-- `domains`: grade node (final grade, branch, leaf). `rounding_step` for display.
+- `domains`: formations domain blocks, contains `subjects`. 
 - `domain_nodes`: parent → child links between domains (DAG).
 - `domain_edges`: weight of a domain node for a given context (`weight`).
 - `subject_category`: grouping for UI (CIE, modules, etc.).
