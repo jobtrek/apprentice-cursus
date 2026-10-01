@@ -1,0 +1,42 @@
+[
+    {
+        "id": "1",
+        "name": "Léa Dubois",
+        "track": "IT"
+    },
+    {
+        "id": "2",
+        "name": "Nathan Girard",
+        "track": "IT"
+    },
+    {
+        "id": "3",
+        "name": "Camille Petit",
+        "track": "EC"
+    },
+    {
+        "id": "4",
+        "name": "Hugo Moreau",
+        "track": "EC"
+    },
+    {
+        "id": "5",
+        "name": "Manon Rousseau",
+        "track": "IT"
+    },
+    {
+        "id": "6",
+        "name": "Théo Simon",
+        "track": "IT"
+    },
+    {
+        "id": "7",
+        "name": "Chloé Laurent",
+        "track": "EC"
+    },
+    {
+        "id": "8",
+        "name": "Lucas Michel",
+        "track": "EC"
+    }
+]

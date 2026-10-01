@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Enums\Permission;
+use App\Http\Resources\ApprenticeResource;
 use App\Http\Resources\GradeResource;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -22,6 +23,14 @@ class HomeController extends Controller
                         ->latest('test_date')
                         ->latest('id')
                         ->limit(4)
+                        ->get(),
+                )->resolve()
+                : [],
+            'apprentices' => $user->can(Permission::ApprenticesViewList->value)
+                ? ApprenticeResource::collection(
+                    $user->listedApprentices()
+                        ->with(ApprenticeResource::RELATIONS)
+                        ->orderBy('name')
                         ->get(),
                 )->resolve()
                 : [],

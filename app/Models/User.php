@@ -5,9 +5,11 @@ namespace App\Models;
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use App\Enums\Permission;
 use App\Enums\UserRole;
+use Carbon\CarbonImmutable;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -35,6 +37,7 @@ use Spatie\Permission\Traits\HasRoles;
  * @property string|null $two_factor_recovery_codes
  * @property Carbon|null $two_factor_confirmed_at
  * @property string|null $remember_token
+ * @property CarbonImmutable|null $synced_at Last time the Entra account sync confirmed this user. NULL = never synced (local accounts).
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
@@ -64,6 +67,7 @@ class User extends Authenticatable
             'password' => 'hashed',
             'is_mp' => 'boolean',
             'is_active' => 'boolean',
+            'synced_at' => 'datetime',
         ];
     }
 
@@ -89,6 +93,9 @@ class User extends Authenticatable
         return $this->belongsTo(Apprenticeship::class);
     }
 
+    /**
+     * @return BelongsTo<self, $this>
+     */
     public function coach(): BelongsTo
     {
         return $this->belongsTo(self::class, 'coach_id');
@@ -152,6 +159,28 @@ class User extends Authenticatable
             $this->hasPermissionTo(Permission::GradesViewOwn->value) => 'grades.dashboard',
             $this->hasPermissionTo(Permission::ApprenticesViewList->value) => 'apprentisdashboard',
             default => 'home',
+        };
+    }
+
+    /**
+     * Active apprentices shown on this user's apprentice list. Coaches see both
+     * sections, assigned or not, so they can take on an apprentice; trainers
+     * only their own section. Opening one is still decided by supervises().
+     *
+     * @return Builder<self>
+     */
+    public function listedApprentices(): Builder
+    {
+        $query = self::role(UserRole::Apprentice->value)->where('is_active', true);
+
+        if ($this->isLocalAdmin()) {
+            return $query;
+        }
+
+        return match ($this->role) {
+            UserRole::Coach => $query,
+            UserRole::Trainer => $query->where('apprenticeship_id', $this->apprenticeship_id),
+            default => $query->whereRaw('false'),
         };
     }
 

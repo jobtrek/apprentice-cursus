@@ -26,7 +26,8 @@ beforeEach(function () {
 dataset('local accounts', [
     'admin' => ['admin@example.com', UserRole::Admin, null, 'apprentisdashboard'],
     'coach' => ['coach@example.com', UserRole::Coach, null, 'apprentisdashboard'],
-    'trainer' => ['trainer@example.com', UserRole::Trainer, ApprenticeshipSeeder::IT, 'apprentisdashboard'],
+    'trainer IT' => ['trainer@example.com', UserRole::Trainer, ApprenticeshipSeeder::IT, 'apprentisdashboard'],
+    'trainer EC' => ['trainer-ec@example.com', UserRole::Trainer, ApprenticeshipSeeder::EC, 'apprentisdashboard'],
     'apprentice IT' => ['apprentice-it@example.com', UserRole::Apprentice, ApprenticeshipSeeder::IT, 'grades.dashboard'],
     'apprentice EC' => ['apprentice-ec@example.com', UserRole::Apprentice, ApprenticeshipSeeder::EC, 'grades.dashboard'],
 ]);
@@ -50,10 +51,11 @@ it('logs in with the local password and lands on the role page', function (strin
     $this->assertAuthenticatedAs($user);
 })->with('local accounts');
 
-it('makes the local coach and admin supervise both local apprentices and the trainer only the IT one', function () {
+it('makes the local coach and admin supervise both local apprentices and each trainer only its own section', function () {
     $admin = User::query()->where('email', 'admin@example.com')->firstOrFail();
     $coach = User::query()->where('email', 'coach@example.com')->firstOrFail();
     $trainer = User::query()->where('email', 'trainer@example.com')->firstOrFail();
+    $trainerEc = User::query()->where('email', 'trainer-ec@example.com')->firstOrFail();
     $apprenticeIt = User::query()->where('email', 'apprentice-it@example.com')->firstOrFail();
     $apprenticeEc = User::query()->where('email', 'apprentice-ec@example.com')->firstOrFail();
 
@@ -65,6 +67,8 @@ it('makes the local coach and admin supervise both local apprentices and the tra
     expect($admin->supervises($apprenticeEc))->toBeTrue();
     expect($trainer->supervises($apprenticeIt))->toBeTrue();
     expect($trainer->supervises($apprenticeEc))->toBeFalse();
+    expect($trainerEc->supervises($apprenticeEc))->toBeTrue();
+    expect($trainerEc->supervises($apprenticeIt))->toBeFalse();
 });
 
 it('does not let demo apprentices log in with the local password', function () {
@@ -81,8 +85,9 @@ it('is idempotent when seeded twice', function () {
         'admin@example.com',
         'coach@example.com',
         'trainer@example.com',
+        'trainer-ec@example.com',
         'apprentice-it@example.com',
         'apprentice-ec@example.com',
-    ])->count())->toBe(5);
+    ])->count())->toBe(6);
     expect(User::query()->where('email', 'test@example.com')->exists())->toBeFalse();
 });

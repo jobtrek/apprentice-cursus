@@ -67,11 +67,11 @@ class SsoLoginException extends RuntimeException
         );
     }
 
-    public static function emailConflict(string $azureId): self
+    public static function notSynced(string $azureId): self
     {
         return new self(
-            'Could not sign in with Microsoft. Please contact an administrator.',
-            'Microsoft SSO login refused: email already belongs to another account.',
+            'Your account has not been synced yet. Please try again tomorrow or ask an administrator to run the account sync.',
+            'Microsoft SSO login refused: account has not been synced yet.',
             ['azure_id' => $azureId],
         );
     }
