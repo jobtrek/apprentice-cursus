@@ -14,37 +14,19 @@ class UserPolicy
             && $user->supervises($apprentice);
     }
 
-    /** A coach takes an active apprentice that has no coach yet. */
-    public function assignSelfAsCoach(User $user, User $apprentice): bool
+    /** Only an active apprentice with no coach: taking one over from another coach is refused. */
+    public function assignSelf(User $user, User $apprentice): bool
     {
-        return $user->can(Permission::CoachingAssignSelf->value)
+        return $user->hasPermissionTo(Permission::CoachingAssignSelf->value)
             && $apprentice->hasRole(UserRole::Apprentice->value)
             && $apprentice->is_active
             && $apprentice->coach_id === null;
     }
 
-    /** A trainer takes an active apprentice of their own section that has no trainer yet. */
-    public function assignSelfAsTrainer(User $user, User $apprentice): bool
-    {
-        return $user->can(Permission::TrainingAssignSelf->value)
-            && $apprentice->hasRole(UserRole::Apprentice->value)
-            && $apprentice->is_active
-            && $apprentice->trainer_id === null
-            && $user->apprenticeship_id !== null
-            && $apprentice->apprenticeship_id === $user->apprenticeship_id;
-    }
-
-    /** Assign or remove the trainer of any apprentice (local admin only). */
-    public function assignTrainer(User $user, User $apprentice): bool
-    {
-        return $user->can(Permission::SupervisionManage->value)
-            && $apprentice->hasRole(UserRole::Apprentice->value);
-    }
-
     /** Assign or remove the coach of any apprentice (local admin only). */
     public function assignCoach(User $user, User $apprentice): bool
     {
-        return $user->can(Permission::SupervisionManage->value)
+        return $user->hasPermissionTo(Permission::SupervisionManage->value)
             && $apprentice->hasRole(UserRole::Apprentice->value);
     }
 }

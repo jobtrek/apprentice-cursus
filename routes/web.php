@@ -53,27 +53,16 @@ Route::middleware(['auth', 'verified'])->group(function () {
                 Route::get('/grades/{grade}', 'grade')
                     ->whereNumber('grade')
                     ->name('grades.show');
+                Route::post('/assign', 'assign')
+                    ->middleware('can:'.Permission::CoachingAssignSelf->value)
+                    ->name('assign');
             });
     });
 
-    Route::prefix('apprentices/{apprentice}')
+    Route::put('/apprentices/{apprentice}/coach', [SupervisionController::class, 'updateCoach'])
         ->whereNumber('apprentice')
-        ->name('apprentices.')
-        ->controller(SupervisionController::class)
-        ->group(function () {
-            Route::post('/coach/self', 'assignSelfAsCoach')
-                ->middleware('can:'.Permission::CoachingAssignSelf->value)
-                ->name('coach.assign-self');
-            Route::put('/coach', 'updateCoach')
-                ->middleware('can:'.Permission::SupervisionManage->value)
-                ->name('coach.update');
-            Route::post('/trainer/self', 'assignSelfAsTrainer')
-                ->middleware('can:'.Permission::TrainingAssignSelf->value)
-                ->name('trainer.assign-self');
-            Route::put('/trainer', 'updateTrainer')
-                ->middleware('can:'.Permission::SupervisionManage->value)
-                ->name('trainer.update');
-        });
+        ->middleware('can:'.Permission::SupervisionManage->value)
+        ->name('apprentices.coach.update');
 });
 
 require __DIR__.'/profile.php';

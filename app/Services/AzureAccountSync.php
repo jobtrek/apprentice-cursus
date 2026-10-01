@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Enums\AzureGroup;
+use App\Enums\UserRole;
 use App\Exceptions\ApprenticeshipNotSeededException;
 use App\Exceptions\AzureAccessRevokedException;
 use App\Models\Apprenticeship;
@@ -13,7 +14,8 @@ use RuntimeException;
 
 /**
  * Single source of truth for keeping a local user in line with Entra ID,
- * shared by the SSO login and the periodic re-check middleware.
+ * shared by the SSO login, the periodic re-check middleware and the daily
+ * account sync.
  */
 class AzureAccountSync
 {
@@ -58,23 +60,30 @@ class AzureAccountSync
 
     /**
      * Apply the group's role (Spatie) and apprenticeship to the user and (re)activate it.
-     * A user whose role is unchanged keeps a different existing apprenticeship.
+     * A group without a section (coach) clears the apprenticeship.
+     * An apprentice keeps a different existing apprenticeship (moving grades needs
+     * a confirmation); a trainer follows its group's section.
      *
      * @throws ApprenticeshipNotSeededException before anything is modified
      */
     public function apply(User $user, AzureGroup $group): void
     {
         $name = $group->apprenticeship();
-        $apprenticeshipId = Apprenticeship::where('name', $name)->value('id');
+        $apprenticeshipId = null;
 
-        if ($apprenticeshipId === null) {
-            throw new ApprenticeshipNotSeededException($name);
+        if ($name !== null) {
+            $id = Apprenticeship::where('name', $name)->value('id');
+
+            if ($id === null) {
+                throw new ApprenticeshipNotSeededException($name);
+            }
+
+            $apprenticeshipId = (int) $id;
         }
 
-        $apprenticeshipId = (int) $apprenticeshipId;
         $roleUnchanged = $user->role === $group->role();
 
-        if ($roleUnchanged && $user->apprenticeship_id !== null && $user->apprenticeship_id !== $apprenticeshipId) {
+        if ($apprenticeshipId !== null && $roleUnchanged && $group->role() === UserRole::Apprentice && $user->apprenticeship_id !== null && $user->apprenticeship_id !== $apprenticeshipId) {
             Log::warning('Microsoft SSO: section change pending confirmation, apprenticeship kept.', [
                 'user_id' => $user->id,
                 'from' => $user->apprenticeship_id,

@@ -61,13 +61,12 @@ function makeGrade(User $apprentice): Grade
     ]);
 }
 
-function makeApprentice(?Apprenticeship $section = null, ?User $coach = null, ?User $trainer = null): User
+function makeApprentice(?Apprenticeship $section = null, ?User $coach = null): User
 {
     $apprentice = User::factory()->create();
     $apprentice->forceFill([
         'apprenticeship_id' => $section?->id,
         'coach_id' => $coach?->id,
-        'trainer_id' => $trainer?->id,
     ])->save();
 
     return $apprentice;

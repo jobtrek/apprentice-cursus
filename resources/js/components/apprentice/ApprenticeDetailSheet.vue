@@ -22,10 +22,10 @@ import ApprenticeMetaRow from './ApprenticeMetaRow.vue';
 import ApprenticeScoreSummary from './ApprenticeScoreSummary.vue';
 import ApprenticeScoreTable from './ApprenticeScoreTable.vue';
 import apprentices from '@/routes/apprentices';
-import type { ApprenticeSummary } from '@/types/apprentice';
+import type { Apprentice } from '@/types/apprentice';
 
 defineProps<{
-    apprentice: ApprenticeSummary | null;
+    apprentice: Apprentice | null;
 }>();
 
 const open = defineModel<boolean>('open', { required: true });
@@ -54,8 +54,8 @@ const open = defineModel<boolean>('open', { required: true });
                 <Separator />
 
                 <ApprenticeMetaRow
-                    :coach="apprentice.coach?.name"
-                    :formateur="apprentice.trainer?.name"
+                    :coach="apprentice.coach ?? undefined"
+                    :formateur="apprentice.trainer ?? undefined"
                 />
 
                 <ApprenticeScoreSummary
@@ -66,7 +66,7 @@ const open = defineModel<boolean>('open', { required: true });
                 <ApprenticeScoreTable :branches="BRANCH_SCORES" />
             </div>
 
-            <SheetFooter v-if="apprentice" class="border-t">
+            <SheetFooter v-if="apprentice?.canView" class="border-t">
                 <Button as-child>
                     <Link
                         :href="

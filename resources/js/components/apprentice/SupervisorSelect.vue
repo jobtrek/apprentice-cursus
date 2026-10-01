@@ -16,8 +16,8 @@ const props = defineProps<{
     options: SupervisorOption[];
     /** Route PUT qui enregistre le choix. */
     url: string;
-    /** Champ envoyé : `coach_id` ou `trainer_id`. */
-    field: 'coach_id' | 'trainer_id';
+    /** Champ envoyé. */
+    field: 'coach_id';
     /** Libellé de l'option vide, ex. « Aucun coach ». */
     noneLabel: string;
     /** Nom accessible du champ, ex. « Coach de Léa Dubois ». */

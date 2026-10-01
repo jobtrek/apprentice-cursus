@@ -1,12 +1,21 @@
-/** Forme envoyée par `ApprenticeController::summary()`. */
-export interface ApprenticeSummary {
+/** Forme envoyée par `ApprenticeResource` (app/Http/Resources/ApprenticeResource.php). */
+export interface Apprentice {
     id: number;
     name: string;
     /** « IT », « EC », ou null sans filière. */
-    track: string | null;
-    is_active: boolean;
-    coach: { id: number; name: string } | null;
-    trainer: { id: number; name: string } | null;
+    track: 'IT' | 'EC' | null;
+    /** Déduite des notes une fois le calcul en place ; null en attendant. */
+    year: number | null;
+    isActive: boolean;
+    /** Nom du coach, null sans coach. */
+    coach: string | null;
+    coachId: number | null;
+    /** Formateur de la filière (config/apprenticeships.php), null si aucun. */
+    trainer: string | null;
+    /** Un coach voit tous les apprentis mais n'ouvre que les siens. */
+    canView: boolean;
+    /** Le coach peut se l'attribuer : apprenti·e actif·ve sans coach. */
+    canAssign: boolean;
 }
 
 /** Statistiques de notes calculées par le serveur. */
@@ -18,30 +27,13 @@ export interface ApprenticeStats {
     last_grade_date: string | null;
 }
 
-export interface ApprenticeListItem extends ApprenticeSummary {
-    stats: ApprenticeStats;
+export interface ApprenticeListItem extends Apprentice {
+    /** Null pour un·e apprenti·e que l'utilisateur ne peut pas ouvrir. */
+    stats: ApprenticeStats | null;
 }
 
-/** Rôle sous lequel l'utilisateur s'ajoute un·e apprenti·e (bouton « Ajouter »). */
-export type AssignSelfAs = 'coach' | 'trainer';
-
-/**
- * Apprenti·e proposé·e par le bouton « Ajouter » : sans coach (coach), ou sans
- * formateur et de la filière du formateur (formateur).
- */
-export interface AssignableApprentice {
-    id: number;
-    name: string;
-    track: string | null;
-}
-
-/** Coach ou formateur proposé dans les listes de l'admin. */
+/** Coach proposé dans la liste de l'admin. */
 export interface SupervisorOption {
     id: number;
     name: string;
-}
-
-/** Les formateurs ne sont proposés qu'aux apprentis de leur filière. */
-export interface TrainerOption extends SupervisorOption {
-    track: string | null;
 }

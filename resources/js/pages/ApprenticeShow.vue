@@ -22,13 +22,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { getInitials } from '@/composables/useInitials';
 import { apprentisdashboard } from '@/routes';
 import apprentices from '@/routes/apprentices';
-import type { ApprenticeSummary } from '@/types/apprentice';
+import type { Apprentice } from '@/types/apprentice';
 import type { Grade } from '@/types/grade';
 import type { SupervisedPortfolio } from '@/types/portfolio';
 
 const props = defineProps<{
     apprenticeId: number;
-    apprentice: ApprenticeSummary;
+    apprentice: Apprentice;
     grades: Grade[];
     /** Null quand l'utilisateur n'a pas le droit de voir le portfolio. */
     portfolio: SupervisedPortfolio | null;
@@ -104,7 +104,7 @@ function selectTab(tab: string | number): void {
                                 {{ apprentice.track }}
                             </Badge>
                             <Badge
-                                v-if="!apprentice.is_active"
+                                v-if="!apprentice.isActive"
                                 variant="outline"
                             >
                                 Inactif
@@ -115,8 +115,8 @@ function selectTab(tab: string | number): void {
 
                 <ApprenticeMetaRow
                     class="sm:w-80 sm:shrink-0"
-                    :coach="apprentice.coach?.name"
-                    :formateur="apprentice.trainer?.name"
+                    :coach="apprentice.coach ?? undefined"
+                    :formateur="apprentice.trainer ?? undefined"
                 />
             </CardContent>
         </Card>

@@ -8,8 +8,7 @@ use Spatie\Permission\PermissionRegistrar;
 return new class extends Migration
 {
     /**
-     * Create the `supervision.manage` and `training.assign-self` permissions on
-     * already-migrated databases and give the trainer role its new one
+     * Create the `supervision.manage` permission on already-migrated databases
      * (idempotent: sync() only creates what is missing).
      */
     public function up(): void
@@ -20,7 +19,7 @@ return new class extends Migration
     public function down(): void
     {
         Permission::query()
-            ->whereIn('name', ['supervision.manage', 'training.assign-self'])
+            ->where('name', 'supervision.manage')
             ->where('guard_name', 'web')
             ->delete();
 

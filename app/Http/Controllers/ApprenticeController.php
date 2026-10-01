@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Enums\Permission;
 use App\Enums\UserRole;
+use App\Http\Resources\ApprenticeResource;
 use App\Http\Resources\GradeResource;
 use App\Http\Resources\ProjectResource;
 use App\Models\Grade;
@@ -11,7 +12,7 @@ use App\Models\Skill;
 use App\Models\User;
 use App\Support\Demo\DemoGrade;
 use Carbon\CarbonImmutable;
-use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
@@ -19,70 +20,32 @@ use Inertia\Response;
 
 class ApprenticeController extends Controller
 {
-    /**
-     * Apprentices the user supervises (coach and trainer: the ones assigned to
-     * them, local admin: everyone), with their grade statistics.
-     */
+    /** Route middleware gates the permission; User::listedApprentices() scopes the rows. */
     public function index(Request $request): Response
     {
         $user = $request->user();
 
-        $apprentices = $this->apprentices()
-            ->filter(fn (User $apprentice): bool => $user->supervises($apprentice))
-            ->values();
+        $apprentices = $user->listedApprentices()
+            ->with(ApprenticeResource::RELATIONS)
+            ->orderBy('name')
+            ->get();
+
+        // Grade statistics only for the apprentices the user may open.
+        $stats = $this->gradeStats(
+            $apprentices->filter(fn (User $apprentice): bool => $user->can('view', $apprentice))->modelKeys(),
+        );
 
         $canManage = $user->can(Permission::SupervisionManage->value);
-        // Which "Ajouter" button the user gets. The local admin passes every
-        // check, but assigns coaches from the selects instead.
-        $assignSelfAs = match (true) {
-            $canManage => null,
-            $user->can(Permission::CoachingAssignSelf->value) => 'coach',
-            $user->can(Permission::TrainingAssignSelf->value) => 'trainer',
-            default => null,
-        };
-
-        $stats = $this->gradeStats($apprentices->map(fn (User $apprentice): int => $apprentice->id)->all());
 
         return Inertia::render('ApprentisDashboard', [
-            'apprentices' => $apprentices->map(fn (User $apprentice): array => [
-                ...$this->summary($apprentice),
-                'stats' => $stats[$apprentice->id],
-            ])->all(),
-            // Apprentices the "Ajouter" button offers: no coach yet (coach), or
-            // no trainer yet and in the trainer's section (trainer).
-            'assignable' => $assignSelfAs === null
-                ? []
-                : $this->apprentices()
-                    ->filter(fn (User $apprentice): bool => $user->can(
-                        $assignSelfAs === 'coach' ? 'assignSelfAsCoach' : 'assignSelfAsTrainer',
-                        $apprentice,
-                    ))
-                    ->map(fn (User $apprentice): array => [
-                        'id' => $apprentice->id,
-                        'name' => $apprentice->name,
-                        'track' => $this->track($apprentice),
-                    ])
-                    ->values()
-                    ->all(),
-            // Local admin: coaches and trainers offered in each row's selects.
+            'apprentices' => collect(ApprenticeResource::collection($apprentices)->resolve())
+                ->map(fn (array $row): array => [...$row, 'stats' => $stats[$row['id']] ?? null])
+                ->all(),
+            // Local admin: coaches offered in each row's select.
             'coaches' => $canManage
                 ? User::role(UserRole::Coach->value)->orderBy('name')->get(['id', 'name'])
                 : [],
-            // The front only offers the trainers of the apprentice's section.
-            'trainers' => $canManage
-                ? User::role(UserRole::Trainer->value)
-                    ->with('apprenticeship')
-                    ->orderBy('name')
-                    ->get()
-                    ->map(fn (User $trainer): array => [
-                        'id' => $trainer->id,
-                        'name' => $trainer->name,
-                        'track' => $this->track($trainer),
-                    ])
-                    ->all()
-                : [],
             'can' => [
-                'assignSelfAs' => $assignSelfAs,
                 'manageSupervision' => $canManage,
             ],
         ]);
@@ -108,7 +71,7 @@ class ApprenticeController extends Controller
 
         return Inertia::render('ApprenticeShow', [
             'apprenticeId' => $apprentice->id,
-            'apprentice' => $this->summary($apprentice->load(['apprenticeship', 'coach', 'trainer'])),
+            'apprentice' => (new ApprenticeResource($apprentice->load(ApprenticeResource::RELATIONS)))->resolve(),
             'grades' => GradeResource::collection(
                 $apprentice->grades()
                     ->with(GradeResource::RELATIONS)
@@ -118,6 +81,24 @@ class ApprenticeController extends Controller
             )->resolve(),
             'portfolio' => $portfolio,
         ]);
+    }
+
+    /**
+     * The coach_id guard makes two coaches assigning themselves at once safe:
+     * the slower one updates no row and is refused.
+     */
+    public function assign(Request $request, User $apprentice): RedirectResponse
+    {
+        Gate::authorize('assignSelf', $apprentice);
+
+        $assigned = User::query()
+            ->whereKey($apprentice->id)
+            ->whereNull('coach_id')
+            ->update(['coach_id' => $request->user()->id]);
+
+        abort_if($assigned === 0, 409);
+
+        return back();
     }
 
     /** The grade must belong to the apprentice in the URL and be viewable by the user. */
@@ -130,51 +111,12 @@ class ApprenticeController extends Controller
         return Inertia::render('GradeDetails', [
             ...DemoGrade::props(),
             'apprenticeId' => $apprentice->id,
+            'apprentice' => (new ApprenticeResource($apprentice->load(ApprenticeResource::RELATIONS)))->resolve(),
             'grade' => (new GradeResource($grade->load(GradeResource::RELATIONS)))->resolve(),
             'can' => [
                 'comment' => request()->user()->can('comment', $grade),
             ],
         ]);
-    }
-
-    /**
-     * @return Collection<int, User>
-     */
-    private function apprentices(): Collection
-    {
-        return User::role(UserRole::Apprentice->value)
-            ->with(['roles', 'apprenticeship', 'coach', 'trainer'])
-            ->orderBy('name')
-            ->get();
-    }
-
-    /**
-     * Shape of `ApprenticeSummary` in resources/js/types/apprentice.ts.
-     *
-     * @return array<string, mixed>
-     */
-    private function summary(User $apprentice): array
-    {
-        return [
-            'id' => $apprentice->id,
-            'name' => $apprentice->name,
-            'track' => $this->track($apprentice),
-            'is_active' => $apprentice->is_active,
-            'coach' => $apprentice->coach === null ? null : [
-                'id' => $apprentice->coach->id,
-                'name' => $apprentice->coach->name,
-            ],
-            'trainer' => $apprentice->trainer === null ? null : [
-                'id' => $apprentice->trainer->id,
-                'name' => $apprentice->trainer->name,
-            ],
-        ];
-    }
-
-    /** Short label of the apprentice's section: "IT", "EC", or null if none. */
-    private function track(User $apprentice): ?string
-    {
-        return $apprentice->apprenticeship?->shortName();
     }
 
     /**

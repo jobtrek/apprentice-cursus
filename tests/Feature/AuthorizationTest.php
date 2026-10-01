@@ -113,20 +113,17 @@ describe('coach', function () {
 });
 
 describe('trainer', function () {
-    test('sees grades of its own apprentices only', function () {
+    test('sees grades of apprentices in the same section only', function () {
         $it = section('IT');
         $ec = section('EC');
         $trainer = User::factory()->trainer()->create();
         $trainer->forceFill(['apprenticeship_id' => $it->id])->save();
 
-        $ownGrade = makeGrade(makeApprentice($it, trainer: $trainer));
-        $unassignedGrade = makeGrade(makeApprentice($it));
-        $ecGrade = makeGrade(makeApprentice($ec, trainer: $trainer));
+        $itGrade = makeGrade(makeApprentice($it));
+        $ecGrade = makeGrade(makeApprentice($ec));
 
         $this->actingAs($trainer)->get(route('apprentisdashboard'))->assertOk();
-        $this->actingAs($trainer)->get(route('grades.show', $ownGrade))->assertOk();
-        $this->actingAs($trainer)->get(route('grades.show', $unassignedGrade))->assertForbidden();
-        // Even assigned, an apprentice of another section stays out of reach.
+        $this->actingAs($trainer)->get(route('grades.show', $itGrade))->assertOk();
         $this->actingAs($trainer)->get(route('grades.show', $ecGrade))->assertForbidden();
     });
 
@@ -184,7 +181,7 @@ describe('apprentice pages', function () {
         $ec = makeApprentice(section('EC'));
 
         $this->actingAs($trainer)->get(route('apprentices.show', $ec))->assertForbidden();
-        $this->actingAs($trainer)->get(route('apprentices.show', makeApprentice($it, trainer: $trainer)))->assertOk();
+        $this->actingAs($trainer)->get(route('apprentices.show', makeApprentice($it)))->assertOk();
     });
 });
 
@@ -286,8 +283,8 @@ describe('commenting', function () {
         $trainer = User::factory()->trainer()->create();
         $trainer->forceFill(['apprenticeship_id' => $it->id])->save();
 
-        $itGrade = makeGrade(makeApprentice($it, trainer: $trainer));
-        $ecGrade = makeGrade(makeApprentice($ec, trainer: $trainer));
+        $itGrade = makeGrade(makeApprentice($it));
+        $ecGrade = makeGrade(makeApprentice($ec));
 
         expect($trainer->can('view', $itGrade))->toBeTrue()
             ->and($trainer->can('comment', $itGrade))->toBeTrue()

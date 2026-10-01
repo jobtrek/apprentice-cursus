@@ -22,7 +22,7 @@ the table for the weight of each grade inside of EC's program. MP = Maturité
 
 ## 2026-09-09 — Migrations & models derived from the MCD
 
-**Decision:** `db_schema/mcd.mmd` is turned into Laravel migrations and Eloquent models. Where the diagram was incomplete or ambiguous, the entries below record what was chosen instead.
+**Decision:** `../db/schemas/history/V1/mcd.mmd` is turned into Laravel migrations and Eloquent models. Where the diagram was incomplete or ambiguous, the entries below record what was chosen instead.
 
 ### Users: extended, not replaced
 
@@ -136,19 +136,19 @@ What each role can do and how the sync behaves: `docs/project-docs/role_permissi
 
 **One sync, used by login and the re-check middleware** (`AzureAccountSync`, one Graph client `MicrosoftGraphService`). *Why:* two copies of the mapping logic had already diverged.
 
-**Deactivate, never delete; no scheduled job.** Revoked access sets `is_active = false` at login or in `EnsureAzureAccountIsActive`; a later valid login reactivates. *Why:* history-bearing foreign keys forbid deletes, and the next request already detects the change.
+**Deactivate, never delete; no scheduled job.** *(The "no scheduled job" part is superseded by 2026-10-01 — Entra account sync.)* Revoked access sets `is_active = false` at login or in `EnsureAzureAccountIsActive`; a later valid login reactivates. *Why:* history-bearing foreign keys forbid deletes, and the next request already detects the change.
 
 **The re-check fails open, login fails closed.** If Graph is down, signed-in users keep working and the check retries after 60 s; a new login is refused. `is_active` itself is checked on every request, uncached. *Why:* failing closed would log everyone out during a Microsoft outage; at login there is no known state to fall back on.
 
-**Trainers are mapped to the IT apprenticeship.** *Why:* `User::supervises()` needs a section, and all trainers are IT until an EC trainer group exists.
+**Trainers have one group per section** (`trainer_IT`, `trainer_EC`). *Why:* `User::supervises()` needs a section, and IT and EC have their own trainers. *(Supersedes "trainers are mapped to the IT apprenticeship".)*
 
 **Groups map to apprenticeships by seeded name** (`ApprenticeshipSeeder::IT` / `::EC`), no `apprenticeships.code` column. *Why:* a second identifier for two rows adds a migration and a value to keep in sync.
 
-**Apprenticeship kept on section change**, with a logged warning. *Why:* the user story requires the apprentice to confirm before grades move; that page does not exist yet.
+**Apprenticeship kept on an apprentice's section change**, with a logged warning. *Why:* the user story requires the apprentice to confirm before grades move; that page does not exist yet. A trainer has no grades, so it follows its group's section.
 
 **Supervision requires the target to be an apprentice and never oneself.** *Why:* otherwise a supervisor could "supervise" another supervisor.
 
-**Coaches keep `coaching.assign-self` without a route.** *Why:* it is part of the matrix; the route comes with the coaching feature.
+**`coaching.assign-self` is served by `POST /apprentices/{apprentice}/assign`** (`UserPolicy::assignSelf`). Only an active apprentice with no coach; the update is guarded on `coach_id IS NULL`, so two coaches at once cannot overwrite each other. *Why:* another coach must never silently lose an apprentice.
 
 **Landing page is chosen by permission** (`User::homeRoute()`). *Why:* a new role only needs permissions.
 
@@ -174,3 +174,23 @@ What each role can do and how the sync behaves: `docs/project-docs/role_permissi
 - No Entra group maps to it, so it can never come from Microsoft.
 - `hasPermissionTo()` does not go through the Gate, so a bypass there is not automatic: `homeRoute()` (lands on `apprentisdashboard`) and `supervises()` (supervises every apprentice) check `isLocalAdmin()` themselves. Code should prefer `$user->can()`.
 - Guide: `docs/permissions_guide.md`.
+
+## 2026-10-01 — Entra account sync
+
+**Decision:** Accounts are created by a daily scheduled job, not at login. The job lists the members of every mapped `AzureGroup` through Graph and creates, updates or deactivates the matching local users through `AzureAccountSync::apply()` / `deactivate()`, then stamps `users.synced_at`. Login only matches an existing user on `azure_id`. An account not synced yet is refused with a message telling the admin to run the sync (`azure:sync`). This supersedes the "no scheduled job" part of 2026-09-30 — Roles and permissions.
+
+**Why:** The user story requires accounts to exist "even before my first login, so that coaches and trainers can see me on their dashboard right away" (`docs/user_stories/user_story_final.md`). Creating accounts at login cannot meet it: the apprentice list would miss everyone who has not signed in yet. Pre-loading users without a sync would drift from Entra.
+
+**Considered options:**
+
+- *Create at login* (previous behaviour): no job, but unsynced apprentices are invisible to their supervisors.
+- *Group mapping in an `azure_groups` table*: rejected. The four groups only change with a new section, which needs a deploy anyway. The `AzureGroup` enum stays.
+- *Sync at login on a miss*: rejected. New apprentices get their Microsoft account and group before they arrive, so the daily run covers them. A manual `azure:sync` handles the exceptions.
+
+**Consequences:**
+
+- **The 15-minute re-check stays.** `EnsureAzureAccountIsActive` still checks Graph per user, so removing access meets the 15-minute story. The daily job is not the only revocation path.
+- **All or nothing.** The job fetches all groups before writing anything. If any Graph call fails it throws and changes nothing, so a partial response can never deactivate a whole group. Retries use the job's `tries`/`backoff`.
+- **A coaches group is mapped** (`AzureGroup::Coach`, no section). `apprenticeship()` becomes nullable.
+- **Apprentice list vs. supervision.** Coaches list every active apprentice in both sections but open only their coachees (`User::supervises()` is unchanged). Trainers list and open only their own section.
+- The no-group / several-groups rule, matching on `azure_id` only, and keeping the section on a section change all still apply, in the job as at login.

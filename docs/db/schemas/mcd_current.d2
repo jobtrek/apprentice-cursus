@@ -1,0 +1,341 @@
+direction: right
+
+domains: {
+  shape: sql_table
+  id: bigint {constraint: primary_key}
+  name: varchar
+  rounding_step: "decimal(2,1)"
+  created_at: timestamp
+}
+
+domain_nodes: {
+  shape: sql_table
+  parent_id: bigint {constraint: [primary_key; foreign_key]}
+  child_id: bigint {constraint: [primary_key; foreign_key]}
+}
+
+domain_edges: {
+  shape: sql_table
+  apprenticeship_context_id: bigint {constraint: [primary_key; foreign_key]}
+  domain_node_id: bigint {constraint: [primary_key; foreign_key]}
+  weight: "decimal(5,2)"
+}
+
+subjects: {
+  shape: sql_table
+  id: bigint {constraint: primary_key}
+  domain_id: bigint {constraint: foreign_key}
+  subject_category_id: bigint {constraint: foreign_key}
+  created_at: timestamp
+}
+
+subject_category: {
+  shape: sql_table
+  id: bigint {constraint: primary_key}
+  name: varchar
+}
+
+apprenticeships: {
+  shape: sql_table
+  id: bigint {constraint: primary_key}
+  name: varchar
+  created_at: timestamp
+  updated_at: timestamp
+}
+
+apprenticeship_context: {
+  shape: sql_table
+  id: bigint {constraint: primary_key}
+  is_mp: boolean
+  apprenticeship_id: bigint {constraint: foreign_key}
+  root_domain_id: bigint {constraint: foreign_key}
+}
+
+apprenticeship_periods: {
+  shape: sql_table
+  id: bigint {constraint: primary_key}
+  apprentice_id: bigint {constraint: foreign_key} # Reference user
+  semester: smallint # check
+  year: smallint # generated
+  start_date: date
+  end_date: date
+}
+
+users: {
+  shape: sql_table
+  id: bigint {constraint: primary_key}
+  azure_id: varchar {constraint: unique}
+  tenant_id: varchar
+  name: varchar
+  email: varchar {constraint: unique}
+  email_verified_at: timestamp
+  password: varchar
+  is_active: boolean
+  apprenticeship_context_id: bigint {constraint: foreign_key}
+  apprenticeship_periods: bigint {constraint: foreign_key}
+  coach_id: bigint {constraint: foreign_key}
+  trainer_id: bigint {constraint: foreign_key}
+}
+
+grades: {
+  shape: sql_table
+  id: bigint {constraint: primary_key}
+  apprentice_id: bigint {constraint: foreign_key} # Reference users
+  domain_id: bigint {constraint: foreign_key}
+  subject_id: bigint {constraint: foreign_key}
+  apprenticeship_periods_id: bigint { constraint: foreign_key }
+  value: "decimal(2,1)"
+  test_date: date
+  file_path: varchar
+  original_filename: varchar
+  notified_at: timestamp
+  created_at: timestamp
+  updated_at: timestamp
+}
+
+comments: {
+  shape: sql_table
+  id: bigint {constraint: primary_key}
+  author_id: bigint {constraint: foreign_key}
+  commentable_type: varchar
+  commentable_id: bigint
+  body: text
+  created_at: timestamp
+  updated_at: timestamp
+}
+
+projects: {
+  shape: sql_table
+  id: bigint {constraint: primary_key}
+  user_id: bigint {constraint: foreign_key}
+  title: varchar
+  organization: varchar
+  description: text
+  responsibilities: varchar
+  technologies: varchar
+  repository_url: varchar
+  demo_path: varchar
+  date_start: date
+  date_end: date
+  created_at: timestamp
+  updated_at: timestamp
+}
+
+project_screenshots: {
+  shape: sql_table
+  id: bigint {constraint: primary_key}
+  project_id: bigint {constraint: foreign_key}
+  path: varchar
+  created_at: timestamp
+  updated_at: timestamp
+}
+
+skills: {
+  shape: sql_table
+  id: bigint {constraint: primary_key}
+  name: varchar {constraint: unique}
+  created_at: timestamp
+}
+
+project_skill: {
+  shape: sql_table
+  project_id: bigint {constraint: [primary_key; foreign_key]}
+  skill_id: bigint {constraint: [primary_key; foreign_key]}
+}
+permissions: {
+  label: "permissions (Spatie)"
+  shape: sql_table
+  id: bigint {constraint: primary_key}
+  name: varchar
+  guard_name: varchar
+  created_at: timestamp
+  updated_at: timestamp
+  # UNIQUE (name, guard_name)
+}
+
+roles: {
+  label: "roles (Spatie)"
+  shape: sql_table
+  id: bigint {constraint: primary_key}
+  name: varchar
+  guard_name: varchar
+  created_at: timestamp
+  updated_at: timestamp
+  # UNIQUE (name, guard_name)
+}
+
+model_has_permissions: {
+  label: "model_has_permissions (Spatie)"
+  shape: sql_table
+  permission_id: bigint {constraint: [primary_key; foreign_key]}
+  model_type: varchar {constraint: primary_key}
+  model_id: bigint {constraint: primary_key}
+  # INDEX (model_id, model_type), cascadeOnDelete sur permission_id
+}
+
+model_has_roles: {
+  label: "model_has_roles (Spatie)"
+  shape: sql_table
+  role_id: bigint {constraint: [primary_key; foreign_key]}
+  model_type: varchar {constraint: primary_key}
+  model_id: bigint {constraint: primary_key}
+  # INDEX (model_id, model_type), cascadeOnDelete sur role_id
+}
+
+role_has_permissions: {
+  label: "role_has_permissions (Spatie)"
+  shape: sql_table
+  permission_id: bigint {constraint: [primary_key; foreign_key]}
+  role_id: bigint {constraint: [primary_key; foreign_key]}
+  # cascadeOnDelete sur les deux FK
+}
+
+
+apprenticeships -> apprenticeship_context: contexts {
+  source-arrowhead: {shape: cf-one-required}
+  target-arrowhead: {shape: cf-many}
+}
+
+apprenticeship_context -> domain_edges: context {
+  source-arrowhead: {shape: cf-one-required}
+  target-arrowhead: {shape: cf-many}
+}
+
+domain_nodes -> domain_edges: domain {
+  source-arrowhead: {shape: cf-one-required}
+  target-arrowhead: {shape: cf-many}
+}
+
+domains -> domain_nodes: parent {
+  source-arrowhead: {shape: cf-one-required}
+  target-arrowhead: {shape: cf-many}
+}
+
+domains -> domain_nodes: child {
+  source-arrowhead: {shape: cf-one-required}
+  target-arrowhead: {shape: cf-many}
+}
+
+subject_category -> subjects: category {
+  source-arrowhead: {shape: cf-one-required}
+  target-arrowhead: {shape: cf-many}
+}
+
+users -> users: coach {
+  source-arrowhead: {shape: cf-one}
+  target-arrowhead: {shape: cf-many}
+}
+
+users -> users: trainer {
+  source-arrowhead: {shape: cf-one}
+  target-arrowhead: {shape: cf-many}
+}
+
+subjects -> grades: subject {
+  source-arrowhead: {shape: cf-one-required}
+  target-arrowhead: {shape: cf-many}
+}
+
+subjects -> domains: subject {
+  source-arrowhead: {shape: cf-one-required}
+  target-arrowhead: {shape: cf-many}
+}
+
+users -> comments: author {
+  source-arrowhead: {shape: cf-one-required}
+  target-arrowhead: {shape: cf-many}
+}
+
+grades -> comments: commentable {
+  source-arrowhead: {shape: cf-one-required}
+  target-arrowhead: {shape: cf-many}
+}
+
+projects -> comments: commentable {
+  source-arrowhead: {shape: cf-one-required}
+  target-arrowhead: {shape: cf-many}
+}
+
+users -> projects: apprentice {
+  source-arrowhead: {shape: cf-one-required}
+  target-arrowhead: {shape: cf-many}
+}
+
+projects -> project_screenshots: screenshots {
+  source-arrowhead: {shape: cf-one-required}
+  target-arrowhead: {shape: cf-many}
+}
+
+projects -> project_skill: projects {
+  source-arrowhead: {shape: cf-one-required}
+  target-arrowhead: {shape: cf-many}
+}
+
+skills -> project_skill: skills {
+  source-arrowhead: {shape: cf-one-required}
+  target-arrowhead: {shape: cf-many}
+}
+
+apprenticeship_context -> users: context {
+  source-arrowhead: {shape: cf-one-required}
+  target-arrowhead: {shape: cf-many}
+}
+
+users -> apprenticeship_periods: period {
+  source-arrowhead: {shape: cf-one-required}
+  target-arrowhead: {shape: cf-many}
+}
+
+grades -> apprenticeship_periods: period {
+  source-arrowhead: {shape: cf-many}
+  target-arrowhead: {shape: cf-one-required}
+}
+
+users -> grades: user-grade {
+  source-arrowhead: {shape: cf-one-required}
+  target-arrowhead: {shape: cf-many}
+}
+
+domains -> grades: domains-grade {
+  source-arrowhead: {shape: cf-one-required}
+  target-arrowhead: {shape: cf-many}
+}
+
+domains -> apprenticeship_context: root {
+  source-arrowhead: {shape: cf-one-required}
+  target-arrowhead: {shape: cf-many}
+}
+
+permissions -> model_has_permissions: permission {
+  source-arrowhead: {shape: cf-one-required}
+  target-arrowhead: {shape: cf-many}
+}
+
+roles -> model_has_roles: role {
+  source-arrowhead: {shape: cf-one-required}
+  target-arrowhead: {shape: cf-many}
+}
+
+permissions -> role_has_permissions: permission {
+  source-arrowhead: {shape: cf-one-required}
+  target-arrowhead: {shape: cf-many}
+}
+
+roles -> role_has_permissions: role {
+  source-arrowhead: {shape: cf-one-required}
+  target-arrowhead: {shape: cf-many}
+}
+
+# Relation polymorphe : model_type = App\Models\User, model_id = users.id
+# Aucune FK en base, donc ligne en pointillés
+users -> model_has_roles: model {
+  style.stroke-dash: 3
+  source-arrowhead: {shape: cf-one-required}
+  target-arrowhead: {shape: cf-many}
+}
+
+users -> model_has_permissions: model {
+  style.stroke-dash: 3
+  source-arrowhead: {shape: cf-one-required}
+  target-arrowhead: {shape: cf-many}
+}

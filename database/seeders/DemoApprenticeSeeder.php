@@ -10,8 +10,8 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 /**
- * Seeds the apprentices shown on the (still static) apprentices dashboard,
- * using the same ids so its links resolve to real users.
+ * Seeds local demo apprentices, with the ids the demo averages in
+ * resources/js/data/dashboard.ts are keyed on.
  */
 class DemoApprenticeSeeder extends Seeder
 {
@@ -25,7 +25,7 @@ class DemoApprenticeSeeder extends Seeder
     public function run(): void
     {
         /** @var list<array{id: string, name: string, track: string}> $demo */
-        $demo = json_decode((string) file_get_contents(resource_path('js/data/apprentices.json')), true);
+        $demo = json_decode((string) file_get_contents(database_path('seeders/data/demo_apprentices.json')), true);
 
         $apprenticeships = [
             'IT' => Apprenticeship::where('name', ApprenticeshipSeeder::IT)->value('id'),

@@ -1,0 +1,169 @@
+erDiagram
+
+%% Mirrors database/migrations. Framework tables (password_reset_tokens, sessions,
+%% cache, cache_locks, jobs, job_batches, failed_jobs) are left out.
+%% "enum" columns are varchar + CHECK in Postgres, not native enums.
+
+    evaluation_schemes {
+        bigint id PK
+        bigint apprenticeship_id FK "-> apprenticeships (track), restrictOnDelete"
+        boolean is_mp "default false, maturité professionnelle variant of this scheme"
+        varchar name "e.g. IT - standard (2024), IT - MP (2024)"
+        bigint root_domain_id FK "-> domains (Final grade root), restrictOnDelete"
+        date valid_from "nullable, lets a new ordinance / plan de formation get its own scheme"
+        timestamp created_at
+        timestamp updated_at
+    }
+%% evaluation_schemes: UNIQUE (apprenticeship_id, is_mp, valid_from)
+%% The scheme decides WHICH tree applies: recompute walks from root_domain_id, no filtering.
+%% Subtrees identical across schemes (e.g. CIE) are shared by linking them under several roots.
+
+    domains {
+        bigint id PK
+        varchar name "e.g. Final grade, DCO B, French..."
+        enum aggregation "nullable, weighted_average; NULL = leaf node, no children"
+        decimal rounding_step "nullable, (2,1), 0.5 or NULL"
+        bigint context_id FK "NOT NULL"
+        timestamp created_at "default now"
+    }
+
+    domains_node {
+        bigint parent_id PK, FK "-> domains, cascadeOnDelete"
+        bigint child_id PK, FK "-> domains, self-ref (DAG, not strict tree), cascadeOnDelete"
+        timestamp created_at "default now"
+    }
+%% domains_node: PRIMARY KEY (parent_id, child_id) — prevents duplicate edges double-counting weight
+%% CHECK (parent_id <> child_id) blocks self-loops; longer cycles are enforced by Domain::addChild()
+%% Children weights of each parent must sum to 100, validated at configuration time (every edge always applies)
+
+    subjects {
+        bigint id PK
+        bigint subject_category_id FK "-> subject_category, cascadeOnDelete"
+        timestamp created_at "default now"
+    }
+
+    subject_category {
+        bigint id PK
+        varchar name "CIE, competence elargie, Modules. Used for grouping in the UI"
+    }
+
+    apprenticeships {
+        bigint id PK
+        varchar name "IT | EC (track)"
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    users {
+        bigint id PK
+        varchar azure_id UK "nullable, for SSO, varchar since it's UUID"
+        varchar tenant_id "nullable, for SSO, varchar since it's UUID"
+        varchar name
+        varchar email UK
+        timestamp email_verified_at "nullable"
+        varchar password "nullable, SSO users have none"
+        boolean is_active "default true"
+        enum role "apprentice | coach | trainer | admin | super_admin, default apprentice"
+        bigint apprenticeship_id FK "nullable, -> apprenticeships (track), nullOnDelete"
+        bigint evaluation_scheme_id FK "nullable (non-apprentices), -> evaluation_schemes, restrictOnDelete; replaces is_mp"
+        bigint coach_id FK "nullable, self-ref, nullOnDelete"
+        bigint trainer_id FK "nullable, self-ref, nullOnDelete"
+    }
+%% users: scheme.apprenticeship_id must match users.apprenticeship_id, enforced in FormRequest / model
+
+    grades {
+        bigint id PK
+        bigint user_id FK "-> users (apprentice), restrictOnDelete"
+        bigint domain_id FK "-> domains (leaf), restrictOnDelete"
+        bigint subject_id FK "-> subjects, restrictOnDelete"
+        decimal value "(2,1), CHECK 1.0-6.0, no half steps"
+        date test_date "<= today, enforced in FormRequest (CURRENT_DATE not allowed in CHECK)"
+        smallint semester "CHECK 1..8, derived from test_date"
+        varchar file_path "nullable, required if not oral"
+        varchar original_filename "nullable"
+        timestamp notified_at "nullable, anti-duplicate email"
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    domain_averages {
+        bigint id PK
+        bigint user_id FK "-> users (apprentice), restrictOnDelete"
+        bigint domain_id FK "-> domains, restrictOnDelete"
+        decimal rounded_value "(2,1), CHECK 1.0-6.0, displayed value"
+        timestamp created_at
+        timestamp updated_at
+    }
+%% domain_averages: UNIQUE (user_id, domain_id) — upsert target on recompute
+%% recompute upserts update in place instead of duplicating
+%% On scheme change: delete the user's averages not reachable from the new root, then recompute
+
+    comments {
+        bigint id PK
+        bigint author_id FK "-> users, restrictOnDelete"
+        varchar commentable_type "Grade | Project"
+        bigint commentable_id
+        text body "CHECK max 2000 chars"
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    projects {
+        bigint id PK
+        bigint user_id FK "-> users (IT apprentice), restrictOnDelete"
+        varchar title
+        varchar organization "nullable"
+        text description
+        varchar responsibilities "nullable"
+        varchar technologies "nullable, comma-separated"
+        varchar repository_url "nullable"
+        varchar demo_path "nullable"
+        date date_start
+        date date_end "nullable"
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    project_screenshots {
+        bigint id PK
+        bigint project_id FK "-> projects, cascadeOnDelete"
+        varchar path "private disk, served through DossierController::screenshot"
+        timestamp created_at
+        timestamp updated_at
+    }
+%% project_screenshots: max 10 per project (ProjectScreenshot::MAX_PER_PROJECT), enforced in PortfolioProjectRequest
+
+    skills {
+        bigint id PK
+        varchar name UK
+        timestamp created_at "default now"
+    }
+
+    project_skill {
+        bigint project_id PK, FK "-> projects, cascadeOnDelete"
+        bigint skill_id PK, FK "-> skills, cascadeOnDelete"
+    }
+
+    apprenticeships ||--o{ evaluation_schemes : "track"
+    domains ||--o{ evaluation_schemes : "root"
+    evaluation_schemes |o--o{ users : "scheme"
+    domains ||--o{ domains_node : "parent"
+    domains ||--o{ domains_node : "child"
+    subject_category ||--o{ subjects : "category"
+    apprenticeships |o--o{ users : "track"
+    users |o--o{ users : "coach"
+    users |o--o{ users : "trainer"
+    users ||--o{ grades : "apprentice"
+    domains ||--o{ grades : "leaf"
+    subjects ||--o{ grades : "subject"
+    domains ||--o{ domain_averages : ""
+    users ||--o{ domain_averages : "apprentice"
+    users ||--o{ comments : "author"
+    grades ||--o{ comments : "commentable"
+    projects ||--o{ comments : "commentable"
+    users ||--o{ projects : "apprentice"
+    projects ||--o{ project_screenshots : "screenshots"
+    projects ||--o{ project_skill : ""
+    skills ||--o{ project_skill : ""
+
+

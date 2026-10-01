@@ -1,33 +1,24 @@
 <script setup lang="ts">
 import { Head } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
-import AddActionButton from '@/components/AddActionButton.vue';
 import ApprenticeDetailSheet from '@/components/apprentice/ApprenticeDetailSheet.vue';
 import ApprenticeRow from '@/components/apprentice/ApprenticeRow.vue';
-import AssignApprenticeDialog from '@/components/apprentice/AssignApprenticeDialog.vue';
 import DataTable from '@/components/DataTable.vue';
 import { PageContainer, PageHeader } from '@/components/page';
 import SearchInput from '@/components/SearchInput.vue';
 import TabFilter from '@/components/TabFilter.vue';
 import { TRACK_FILTER_OPTIONS } from '@/constants/constants';
-import type {
-    ApprenticeListItem,
-    AssignableApprentice,
-    AssignSelfAs,
-    SupervisorOption,
-    TrainerOption,
-} from '@/types/apprentice';
+import type { ApprenticeListItem, SupervisorOption } from '@/types/apprentice';
 
 const props = defineProps<{
-    /** Apprentis supervisés : coach et formateur → les leurs, admin → tous. */
+    /**
+     * Apprentis actifs listés (`User::listedApprentices()`) : coach → tous,
+     * formateur → sa filière, admin → tous. `canView` dit lesquels s'ouvrent.
+     */
     apprentices: ApprenticeListItem[];
-    assignable: AssignableApprentice[];
     coaches: SupervisorOption[];
-    trainers: TrainerOption[];
     can: {
-        /** Bouton « Ajouter un·e apprenti·e » : en tant que coach ou formateur. */
-        assignSelfAs: AssignSelfAs | null;
-        /** Admin local : choix du coach et du formateur de chaque apprenti·e. */
+        /** Admin local : choix du coach de chaque apprenti·e. */
         manageSupervision: boolean;
     };
 }>();
@@ -59,8 +50,6 @@ const openPreview = (apprentice: ApprenticeListItem) => {
     sheetOpen.value = true;
 };
 
-const assignOpen = ref(false);
-
 const apprenticeColumns = [
     { key: 'apprentice', label: 'Apprenti·e' },
     { key: 'track', label: 'Filière' },
@@ -77,19 +66,12 @@ const apprenticeColumns = [
     <Head title="Apprentis" />
 
     <PageContainer size="lg">
-        <PageHeader :title="can.assignSelfAs ? 'Mes apprentis' : 'Apprentis'">
+        <PageHeader title="Apprentis">
             <template #description>
                 {{ filtered.length }} apprenti·e{{
                     filtered.length > 1 ? 's' : ''
                 }}
                 au total
-            </template>
-            <template v-if="can.assignSelfAs" #actions>
-                <AddActionButton
-                    label="Ajouter un·e apprenti·e"
-                    data-test="assign-apprentice-button"
-                    @click="assignOpen = true"
-                />
             </template>
         </PageHeader>
 
@@ -110,17 +92,12 @@ const apprenticeColumns = [
         <DataTable
             :columns="apprenticeColumns"
             :data="filtered"
-            :empty-message="
-                apprentices.length === 0 && can.assignSelfAs
-                    ? 'Vous ne suivez encore aucun apprenti. Utilisez le bouton + pour en ajouter.'
-                    : 'Aucun apprenti trouvé.'
-            "
+            empty-message="Aucun apprenti trouvé."
         >
             <template #row="{ item }">
                 <ApprenticeRow
                     :apprentice="item"
                     :coaches="can.manageSupervision ? coaches : null"
-                    :trainers="can.manageSupervision ? trainers : null"
                     @preview="openPreview"
                 />
             </template>
@@ -129,13 +106,6 @@ const apprenticeColumns = [
         <ApprenticeDetailSheet
             v-model:open="sheetOpen"
             :apprentice="selected"
-        />
-
-        <AssignApprenticeDialog
-            v-if="can.assignSelfAs"
-            v-model:open="assignOpen"
-            :as="can.assignSelfAs"
-            :assignable="assignable"
         />
     </PageContainer>
 </template>
