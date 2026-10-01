@@ -1,13 +1,29 @@
-import { computed, ref, toValue, type MaybeRefOrGetter } from 'vue';
-import type { Apprentice } from '@/types/apprentice';
+import { computed, ref } from 'vue';
+import rawApprentices from '@/data/apprentices.json';
 
-export const useApprentices = (apprentices: MaybeRefOrGetter<Apprentice[]>) => {
+export interface Apprentice {
+    id: string;
+    name: string;
+    avatarUrl?: string;
+    track: 'IT' | 'EC';
+    year: '1ère' | '2ème' | '3ème' | '4ème';
+    coach?: string;
+    trainer?: string;
+}
+
+const apprentices = ref<Apprentice[]>(rawApprentices as Apprentice[]);
+
+/** Apprenti·e correspondant à l'identifiant d'URL, s'il existe. */
+export const findApprentice = (id: number | string): Apprentice | undefined =>
+    apprentices.value.find((apprentice) => apprentice.id === String(id));
+
+export const useApprentices = () => {
     const search = ref('');
     const trackFilter = ref<'All' | 'IT' | 'EC'>('All');
-    const yearFilter = ref<'All' | NonNullable<Apprentice['year']>>('All');
+    const yearFilter = ref<'All' | Apprentice['year']>('All');
 
     const filtered = computed(() =>
-        toValue(apprentices).filter((a) => {
+        apprentices.value.filter((a) => {
             const matchesSearch = a.name
                 .toLowerCase()
                 .includes(search.value.toLowerCase());
@@ -19,5 +35,5 @@ export const useApprentices = (apprentices: MaybeRefOrGetter<Apprentice[]>) => {
         }),
     );
 
-    return { filtered, search, trackFilter, yearFilter };
+    return { apprentices, filtered, search, trackFilter, yearFilter };
 };

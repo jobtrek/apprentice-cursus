@@ -2,7 +2,7 @@
 import { Badge } from '@/components/ui/badge';
 
 defineProps<{
-    value?: string | null;
+    value?: string;
 }>();
 </script>
 

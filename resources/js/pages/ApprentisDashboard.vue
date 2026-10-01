@@ -7,20 +7,13 @@ import DataTable from '@/components/DataTable.vue';
 import { PageContainer, PageHeader } from '@/components/page';
 import SearchInput from '@/components/SearchInput.vue';
 import TabFilter from '@/components/TabFilter.vue';
-import { useApprentices } from '@/composables/useApprentices';
+import { useApprentices, type Apprentice } from '@/composables/useApprentices';
 import {
     TRACK_FILTER_OPTIONS,
     YEAR_FILTER_OPTIONS,
 } from '@/constants/constants';
-import type { Apprentice } from '@/types/apprentice';
 
-const props = defineProps<{
-    apprentices: Apprentice[];
-}>();
-
-const { filtered, search, trackFilter, yearFilter } = useApprentices(
-    () => props.apprentices,
-);
+const { filtered, search, trackFilter, yearFilter } = useApprentices();
 
 const selected = ref<Apprentice | null>(null);
 const sheetOpen = ref(false);
@@ -35,6 +28,7 @@ const apprenticeColumns = [
     { key: 'track', label: 'Filière' },
     { key: 'year', label: 'Année' },
     { key: 'coach', label: 'Coach' },
+    { key: 'trainer', label: 'Formateur' },
 ];
 </script>
 

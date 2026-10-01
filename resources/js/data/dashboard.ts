@@ -39,7 +39,7 @@ export interface ProgressPoint {
 export const GRADES_THIS_SEMESTER = 6;
 
 export interface ApprenticeAverage {
-    /** Identifiant d'un·e apprenti·e de démo (`DemoApprenticeSeeder`). */
+    /** Identifiant dans `apprentices.json`. */
     apprenticeId: string;
     average: number;
     /** Moyenne du semestre précédent, pour la tendance. */

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Link } from '@inertiajs/vue3';
 import { ArrowRightIcon } from '@lucide/vue';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import {
@@ -13,7 +13,7 @@ import {
     SheetTitle,
 } from '@/components/ui/sheet';
 import { getInitials } from '@/composables/useInitials';
-import type { Apprentice } from '@/types/apprentice';
+import type { Apprentice } from '@/composables/useApprentices';
 import {
     AVERAGE_SCORE,
     BRANCH_SCORES,
@@ -37,6 +37,7 @@ const open = defineModel<boolean>('open', { required: true });
             <SheetHeader>
                 <div class="flex items-center gap-3">
                     <Avatar class="size-10">
+                        <AvatarImage :src="apprentice?.avatarUrl ?? ''" />
                         <AvatarFallback>
                             {{ getInitials(apprentice?.name) }}
                         </AvatarFallback>
@@ -44,11 +45,7 @@ const open = defineModel<boolean>('open', { required: true });
                     <div>
                         <SheetTitle>{{ apprentice?.name }}</SheetTitle>
                         <SheetDescription>
-                            {{
-                                [apprentice?.track, apprentice?.year]
-                                    .filter(Boolean)
-                                    .join(' · ')
-                            }}
+                            {{ apprentice?.track }} · {{ apprentice?.year }}
                         </SheetDescription>
                     </div>
                 </div>
@@ -57,7 +54,10 @@ const open = defineModel<boolean>('open', { required: true });
             <div v-if="apprentice" class="flex flex-col gap-6 px-4 pb-6">
                 <Separator />
 
-                <ApprenticeMetaRow :coach="apprentice.coach" />
+                <ApprenticeMetaRow
+                    :coach="apprentice.coach"
+                    :formateur="apprentice.trainer"
+                />
 
                 <ApprenticeScoreSummary
                     :average="AVERAGE_SCORE"
@@ -67,9 +67,9 @@ const open = defineModel<boolean>('open', { required: true });
                 <ApprenticeScoreTable :branches="BRANCH_SCORES" />
             </div>
 
-            <SheetFooter v-if="apprentice?.canView" class="border-t">
+            <SheetFooter v-if="apprentice" class="border-t">
                 <Button as-child>
-                    <Link :href="apprentices.show(apprentice.id)">
+                    <Link :href="apprentices.show(Number(apprentice.id))">
                         Voir le carnet de notes
                         <ArrowRightIcon aria-hidden="true" />
                     </Link>

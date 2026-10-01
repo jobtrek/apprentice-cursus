@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Head, Link } from '@inertiajs/vue3';
 import { UserXIcon } from '@lucide/vue';
+import { computed } from 'vue';
 import ApprenticeMetaRow from '@/components/apprentice/ApprenticeMetaRow.vue';
 import GradeBook from '@/components/gradeList/GradeBook.vue';
 import { PageContainer, PageHeader } from '@/components/page';
@@ -13,16 +14,17 @@ import {
     EmptyMedia,
     EmptyTitle,
 } from '@/components/ui/empty';
+import { findApprentice } from '@/composables/useApprentices';
 import { apprentisdashboard } from '@/routes';
 import apprentices from '@/routes/apprentices';
-import type { Apprentice } from '@/types/apprentice';
 import type { Grade } from '@/types/grade';
 
 const props = defineProps<{
     apprenticeId: number;
-    apprentice: Apprentice;
     grades: Grade[];
 }>();
+
+const apprentice = computed(() => findApprentice(props.apprenticeId));
 
 const breadcrumbs = [{ label: 'Apprentis', href: apprentisdashboard() }];
 
@@ -40,19 +42,13 @@ const gradeHref = (grade: Grade) =>
         <template v-if="apprentice">
             <PageHeader
                 :title="apprentice.name"
-                :description="
-                    [
-                        apprentice.track,
-                        apprentice.year && `${apprentice.year} année`,
-                    ]
-                        .filter(Boolean)
-                        .join(' · ')
-                "
+                :description="`${apprentice.track} · ${apprentice.year} année`"
                 :breadcrumbs="breadcrumbs"
             >
                 <ApprenticeMetaRow
                     class="mt-2 max-w-sm"
                     :coach="apprentice.coach"
+                    :formateur="apprentice.trainer"
                 />
             </PageHeader>
 
