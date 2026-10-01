@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('subjects', function (Blueprint $table) {
-            $table->dropForeign('subject_category_id');
+            $table->dropForeign(['subject_category_id']);
             $table->string('name');
         });
 
@@ -24,13 +24,13 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('subject_category', function (Blueprint $table) {
+        Schema::create('subject_category', function (Blueprint $table) {
             $table->id();
             $table->string('name');
         });
 
         Schema::table('subjects', function (Blueprint $table) {
-            $table->foreignId('subject_category_id')->constrained('subject_categories');
+            $table->foreignId('subject_category_id')->constrained('subject_category');
             $table->dropColumn('name');
         });
     }
