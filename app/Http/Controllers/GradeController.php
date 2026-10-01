@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Resources\CommentResource;
 use App\Http\Resources\GradeResource;
 use App\Models\Grade;
 use App\Support\Demo\DemoGrade;
@@ -29,12 +30,13 @@ class GradeController extends Controller
 
     /**
      * Access is enforced by the `can:view,grade` route middleware.
-     * TODO: replace the demo payload once grade files and comments are served from the database.
+     * TODO: replace the demo PDF once grade files are served from the database.
      */
     public function show(Request $request, Grade $grade): Response
     {
         return Inertia::render('GradeDetails', [
             ...DemoGrade::props(),
+            'comments' => CommentResource::forGrade($grade),
             'grade' => (new GradeResource($grade->load(GradeResource::RELATIONS)))->resolve(),
             'can' => [
                 'comment' => $request->user()->can('comment', $grade),

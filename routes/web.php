@@ -2,6 +2,7 @@
 
 use App\Enums\Permission;
 use App\Http\Controllers\ApprenticeController;
+use App\Http\Controllers\CommentController;
 use App\Http\Controllers\DossierController;
 use App\Http\Controllers\GradeController;
 use App\Http\Controllers\HomeController;
@@ -19,7 +20,15 @@ Route::middleware(['auth', 'verified'])->group(function () {
             ->whereNumber('grade')
             ->middleware('can:view,grade')
             ->name('show');
+        Route::post('/{grade}/comments', [CommentController::class, 'store'])
+            ->whereNumber('grade')
+            ->name('comments.store');
     });
+
+    Route::put('/comments/{comment}', [CommentController::class, 'update'])
+        ->whereNumber('comment')
+        ->middleware('can:update,comment')
+        ->name('comments.update');
 
     Route::middleware('can:'.Permission::PortfolioManageOwn->value)
         ->prefix('portfolio')
