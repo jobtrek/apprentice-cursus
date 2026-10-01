@@ -57,6 +57,8 @@ class EvaluationNode extends Model
 
     /**
      * The composite node(s) this node contributes to.
+     *
+     * @return BelongsToMany<EvaluationNode, $this, EvaluationNodeConnection, 'pivot'>
      */
     public function parents(): BelongsToMany
     {

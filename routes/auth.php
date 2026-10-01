@@ -8,8 +8,11 @@ Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthenticatedSessionController::class, 'create'])
         ->name('login');
 
-    Route::post('/login', [AuthenticatedSessionController::class, 'store'])
-        ->name('login.store');
+    // Password login is a local-only testing tool; production uses Microsoft SSO exclusively.
+    if (app()->environment('local')) {
+        Route::post('/login', [AuthenticatedSessionController::class, 'store'])
+            ->name('login.store');
+    }
 });
 
 Route::middleware('auth')->post('/logout', [AuthenticatedSessionController::class, 'destroy'])

@@ -8,7 +8,7 @@ import {
     PencilIcon,
     PlusIcon,
 } from '@lucide/vue';
-import { ref } from 'vue';
+import { ref, watch } from 'vue';
 import { formatPeriod } from '@/composables/usePortfolio';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -22,18 +22,33 @@ import {
     EmptyTitle,
 } from '@/components/ui/empty';
 import portfolio from '@/routes/portfolio';
+import AddActionButton from '@/components/AddActionButton.vue';
 import { PageContainer, PageHeader } from '@/components/page';
-import type { PortfolioProject } from '@/types/portfolio';
+import ProjectDialog from '@/components/portfolio/ProjectDialog.vue';
+import { useProjectDialog } from '@/composables/useProjectDialog';
+import type { PortfolioProject, Skill } from '@/types/portfolio';
 
 const props = defineProps<{
     projects: PortfolioProject[];
+    skills: Skill[];
 }>();
+
+const { openCreate: openAddProject, openEdit: openEditProject } =
+    useProjectDialog();
 
 /**
  * Copie locale pour le glisser-déposer. L'ordre n'est pas encore enregistré :
- * la table `projects` n'a pas de colonne `position`.
+ * la table `projects` n'a pas de colonne `position`. Resynchronisée quand le
+ * serveur renvoie la liste (après un ajout, une modification, une suppression).
  */
 const projects = ref<PortfolioProject[]>([...props.projects]);
+
+watch(
+    () => props.projects,
+    (fresh) => {
+        projects.value = [...fresh];
+    },
+);
 
 /** Déplace un projet dans la liste, en bornant la position d'arrivée. */
 function moveProject(from: number, to: number): void {
@@ -101,12 +116,11 @@ function onHandleKeydown(event: KeyboardEvent, index: number): void {
                         Aperçu
                     </Link>
                 </Button>
-                <Button as-child data-test="new-project-link">
-                    <Link :href="portfolio.projects.create()">
-                        <PlusIcon aria-hidden="true" />
-                        Nouveau projet
-                    </Link>
-                </Button>
+                <AddActionButton
+                    label="Nouveau projet"
+                    data-test="new-project-button"
+                    @click="openAddProject"
+                />
             </template>
         </PageHeader>
 
@@ -166,13 +180,14 @@ function onHandleKeydown(event: KeyboardEvent, index: number): void {
                         </div>
                     </div>
 
-                    <Button as-child variant="outline" size="icon">
-                        <Link
-                            :href="portfolio.projects.edit(project.id)"
-                            :aria-label="`Modifier ${project.title}`"
-                        >
-                            <PencilIcon aria-hidden="true" />
-                        </Link>
+                    <Button
+                        variant="outline"
+                        size="icon"
+                        :aria-label="`Modifier ${project.title}`"
+                        :title="`Modifier ${project.title}`"
+                        @click="openEditProject(project)"
+                    >
+                        <PencilIcon aria-hidden="true" />
                     </Button>
                 </li>
             </ul>
@@ -190,13 +205,13 @@ function onHandleKeydown(event: KeyboardEvent, index: number): void {
                 </EmptyDescription>
             </EmptyHeader>
             <EmptyContent>
-                <Button as-child>
-                    <Link :href="portfolio.projects.create()">
-                        <PlusIcon aria-hidden="true" />
-                        Nouveau projet
-                    </Link>
+                <Button @click="openAddProject">
+                    <PlusIcon aria-hidden="true" />
+                    Nouveau projet
                 </Button>
             </EmptyContent>
         </Empty>
+
+        <ProjectDialog :skills="skills" />
     </PageContainer>
 </template>

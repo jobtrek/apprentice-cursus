@@ -96,7 +96,7 @@ function onDelete(): void {
     <PageContainer size="sm">
         <PageHeader :title="heading" :breadcrumbs="breadcrumbs" />
 
-        <form novalidate @submit.prevent="submit">
+        <form novalidate @submit.prevent="submit()">
             <Card>
                 <CardContent>
                     <FieldGroup>

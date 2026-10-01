@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Enums\Permission;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -35,11 +36,26 @@ class HandleInertiaRequests extends Middleware
      */
     public function share(Request $request): array
     {
+        $user = $request->user();
+
         return [
             ...parent::share($request),
             'name' => config('app.name'),
             'auth' => [
-                'user' => $request->user(),
+                'user' => $user === null ? null : [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'role' => $user->role?->value,
+                    'apprenticeship_id' => $user->apprenticeship_id,
+                ],
+                'can' => [
+                    'createGrade' => $user?->can(Permission::GradesCreate->value) ?? false,
+                    'viewOwnGrades' => $user?->can(Permission::GradesViewOwn->value) ?? false,
+                    'viewSupervisedGrades' => $user?->can(Permission::GradesViewSupervised->value) ?? false,
+                    'managePortfolio' => $user?->can(Permission::PortfolioManageOwn->value) ?? false,
+                    'viewApprentices' => $user?->can(Permission::ApprenticesViewList->value) ?? false,
+                ],
             ],
         ];
     }

@@ -1,7 +1,9 @@
 import type { Grade, GradeMenu } from '@/types/grade';
 
-// Données de démonstration du carnet de notes, en attendant les notes réelles
-// côté serveur. Les mêmes valeurs servent pour tous les apprentis.
+// Carnet de notes : la structure des domaines et les notes par domaine restent
+// des données de démonstration (les mêmes pour tous les apprentis). Les lignes
+// des tableaux sont les notes réelles de l'apprenti·e, envoyées par le serveur,
+// réparties selon le domaine de l'arbre d'évaluation auquel elles appartiennent.
 
 export interface DomainGrade {
     title: string;
@@ -30,54 +32,52 @@ const columns = [
     { key: 'date', label: 'Date' },
 ];
 
-const gradeRows: Grade[] = [
-    {
-        id: 1,
-        title: 'Test 1',
-        subject: 'Mathématique',
-        value: 6,
-        semester: 1,
-        date: '12.03.2026',
-    },
-    {
-        id: 2,
-        title: 'Test 2',
-        subject: 'Mathématique',
-        value: 5.5,
-        semester: 1,
-        date: '02.04.2026',
-    },
-    {
-        id: 3,
-        title: 'Test 3',
-        subject: 'Mathématique',
-        value: 4.5,
-        semester: 2,
-        date: '14.05.2026',
-    },
-];
+// Noms des nœuds de l'arbre : ils doivent correspondre à EvaluationTreeSeeder::itTree().
+const NODES = {
+    informatique: 'Compétences en informatique',
+    modulesEcole: 'Modules école professionnelle',
+    modulesCie: 'Modules cours interentreprises',
+    baseElargies: 'Compétences de base élargies',
+    cultureGenerale: 'Culture générale',
+    tpi: 'Travail pratique individuel (TPI)',
+};
 
-export const GRADE_TABLES: GradeMenu[] = [
+/** Notes dont le chemin d'ancêtres commence par `path`. */
+const under = (grades: Grade[], path: string[]): Grade[] =>
+    grades.filter((grade) => path.every((name, i) => grade.path[i] === name));
+
+/**
+ * Arbre d'affichage du carnet (démo) : la structure suit l'arbre IT, mais chaque
+ * table ne reçoit que les notes dont le chemin d'ancêtres correspond à son nœud.
+ * Les notes d'un autre arbre (ex. EC) n'apparaissent dans aucune de ces tables.
+ */
+export const gradeTables = (grades: Grade[]): GradeMenu[] => [
     {
         title: 'Compétences en informatique',
         columns,
-        grades: gradeRows,
+        grades: under(grades, [NODES.informatique]),
         subMenu: [
-            { title: 'Modules école pro', columns, grades: gradeRows },
-            { title: 'Modules CIE', columns, grades: gradeRows },
+            {
+                title: 'Modules école pro',
+                columns,
+                grades: under(grades, [NODES.informatique, NODES.modulesEcole]),
+            },
+            {
+                title: 'Modules CIE',
+                columns,
+                grades: under(grades, [NODES.informatique, NODES.modulesCie]),
+            },
         ],
     },
-    { title: 'Compétences de base élargies', columns, grades: gradeRows },
-    { title: 'Culture générale', columns, grades: gradeRows },
-    { title: 'TPI', columns, grades: gradeRows },
+    {
+        title: 'Compétences de base élargies',
+        columns,
+        grades: under(grades, [NODES.baseElargies]),
+    },
+    {
+        title: 'Culture générale',
+        columns,
+        grades: under(grades, [NODES.cultureGenerale]),
+    },
+    { title: 'TPI', columns, grades: under(grades, [NODES.tpi]) },
 ];
-
-const flattenGrades = (menus: GradeMenu[]): Grade[] =>
-    menus.flatMap((menu) => [
-        ...menu.grades,
-        ...flattenGrades(menu.subMenu ?? []),
-    ]);
-
-/** Note de démonstration correspondant à l'identifiant d'URL, si elle existe. */
-export const findGrade = (id: number): Grade | undefined =>
-    flattenGrades(GRADE_TABLES).find((grade) => grade.id === id);

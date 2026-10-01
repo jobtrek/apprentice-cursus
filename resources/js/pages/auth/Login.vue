@@ -9,7 +9,6 @@ import {
     FieldSeparator,
 } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
-import login from '@/routes/login';
 import microsoft from '@/routes/microsoft';
 import { Head, useForm } from '@inertiajs/vue3';
 import MicrosoftLogo from '../../../assets/microsoft (2).svg';
@@ -17,14 +16,14 @@ import MicrosoftLogo from '../../../assets/microsoft (2).svg';
 defineOptions({
     layout: {
         title: 'Connexion',
-        description:
-            'Connectez-vous avec votre compte Microsoft ou votre adresse e-mail.',
+        description: 'Connectez-vous avec votre compte Microsoft.',
     },
 });
 
-defineProps<{
+const props = defineProps<{
     status?: string;
     error?: string;
+    passwordLoginUrl: string | null;
 }>();
 
 const form = useForm({
@@ -33,7 +32,11 @@ const form = useForm({
 });
 
 const submit = () => {
-    form.post(login.store.url(), {
+    if (!props.passwordLoginUrl) {
+        return;
+    }
+
+    form.post(props.passwordLoginUrl, {
         onFinish: () => form.reset('password'),
     });
 };
@@ -65,9 +68,9 @@ const submit = () => {
                 </Button>
             </form>
 
-            <FieldSeparator>ou</FieldSeparator>
+            <FieldSeparator v-if="passwordLoginUrl">ou</FieldSeparator>
 
-            <form @submit.prevent="submit">
+            <form v-if="passwordLoginUrl" @submit.prevent="submit">
                 <FieldGroup>
                     <Field :data-invalid="!!form.errors.email">
                         <FieldLabel for="email">Adresse e-mail</FieldLabel>

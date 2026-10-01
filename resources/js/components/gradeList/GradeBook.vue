@@ -5,11 +5,13 @@ import GradeAccordionItem from '@/components/gradeList/GradeAccordionItem.vue';
 import { SectionHeader } from '@/components/page';
 import SearchInput from '@/components/SearchInput.vue';
 import { Accordion } from '@/components/ui/accordion';
-import { DOMAIN_GRADES, FINAL_GRADE, GRADE_TABLES } from '@/data/gradebook';
+import { DOMAIN_GRADES, FINAL_GRADE, gradeTables } from '@/data/gradebook';
 import type { Grade, GradeMenu } from '@/types/grade';
 import type { RouteDefinition } from '@/wayfinder';
 
 const props = defineProps<{
+    /** Notes réelles de l'apprenti·e, réparties dans chaque domaine. */
+    grades: Grade[];
     /** Page de détail d'une note : diffère entre l'apprenti et le coach. */
     gradeHref: (grade: Grade) => RouteDefinition<'get'>;
 }>();
@@ -27,12 +29,14 @@ function filterMenu(menu: GradeMenu, query: string): GradeMenu {
     };
 }
 
+const tables = computed(() => gradeTables(props.grades));
+
 const filteredTables = computed(() => {
     const query = search.value.trim().toLowerCase();
 
     return query
-        ? GRADE_TABLES.map((menu) => filterMenu(menu, query))
-        : GRADE_TABLES;
+        ? tables.value.map((menu) => filterMenu(menu, query))
+        : tables.value;
 });
 
 const gridCols = computed(() => {

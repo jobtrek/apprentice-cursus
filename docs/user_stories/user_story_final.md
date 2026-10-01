@@ -1,8 +1,8 @@
 ## Authentication
 
-As a user (apprentice, coach, trainer, or admin),
-I want to log in with my email and password,
-so that I can access the features available to my role.
+As a user (apprentice, trainer, or coach),
+I want to log in with my Microsoft account,
+so that I can access the features available to my role without a separate password.
 
 As a logged-in user,
 I want to remain logged in when I reload the page or navigate through the application,
@@ -12,87 +12,57 @@ As a logged-in user,
 I want to log out,
 so that I can securely end my session on a shared device.
 
-As a logged-in user,
-I want to be able to change my password from my settings at any time,
-so that I can keep my account secure.
-
-As a user who has forgotten my password,
-I want to see a message telling me to contact my administrator,
-so that I know how to regain access since there is no automatic password reset.
-
-As an administrator,
-I want each role to be restricted to the pages and actions corresponding to its permissions,
-so that apprentices, coaches, and trainers cannot view or act on data outside their permissions.
-
 As a user,
 I want to be able to stay logged in on multiple tabs or devices at the same time,
 so that I am not logged out when I use the application elsewhere.
 
-As an administrator,
-I want passwords to follow security rules (minimum 8 characters, 1 uppercase letter, 1 number),
-so that accounts are properly protected.
+As a user,
+I want each role to be restricted to the pages and actions corresponding to its permissions,
+so that apprentices, trainers, and coaches cannot view or act on data outside their permissions.
 
 As a user,
 I want to be redirected to the page corresponding to my role after logging in,
 so that I can access my workspace directly without navigating manually.
 
-As a user,
-I want changing my password to log out all other active sessions,
-so that nobody can continue using my old password.
+As a user without a valid role or section in Microsoft Entra,
+I want to see a message telling me to contact my Microsoft administrator,
+so that I know why I cannot log in.
 
-As a user logging in for the first time with a password created by an administrator,
-I want to be prompted to set my own password,
-so that the temporary password does not remain in place indefinitely.
+As a user whose role or section was removed in Microsoft Entra,
+I want my open session to end within 15 minutes,
+so that access I no longer have is not kept alive by an old session.
 
-## Administration
+As a new apprentice, trainer, or coach,
+I want my account to be created automatically from Microsoft Entra, even before my first login,
+so that coaches and trainers can see me on their dashboard right away.
 
-As an administrator,
-I want to be able to edit or deactivate an existing account,
-so that I can correct mistakes or remove access for someone who has left.
+As an EC apprentice,
+I want to declare with a checkbox whether I follow the maturité professionnelle (MP),
+so that my averages use the correct weights.
 
-As an administrator,
-I want to assign a coach to each apprentice,
-so that the appropriate coach can track their progress.
+As an apprentice moved to another section in Microsoft Entra,
+I want to be asked to confirm the change before my grades from the old apprenticeship are deleted,
+so that a mistake in Entra does not silently wipe my record. (My projects are kept.)
 
-As an administrator,
-I want to assign a trainer to each apprentice based on their section,
-so that the appropriate trainer can review their work.
+## Coaching Assignment
 
-As an administrator,
-I want to define the year and section for each apprentice,
-so that the system applies the correct rules and content to their profile.
+As a coach,
+I want to assign myself to an apprentice who has no coach,
+so that I receive notifications for that apprentice.
 
-As an administrator,
-I want to add, edit, or delete the subjects available for grades,
-so that the grades section reflects the subjects that are actually taught.
+As a coach,
+I want assigning myself to an apprentice who already has a coach to be refused,
+so that another coach never silently loses an apprentice.
 
-As an administrator,
-I want to add, edit, or delete entries in the IT skills catalog,
-so that apprentices can select specific and standardized skills for their projects.
+As a coach,
+I want to de-assign myself from one of my apprentices,
+so that another coach can take over.
 
-As an administrator,
-I want to see a list of all apprentices with their assigned coach, trainer, year, and section,
-so that I can verify assignments and identify missing ones.
+As a coach,
+I want to see all apprentices (EC and IT) and whether they have a coach,
+so that I can find apprentices who still need one.
 
-As an administrator,
-I do NOT want to be able to deactivate myself,
-so that I do not accidentally lock myself and all accounts out of the system.
-
-As an administrator,
-I want a subject linked to grades to be impossible to delete and only possible to deactivate,
-so that the history of existing grades is not lost.
-
-As a super-administrator,
-I want to create both regular administrators and other super-administrators,
-so that administration and its highest level of control can be shared when needed.
-
-As a regular administrator,
-I want to be restricted from creating or deactivating other administrator accounts,
-so that only super-administrators control the administrative hierarchy.
-
-As a super-administrator,
-I want to be able to deactivate a regular administrator or another super-administrator with mandatory confirmation,
-so that accidental deactivations are avoided while oversight of the admin hierarchy is preserved.
+---
 
 ## Grade Submission
 
@@ -154,11 +124,6 @@ so that I cannot submit a test that has not taken place yet.
 
 
 As an apprentice,
-I want a subject deactivated by the administrator to no longer be selectable when submitting a grade,
-so that I cannot submit a grade under an obsolete subject.
-
-
-As an apprentice,
 I want to see a clear error message if the upload fails,
 so that I understand what happened and can try again.
 
@@ -202,7 +167,7 @@ so that I have one number representing my overall performance.
 
 As an apprentice,
 I want to be able to edit a grade I have already submitted,
-so that I can fix a mistake without asking an administrator.
+so that I can fix a mistake myself.
 
 As an apprentice,
 I want the renamed file to be automatically updated if I change the subject or grade when editing a submission,
@@ -232,7 +197,7 @@ so that feedback from my coach or trainer is not lost.
 ## Review by Coach/Trainer
 
 As a coach,
-I want to see a list of the apprentices assigned to me,
+I want to see a dashboard of all apprentices (EC and IT),
 so that I have an entry point to each apprentice's record.
 
 As a coach,
@@ -244,12 +209,12 @@ I want to open a specific grade and view the scanned PDF,
 so that I can review the actual test and not just the grade.
 
 As a trainer,
-I want the same access (list, grades, scans) for the apprentices assigned to me,
+I want the same access (dashboard, grades, scans) for all apprentices of my section,
 so that I can track their progress without using a separate tool.
 
-As a coach or trainer,
-I want access to an apprentice who is not assigned to me to be rejected,
-so that the assignment boundary is actually enforced rather than simply being a hidden link.
+As a trainer,
+I want access to an apprentice of the other section to be rejected,
+so that the section boundary is actually enforced rather than simply being a hidden link.
 
 As a coach or trainer,
 I want grade data to be read-only for me,
@@ -261,9 +226,13 @@ so that I have a complete view of the feedback given to the apprentice.
 
 
 As a coach or trainer,
-I want a deactivated apprentice to disappear from my active list while their grades remain archived and accessible,
+I want a deactivated apprentice to disappear from my active list while their grades remain read-only under an "Archived" filter,
 so that my active view stays clean while preserving the history.
-(Deactivation is the same generic account state as any other role — see Administration: "edit or deactivate an existing account.")
+(An account is deactivated when its app role is removed in Microsoft Entra, and reactivated unchanged if it is given back.)
+
+As a coach or trainer,
+I want commenting on a deactivated apprentice's grades or projects to be refused,
+so that feedback is only given to apprentices still in training.
 
 ---
 
@@ -289,9 +258,13 @@ As a coach or trainer,
 I want to be able to edit a comment I have left,
 so that I can correct a mistake or rephrase my thoughts.
 
-As an administrator,
-I want to be able to delete an inappropriate comment,
-so that I can maintain the quality of interactions.
+As a coach or trainer,
+I want to be able to delete a comment I have left,
+so that I can remove a comment written by mistake.
+
+As a coach or trainer,
+I want deleting someone else's comment to be refused,
+so that feedback from others stays on the record.
 
 
 As a coach or trainer,
@@ -307,11 +280,11 @@ so that feedback is never lost.
 ## Notifications
 
 As a coach,
-I want to automatically receive an email when an apprentice I supervise adds a grade,
+I want to automatically receive an email when an apprentice I coach adds a grade,
 so that I know there is something to review without having to check the application.
 
 As a trainer,
-I want to receive the same email for the apprentices assigned to me,
+I want to receive the same email for every apprentice of my section,
 so that I am notified of new grades as soon as they are submitted.
 
 As a coach or trainer,
@@ -328,7 +301,7 @@ so that I am not flooded with emails if I prefer to check the application manual
 
 
 As a coach or trainer,
-I want to receive an email when a grade I was notified about is deleted by the apprentice,
+I want to receive an email when a grade is deleted by an apprentice I coach or of my section,
 so that I know the test is no longer in the system.
 
 
@@ -382,18 +355,14 @@ I want to be able to delete an existing project,
 so that I can remove an entry that is no longer part of my portfolio.
 
 As a coach,
-I want to see the portfolio of the apprentices assigned to me,
+I want to see the portfolio of any apprentice,
 so that I can review their documented projects and skills.
 
 As a trainer,
-I want to see the portfolio of the apprentices assigned to me,
+I want to see the portfolio of the apprentices of my section,
 so that I can review their documented projects and skills.
 
-As an administrator,
-I want to be able to view any apprentice's portfolio,
-so that I can supervise training portfolios across the organization.
-
-As a coach, trainer, or administrator,
+As a coach or trainer,
 I want to be able to leave a comment on a specific project in an apprentice's portfolio,
 so that I can provide feedback on their work.
 
@@ -416,9 +385,9 @@ I want existing projects referencing a skill to keep that skill if it is removed
 so that historical data is not altered.
 
 As a deactivated apprentice,
-I want my portfolio to remain accessible to my coach and trainer,
+I want my portfolio to remain readable by coaches and my section's trainers,
 so that their follow-up is not interrupted.
-(Deactivation here is the same generic account state that applies to any role in the organization — see Administration: "edit or deactivate an existing account." Not apprentice-specific, and not the same as graduating.)
+(Deactivation happens when the app role is removed in Microsoft Entra. Not the same as graduating.)
 
 As an IT apprentice,
 I want to be able to reorder my projects,

@@ -3,6 +3,7 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Enums\Permission;
 use App\Enums\UserRole;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -13,6 +14,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Carbon;
+use Spatie\Permission\Traits\HasRoles;
 
 /**
  * @property int $id
@@ -22,7 +24,7 @@ use Illuminate\Support\Carbon;
  * @property string $email
  * @property bool|null $is_mp Maturité professionnelle track. NULL = not applicable (non-apprentice roles).
  * @property bool $is_active Deactivation flag. Users are never deleted, only deactivated.
- * @property UserRole $role
+ * @property-read UserRole|null $role Derived from the Spatie role; use syncRoles() to change it.
  * @property string|null $apprenticeship_name
  * @property int|null $apprenticeship_id
  * @property int|null $coach_id
@@ -36,18 +38,12 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
-/*
- * Only self-service profile fields are mass-assignable. Everything that decides what a
- * user is allowed to do or who they are attached to — role, is_active, is_mp,
- * apprenticeship_id, coach_id, trainer_id — must be assigned explicitly by the
- * administration flow that owns it, never filled from a request payload.
- */
 #[Fillable(['name', 'email', 'password', 'azure_id', 'tenant_id'])]
 #[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
-    use HasFactory, Notifiable;
+    use HasFactory, HasRoles, Notifiable;
 
     /**
      * Timestamps were dropped from the users table (see
@@ -68,8 +64,21 @@ class User extends Authenticatable
             'password' => 'hashed',
             'is_mp' => 'boolean',
             'is_active' => 'boolean',
-            'role' => UserRole::class,
         ];
+    }
+
+    /**
+     * The single Spatie role of the user as an enum. Spatie is the only source
+     * of truth; there is no users.role column.
+     *
+     * Deliberately a legacy getter, not an Attribute::make() `role()` method:
+     * that method would shadow Spatie's `scopeRole()` in `User::role('coach')`.
+     */
+    public function getRoleAttribute(): ?UserRole
+    {
+        $name = $this->getRoleNames()->first();
+
+        return $name === null ? null : UserRole::tryFrom($name);
     }
 
     /**
@@ -121,5 +130,46 @@ class User extends Authenticatable
     public function projects(): HasMany
     {
         return $this->hasMany(Project::class);
+    }
+
+    /**
+     * The admin role only grants anything in the local environment; elsewhere
+     * this is always false.
+     */
+    public function isLocalAdmin(): bool
+    {
+        return app()->environment('local') && $this->hasRole(UserRole::Admin->value);
+    }
+
+    /**
+     * Named route a user lands on after signing in, chosen by permission
+     * rather than by role so new roles only need permissions.
+     */
+    public function homeRoute(): string
+    {
+        return match (true) {
+            $this->isLocalAdmin() => 'apprentisdashboard',
+            $this->hasPermissionTo(Permission::GradesViewOwn->value) => 'grades.dashboard',
+            $this->hasPermissionTo(Permission::ApprenticesViewList->value) => 'apprentisdashboard',
+            default => 'home',
+        };
+    }
+
+    public function supervises(self $apprentice): bool
+    {
+        if ($apprentice->id === $this->id || ! $apprentice->hasRole(UserRole::Apprentice->value)) {
+            return false;
+        }
+
+        if ($this->isLocalAdmin()) {
+            return true;
+        }
+
+        return match ($this->role) {
+            UserRole::Coach => $apprentice->coach_id === $this->id,
+            UserRole::Trainer => $this->apprenticeship_id !== null
+                && $apprentice->apprenticeship_id === $this->apprenticeship_id,
+            default => false,
+        };
     }
 }

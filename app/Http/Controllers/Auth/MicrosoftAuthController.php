@@ -2,95 +2,57 @@
 
 namespace App\Http\Controllers\Auth;
 
+use App\Exceptions\SsoLoginException;
 use App\Http\Controllers\Controller;
-use App\Models\User;
+use App\Services\AzureAccountSync;
+use App\Services\MicrosoftLoginService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Cache;
 use Laravel\Socialite\Facades\Socialite;
 use Laravel\Socialite\Two\AbstractProvider;
 use Laravel\Socialite\Two\InvalidStateException;
 use Laravel\Socialite\Two\User as AzureUser;
-use Illuminate\Support\Facades\App;
-use Illuminate\Support\Str;
-
+use RuntimeException;
 use Throwable;
 
-/** @var AbstractProvider $driver */
 class MicrosoftAuthController extends Controller
 {
-    public function redirectToProvider()
+    public function redirectToProvider(): RedirectResponse
     {
         $driver = Socialite::driver('azure');
+
+        if (! $driver instanceof AbstractProvider) {
+            throw new RuntimeException('The azure Socialite driver must be an OAuth2 provider.');
+        }
 
         return $driver->with(['prompt' => 'login'])->redirect();
     }
 
-    public function callback(): RedirectResponse
+    public function callback(MicrosoftLoginService $login): RedirectResponse
     {
         try {
             $azureUser = Socialite::driver('azure')->user();
-
         } catch (InvalidStateException) {
-            return $this->loginError('Your Microsoft sign-in session expired. Please try again.');
+            throw SsoLoginException::sessionExpired();
         } catch (Throwable $e) {
-            Log::error('Microsoft SSO callback failed.', ['exception' => $e]);
-
-            return $this->loginError('Could not sign in with Microsoft. Please try again.');
+            throw SsoLoginException::providerFailed($e);
         }
-        // this will invalidate and block anyone trying to connect with a non existing account.
+
         if (! $azureUser instanceof AzureUser || ! $azureUser->getId()) {
-            Log::error('Microsoft SSO did not return a usable azure id.', [
-                'class' => $azureUser::class,
-            ]);
-
-            return $this->loginError('Could not sign in with Microsoft. Please try again.');
+            throw SsoLoginException::unusableProviderUser($azureUser::class);
         }
 
-        $tenantId = config('services.azure.tenant');
-
-        $user = User::where('azure_id', $azureUser->getId())->first();
-
-        if (! $user) {
-            $user = User::where('email', $azureUser->getEmail())->first();
-
-            if ($user) {
-                $user->forceFill([
-                    'azure_id' => $azureUser->getId(),
-                    'tenant_id' => $tenantId,
-                ])->save();
-            }
-        }
-
-        if (! $user) {
-            $user = User::create([
-                'name' => $azureUser->getName() ?: $azureUser->getNickname() ?: $azureUser->getEmail(),
-                'email' => $azureUser->getEmail(),
-                'azure_id' => $azureUser->getId(),
-                'tenant_id' => $tenantId,
-            ]);
-
-            Log::info('Microsoft SSO auto-provisioned a new account.', [
-                'user_id' => $user->id,
-                'email' => $user->email,
-            ]);
-        }
-
-        if (! $user->is_active) {
-            Log::warning('Microsoft SSO login attempted for a deactivated account.', [
-                'user_id' => $user->id,
-            ]);
-
-            return $this->loginError('Your account has been deactivated. Please contact an administrator.');
-        }
+        $user = $login->resolveUser($azureUser);
 
         Auth::login($user);
 
-        return redirect()->route('home');
-    }
+        Cache::put(
+            AzureAccountSync::checkCacheKey($user),
+            true,
+            (int) config('services.azure.account_check_interval', 900),
+        );
 
-    private function loginError(string $message): RedirectResponse
-    {
-        return redirect()->route('login')->with('error', $message);
+        return redirect()->route($user->homeRoute());
     }
 }

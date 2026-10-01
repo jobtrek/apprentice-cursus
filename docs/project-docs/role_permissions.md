@@ -1,85 +1,78 @@
-# Role Permissions
+# Roles and Permissions
 
-Legend: Y = Allowed, N = Not allowed, RO = Read-only
+The only document on who can do what, and how people get their role. Design decisions and their reasons are in `docs/adr/ADR.md` (2026-09-30).
 
-## Authentication
+## In short
 
-| Permission | Apprentice | Coach | Trainer | Super-Admin |
-|---|---|---|---|---|
-| Log in with email/password | Y | Y | Y | Y |
-| Stay logged in across reload/tabs/devices | Y | Y | Y | Y |
-| Log out | Y | Y | Y | Y |
-| Change own password | Y | Y | Y | Y |
-| Set own password on first login (temp password) | Y | Y | Y | Y |
-| Access pages/actions outside own role's permissions | N | N | N | N |
+- There are **3 roles**: Apprentice, Trainer, Coach. There is no admin in production. A local-only `admin` role exists for development (see `docs/permissions_guide.md`, section 6).
+- Your role comes from the **Microsoft Entra group** you are in. Nobody sets roles inside the app.
+- Everyone logs in with **Microsoft**. Password login only exists on a developer's machine.
+- **Apprentices** manage their own grades and portfolio. **Trainers and coaches** read and comment on the apprentices they supervise. They never change an apprentice's data.
 
-## Administration
+## The roles
 
-| Permission | Apprentice | Coach | Trainer | Super-Admin |
-|---|---|---|---|---|
-| Create apprentice/coach/trainer accounts | N | N | N | Y |
-| Edit/deactivate apprentice/coach/trainer accounts | N | N | N | Y |
-| Create super-administrator accounts | N | N | N | Y |
-| Deactivate super-administrator accounts (confirmation required) | N | N | N | Y |
-| Deactivate own super-admin account | N | N | N | N |
-| Assign coach to apprentice | N | N | N | Y |
-| Assign trainer to apprentice (by section) | N | N | N | Y |
-| Define apprentice year/section | N | N | N | Y |
-| Add/edit/delete subjects | N | N | N | Y |
-| Deactivate a subject (delete blocked if grades exist) | N | N | N | Y |
-| Add/edit/delete IT skills catalog entries | N | N | N | Y |
-| View list of all apprentices (coach/trainer/year/section) | N | N | N | Y |
-| View admin dashboard/overview stats | N | N | N | Y |
+| Role       | How you get it                        | Who you supervise                                          |
+| ---------- | ------------------------------------- | ---------------------------------------------------------- |
+| Apprentice | IT or EC apprentices group            | Nobody. You only see your own data                         |
+| Trainer    | Trainers group                        | Every apprentice of your section (all trainers are IT for now) |
+| Coach      | No group yet, so coaches cannot log in | Apprentices whose coach you are (IT and EC)                |
 
-## Grade Submission & My Grade Record
+The table lists the production roles. The `admin` role (local development only) is not one of them: it passes every check when `APP_ENV=local`, grants nothing elsewhere, and no Entra group maps to it.
 
-| Permission | Apprentice (own grades) | Coach | Trainer | Super-Admin |
-|---|---|---|---|---|
-| Upload scanned PDF test | Y | N | N | N |
-| Submit grade (subject, value, date, oral-exam flag) | Y | N | N | N |
-| Edit own submitted grade | Y | N | N | N |
-| Delete own submitted grade | Y | N | N | N |
-| View own grades, averages, PDFs, comments | Y | — | — | — |
-| Filter own grades by subject | Y | — | — | — |
-| Access another apprentice's grades/PDFs | N | — | — | — |
+IT and EC apprentices have the same permissions. Only their grade tree differs (`grade_tree_IT.md`, `grade_tree_EC.md`).
 
-## Review by Coach/Trainer (assigned apprentices only)
+## What each role can do
 
-| Permission | Coach | Trainer | Super-Admin |
-|---|---|---|---|
-| View list of assigned apprentices | Y | Y | — |
-| View assigned apprentice's grades grouped by subject + averages | RO | RO | Y (any apprentice) |
-| View scanned PDF of assigned apprentice's test | RO | RO | — |
-| Edit/delete an apprentice's grade | N | N | N |
-| Access an apprentice not assigned to them | N | N | — |
-| View comments left by the other role (coach ↔ trainer) | Y | Y | — |
+Y = yes, N = no, RO = read-only. Anything on a **deactivated** apprentice is read-only.
 
-## Feedback / Comments (on grades)
+| Action                                              | Apprentice | Trainer     | Coach       |
+| --------------------------------------------------- | ---------- | ----------- | ----------- |
+| Submit, edit, delete own grades and PDF scans       | Y          | N           | N           |
+| See own grades, averages and comments               | Y          | –           | –           |
+| See a supervised apprentice's grades and scans      | N          | RO          | RO          |
+| Comment on a supervised apprentice's grade/project  | N          | Y           | Y           |
+| Edit or delete a comment                            | N          | Own only    | Own only    |
+| Manage own portfolio (projects, skills, PDF export) | Y          | N           | N           |
+| See a supervised apprentice's portfolio             | N          | RO          | RO          |
+| See the apprentices list                            | N          | Y           | Y           |
+| Assign self as coach of an apprentice with no coach | N          | N           | Y (not built yet) |
+| Get an email when a supervised apprentice adds/deletes a grade | – | Y (not built yet) | Y (not built yet) |
+| Get an email when someone comments on own grade     | Y (not built yet) | –    | –           |
 
-| Permission | Apprentice | Coach | Trainer | Super-Admin |
-|---|---|---|---|---|
-| Leave a comment on a grade | N | Y (assigned) | Y (assigned) | N |
-| Edit own comment | — | Y | Y | N |
-| Delete any comment (moderation) | N | N | N | Y |
-| View comments on own/assigned grades | Y | Y | Y | — |
+After login, apprentices land on their grades, trainers and coaches on the apprentices list.
 
-## Notifications
+## How a user gets their role
 
-| Permission | Apprentice | Coach | Trainer | Super-Admin |
-|---|---|---|---|---|
-| Receive email when assigned apprentice adds a grade | — | Y | Y | — |
-| Receive email when a coach/trainer comments on own grade | Y | — | — | — |
-| Receive email when a notified grade is deleted | — | Y | Y | — |
-| Disable own email notifications | — | Y | Y | — |
+1. The user logs in with Microsoft. The app asks Microsoft which of the mapped groups they are in.
+2. **Exactly one group:** the account is created (first login) or updated with that group's role and section.
+3. **No group, several groups, or disabled in Entra:** the login is refused. An existing account is set inactive; it is never deleted.
+4. While logged in, this check runs again **every 15 minutes**. If access was removed, the session ends. If Microsoft is down, the user keeps working and the check retries a minute later.
 
-## Training Portfolio
+Other rules:
 
-| Permission | Apprentice (own portfolio) | Coach | Trainer | Super-Admin |
-|---|---|---|---|---|
-| Add/edit/delete/reorder a project | Y | N | N | N |
-| Select IT skills from catalog for a project | Y | N | N | N |
-| View HTML preview / export portfolio as PDF | Y | — | — | — |
-| View assigned apprentice's portfolio | N | RO (assigned) | RO (assigned) | RO (any) |
-| Leave a comment on a project | N | Y (assigned) | Y (assigned) | Y (any) |
-| View comments left on own projects | Y | — | — | — |
-| Access a deactivated apprentice's portfolio | — | Y (if was assigned) | Y (if was assigned) | Y |
+- Accounts are matched on the Microsoft account id, never on email.
+- An account only exists after its first login.
+- Adding the person back to one group reactivates their account at the next login.
+- Moving an apprentice from IT to EC (or back) does not change their section yet: that needs a confirmation page that is not built. A warning is logged.
+
+## Entra setup (for the Microsoft administrator)
+
+| Group          | `.env` variable                  | Role       | Section                   |
+| -------------- | -------------------------------- | ---------- | ------------------------- |
+| IT apprentices | `MICROSOFT_GROUP_APPRENTICES_IT` | Apprentice | Informaticien·ne CFC      |
+| EC apprentices | `MICROSOFT_GROUP_APPRENTICES_EC` | Apprentice | Employé·e de commerce CFC |
+| Trainers       | `MICROSOFT_GROUP_TRAINER`        | Trainer    | Informaticien·ne CFC      |
+
+- [ ] The three groups exist (nested members count).
+- [ ] App registration has Graph permissions `User.Read.All` and `GroupMember.Read.All`, **with admin consent**.
+- [ ] Redirect URIs: `http://localhost/auth/microsoft/callback` (dev) and the production callback.
+- [ ] Send the maintainers, securely: tenant id, client id, client secret and its expiry, and the object id of each group.
+
+## For developers
+
+- Code checks **permissions, never role names**. The list of permissions per role is `App\Enums\Permission::byRole()`. To change what a role can do, edit it there and re-run `RolesAndPermissionsSeeder`.
+- "Supervised" means `User::supervises($apprentice)`: trainer = same section, coach = apprentice's `coach_id` is theirs.
+- Policies (`GradePolicy`, `ProjectPolicy`, `CommentPolicy`, `UserPolicy`) add the per-record checks: supervision, author only, active apprentice only.
+- Routes use `can:` middleware. The frontend reads the `auth.can` flags shared by `HandleInertiaRequests` and never re-derives rules.
+- Local login (password `password`): `admin@example.com` (local-only admin, everything), `coach@example.com` (coach), `trainer@example.com` (IT trainer), `apprentice-it@example.com` (IT apprentice), `apprentice-ec@example.com` (EC apprentice).
+- The local admin comes from Spatie's `Gate::before` in `AppServiceProvider`, not from `byRole()`. Direct `hasPermissionTo()` calls bypass the Gate, so `User::homeRoute()` and `User::supervises()` handle it explicitly. Guide: `docs/permissions_guide.md`.
