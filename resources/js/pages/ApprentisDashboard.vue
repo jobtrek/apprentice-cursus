@@ -7,18 +7,27 @@ import DataTable from '@/components/DataTable.vue';
 import { PageContainer, PageHeader } from '@/components/page';
 import SearchInput from '@/components/SearchInput.vue';
 import TabFilter from '@/components/TabFilter.vue';
-import { useApprentices, type Apprentice } from '@/composables/useApprentices';
+import {
+    useApprentices,
+    type Apprentice,
+    type ApprenticeStats,
+} from '@/composables/useApprentices';
 import {
     TRACK_FILTER_OPTIONS,
     YEAR_FILTER_OPTIONS,
 } from '@/constants/constants';
+
+defineProps<{
+    /** Par identifiant d'apprenti·e ; absent si l'apprenti·e n'est pas supervisé·e. */
+    stats: Record<string, ApprenticeStats>;
+}>();
 
 const { filtered, search, trackFilter, yearFilter } = useApprentices();
 
 const selected = ref<Apprentice | null>(null);
 const sheetOpen = ref(false);
 
-const openDetail = (apprentice: Apprentice) => {
+const openPreview = (apprentice: Apprentice) => {
     selected.value = apprentice;
     sheetOpen.value = true;
 };
@@ -27,8 +36,12 @@ const apprenticeColumns = [
     { key: 'apprentice', label: 'Apprenti·e' },
     { key: 'track', label: 'Filière' },
     { key: 'year', label: 'Année' },
-    { key: 'coach', label: 'Coach' },
-    { key: 'trainer', label: 'Formateur' },
+    { key: 'gradesCount', label: 'Notes', class: 'text-right' },
+    { key: 'average', label: 'Moyenne', class: 'text-right' },
+    { key: 'lastGrade', label: 'Dernière note' },
+    { key: 'coach', label: 'Coach', class: 'hidden xl:table-cell' },
+    { key: 'trainer', label: 'Formateur', class: 'hidden xl:table-cell' },
+    { key: 'actions', label: 'Accès rapide', class: 'w-px text-right' },
 ];
 </script>
 
@@ -71,7 +84,11 @@ const apprenticeColumns = [
             empty-message="Aucun apprenti trouvé."
         >
             <template #row="{ item }">
-                <ApprenticeRow :apprentice="item" @select="openDetail" />
+                <ApprenticeRow
+                    :apprentice="item"
+                    :stats="stats[item.id]"
+                    @preview="openPreview"
+                />
             </template>
         </DataTable>
 

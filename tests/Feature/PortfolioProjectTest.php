@@ -331,3 +331,30 @@ test('precognitive requests reach the update route through method spoofing', fun
 
     expect($project->refresh()->title)->toBe('Ancien titre');
 });
+
+test('a coach sees the read-only portfolio of a supervised apprentice', function () {
+    $coach = User::factory()->coach()->create();
+    $apprentice = makeApprentice(coach: $coach);
+    $skill = Skill::factory()->create();
+    $project = Project::factory()->for($apprentice)->create();
+    $project->skills()->attach($skill);
+    Project::factory()->create();
+
+    $this->actingAs($coach)
+        ->get(route('apprentices.show', $apprentice))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('ApprenticeShow')
+            ->has('portfolio.projects', 1)
+            ->where('portfolio.projects.0.id', $project->id)
+            ->where('portfolio.projects.0.skill_ids', [$skill->id])
+            ->has('portfolio.skills', 1));
+});
+
+test('a coach cannot open the profile of an apprentice they do not supervise', function () {
+    $apprentice = makeApprentice(coach: User::factory()->coach()->create());
+
+    $this->actingAs(User::factory()->coach()->create())
+        ->get(route('apprentices.show', $apprentice))
+        ->assertForbidden();
+});

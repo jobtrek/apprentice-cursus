@@ -30,3 +30,9 @@ export type PortfolioOwner = {
     /** Nom de la filière d'apprentissage, null si non attribuée. */
     track: string | null;
 };
+
+/** Portfolio d'un·e apprenti·e vu par son coach ou formateur (lecture seule). */
+export type SupervisedPortfolio = {
+    projects: PortfolioProject[];
+    skills: Skill[];
+};

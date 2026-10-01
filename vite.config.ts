@@ -3,7 +3,7 @@ import { wayfinder } from '@laravel/vite-plugin-wayfinder';
 import tailwindcss from '@tailwindcss/vite';
 import vue from '@vitejs/plugin-vue';
 import laravel from 'laravel-vite-plugin';
-import { bunny } from 'laravel-vite-plugin/fonts';
+import { bunny, fontsource } from 'laravel-vite-plugin/fonts';
 import { defineConfig, lazyPlugins } from 'vite-plus';
 
 export default defineConfig({
@@ -11,10 +11,18 @@ export default defineConfig({
         laravel({
             input: ['resources/css/app.css', 'resources/js/app.ts'],
             refresh: true,
+            // Familles reprises par `--font-heading`, `--font-sans` et
+            // `--font-mono` dans resources/css/app.css.
             fonts: [
-                // Doit correspondre à `--font-sans` dans resources/css/app.css.
-                bunny('Inter', {
-                    weights: [400, 500, 600, 700],
+                bunny('Karla', {
+                    weights: [500, 600, 700],
+                }),
+                bunny('Roboto', {
+                    weights: [400, 500, 700],
+                }),
+                fontsource('Iosevka', {
+                    weights: [400, 700],
+                    preload: false,
                 }),
             ],
         }),

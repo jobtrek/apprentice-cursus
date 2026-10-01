@@ -39,7 +39,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->name('portfolio.screenshots.show');
 
     Route::middleware('can:'.Permission::ApprenticesViewList->value)->group(function () {
-        Route::inertia('/apprentisdashboard', 'ApprentisDashboard')->name('apprentisdashboard');
+        Route::get('/apprentisdashboard', [ApprenticeController::class, 'index'])->name('apprentisdashboard');
 
         Route::prefix('apprentices/{apprentice}')
             ->whereNumber('apprentice')

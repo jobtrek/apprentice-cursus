@@ -69,9 +69,26 @@ const open = defineModel<boolean>('open', { required: true });
 
             <SheetFooter v-if="apprentice" class="border-t">
                 <Button as-child>
-                    <Link :href="apprentices.show(Number(apprentice.id))">
+                    <Link
+                        :href="
+                            apprentices.show(Number(apprentice.id), {
+                                query: { tab: 'grades' },
+                            })
+                        "
+                    >
                         Voir le carnet de notes
                         <ArrowRightIcon aria-hidden="true" />
+                    </Link>
+                </Button>
+                <Button as-child variant="outline">
+                    <Link
+                        :href="
+                            apprentices.show(Number(apprentice.id), {
+                                query: { tab: 'portfolio' },
+                            })
+                        "
+                    >
+                        Voir le portfolio
                     </Link>
                 </Button>
             </SheetFooter>
