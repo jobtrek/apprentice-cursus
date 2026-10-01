@@ -3,6 +3,7 @@ import { Head } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
 import ApprenticeDetailSheet from '@/components/apprentice/ApprenticeDetailSheet.vue';
 import ApprenticeRow from '@/components/apprentice/ApprenticeRow.vue';
+import AssignmentRequestDialog from '@/components/apprentice/AssignmentRequestDialog.vue';
 import DataTable from '@/components/DataTable.vue';
 import { PageContainer, PageHeader } from '@/components/page';
 import SearchInput from '@/components/SearchInput.vue';
@@ -17,6 +18,8 @@ const props = defineProps<{
      */
     apprentices: ApprenticeListItem[];
     coaches: SupervisorOption[];
+    /** Validateurs d'une demande d'attribution (formateurs et admin pour l'instant). */
+    validators: SupervisorOption[];
     can: {
         /** Admin local : choix du coach de chaque apprenti·e. */
         manageSupervision: boolean;
@@ -48,6 +51,14 @@ const sheetOpen = ref(false);
 const openPreview = (apprentice: ApprenticeListItem) => {
     selected.value = apprentice;
     sheetOpen.value = true;
+};
+
+const assignTarget = ref<ApprenticeListItem | null>(null);
+const assignOpen = ref(false);
+
+const openAssign = (apprentice: ApprenticeListItem) => {
+    assignTarget.value = apprentice;
+    assignOpen.value = true;
 };
 
 const apprenticeColumns = [
@@ -99,6 +110,7 @@ const apprenticeColumns = [
                     :apprentice="item"
                     :coaches="can.manageSupervision ? coaches : null"
                     @preview="openPreview"
+                    @assign="openAssign"
                 />
             </template>
         </DataTable>
@@ -106,6 +118,11 @@ const apprenticeColumns = [
         <ApprenticeDetailSheet
             v-model:open="sheetOpen"
             :apprentice="selected"
+        />
+        <AssignmentRequestDialog
+            v-model:open="assignOpen"
+            :apprentice="assignTarget"
+            :validators="validators"
         />
     </PageContainer>
 </template>

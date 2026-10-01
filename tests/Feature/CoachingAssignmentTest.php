@@ -67,3 +67,19 @@ test('the list flags only unassigned apprentices as assignable', function () {
                 ->and($rows[$free->id]['canAssign'])->toBeTrue();
         });
 });
+
+test('a coach is offered the trainers and admins as validators, a trainer none', function () {
+    $coach = User::factory()->coach()->create();
+    $trainer = User::factory()->trainer()->create(['name' => 'A trainer']);
+    User::factory()->admin()->create(['name' => 'B admin']);
+    User::factory()->coach()->create(['name' => 'Other coach']);
+
+    $this->actingAs($coach)
+        ->get(route('apprentisdashboard'))
+        ->assertInertia(fn (Assert $page) => expect(collect($page->toArray()['props']['validators'])->pluck('name')->all())
+            ->toBe(['A trainer', 'B admin']));
+
+    $this->actingAs($trainer)
+        ->get(route('apprentisdashboard'))
+        ->assertInertia(fn (Assert $page) => $page->has('validators', 0));
+});
