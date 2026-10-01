@@ -97,7 +97,7 @@ test('an unknown azure id provisions a new account', function () {
     $this->assertAuthenticatedAs($user);
 });
 
-test('a trainer logs in with the IT apprenticeship and can view an IT apprentice grade', function () {
+test('a trainer logs in with the IT apprenticeship and can view a grade of its IT apprentice', function () {
     fakeSso('azure-trainer', 'trainer@example.test', TRAINER_GROUP);
 
     $this->get(route('microsoft.callback'))->assertRedirect(route('apprentisdashboard'));
@@ -106,7 +106,7 @@ test('a trainer logs in with the IT apprenticeship and can view an IT apprentice
     expect($trainer->role)->toBe(UserRole::Trainer)
         ->and($trainer->apprenticeship->name)->toBe(ApprenticeshipSeeder::IT);
 
-    $apprentice = makeApprentice($trainer->apprenticeship);
+    $apprentice = makeApprentice($trainer->apprenticeship, trainer: $trainer);
     $grade = makeGrade($apprentice);
 
     $this->get(route('grades.show', $grade))->assertOk();

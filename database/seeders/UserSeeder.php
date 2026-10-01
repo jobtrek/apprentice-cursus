@@ -16,7 +16,7 @@ class UserSeeder extends Seeder
      * local environment. All accounts use the password "password":
      * - admin@example.com (local admin: bypasses every check in the local environment)
      * - coach@example.com (coach of the local apprentices)
-     * - trainer@example.com (IT trainer)
+     * - trainer@example.com (IT trainer of apprentice-it)
      * - apprentice-it@example.com (IT apprentice)
      * - apprentice-ec@example.com (EC apprentice)
      */
@@ -28,7 +28,7 @@ class UserSeeder extends Seeder
 
         $this->seed('admin@example.com', 'Local Admin', UserRole::Admin, null);
         $coach = $this->seed('coach@example.com', 'Local Coach', UserRole::Coach, null);
-        $this->seed(
+        $trainer = $this->seed(
             'trainer@example.com',
             'Local Trainer',
             UserRole::Trainer,
@@ -40,6 +40,7 @@ class UserSeeder extends Seeder
             UserRole::Apprentice,
             Apprenticeship::where('name', ApprenticeshipSeeder::IT)->value('id'),
             $coach->id,
+            $trainer->id,
         );
         $this->seed(
             'apprentice-ec@example.com',
@@ -50,9 +51,9 @@ class UserSeeder extends Seeder
         );
     }
 
-    private function seed(string $email, string $name, UserRole $role, ?int $apprenticeshipId, ?int $coachId = null): User
+    private function seed(string $email, string $name, UserRole $role, ?int $apprenticeshipId, ?int $coachId = null, ?int $trainerId = null): User
     {
-        // is_active, apprenticeship_id and coach_id are not mass assignable.
+        // is_active, apprenticeship_id, coach_id and trainer_id are not mass assignable.
         $user = User::query()->firstOrNew(['email' => $email]);
         $user->forceFill([
             'name' => $name,
@@ -60,6 +61,7 @@ class UserSeeder extends Seeder
             'is_active' => true,
             'apprenticeship_id' => $apprenticeshipId,
             'coach_id' => $coachId,
+            'trainer_id' => $trainerId,
         ])->save();
 
         $user->syncRoles($role->value);

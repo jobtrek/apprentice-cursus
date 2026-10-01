@@ -5,6 +5,7 @@ use App\Http\Controllers\ApprenticeController;
 use App\Http\Controllers\DossierController;
 use App\Http\Controllers\GradeController;
 use App\Http\Controllers\HomeController;
+use App\Http\Controllers\SupervisionController;
 use Illuminate\Foundation\Http\Middleware\HandlePrecognitiveRequests;
 use Illuminate\Support\Facades\Route;
 
@@ -52,6 +53,25 @@ Route::middleware(['auth', 'verified'])->group(function () {
                     ->name('grades.show');
             });
     });
+
+    Route::prefix('apprentices/{apprentice}')
+        ->whereNumber('apprentice')
+        ->name('apprentices.')
+        ->controller(SupervisionController::class)
+        ->group(function () {
+            Route::post('/coach/self', 'assignSelfAsCoach')
+                ->middleware('can:'.Permission::CoachingAssignSelf->value)
+                ->name('coach.assign-self');
+            Route::put('/coach', 'updateCoach')
+                ->middleware('can:'.Permission::SupervisionManage->value)
+                ->name('coach.update');
+            Route::post('/trainer/self', 'assignSelfAsTrainer')
+                ->middleware('can:'.Permission::TrainingAssignSelf->value)
+                ->name('trainer.assign-self');
+            Route::put('/trainer', 'updateTrainer')
+                ->middleware('can:'.Permission::SupervisionManage->value)
+                ->name('trainer.update');
+        });
 });
 
 require __DIR__.'/profile.php';

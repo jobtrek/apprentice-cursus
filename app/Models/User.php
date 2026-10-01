@@ -89,11 +89,17 @@ class User extends Authenticatable
         return $this->belongsTo(Apprenticeship::class);
     }
 
+    /**
+     * @return BelongsTo<self, $this>
+     */
     public function coach(): BelongsTo
     {
         return $this->belongsTo(self::class, 'coach_id');
     }
 
+    /**
+     * @return BelongsTo<self, $this>
+     */
     public function trainer(): BelongsTo
     {
         return $this->belongsTo(self::class, 'trainer_id');
@@ -167,7 +173,9 @@ class User extends Authenticatable
 
         return match ($this->role) {
             UserRole::Coach => $apprentice->coach_id === $this->id,
-            UserRole::Trainer => $this->apprenticeship_id !== null
+            // Assigned to this trainer, and still in the trainer's section.
+            UserRole::Trainer => $apprentice->trainer_id === $this->id
+                && $this->apprenticeship_id !== null
                 && $apprentice->apprenticeship_id === $this->apprenticeship_id,
             default => false,
         };

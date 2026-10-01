@@ -1,31 +1,48 @@
 <script setup lang="ts">
 import { Link, router } from '@inertiajs/vue3';
 import { BookOpenIcon, EyeIcon, FolderOpenIcon } from '@lucide/vue';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { computed } from 'vue';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { TableCell, TableRow } from '@/components/ui/table';
 import { getInitials } from '@/composables/useInitials';
-import type { Apprentice, ApprenticeStats } from '@/composables/useApprentices';
 import { PASSING_GRADE } from '@/data/dashboard';
 import apprentices from '@/routes/apprentices';
+import type {
+    ApprenticeListItem,
+    SupervisorOption,
+    TrainerOption,
+} from '@/types/apprentice';
 import AssignmentBadge from './AssignmentBadge.vue';
+import SupervisorSelect from './SupervisorSelect.vue';
 
 const props = defineProps<{
-    apprentice: Apprentice;
-    stats?: ApprenticeStats;
+    apprentice: ApprenticeListItem;
+    /** Admin local : coachs et formateurs proposés dans les cellules. Null sinon. */
+    coaches: SupervisorOption[] | null;
+    trainers: TrainerOption[] | null;
 }>();
 
 defineEmits<{
     /** Aperçu rapide dans le panneau latéral, sans quitter la liste. */
-    preview: [apprentice: Apprentice];
+    preview: [apprentice: ApprenticeListItem];
 }>();
 
 const profile = (tab?: 'grades' | 'portfolio') =>
-    apprentices.show(Number(props.apprentice.id), {
+    apprentices.show(props.apprentice.id, {
         query: tab ? { tab } : undefined,
     });
 
 const openProfile = () => router.visit(profile());
+
+/** Seuls les formateurs de la filière de l'apprenti·e peuvent le suivre. */
+const trainerOptions = computed(
+    () =>
+        props.trainers?.filter(
+            (trainer) => trainer.track === props.apprentice.track,
+        ) ?? null,
+);
 </script>
 
 <template>
@@ -40,7 +57,6 @@ const openProfile = () => router.visit(profile());
         <TableCell>
             <div class="flex items-center gap-3">
                 <Avatar>
-                    <AvatarImage :src="apprentice.avatarUrl ?? ''" />
                     <AvatarFallback class="text-xs">
                         {{ getInitials(apprentice.name) }}
                     </AvatarFallback>
@@ -48,39 +64,69 @@ const openProfile = () => router.visit(profile());
                 <span class="font-medium group-hover:underline">
                     {{ apprentice.name }}
                 </span>
+                <Badge v-if="!apprentice.is_active" variant="outline">
+                    Inactif
+                </Badge>
             </div>
         </TableCell>
 
-        <TableCell>{{ apprentice.track }}</TableCell>
-        <TableCell>{{ apprentice.year }}</TableCell>
+        <TableCell>{{ apprentice.track ?? '—' }}</TableCell>
 
         <TableCell class="text-right tabular-nums">
-            {{ stats?.grades_count ?? '—' }}
+            {{ apprentice.stats.grades_count }}
         </TableCell>
         <TableCell class="text-right font-semibold tabular-nums">
             <span
-                v-if="stats?.average != null"
-                :class="{ 'text-destructive': stats.average < PASSING_GRADE }"
+                v-if="apprentice.stats.average !== null"
+                :class="{
+                    'text-destructive':
+                        apprentice.stats.average < PASSING_GRADE,
+                }"
                 :title="
-                    stats.average < PASSING_GRADE
+                    apprentice.stats.average < PASSING_GRADE
                         ? 'Moyenne insuffisante'
                         : undefined
                 "
             >
-                {{ stats.average.toFixed(1) }}
+                {{ apprentice.stats.average.toFixed(1) }}
             </span>
             <span v-else class="text-muted-foreground font-normal">—</span>
         </TableCell>
         <TableCell class="text-muted-foreground tabular-nums">
-            {{ stats?.last_grade_date ?? '—' }}
+            {{ apprentice.stats.last_grade_date ?? '—' }}
         </TableCell>
 
-        <TableCell class="hidden xl:table-cell">
-            <AssignmentBadge :value="apprentice.coach" />
+        <TableCell v-if="coaches" @click.stop @keydown.stop>
+            <SupervisorSelect
+                :current="apprentice.coach"
+                :options="coaches"
+                :url="apprentices.coach.update.url(apprentice.id)"
+                field="coach_id"
+                none-label="Aucun coach"
+                :label="`Coach de ${apprentice.name}`"
+            />
+        </TableCell>
+        <TableCell v-else>
+            <AssignmentBadge :value="apprentice.coach?.name" />
         </TableCell>
 
-        <TableCell class="hidden xl:table-cell">
-            <AssignmentBadge :value="apprentice.trainer" />
+        <TableCell
+            v-if="trainerOptions"
+            class="hidden lg:table-cell"
+            @click.stop
+            @keydown.stop
+        >
+            <SupervisorSelect
+                :current="apprentice.trainer"
+                :options="trainerOptions"
+                :url="apprentices.trainer.update.url(apprentice.id)"
+                field="trainer_id"
+                none-label="Aucun formateur"
+                :label="`Formateur de ${apprentice.name}`"
+            />
+        </TableCell>
+        <TableCell v-else class="hidden lg:table-cell">
+            <AssignmentBadge :value="apprentice.trainer?.name" />
         </TableCell>
 
         <TableCell @click.stop>

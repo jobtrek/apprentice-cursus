@@ -11,15 +11,6 @@ export interface Apprentice {
     trainer?: string;
 }
 
-/** Statistiques de notes calculées par le serveur (`ApprenticeController@index`). */
-export interface ApprenticeStats {
-    grades_count: number;
-    /** Moyenne arrondie au dixième, null sans note. */
-    average: number | null;
-    /** Format `d.m.Y`, null sans note. */
-    last_grade_date: string | null;
-}
-
 const apprentices = ref<Apprentice[]>(rawApprentices as Apprentice[]);
 
 /** Apprenti·e correspondant à l'identifiant d'URL, s'il existe. */

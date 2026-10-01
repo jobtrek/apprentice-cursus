@@ -14,7 +14,7 @@ The only document on who can do what, and how people get their role. Design deci
 | Role       | How you get it                        | Who you supervise                                          |
 | ---------- | ------------------------------------- | ---------------------------------------------------------- |
 | Apprentice | IT or EC apprentices group            | Nobody. You only see your own data                         |
-| Trainer    | Trainers group                        | Every apprentice of your section (all trainers are IT for now) |
+| Trainer    | Trainers group                        | Apprentices assigned to you, only within your section (all trainers are IT for now) |
 | Coach      | No group yet, so coaches cannot log in | Apprentices whose coach you are (IT and EC)                |
 
 The table lists the production roles. The `admin` role (local development only) is not one of them: it passes every check when `APP_ENV=local`, grants nothing elsewhere, and no Entra group maps to it.
@@ -35,7 +35,8 @@ Y = yes, N = no, RO = read-only. Anything on a **deactivated** apprentice is rea
 | Manage own portfolio (projects, skills, PDF export) | Y          | N           | N           |
 | See a supervised apprentice's portfolio             | N          | RO          | RO          |
 | See the apprentices list                            | N          | Y           | Y           |
-| Assign self as coach of an apprentice with no coach | N          | N           | Y (not built yet) |
+| Assign self as coach of an apprentice with no coach | N          | N           | Y           |
+| Assign self as trainer of an apprentice of own section with no trainer | N | Y | N |
 | Get an email when a supervised apprentice adds/deletes a grade | – | Y (not built yet) | Y (not built yet) |
 | Get an email when someone comments on own grade     | Y (not built yet) | –    | –           |
 
@@ -71,7 +72,8 @@ Other rules:
 ## For developers
 
 - Code checks **permissions, never role names**. The list of permissions per role is `App\Enums\Permission::byRole()`. To change what a role can do, edit it there and re-run `RolesAndPermissionsSeeder`.
-- "Supervised" means `User::supervises($apprentice)`: trainer = same section, coach = apprentice's `coach_id` is theirs.
+- "Supervised" means `User::supervises($apprentice)`: trainer = apprentice's `trainer_id` is theirs **and** same section, coach = apprentice's `coach_id` is theirs. The apprentices list shows exactly the supervised apprentices.
+- Assignment (`SupervisionController`): a coach takes an active apprentice with no coach (`coaching.assign-self`); a trainer takes an active apprentice of their own section with no trainer (`training.assign-self`), so an IT trainer can only add IT apprentices. Setting, changing or removing any apprentice's coach or trainer needs `supervision.manage`, which no production role has: only the local admin can do it, from the coach and trainer selects of the apprentices list. Only a trainer of the apprentice's section can be picked.
 - Policies (`GradePolicy`, `ProjectPolicy`, `CommentPolicy`, `UserPolicy`) add the per-record checks: supervision, author only, active apprentice only.
 - Routes use `can:` middleware. The frontend reads the `auth.can` flags shared by `HandleInertiaRequests` and never re-derives rules.
 - Local login (password `password`): `admin@example.com` (local-only admin, everything), `coach@example.com` (coach), `trainer@example.com` (IT trainer), `apprentice-it@example.com` (IT apprentice), `apprentice-ec@example.com` (EC apprentice).

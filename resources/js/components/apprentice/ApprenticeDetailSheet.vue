@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Link } from '@inertiajs/vue3';
 import { ArrowRightIcon } from '@lucide/vue';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import {
@@ -13,7 +13,6 @@ import {
     SheetTitle,
 } from '@/components/ui/sheet';
 import { getInitials } from '@/composables/useInitials';
-import type { Apprentice } from '@/composables/useApprentices';
 import {
     AVERAGE_SCORE,
     BRANCH_SCORES,
@@ -23,9 +22,10 @@ import ApprenticeMetaRow from './ApprenticeMetaRow.vue';
 import ApprenticeScoreSummary from './ApprenticeScoreSummary.vue';
 import ApprenticeScoreTable from './ApprenticeScoreTable.vue';
 import apprentices from '@/routes/apprentices';
+import type { ApprenticeSummary } from '@/types/apprentice';
 
 defineProps<{
-    apprentice: Apprentice | null;
+    apprentice: ApprenticeSummary | null;
 }>();
 
 const open = defineModel<boolean>('open', { required: true });
@@ -37,7 +37,6 @@ const open = defineModel<boolean>('open', { required: true });
             <SheetHeader>
                 <div class="flex items-center gap-3">
                     <Avatar class="size-10">
-                        <AvatarImage :src="apprentice?.avatarUrl ?? ''" />
                         <AvatarFallback>
                             {{ getInitials(apprentice?.name) }}
                         </AvatarFallback>
@@ -45,7 +44,7 @@ const open = defineModel<boolean>('open', { required: true });
                     <div>
                         <SheetTitle>{{ apprentice?.name }}</SheetTitle>
                         <SheetDescription>
-                            {{ apprentice?.track }} · {{ apprentice?.year }}
+                            {{ apprentice?.track ?? 'Sans filière' }}
                         </SheetDescription>
                     </div>
                 </div>
@@ -55,8 +54,8 @@ const open = defineModel<boolean>('open', { required: true });
                 <Separator />
 
                 <ApprenticeMetaRow
-                    :coach="apprentice.coach"
-                    :formateur="apprentice.trainer"
+                    :coach="apprentice.coach?.name"
+                    :formateur="apprentice.trainer?.name"
                 />
 
                 <ApprenticeScoreSummary
@@ -71,7 +70,7 @@ const open = defineModel<boolean>('open', { required: true });
                 <Button as-child>
                     <Link
                         :href="
-                            apprentices.show(Number(apprentice.id), {
+                            apprentices.show(apprentice.id, {
                                 query: { tab: 'grades' },
                             })
                         "
@@ -83,7 +82,7 @@ const open = defineModel<boolean>('open', { required: true });
                 <Button as-child variant="outline">
                     <Link
                         :href="
-                            apprentices.show(Number(apprentice.id), {
+                            apprentices.show(apprentice.id, {
                                 query: { tab: 'portfolio' },
                             })
                         "
