@@ -110,6 +110,7 @@ class ApprenticeController extends Controller
 
         return Inertia::render('GradeDetails', [
             ...DemoGrade::props(),
+            'comments' => CommentResource::forGrade($grade),
             'apprenticeId' => $apprentice->id,
             'apprentice' => (new ApprenticeResource($apprentice->load(ApprenticeResource::RELATIONS)))->resolve(),
             'grade' => (new GradeResource($grade->load(GradeResource::RELATIONS)))->resolve(),

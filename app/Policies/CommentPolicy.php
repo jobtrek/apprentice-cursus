@@ -20,13 +20,19 @@ class CommentPolicy
     }
 
     /**
-     * Only the author may change a comment, and only while the apprentice it
-     * is attached to (grade or project owner) is still active.
+     * Only the author may change a comment, only while the apprentice it is
+     * attached to (grade or project owner) is still active, and, for a grade,
+     * only while the author can still view it (a reviewer who lost supervision
+     * can no longer change their feedback).
      */
     private function isAuthorOfActiveApprenticeComment(User $user, Comment $comment): bool
     {
         $commentable = $comment->commentable;
         $owner = $commentable instanceof Grade || $commentable instanceof Project ? $commentable->user : null;
+
+        if ($commentable instanceof Grade && ! $user->can('view', $commentable)) {
+            return false;
+        }
 
         return $comment->author_id === $user->id && $owner?->is_active === true;
     }
