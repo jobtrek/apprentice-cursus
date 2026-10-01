@@ -68,16 +68,17 @@ test('the list flags only unassigned apprentices as assignable', function () {
         });
 });
 
-test('a coach is offered the trainers and admins as validators, a trainer none', function () {
-    $coach = User::factory()->coach()->create();
+test('a coach is offered the other coaches as validators, a trainer none', function () {
+    $coach = User::factory()->coach()->create(['name' => 'Self coach']);
     $trainer = User::factory()->trainer()->create(['name' => 'A trainer']);
-    User::factory()->admin()->create(['name' => 'B admin']);
-    User::factory()->coach()->create(['name' => 'Other coach']);
+    User::factory()->admin()->create(['name' => 'An admin']);
+    User::factory()->coach()->create(['name' => 'B coach']);
+    User::factory()->coach()->create(['name' => 'A coach']);
 
     $this->actingAs($coach)
         ->get(route('apprentisdashboard'))
         ->assertInertia(fn (Assert $page) => expect(collect($page->toArray()['props']['validators'])->pluck('name')->all())
-            ->toBe(['A trainer', 'B admin']));
+            ->toBe(['A coach', 'B coach']));
 
     $this->actingAs($trainer)
         ->get(route('apprentisdashboard'))

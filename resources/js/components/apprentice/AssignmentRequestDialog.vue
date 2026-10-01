@@ -25,7 +25,7 @@ import type { ApprenticeListItem, SupervisorOption } from '@/types/apprentice';
 
 const props = defineProps<{
     apprentice: ApprenticeListItem | null;
-    /** Formateurs et admin pour l'instant. */
+    /** Les autres coachs. */
     validators: SupervisorOption[];
 }>();
 

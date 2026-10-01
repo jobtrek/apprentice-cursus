@@ -18,7 +18,7 @@ const props = defineProps<{
      */
     apprentices: ApprenticeListItem[];
     coaches: SupervisorOption[];
-    /** Validateurs d'une demande d'attribution (formateurs et admin pour l'instant). */
+    /** Validateurs d'une demande d'attribution : les autres coachs. */
     validators: SupervisorOption[];
     can: {
         /** Admin local : choix du coach de chaque apprenti·e. */
