@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Enums\Permission;
 use App\Enums\UserRole;
 use App\Http\Resources\ApprenticeResource;
+use App\Http\Resources\CommentResource;
 use App\Http\Resources\GradeResource;
 use App\Http\Resources\ProjectResource;
 use App\Models\Grade;
@@ -110,6 +111,7 @@ class ApprenticeController extends Controller
 
         return Inertia::render('GradeDetails', [
             ...DemoGrade::props(),
+            'comments' => CommentResource::forGrade($grade),
             'apprenticeId' => $apprentice->id,
             'apprentice' => (new ApprenticeResource($apprentice->load(ApprenticeResource::RELATIONS)))->resolve(),
             'grade' => (new GradeResource($grade->load(GradeResource::RELATIONS)))->resolve(),
