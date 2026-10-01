@@ -8,7 +8,7 @@ domains: {
   created_at: timestamp
 }
 
-domain_nodes: {
+domain_links: {
   shape: sql_table
   parent_id: bigint {constraint: [primary_key; foreign_key]}
   child_id: bigint {constraint: [primary_key; foreign_key]}
@@ -17,7 +17,7 @@ domain_nodes: {
 domain_edges: {
   shape: sql_table
   apprenticeship_context_id: bigint {constraint: [primary_key; foreign_key]}
-  domain_node_id: bigint {constraint: [primary_key; foreign_key]}
+  domain_link_id: bigint {constraint: [primary_key; foreign_key]}
   weight: "decimal(5,2)"
 }
 
@@ -201,17 +201,17 @@ apprenticeship_context -> domain_edges: context {
   target-arrowhead: {shape: cf-many}
 }
 
-domain_nodes -> domain_edges: domain {
+domain_links -> domain_edges: domain {
   source-arrowhead: {shape: cf-one-required}
   target-arrowhead: {shape: cf-many}
 }
 
-domains -> domain_nodes: parent {
+domains -> domain_links: parent {
   source-arrowhead: {shape: cf-one-required}
   target-arrowhead: {shape: cf-many}
 }
 
-domains -> domain_nodes: child {
+domains -> domain_links: child {
   source-arrowhead: {shape: cf-one-required}
   target-arrowhead: {shape: cf-many}
 }

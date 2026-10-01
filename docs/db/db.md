@@ -8,12 +8,12 @@ Source: `schemas/mcd_current.d2`
 - `apprenticeship_context`: one variant per apprenticeship (`is_mp` true/false) + entry point `root_domain_id`.
 - `apprenticeship_periods`: stores the periods during which the apprenticeship takes place.
 - `domains`: training domain blocks, each holds `subjects`.
-- `domain_nodes`: parent → child links between domains (DAG).
+- `domain_links`: parent → child links between domains (DAG).
 - `domain_edges`: weight of a domain node for a given context (`weight`).
 - `subject_category`: grouping for UI (CIE, modules, etc.).
 - `subjects`: exam subject, belongs to one `domain_id` + one `subject_category_id`.
 
-Flow: `apprenticeships` → `apprenticeship_context` → `domain_edges` (weighted) → `domain_nodes` → `domains`. `subjects` hang under leaf `domains`.
+Flow: `apprenticeships` → `apprenticeship_context` → `domain_edges` (weighted) → `domain_links` → `domains`. `subjects` hang under leaf `domains`.
 
 ## 2. Users and grades
 
@@ -60,7 +60,7 @@ Used later in `domain_edges`
 
 This is the configuration / weight calculation table.
 
-It uses both `apprenticeship_context` and `domain_nodes` to determine a weight for a specific domain.
+It uses both `apprenticeship_context` and `domain_links` to determine a weight for a specific domain.
 
 ## Apprenticeship periods
 
