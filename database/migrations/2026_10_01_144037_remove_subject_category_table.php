@@ -8,19 +8,25 @@ return new class extends Migration
 {
     /**
      * Run the migrations.
+     *
+     * Structure only: no data is carried over, so this expects an empty `subjects` table.
      */
     public function up(): void
     {
         Schema::table('subjects', function (Blueprint $table) {
-            $table->dropForeign(['subject_category_id']);
+            $table->dropConstrainedForeignId('subject_category_id');
             $table->string('name');
+            $table->foreignId('domain_id')->constrained('domains');
+            $table->index('domain_id');
         });
 
-        Schema::dropIfExists('subject_category');
+        Schema::drop('subject_category');
     }
 
     /**
      * Reverse the migrations.
+     *
+     * Structure only, like up(): fails on a populated `subjects` table.
      */
     public function down(): void
     {
@@ -30,8 +36,11 @@ return new class extends Migration
         });
 
         Schema::table('subjects', function (Blueprint $table) {
-            $table->foreignId('subject_category_id')->constrained('subject_category');
+            $table->dropConstrainedForeignId('domain_id');
             $table->dropColumn('name');
+
+            $table->foreignId('subject_category_id')->constrained('subject_category');
+            $table->index('subject_category_id');
         });
     }
 };
