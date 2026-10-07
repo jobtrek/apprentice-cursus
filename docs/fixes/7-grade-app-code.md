@@ -2,7 +2,7 @@
 
 This file is the context for solving the issues below in the package of issue Grade app code.
 
-- **Depends on:** package 4 (Grades and periods: `apprentice_id`, `apprenticeship_period_id`, no `semester`), package 6 (Tree app code: seeded tree, `GradebookTree`).
+- **Depends on:** package 4 (Grades and periods: `user_id`, `apprenticeship_period_id`, no `semester`), package 6 (Tree app code: seeded tree, `GradebookTree`).
 - **Blocks:** nothing.
 - The file list below comes from a search for the stale names, not from reading each file in full. Some files may need no change.
 
@@ -29,7 +29,7 @@ Files owned by this package (no other package edits them):
 # Fixes suggested
 
 1. **`GradeResource`.** `node_id` → `$this->domain_id`. Replace `semester` by the period: `$this->apprenticeshipPeriod->semester` (and `year` if the page shows it), with the relation eager-loaded by the caller. Rewrite `firstParent()` on `Domain` using the parent links of package 1; note a domain can have several parents, so decide which path is displayed (the one inside the apprentice's context).
-2. **`GradeResourceTest`.** Build `Domain` + `DomainLink` rows instead of `EvaluationNode`, and grades with `apprentice_id`, `domain_id`, `subject_id`, `apprenticeship_period_id`. Ask the package 5 owner for the shared helper in `../../tests/Pest.php` instead of editing it.
+2. **`GradeResourceTest`.** Build `Domain` + `DomainLink` rows instead of `EvaluationNode`, and grades with `user_id`, `domain_id`, `subject_id`, `apprenticeship_period_id`. Ask the package 5 owner for the shared helper in `../../tests/Pest.php` instead of editing it.
 3. **`DemoGradeSeeder`.**
    - Start from `$user->apprenticeshipContext->root_domain_id`.
    - Walk `DomainLink` rows (breadth-first, visited set, as today) to collect leaf domains: leaves are domains with no child link.

@@ -21,7 +21,7 @@ Files owned by this package (no other package edits them):
 - [ ] **Comment 8 — line 9:** `apprenticeship_periods` is described as "planned, not yet migrated"; `2026_10_07_130000` creates it.
 - [ ] **D1 — line 13:** `subject_category` is listed as a current table; it was dropped.
 - [ ] **D1 — line 14:** `subjects` "belongs to one `domain_id` + one `subject_category_id`"; the second column was dropped and `name` was added.
-- [ ] **D1 — line 21:** `grades` described with `user_id` and `semester (1–8)`; the row now has `apprentice_id`, `apprenticeship_period_id`, no `semester`.
+- [ ] **D1 — line 21:** `grades` described with `user_id` and `semester (1–8)`; the row now has `user_id`, `apprenticeship_period_id`, no `semester`.
 - [ ] **D1 — line 52:** "no Eloquent model for these tables yet" and "code and seeders still read `users.apprenticeship_id`"; models now exist.
 - [ ] **D3 — line 54:** heading "Domain nodes" while the table is `domain_links`.
 - [ ] **D4 — lines 20 and 52:** `users.is_mp` called "transitional" with no end date and no statement of which `is_mp` wins.
@@ -31,7 +31,7 @@ Files owned by this package (no other package edits them):
 
 - [ ] **Comment 8 — lines 11 to 15:** `domain_links` has no `id`; `parent_id` and `child_id` are drawn as the primary key. `domain_link_weights.domain_link_id` then has no target.
 - [ ] **D2 — lines 24 to 36:** `subjects.subject_category_id` and the `subject_category` table are still drawn (and the relation at line 219); `subjects.name` is missing.
-- [ ] **D2 — line 75:** `users.apprenticeship_periods` foreign key column does not exist (the link goes the other way, `apprenticeship_periods.apprentice_id`).
+- [ ] **D2 — line 75:** `users.apprenticeship_periods` foreign key column does not exist (the link goes the other way, `apprenticeship_periods.user_id`).
 - [ ] **D2 — users block:** `is_mp` is missing although the column exists.
 - [ ] **D2 — line 86:** `grades.apprenticeship_periods_id` (plural); the agreed name is `apprenticeship_period_id`.
 - [ ] **D2 — line 239:** the `subjects -> domains` arrow is drawn the wrong way round (a domain has many subjects).
@@ -55,9 +55,9 @@ Open in the docs
 
 # Fixes suggested
 
-1. **`db.md` line 9.** Describe `apprenticeship_periods` as implemented by `2026_10_07_130000`: `id`, `apprentice_id` FK → `users.id` (restrict), `semester` smallint, `year` generated as `(semester + 1) / 2`, `start_date`, `end_date`, index (`apprentice_id`, `year`, `semester`), plus the CHECKs added by package 4.
+1. **`db.md` line 9.** Describe `apprenticeship_periods` as implemented by `2026_10_07_130000`: `id`, `user_id` FK → `users.id` (restrict; created as `apprentice_id`, renamed by `2026_10_07_190000`), `semester` smallint, `year` generated as `(semester + 1) / 2`, `start_date`, `end_date`, index (`apprentice_id`, `year`, `semester`), plus the CHECKs added by package 4.
 2. **`db.md` lines 13, 14.** Remove `subject_category`; `subjects` = `name` + `domain_id` + `created_at`.
-3. **`db.md` line 21.** `grades`: `apprentice_id`, `domain_id`, `subject_id`, `apprenticeship_period_id`, value 1.0 to 6.0, `test_date`, optional proof file. No `semester`.
+3. **`db.md` line 21.** `grades`: `user_id`, `domain_id`, `subject_id`, `apprenticeship_period_id`, value 1.0 to 6.0, `test_date`, optional proof file. No `semester`.
 4. **`db.md` line 52.** Replace the "not wired" paragraph with the real state after packages 5 to 7.
 5. **`db.md` line 54.** Rename the section "Domain links"; use `DomainLink` / `DomainLinkWeight` everywhere.
 6. **`db.md`, new short section "Migrating".** State that the chain from `2026_10_01_095759` drops the old tree and requires `migrate:fresh` followed by seeding; existing grades are not carried over.

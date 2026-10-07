@@ -54,7 +54,7 @@ apprenticeship_contexts: {
 apprenticeship_periods: {
   shape: sql_table
   id: bigint {constraint: primary_key}
-  apprentice_id: bigint {constraint: foreign_key} # Reference user
+  user_id: bigint {constraint: foreign_key} # Reference user
   semester: smallint # check
   year: smallint # generated
   start_date: date
@@ -80,7 +80,7 @@ users: {
 grades: {
   shape: sql_table
   id: bigint {constraint: primary_key}
-  apprentice_id: bigint {constraint: foreign_key} # Reference users
+  user_id: bigint {constraint: foreign_key} # Reference users
   domain_id: bigint {constraint: foreign_key}
   subject_id: bigint {constraint: foreign_key}
   apprenticeship_periods_id: bigint { constraint: foreign_key }
