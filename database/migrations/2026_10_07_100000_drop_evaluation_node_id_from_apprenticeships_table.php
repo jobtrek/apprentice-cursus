@@ -24,6 +24,8 @@ return new class extends Migration
     {
         Schema::table('apprenticeships', function (Blueprint $table) {
             $table->foreignId('evaluation_node_id')->nullable()->constrained('domains')->restrictOnDelete();
+
+            $table->index('evaluation_node_id');
         });
     }
 };
