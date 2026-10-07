@@ -11,11 +11,9 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // The subject -> domain link now lives on subjects.domain_id. Dropping the
-        // column also drops its aggregation CHECK constraint.
         Schema::table('domains', function (Blueprint $table) {
-            $table->dropConstrainedForeignId('subject_id');
-            $table->dropColumn('aggregation');
+            $table->dropForeign('evaluation_nodes_subject_id_foreign');
+            $table->dropColumn(['subject_id', 'aggregation']);
         });
     }
 
