@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 /**
  * @property int $id
  * @property string $name
- * @property string $rounding_step Decimal cast: string at runtime.
+ * @property string|null $rounding_step Decimal cast: string at runtime.
  */
 #[Fillable(['name', 'rounding_step'])]
 class Domain extends Model
