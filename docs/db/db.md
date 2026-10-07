@@ -5,19 +5,19 @@ Source: `schemas/mcd_current.d2`
 ## 1. Training structure
 
 - `apprenticeships`: formation track (e.g. IT / EC).
-- `apprenticeship_context`: one variant per apprenticeship (`is_mp` true/false) + entry point `root_domain_id`.
-- `apprenticeship_periods`: stores the periods during which the apprenticeship takes place.
+- `apprenticeship_contexts` (implemented in `2026_10_01_114802_create_apprenticeship_context_table.php`): one row per variant of an apprenticeship — `is_mp` boolean (MP track or not) + `root_domain_id` entry point into `domains`. Columns: `id`, `is_mp` (boolean, NOT NULL, no default), `apprenticeship_id` FK → `apprenticeships.id`, `root_domain_id` FK → `domains.id` (both `constrained()` with no cascade, i.e. NO ACTION: the database refuses to delete an apprenticeship or a root domain that still has contexts). No timestamps. A UNIQUE (`apprenticeship_id`, `is_mp`) constraint, added by `2026_10_07_110000_add_unique_to_apprenticeship_contexts_table.php`, enforces the “max 2 rows per apprenticeship (`is_mp` true/false)” rule in the database.
+- `apprenticeship_periods`: planned, not yet migrated — stores the periods during which the apprenticeship takes place.
 - `domains`: training domain blocks, each holds `subjects`.
-- `domain_nodes`: parent → child links between domains (DAG).
-- `domain_edges`: weight of a domain node for a given context (`weight`).
+- `domain_links`: parent → child links between domains (DAG).
+- `domain_link_weights`: weight of a domain link for a given context. Primary key (`apprenticeship_context_id`, `domain_link_id`), `weight` is a `decimal(3,2)` fraction (0.01 to 1).
 - `subject_category`: grouping for UI (CIE, modules, etc.).
 - `subjects`: exam subject, belongs to one `domain_id` + one `subject_category_id`.
 
-Flow: `apprenticeships` → `apprenticeship_context` → `domain_edges` (weighted) → `domain_nodes` → `domains`. `subjects` hang under leaf `domains`.
+Flow: `apprenticeships` → `apprenticeship_contexts` → `domain_link_weights` (weighted) → `domain_links` → `domains`. `subjects` hang under leaf `domains`.
 
 ## 2. Users and grades
 
-- `users`: apprentice account (Azure SSO via `azure_id`, email unique). Belongs to one `apprenticeship_context_id`. Optional `coach_id` / `trainer_id` (self-ref).
+- `users`: apprentice account (Azure SSO via `azure_id`, email unique). Belongs to one apprenticeship context through `apprenticeship_context_id` (nullable FK → `apprenticeship_contexts.id`). The column is migrated: it replaced `users.apprenticeship_id`, was first created as `context_id`, then renamed by `2026_10_07_150000_rename_context_id_on_users_table.php`. Application wiring is not finished (see the apprenticeship context section); `users.is_mp` remains the transitional per-user flag. Optional `coach_id` / `trainer_id` (self-ref).
 - `grades`: one row = one apprentice (`user_id`) + one leaf domain (`domain_id`) + one subject (`subject_id`). Swiss value `1.0–6.0`, `test_date`, `semester (1–8)`, optional proof file (`file_path`).
 
 ## 3. Portfolio (project file)
@@ -47,19 +47,21 @@ Answers two questions: which track the apprentice follows, and whether it includ
 
 MP changes how domains are wired, differently per track.
 To keep it simple, we store both pieces of information.
-Used later in `domain_edges`
+Used in `domain_link_weights`.
+
+Implemented: `apprenticeship_contexts` (`2026_10_01_114802…`, `down()` = `dropIfExists`). Each row pins one (`apprenticeship_id`, `is_mp`) pair to a `root_domain_id` in `domains` — the root of that variant's grade tree. The database side is done (`apprenticeship_contexts`, `domain_link_weights`, `users.apprenticeship_context_id`). The application wiring is not: no Eloquent model for these tables yet, and code and seeders still read `users.apprenticeship_id`, which no longer exists. `users.is_mp` remains the transitional per-user flag.
 
 ## Domain nodes
 
 Wire domains together on a parent-child basis.
 
-Used later in `domain_edges`
+Used later in `domain_link_weights`
 
-## Domain edges
+## Domain link weights
 
 This is the configuration / weight calculation table.
 
-It uses both `apprenticeship_context` and `domain_nodes` to determine a weight for a specific domain.
+It uses both `apprenticeship_contexts` and `domain_links` to determine a weight for a specific domain.
 
 ## Apprenticeship periods
 
