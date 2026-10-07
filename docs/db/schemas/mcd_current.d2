@@ -14,7 +14,7 @@ domain_links: {
   child_id: bigint {constraint: [primary_key; foreign_key]}
 }
 
-domain_edges: {
+domain_link_weights: {
   shape: sql_table
   apprenticeship_context_id: bigint {constraint: [primary_key; foreign_key]}
   domain_link_id: bigint {constraint: [primary_key; foreign_key]}
@@ -196,12 +196,12 @@ apprenticeships -> apprenticeship_contexts: contexts {
   target-arrowhead: {shape: cf-many}
 }
 
-apprenticeship_contexts -> domain_edges: context {
+apprenticeship_contexts -> domain_link_weights: context {
   source-arrowhead: {shape: cf-one-required}
   target-arrowhead: {shape: cf-many}
 }
 
-domain_links -> domain_edges: domain {
+domain_links -> domain_link_weights: domain {
   source-arrowhead: {shape: cf-one-required}
   target-arrowhead: {shape: cf-many}
 }

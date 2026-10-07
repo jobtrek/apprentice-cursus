@@ -9,11 +9,11 @@ Source: `schemas/mcd_current.d2`
 - `apprenticeship_periods`: planned, not yet migrated — stores the periods during which the apprenticeship takes place.
 - `domains`: training domain blocks, each holds `subjects`.
 - `domain_links`: parent → child links between domains (DAG).
-- `domain_edges`: weight of a domain node for a given context (`weight`).
+- `domain_link_weights`: weight of a domain link for a given context. Primary key (`apprenticeship_context_id`, `domain_link_id`), `weight` is a `decimal(3,2)` fraction (0.01 to 1).
 - `subject_category`: grouping for UI (CIE, modules, etc.).
 - `subjects`: exam subject, belongs to one `domain_id` + one `subject_category_id`.
 
-Flow: `apprenticeships` → `apprenticeship_contexts` → `domain_edges` (weighted, planned) → `domain_links` → `domains`. `subjects` hang under leaf `domains`.
+Flow: `apprenticeships` → `apprenticeship_contexts` → `domain_link_weights` (weighted) → `domain_links` → `domains`. `subjects` hang under leaf `domains`.
 
 ## 2. Users and grades
 
@@ -48,17 +48,17 @@ Answers two questions: which track the apprentice follows, and whether it includ
 
 MP changes how domains are wired, differently per track.
 To keep it simple, we store both pieces of information.
-Used later in `domain_edges` (planned, not yet migrated).
+Used in `domain_link_weights`.
 
-Implemented: `apprenticeship_contexts` (`2026_10_01_114802…`, `down()` = `dropIfExists`). Each row pins one (`apprenticeship_id`, `is_mp`) pair to a `root_domain_id` in `domains` — the root of that variant's grade tree. No model / `domain_edges` / `users.apprenticeship_context_id` wiring yet; `users.is_mp` remains the transitional per-user flag.
+Implemented: `apprenticeship_contexts` (`2026_10_01_114802…`, `down()` = `dropIfExists`). Each row pins one (`apprenticeship_id`, `is_mp`) pair to a `root_domain_id` in `domains` — the root of that variant's grade tree. No model / `domain_link_weights` / `users.apprenticeship_context_id` wiring yet; `users.is_mp` remains the transitional per-user flag.
 
 ## Domain nodes
 
 Wire domains together on a parent-child basis.
 
-Used later in `domain_edges`
+Used later in `domain_link_weights`
 
-## Domain edges
+## Domain link weights
 
 This is the configuration / weight calculation table.
 
