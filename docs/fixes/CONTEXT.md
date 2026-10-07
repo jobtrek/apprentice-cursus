@@ -2,6 +2,15 @@
 
 This directory store a fixes plan, organized and stored to be read and splitted. You don't forcefully need to read all documentation under, only package of fixe you're working. 
 
+# Order of the packages
+
+Packages 1 and 4 have no migration left, and package 2 only repairs `down()` methods (see "Not movable to a new migration"). For the rest:
+
+1. **Decisions** D1 to D6, listed in `./10-remaining-migrations.md`.
+2. **Package 10**: the remaining migrations. Package 3 (model fixes) can run in parallel.
+3. **Package 5**, then **6**, then **7**: app code only.
+4. **Package 8**: docs, last. Package 9 keeps the reasons and the model changes of the subject ↔ domain pivot.
+
 # Migration grouping
 
 Rule: when fixes need a migration, make as few migrations as possible. Before creating one, look at the table below and merge with the fixes that fit together.
@@ -25,12 +34,13 @@ Rule: when fixes need a migration, make as few migrations as possible. Before cr
 
 ## Remaining, grouped
 
-| Planned migration | Fixes that go in it | Packages | Note |
+Every migration still to write is owned by package 10 (`./10-remaining-migrations.md`), with the decisions that gate each one. Packages 5 to 9 write no migration.
+
+| Planned migration | Fixes that go in it | Came from | Waits for |
 |---|---|---|---|
-| **A. Missing index on `users`** | `users.apprenticeship_context_id` index (G2) | 5 | Can join `2026_10_07_200000_add_indexes_to_grades_table` only while that file is not committed (rename it if it covers both tables); otherwise a migration of its own. |
-| **C. Subject ↔ domain many-to-many** | create `domain_subject` + copy data + drop `subjects.domain_id` | 9 (+ 3) | Makes package 3 fix 4 (delete rule on `subjects.domain_id`) pointless: the column is dropped. Do not write a migration for that fix if package 9 is accepted. |
-| **D. Grade guard** | composite foreign key `grades (domain_id, subject_id)` → `domain_subject` | 9 + 4 | Only if accepted. Must run after C, so it goes in the same migration as C, at the end, not in A. |
-| **E. Drop `users.is_mp`** | drop the column | 5 | Waits for the "where does MP live" decision. If it is decided before A is committed, it can not join A (different kind of change): it is a migration on `users` of its own. |
+| **U. `users`** | `apprenticeship_context_id` index (G2) + drop `is_mp` | 5 | Nothing for the index. D1 for the drop: it joins U only if decided before U is committed. |
+| **S. `domain_subject`** | create the pivot + copy data + drop `subjects.domain_id` + grade guard on `grades` at the end | 9 (+ 3, 4, 7) | D2, D3; D4 for the guard. Replaces package 3 fix 4. |
+| **R. Explicit delete rules** | `restrictOnDelete()` on three NO ACTION foreign keys | audit | D5. Takes `subjects.domain_id` too if D2 is refused. |
 
 ## Not movable to a new migration
 

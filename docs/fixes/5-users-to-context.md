@@ -2,15 +2,14 @@
 
 This file is the context for solving the issues below in the package of issue Users to context.
 
-- **Depends on:** nothing. Can start immediately.
+- **Depends on:** nothing for fixes 1 to 6, which can start immediately. Only the `is_mp` problem (M6) waits for decision D1 of package 10.
 - **Blocks:** package 6 (Tree app code), which needs the user → context → root domain path.
-- **Migrations are edited in place** (they are not on `main`). After pulling, everyone runs `./vendor/bin/sail artisan migrate:fresh`.
-- **Migration grouping:** see `./CONTEXT.md`. The `apprenticeship_context_id` index (fix 7) fits in the index migration of package 4 (group A) instead of a migration of its own. Dropping `users.is_mp`, if decided, is a separate migration (group E).
+- **This package writes no migration.** Its two schema changes (the `apprenticeship_context_id` index and the `users.is_mp` drop) moved to package 10 (`./10-remaining-migrations.md`, migration U). Committed migrations are not edited in place.
 - The file list below comes from a search for the stale names, not from reading each file in full. Some files may need no change.
 
 Files owned by this package (no other package edits them):
 
-- `../../database/migrations/2026_10_07_150000_rename_context_id_on_users_table.php`
+- `../../database/migrations/2026_10_07_150000_rename_context_id_on_users_table.php` (reference only, not edited)
 - `../../app/Models/User.php`
 - `../../app/Policies/UserPolicy.php`
 - `../../app/Http/Controllers/SupervisionController.php`, `ApprenticeController.php`, `DossierController.php`
@@ -35,8 +34,8 @@ Files owned by this package (no other package edits them):
   - `UserSeeder.php` line 70, `DemoApprenticeSeeder.php` line 48
   - `../../tests/Pest.php` line 68 and about ten test files (`forceFill(['apprenticeship_id' => …])`)
 - [ ] **M3 — `User` has no `apprenticeship()` relation any more**, but `GradebookTree.php` (package 6) and `DemoGradeSeederTest.php` (package 7) call `$user->apprenticeship`.
-- [ ] **G2 — `users.apprenticeship_context_id` has no index.** The old `apprenticeship_id` index disappeared with the column; the new column never got one.
-- [ ] **M6 — `users.is_mp` still exists but `User` does not declare it** (no docblock, no cast), while `HomeController.php` line 35 and `GradebookTree.php` line 29 still read it.
+- [ ] **G2 — `users.apprenticeship_context_id` has no index.** The old `apprenticeship_id` index disappeared with the column; the new column never got one. **Moved to package 10 (migration U).**
+- [ ] **M6 — `users.is_mp` still exists but `User` does not declare it** (no docblock, no cast), while `HomeController.php` line 35 and `GradebookTree.php` line 29 still read it. **Waits for decision D1 of package 10:** if the column is dropped there, nothing is left to declare here.
 - [ ] **`../../tests/Pest.php` line 53** creates an `EvaluationNode`, a class that was deleted.
 
 # Fixes suggested
@@ -59,10 +58,12 @@ Files owned by this package (no other package edits them):
 3. **Same substitution** in `UserPolicy`, `SupervisionController` and the `HandleInertiaRequests` shared prop (keep the prop name `apprenticeship_id` so `../../resources/js/types/auth.ts` and the pages do not change).
 4. **Sync services.** `AzureAccountSync` / `AzureDirectorySync` must now resolve an `apprenticeship_contexts` row instead of an apprenticeship id. That needs a rule for `is_mp` at sync time (see open question). Until decided, pick the non-MP context of the section.
 5. **Trainers.** A trainer has a section but no MP notion. Confirm trainers also point at a context (the non-MP one), since `supervises()` compares sections for trainers.
-6. **Seeders and tests.** Replace `forceFill(['apprenticeship_id' => $x->id])` with the context id. Add a helper in `../../tests/Pest.php` (for example `contextFor(Apprenticeship $section, bool $mp = false)`) so the ten test files change one call each. Replace the `EvaluationNode` use on line 53 with `Domain`, and the grade it creates with the columns from package 4 (`apprentice_id`, `domain_id`, `subject_id`, `apprenticeship_period_id`).
-7. **G2.** In `2026_10_07_150000` `up()`, add `$table->index('apprenticeship_context_id');` and drop it in `down()`.
+6. **Seeders and tests.** Replace `forceFill(['apprenticeship_id' => $x->id])` with the context id. Add a helper in `../../tests/Pest.php` (for example `contextFor(Apprenticeship $section, bool $mp = false)`) so the ten test files change one call each. Replace the `EvaluationNode` use on line 53 with `Domain`, and the grade it creates with the columns from package 4 (`user_id`, `domain_id`, `subject_id`, `apprenticeship_period_id`).
+7. **G2 — moved to package 10 (migration U).** `2026_10_07_150000` is committed and is not edited.
 
 # Open question (needs a team decision, not a code fix)
+
+Tracked as decision D1 in `./10-remaining-migrations.md`, which owns the migration that follows from it.
 
 - **Where does MP live?** `apprenticeship_contexts.is_mp` and `users.is_mp` both exist. `../db/db.md` calls `users.is_mp` "transitional" with no end date. Decide: drop `users.is_mp` (new migration, then update `HomeController` in package 7 and `GradebookTree` in package 6) or keep it and document which one wins. Recommendation: drop it, the context already carries it.
 

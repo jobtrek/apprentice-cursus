@@ -2,7 +2,7 @@
 
 This file is the context for solving the issues below in the package of issue Docs.
 
-- **Depends on:** all names being final. Do this last, after packages 1 to 5 have landed.
+- **Depends on:** all names being final. Do this last, after packages 1 to 7, 9 and 10 have landed.
 - **Blocks:** nothing.
 - Other packages do not edit these files; they send their final names and decisions to this package's owner.
 
@@ -55,9 +55,9 @@ Open in the docs
 
 # Fixes suggested
 
-1. **`db.md` line 9.** Describe `apprenticeship_periods` as implemented by `2026_10_07_130000`: `id`, `user_id` FK → `users.id` (restrict; created as `apprentice_id`, renamed by `2026_10_07_190000`), `semester` smallint, `year` generated as `(semester + 1) / 2`, `start_date`, `end_date`, index (`apprentice_id`, `year`, `semester`), plus the CHECKs added by package 4.
+1. **`db.md` line 9.** Describe `apprenticeship_periods` as implemented by `2026_10_07_130000`: `id`, `user_id` FK → `users.id` (restrict; created as `apprentice_id`, renamed by `2026_10_07_190000`), `semester` smallint, `year` generated as `(semester + 1) / 2`, `start_date`, `end_date`, index (`user_id`, `year`, `semester`), plus the two CHECKs added by `2026_10_07_210000` (`semester BETWEEN 1 AND 8`, `end_date >= start_date`).
 2. **`db.md` lines 13, 14.** Remove `subject_category`; `subjects` = `name` + `domain_id` + `created_at`.
-3. **`db.md` line 21.** `grades`: `user_id`, `domain_id`, `subject_id`, `apprenticeship_period_id`, value 1.0 to 6.0, `test_date`, optional proof file. No `semester`.
+3. **`db.md` line 21.** `grades`: `user_id`, `domain_id`, `subject_id`, `apprenticeship_period_id`, value 1.0 to 6.0, `test_date`, optional proof file. No `semester`. One index per foreign key (`2026_10_07_200000`).
 4. **`db.md` line 52.** Replace the "not wired" paragraph with the real state after packages 5 to 7.
 5. **`db.md` line 54.** Rename the section "Domain links"; use `DomainLink` / `DomainLinkWeight` everywhere.
 6. **`db.md`, new short section "Migrating".** State that the chain from `2026_10_01_095759` drops the old tree and requires `migrate:fresh` followed by seeding; existing grades are not carried over.
@@ -74,10 +74,11 @@ Open in the docs
    ```
 
 8. **`.d2` subjects.** Remove `subject_category_id`, the `subject_category` table and its arrow; add `name: varchar`. Reverse line 239 to `domains -> subjects`.
-9. **`.d2` users and grades.** Remove `apprenticeship_periods` from `users`; add or drop `is_mp` according to the decision in package 5; rename line 86 to `apprenticeship_period_id`.
+9. **`.d2` users and grades.** Remove `apprenticeship_periods` from `users`; add or drop `is_mp` according to decision D1 in package 10; rename line 86 to `apprenticeship_period_id`.
 10. **`../../CONTEXT.md`.** Remove the `AGENT.md` lines, or rename them to `../../CONTEXT.md` if that is the file meant.
 11. **`ADR.md`.** Add a dated entry "2026-10-01 — Grade tree redesign: domains, links, per-context weights" covering: why weights moved from the link to (`context`, `link`), MP as a separate context instead of sibling nodes, `subjects` now carrying `name` and `domain_id`, periods replacing `grades.semester`, the delete rule chosen for `domain_links` (package 1), and where the cycle guard lives (package 6). Mark each old entry listed above with "_(Superseded by 2026-10-01 — Grade tree redesign.)_", the pattern the file already uses at line 136.
 12. **`../../CLAUDE.md`.** Update the ADR one-liner and point the grade-tree source of truth at `../db/db.md` and `../db/schemas/mcd_current.d2`; say whether `grade_tree_IT.md` / `grade_tree_EC.md` still describe the business weights (they probably do) even though the table names changed.
 13. **D6.** Once packages 4 and 7 settle how a grade picks its period, write the rule in the "Apprenticeship periods" section of `db.md`.
+14. **Migrations of package 10.** Once they land, describe in `db.md` and the `.d2` what each one changed: the `users.apprenticeship_context_id` index and the `is_mp` outcome (migration U), the `domain_subject` pivot, the dropped `subjects.domain_id` and the grade guard (migration S), and the explicit delete rules if any (migration R). Record the decisions D1 to D6 of `../fixes/10-remaining-migrations.md` in `ADR.md`.
 
 Check when done: every table and column named in `db.md` and the `.d2` exists after `migrate:fresh` (compare with `\dt` and `\d <table>`), and `grep -rn "subject_category\|evaluation_node\|apprenticeship_periods_id" docs/db/db.md docs/db/schemas/mcd_current.d2` returns nothing.

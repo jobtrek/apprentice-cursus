@@ -27,6 +27,6 @@ Files owned by this package (no other package edits them):
 1. **`Subject.php`.** Fillable → `['name', 'domain_id']`. Docblock → `@property int $id`, `@property string $name`, `@property int $domain_id`. Delete `subjectCategory()` and its import. Keep `domain()` and `grades()`.
 2. **Delete `SubjectCategory.php`.** Its remaining users are `Subject` (fixed above) and `../../database/seeders/EvaluationTreeSeeder.php`, which belongs to package 6: tell that owner the class is gone.
 3. **G3.** Do not write a backfill: the earlier migration `2026_10_01_112517` already drops every tree link, so the old data cannot be carried over anyway. Add a comment at the top of `up()` stating that this chain is for a fresh database, and ask package 8 (Docs) to record it in `../db/db.md`.
-4. **Delete rule.** Make it explicit: `->constrained('domains')->restrictOnDelete()`, consistent with the "history-bearing foreign keys restrict" rule in `../adr/ADR.md`, since grades reference subjects.
+4. **Delete rule — moved to package 10.** If the subject ↔ domain pivot is accepted (decision D2), `subjects.domain_id` is dropped and this fix disappears. If it is refused, the rule goes in migration R of package 10, as a new migration. The rule itself: `->constrained('domains')->restrictOnDelete()`, consistent with the "history-bearing foreign keys restrict" rule in `../adr/ADR.md`, since grades reference subjects.
 
 Check when done: `migrate:fresh` passes, and `Subject::create(['name' => 'x', 'domain_id' => $id])` works in tinker.

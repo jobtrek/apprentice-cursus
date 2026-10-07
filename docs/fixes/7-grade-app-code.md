@@ -2,7 +2,7 @@
 
 This file is the context for solving the issues below in the package of issue Grade app code.
 
-- **Depends on:** package 4 (Grades and periods: `user_id`, `apprenticeship_period_id`, no `semester`), package 6 (Tree app code: seeded tree, `GradebookTree`).
+- **Depends on:** package 4 (Grades and periods: `user_id`, `apprenticeship_period_id`, no `semester`), package 6 (Tree app code: seeded tree, `GradebookTree`), package 10 (Remaining migrations: the grade guard and the `users.is_mp` decision).
 - **Blocks:** nothing.
 - The file list below comes from a search for the stale names, not from reading each file in full. Some files may need no change.
 
@@ -34,10 +34,10 @@ Files owned by this package (no other package edits them):
    - Start from `$user->apprenticeshipContext->root_domain_id`.
    - Walk `DomainLink` rows (breadth-first, visited set, as today) to collect leaf domains: leaves are domains with no child link.
    - For each demo apprentice, create `ApprenticeshipPeriod` rows first (the current fixtures use semesters 1 and 2), then attach each grade to the period matching its fixture semester.
-   - Pick a `Subject` of the leaf domain for `subject_id`.
+   - Pick a `Subject` of the leaf domain for `subject_id` (through `domain_subject` once migration S of package 10 has landed).
 4. **`DemoGradeSeederTest`.** Assert through the context root instead of `apprenticeship->evaluation_node_id`.
-5. **`HomeController`.** Read MP from `$user->apprenticeshipContext?->is_mp`. If the team keeps `users.is_mp` (open question in package 5), leave it and add a comment naming the decision.
-6. **`GradeController`.** Validate `subject_id` (exists, belongs to the chosen domain) and resolve the period server-side rather than trusting a posted `semester`.
+5. **`HomeController`.** Read MP from `$user->apprenticeshipContext?->is_mp`. If the team keeps `users.is_mp` (decision D1 in package 10), leave it and add a comment naming the decision.
+6. **`GradeController`.** Validate `subject_id` (exists, belongs to the chosen domain) and resolve the period server-side rather than trusting a posted `semester`. "Belongs to the chosen domain" means a `domain_subject` row once migration S of package 10 has landed (`subjects.domain_id` before that). If the grade guard is accepted (decision D4), the database refuses an invalid pair too: the validation rule is what turns it into a form error.
 7. **`../../resources/js/data/gradebook.ts`.** Update the grade type if `semester` / `node_id` changed shape in the resource.
 
 # Open question (shared with package 4)

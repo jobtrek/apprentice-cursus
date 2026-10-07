@@ -6,12 +6,12 @@ This file is the context for solving the issues below in the package of issue Su
 - **Blocks:** package 6 (Tree app code), whose seeder must attach subjects to domains through the new table.
 - **Touches package 4 (Grades and periods)** if the grade guard below is accepted: `grades` is owned by that package.
 - **Names proposed:** table `domain_subject` (Laravel pivot convention), relations `Domain::subjects()` and `Subject::domains()`.
-- **Done as a new migration**, not by editing an existing one.
-- **Migration grouping:** see `./CONTEXT.md`. One migration creates the pivot, copies the data and drops `subjects.domain_id` (group C). The grade guard, if accepted, goes at the end of that same migration (group D), because it needs `domain_subject` to exist.
+- **The migration is written under package 10** (`./10-remaining-migrations.md`, migration S), as a new migration. This file keeps the reasons, the specification of that migration (fixes 1 and 2) and the model and doc changes (fixes 3 to 5).
+- **One migration** creates the pivot, copies the data and drops `subjects.domain_id`. The grade guard, if accepted, goes at the end of that same migration, because it needs `domain_subject` to exist.
 
 Files concerned:
 
-- a new migration `../../database/migrations/2026_10_07_170000_create_domain_subject_table.php` (timestamp to adjust to the next free one)
+- a new migration creating `domain_subject` (owned by package 10, migration S)
 - `../../app/Models/Subject.php` (owned by package 3)
 - `../../app/Models/Domain.php` (owned by package 1)
 - `../db/db.md`
@@ -55,8 +55,10 @@ Today a subject belongs to exactly one domain: `subjects.domain_id` is a single 
 
 # Decisions to take before starting
 
+Tracked in `./10-remaining-migrations.md` as D2 (the many-to-many itself), D3 (delete rule) and D4 (grade guard).
+
 - **Delete rule on the pivot.** Recommendation: `cascadeOnDelete()` on both foreign keys. A pivot row has no meaning without both ends, and history stays protected because `grades.domain_id` and `grades.subject_id` are RESTRICT: a domain or a subject that has grades still cannot be deleted.
-- **Guard grades against invalid pairs.** Recommendation: add a composite foreign key `grades (domain_id, subject_id)` → `domain_subject (domain_id, subject_id)`, so a grade can only use a subject that is attached to that domain. It also stops a pivot row from being removed while grades use it. `grades` is owned by package 4, so either do it there or agree with that owner.
+- **Guard grades against invalid pairs.** Recommendation: add a composite foreign key `grades (domain_id, subject_id)` → `domain_subject (domain_id, subject_id)`, so a grade can only use a subject that is attached to that domain. It also stops a pivot row from being removed while grades use it. It is written at the end of migration S (package 10), together with an index on `grades (domain_id, subject_id)`.
 
 # Impact on the rest of the app
 

@@ -2,9 +2,9 @@
 
 This file is the context for solving the issues below in the package of issue Tree app code.
 
-- **Depends on:** package 1 (Domain links: `DomainLink`, `DomainLinkWeight`), package 3 (Subjects: `Subject` with `name`, no `SubjectCategory`), package 5 (Users to context: `User::apprenticeshipContext`).
+- **Depends on:** package 1 (Domain links: `DomainLink`, `DomainLinkWeight`), package 3 (Subjects: `Subject` with `name`, no `SubjectCategory`), package 5 (Users to context: `User::apprenticeshipContext`), package 10 (Remaining migrations: the `domain_subject` pivot if accepted, the `users.is_mp` drop if decided).
 - **Blocks:** package 7 (Grade app code).
-- The seeder and its test (first two files) only need packages 1 and 3. `GradebookTree` also needs package 5.
+- The seeder and its test (first two files) only need packages 1, 3 and migration S of package 10. `GradebookTree` also needs package 5.
 - The file list below comes from a search for the stale names, not from reading each file in full. Some files may need no change.
 
 Files owned by this package (no other package edits them):
@@ -32,10 +32,10 @@ Files owned by this package (no other package edits them):
 1. **Seeder, structure.** Create `Domain` rows (`name`, `rounding_step`), then one `DomainLink` per parent → child edge. Create two `ApprenticeshipContext` rows per apprenticeship that has an MP variant (`is_mp` false / true), each with its `root_domain_id`.
 2. **Seeder, weights.** For each context, insert `DomainLinkWeight` rows for the links that apply to it. Weights are fractions (`decimal(3,2)`, 0.01 to 1): convert the current percentages (50 → 0.50). The EC table in `../adr/ADR.md` (lines 10 to 18) gives the standard and MP values.
 3. **Seeder, MP.** Replace the `variant` siblings by weights: a link that does not apply to a context simply has no weight row for it. Shared leaves (CIE, workplace) stay single domains linked once.
-4. **Seeder, subjects.** `Subject::create(['name' => …, 'domain_id' => $leaf->id])`; remove `SubjectCategory`.
+4. **Seeder, subjects.** Remove `SubjectCategory`. If the pivot is accepted (package 10, decision D2): `Subject::firstOrCreate(['name' => …])` then `$subject->domains()->attach($leaf->id)`, so a shared module exists once. If it is refused: `Subject::create(['name' => …, 'domain_id' => $leaf->id])`.
 5. **Cycle guard.** Add a method on `Domain` (file owned by package 1, so ask that owner) or a small service used by the seeder, for example `Domain::linkChild(Domain $child)`, that refuses a self-link and any edge closing a cycle. Port the walk from the old `EvaluationNode::addChild()` (see `git show main:app/Models/EvaluationNode.php`).
 6. **`GradebookTree`.** Start from `$user->apprenticeshipContext?->root_domain_id`. Load the links reachable from the root and the weights for that context in two queries, and keep only links that have a weight row for the context. Drop the `variant` filter and `is_mp` read.
-7. **Leaf and scope.** "Leaf" was `aggregation === null`; it is now "has no child link in this context". `period_scope` has no replacement in the schema: check `../../resources/js/lib/gradebook.ts` for what the front end needs before removing it from the payload, and raise it with the team if the page depends on it.
+7. **Leaf and scope.** "Leaf" was `aggregation === null`; it is now "has no child link in this context". `period_scope` has no replacement in the schema: check `../../resources/js/lib/gradebook.ts` for what the front end needs before removing it from the payload, and raise it with the team if the page depends on it. A replacement column would be a new migration: it is decision D6 of package 10, not something to add here.
 8. **Enums.** Delete the ones with no remaining use after the changes above (`grep -rn "PeriodScope\|EvaluationVariant\|AggregationType" app database tests`).
 9. **Test.** Rewrite `EvaluationTreeSeederTest` around the new shape: weights per context sum to 1 under each parent, both EC contexts exist with different weights, seeding twice is idempotent.
 
