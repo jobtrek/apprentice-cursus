@@ -7,12 +7,12 @@ use Illuminate\Database\Eloquent\Relations\Pivot;
 
 /**
  * @property int $apprenticeship_context_id
- * @property int $domain_node_id
+ * @property int $domain_link_id
  * @property string $weight Decimal cast: string at runtime.
  */
-class DomainEdge extends Pivot
+class DomainLinkWeight extends Pivot
 {
-    protected $table = 'domain_edges';
+    protected $table = 'domain_link_weights';
 
     public $incrementing = false;
 
@@ -33,9 +33,9 @@ class DomainEdge extends Pivot
         return $this->belongsTo(ApprenticeshipContext::class);
     }
 
-    /** @return BelongsTo<DomainNode, $this> */
-    public function domainNode(): BelongsTo
+    /** @return BelongsTo<DomainLink, $this> */
+    public function domainLink(): BelongsTo
     {
-        return $this->belongsTo(DomainNode::class);
+        return $this->belongsTo(DomainLink::class);
     }
 }
