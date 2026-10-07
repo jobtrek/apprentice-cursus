@@ -8,17 +8,17 @@ domains: {
   created_at: timestamp
 }
 
-domain_nodes: {
+domain_links: {
   shape: sql_table
   parent_id: bigint {constraint: [primary_key; foreign_key]}
   child_id: bigint {constraint: [primary_key; foreign_key]}
 }
 
-domain_edges: {
+domain_link_weights: {
   shape: sql_table
   apprenticeship_context_id: bigint {constraint: [primary_key; foreign_key]}
-  domain_node_id: bigint {constraint: [primary_key; foreign_key]}
-  weight: "decimal(5,2)"
+  domain_link_id: bigint {constraint: [primary_key; foreign_key]}
+  weight: "decimal(3,2)"
 }
 
 subjects: {
@@ -43,7 +43,7 @@ apprenticeships: {
   updated_at: timestamp
 }
 
-apprenticeship_context: {
+apprenticeship_contexts: {
   shape: sql_table
   id: bigint {constraint: primary_key}
   is_mp: boolean
@@ -191,27 +191,27 @@ role_has_permissions: {
 }
 
 
-apprenticeships -> apprenticeship_context: contexts {
+apprenticeships -> apprenticeship_contexts: contexts {
   source-arrowhead: {shape: cf-one-required}
   target-arrowhead: {shape: cf-many}
 }
 
-apprenticeship_context -> domain_edges: context {
+apprenticeship_contexts -> domain_link_weights: context {
   source-arrowhead: {shape: cf-one-required}
   target-arrowhead: {shape: cf-many}
 }
 
-domain_nodes -> domain_edges: domain {
+domain_links -> domain_link_weights: domain {
   source-arrowhead: {shape: cf-one-required}
   target-arrowhead: {shape: cf-many}
 }
 
-domains -> domain_nodes: parent {
+domains -> domain_links: parent {
   source-arrowhead: {shape: cf-one-required}
   target-arrowhead: {shape: cf-many}
 }
 
-domains -> domain_nodes: child {
+domains -> domain_links: child {
   source-arrowhead: {shape: cf-one-required}
   target-arrowhead: {shape: cf-many}
 }
@@ -276,7 +276,7 @@ skills -> project_skill: skills {
   target-arrowhead: {shape: cf-many}
 }
 
-apprenticeship_context -> users: context {
+apprenticeship_contexts -> users: context {
   source-arrowhead: {shape: cf-one-required}
   target-arrowhead: {shape: cf-many}
 }
@@ -301,7 +301,7 @@ domains -> grades: domains-grade {
   target-arrowhead: {shape: cf-many}
 }
 
-domains -> apprenticeship_context: root {
+domains -> apprenticeship_contexts: root {
   source-arrowhead: {shape: cf-one-required}
   target-arrowhead: {shape: cf-many}
 }
