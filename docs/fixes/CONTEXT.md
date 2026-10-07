@@ -6,10 +6,9 @@ This directory store a fixes plan, organized and stored to be read and splitted.
 
 Packages 1 and 4 have no migration left, and package 2 only repairs `down()` methods (see "Not movable to a new migration"). For the rest:
 
-1. **Decisions** D1 to D6, listed in `./10-remaining-migrations.md`.
-2. **Package 10**: the remaining migrations. Package 3 (model fixes) can run in parallel.
-3. **Package 5**, then **6**, then **7**: app code only.
-4. **Package 8**: docs, last. Package 9 keeps the reasons and the model changes of the subject ↔ domain pivot.
+1. **Decisions** D1 to D5 are taken and **package 10** is written (`./10-remaining-migrations.md`). Only D6 (`period_scope`) is open; package 6 answers it.
+2. **Package 5**, then **6**, then **7**: app code only.
+3. **Package 8**: docs, last. Package 9 keeps the reasons and the model changes of the subject ↔ domain pivot.
 
 # Migration grouping
 
@@ -31,16 +30,15 @@ Rule: when fixes need a migration, make as few migrations as possible. Before cr
 | `2026_10_07_190000_rename_apprentice_id_to_user_id_on_apprenticeship_periods_table` | column, foreign key and index rename | 4 |
 | `2026_10_07_200000_add_indexes_to_grades_table` | indexes on `grades.user_id`, `grades.subject_id`, `grades.apprenticeship_period_id` (G1, G2) | 4 |
 | `2026_10_07_210000_add_checks_to_apprenticeship_periods_table` | `semester BETWEEN 1 AND 8` + `end_date >= start_date` (G5) | 4 |
+| `2026_10_07_220000_index_context_and_drop_is_mp_on_users_table` | index on `users.apprenticeship_context_id` (G2) + drop of `users.is_mp` | 10 (from 5) |
+| `2026_10_07_230000_create_domain_subject_table` | `domain_subject` pivot + data copy + drop of `subjects.domain_id` + grade guard and its index on `grades` | 10 (from 9) |
 
 ## Remaining, grouped
 
-Every migration still to write is owned by package 10 (`./10-remaining-migrations.md`), with the decisions that gate each one. Packages 5 to 9 write no migration.
+No migration is planned at the moment. Two things could still add one, both tracked in package 10 (`./10-remaining-migrations.md`):
 
-| Planned migration | Fixes that go in it | Came from | Waits for |
-|---|---|---|---|
-| **U. `users`** | `apprenticeship_context_id` index (G2) + drop `is_mp` | 5 | Nothing for the index. D1 for the drop: it joins U only if decided before U is committed. |
-| **S. `domain_subject`** | create the pivot + copy data + drop `subjects.domain_id` + grade guard on `grades` at the end | 9 (+ 3, 4, 7) | D2, D3; D4 for the guard. Replaces package 3 fix 4. |
-| **R. Explicit delete rules** | `restrictOnDelete()` on three NO ACTION foreign keys | audit | D5. Takes `subjects.domain_id` too if D2 is refused. |
+- **D6 — a replacement for `period_scope`**, if the front end turns out to need it (package 6 fix 7).
+- **Explicit delete rules** on the three NO ACTION foreign keys: decided against (D5), listed here so it is not proposed again.
 
 ## Not movable to a new migration
 

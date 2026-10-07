@@ -21,38 +21,40 @@ Files owned by this package (no other package edits them):
 
 # Decisions to take first
 
-- [ ] **D1 — Where does MP live?** Drop `users.is_mp` or keep it. Recommendation: drop it, the context already carries it. Came from package 5; packages 6, 7 and 8 wait on it. Gates the `is_mp` part of migration U.
-- [ ] **D2 — Is the subject ↔ domain many-to-many accepted?** See `./9-subject-domain-many-to-many.md` for the reasons. Gates migration S.
-- [ ] **D3 — Delete rule on the pivot.** Recommendation: `cascadeOnDelete()` on both foreign keys. Gates migration S.
-- [ ] **D4 — Is the grade guard accepted?** Composite foreign key `grades (domain_id, subject_id)` → `domain_subject`. Recommendation: yes. Gates the last part of migration S.
-- [ ] **D5 — Should the NO ACTION foreign keys get an explicit rule?** NO ACTION already refuses the delete, so this only states the intent. Gates migration R.
+- [x] **D1 — Where does MP live?** **Decided (2026-10-07): drop `users.is_mp`.** Drop `users.is_mp` or keep it. Recommendation: drop it, the context already carries it. Came from package 5; packages 6, 7 and 8 wait on it. Gates the `is_mp` part of migration U.
+- [x] **D2 — Is the subject ↔ domain many-to-many accepted?** **Decided (2026-10-07): yes.** See `./9-subject-domain-many-to-many.md` for the reasons. Gates migration S.
+- [x] **D3 — Delete rule on the pivot.** **Decided (2026-10-07): cascade on both foreign keys.** Recommendation: `cascadeOnDelete()` on both foreign keys. Gates migration S.
+- [x] **D4 — Is the grade guard accepted?** **Decided (2026-10-07): yes.** Composite foreign key `grades (domain_id, subject_id)` → `domain_subject`. Recommendation: yes. Gates the last part of migration S.
+- [x] **D5 — Should the NO ACTION foreign keys get an explicit rule?** **Decided (2026-10-07): no, they stay NO ACTION; package 8 documents it.** NO ACTION already refuses the delete, so this only states the intent. Gates migration R.
 - [ ] **D6 — Does `period_scope` need a replacement column?** Raised by package 6 fix 7: the column was dropped from `domains` and the front end may still depend on it. If yes, it is one more migration, to plan here.
 - **No migration, listed for the order only:** how a grade picks its period (packages 4 and 7). It blocks package 7, not this package.
 
 # Migrations to write
 
-## U — `users` (index, and `is_mp` if D1 says drop)
+## U — `users`: done
 
-- [ ] `$table->index('apprenticeship_context_id');` (G2 of package 5). No decision needed: it can be written now.
-- [ ] `$table->dropColumn('is_mp');` if D1 says drop. `down()` restores it as `2026_09_09_070032` created it (`boolean`, nullable).
+`2026_10_07_220000_index_context_and_drop_is_mp_on_users_table`
 
-Both changes are on `users`, so they share one migration **if D1 is taken before U is committed**. Otherwise U lands with the index alone and the drop becomes a migration of its own.
+- [x] `$table->index('apprenticeship_context_id');` (G2 of package 5).
+- [x] `$table->dropColumn('is_mp');` (D1). `down()` restores the column as `2026_09_09_070032` created it (`boolean`, nullable), without its values.
 
-## S — `domain_subject` (needs D2, D3; D4 for the last step)
+## S — `domain_subject`: done
 
-One migration, in this order (details in package 9, fixes 1 and 2):
+`2026_10_07_230000_create_domain_subject_table` (details in package 9, fixes 1 and 2)
 
-- [ ] Create `domain_subject` (`domain_id`, `subject_id`, primary key on the pair, delete rule from D3) and `$table->index('subject_id')`.
-- [ ] Copy `subjects.domain_id` into `domain_subject`, then drop `subjects.domain_id` and `subjects_domain_id_index`.
-- [ ] If D4 is accepted, at the end: the composite foreign key `grades (domain_id, subject_id)` → `domain_subject (domain_id, subject_id)`, and `$table->index(['domain_id', 'subject_id'])` on `grades` so that removing a pivot row does not scan `grades`.
-- [ ] `down()` undoes the three steps in reverse. It only works while every subject has a single domain: say so in a comment.
+- [x] Create `domain_subject` (`domain_id`, `subject_id`, primary key on the pair, cascade on both foreign keys) and `$table->index('subject_id')`.
+- [x] Copy `subjects.domain_id` into `domain_subject`, then drop `subjects.domain_id` (its index goes with the column).
+- [x] Grade guard: composite foreign key `grades (domain_id, subject_id)` → `domain_subject (domain_id, subject_id)`, restrict, and an index on `grades (domain_id, subject_id)`.
+- [x] `down()` undoes the three steps in reverse. It only works while every subject has a single domain.
+- [x] `Subject::domains()` and `Domain::subjects()` are `BelongsToMany` (package 9, fixes 3 and 4), done with the migration because dropping the column broke the old relations.
 
 This replaces package 3 fix 4 (delete rule on `subjects.domain_id`): the column is dropped.
 
-## R — explicit delete rules (only if D5 says yes)
+`grades_domain_id_index` is now covered by the leading column of `grades_domain_id_subject_id_index`. It is kept; dropping it is optional.
 
-- [ ] `restrictOnDelete()` on `apprenticeship_contexts.apprenticeship_id`, `apprenticeship_contexts.root_domain_id` and `domain_link_weights.apprenticeship_context_id`.
-- [ ] If D2 is refused, `subjects.domain_id` joins this migration (package 3 fix 4).
+## R — explicit delete rules: not written (D5)
+
+`apprenticeship_contexts.apprenticeship_id`, `apprenticeship_contexts.root_domain_id` and `domain_link_weights.apprenticeship_context_id` stay NO ACTION, which already refuses the delete.
 
 # What the other packages do once these land
 

@@ -34,8 +34,8 @@ Files owned by this package (no other package edits them):
   - `UserSeeder.php` line 70, `DemoApprenticeSeeder.php` line 48
   - `../../tests/Pest.php` line 68 and about ten test files (`forceFill(['apprenticeship_id' => …])`)
 - [ ] **M3 — `User` has no `apprenticeship()` relation any more**, but `GradebookTree.php` (package 6) and `DemoGradeSeederTest.php` (package 7) call `$user->apprenticeship`.
-- [ ] **G2 — `users.apprenticeship_context_id` has no index.** The old `apprenticeship_id` index disappeared with the column; the new column never got one. **Moved to package 10 (migration U).**
-- [ ] **M6 — `users.is_mp` still exists but `User` does not declare it** (no docblock, no cast), while `HomeController.php` line 35 and `GradebookTree.php` line 29 still read it. **Waits for decision D1 of package 10:** if the column is dropped there, nothing is left to declare here.
+- [x] **G2 — `users.apprenticeship_context_id` has no index.** The old `apprenticeship_id` index disappeared with the column; the new column never got one. **Moved to package 10 (migration U).**
+- [x] **M6 — `users.is_mp` still exists but `User` does not declare it** (no docblock, no cast), while `HomeController.php` line 35 and `GradebookTree.php` line 29 still read it. **Closed by package 10:** the column is dropped by `2026_10_07_220000`. The two readers are fixed in packages 6 and 7.
 - [ ] **`../../tests/Pest.php` line 53** creates an `EvaluationNode`, a class that was deleted.
 
 # Fixes suggested

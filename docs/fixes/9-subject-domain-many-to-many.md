@@ -31,10 +31,10 @@ Today a subject belongs to exactly one domain: `subjects.domain_id` is a single 
 
 # Problems encountered
 
-- [ ] **The schema cannot express a shared subject.** `subjects.domain_id` is a single foreign key (`2026_10_01_144037`), with no pivot table between `subjects` and `domains`.
-- [ ] **The models are one-to-many.** `Subject::domain()` is a `belongsTo`, `Domain::subjects()` is a `hasMany`.
-- [ ] **`Subject` fillable contains `domain_id`**, which will no longer exist.
-- [ ] **A grade's domain can no longer be derived from its subject.** Once a subject has several domains, `grades.subject_id` alone does not say which domain the grade counts for. `grades.domain_id` becomes the only source for it, and nothing checks that the subject is really attached to that domain.
+- [x] **The schema cannot express a shared subject.** `subjects.domain_id` is a single foreign key (`2026_10_01_144037`), with no pivot table between `subjects` and `domains`.
+- [x] **The models are one-to-many.** `Subject::domain()` is a `belongsTo`, `Domain::subjects()` is a `hasMany`.
+- [x] **`Subject` fillable contains `domain_id`**, which will no longer exist.
+- [x] **A grade's domain can no longer be derived from its subject.** Once a subject has several domains, `grades.subject_id` alone does not say which domain the grade counts for. `grades.domain_id` becomes the only source for it, and nothing checks that the subject is really attached to that domain.
 - [ ] **Docs describe the one-to-many.** `../db/db.md` says subjects hang under leaf domains through `subjects.domain_id`; `./3-subjects.md` fixes 1 and 4 and its final check still rely on that column.
 
 # Fixes suggested
@@ -55,7 +55,7 @@ Today a subject belongs to exactly one domain: `subjects.domain_id` is a single 
 
 # Decisions to take before starting
 
-Tracked in `./10-remaining-migrations.md` as D2 (the many-to-many itself), D3 (delete rule) and D4 (grade guard).
+Decided on 2026-10-07 (D2, D3 and D4 in `./10-remaining-migrations.md`): the pivot is accepted, both recommendations below are followed, and `2026_10_07_230000_create_domain_subject_table` implements them.
 
 - **Delete rule on the pivot.** Recommendation: `cascadeOnDelete()` on both foreign keys. A pivot row has no meaning without both ends, and history stays protected because `grades.domain_id` and `grades.subject_id` are RESTRICT: a domain or a subject that has grades still cannot be deleted.
 - **Guard grades against invalid pairs.** Recommendation: add a composite foreign key `grades (domain_id, subject_id)` → `domain_subject (domain_id, subject_id)`, so a grade can only use a subject that is attached to that domain. It also stops a pivot row from being removed while grades use it. It is written at the end of migration S (package 10), together with an index on `grades (domain_id, subject_id)`.
