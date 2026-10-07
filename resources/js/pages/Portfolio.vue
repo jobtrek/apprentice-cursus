@@ -21,7 +21,6 @@ import {
     EmptyTitle,
 } from '@/components/ui/empty';
 import portfolio from '@/routes/portfolio';
-import AddActionButton from '@/components/AddActionButton.vue';
 import { PageContainer, PageHeader } from '@/components/page';
 import ProjectDialog from '@/components/portfolio/ProjectDialog.vue';
 import { useProjectDialog } from '@/composables/useProjectDialog';
@@ -115,11 +114,10 @@ function onHandleKeydown(event: KeyboardEvent, index: number): void {
                         Aperçu
                     </Link>
                 </Button>
-                <AddActionButton
-                    label="Nouveau projet"
-                    data-test="new-project-button"
-                    @click="openAddProject"
-                />
+                <Button data-test="new-project-button" @click="openAddProject">
+                    <PlusIcon aria-hidden="true" />
+                    Nouveau projet
+                </Button>
             </template>
         </PageHeader>
 

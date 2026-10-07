@@ -42,8 +42,9 @@ const isActive = computed(
             "
         >
             <slot name="icon" />
-            <!-- Libellé explicite : affiché dès le rendu serveur. -->
-            <SelectValue>{{ current }}</SelectValue>
+            <!-- Libellé explicite : affiché dès le rendu serveur. Collé à
+                 l'icône, le chevron reste à droite. -->
+            <SelectValue class="mr-auto">{{ current }}</SelectValue>
         </SelectTrigger>
         <SelectContent>
             <SelectItem

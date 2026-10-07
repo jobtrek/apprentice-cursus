@@ -93,7 +93,7 @@ const matchesSearch = (apprentice: ApprenticeListItem, query: string) =>
         value?.toLocaleLowerCase('fr').includes(query),
     );
 
-const matchesSituation = (
+export const matchesSituation = (
     { stats }: ApprenticeListItem,
     situation: SituationFilter,
 ): boolean => {

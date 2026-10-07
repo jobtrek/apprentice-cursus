@@ -2,16 +2,17 @@
 import { Head } from '@inertiajs/vue3';
 import {
     ArrowUpDownIcon,
-    ListFilterIcon,
+    SearchXIcon,
     UserPlusIcon,
     UsersIcon,
     XIcon,
 } from '@lucide/vue';
 import { computed, ref, toRef } from 'vue';
-import AddActionButton from '@/components/AddActionButton.vue';
+import ApprenticeCard from '@/components/apprentice/ApprenticeCard.vue';
 import ApprenticeDetailSheet from '@/components/apprentice/ApprenticeDetailSheet.vue';
 import ApprenticeRow from '@/components/apprentice/ApprenticeRow.vue';
 import AssignApprenticeDialog from '@/components/apprentice/AssignApprenticeDialog.vue';
+import SituationTiles from '@/components/apprentice/SituationTiles.vue';
 import DataTable from '@/components/DataTable.vue';
 import FilterSelect from '@/components/FilterSelect.vue';
 import { PageContainer, PageHeader } from '@/components/page';
@@ -94,8 +95,8 @@ const columns = [
     { key: 'average', label: 'Moyenne', class: 'text-right' },
     { key: 'lastGrade', label: 'Dernière note' },
     { key: 'coach', label: 'Coach' },
-    { key: 'trainer', label: 'Formateur', class: 'hidden lg:table-cell' },
-    { key: 'actions', label: 'Actions', class: 'w-px text-right' },
+    { key: 'trainer', label: 'Formateur' },
+    { key: 'actions', label: 'Actions', class: 'w-px', srOnly: true },
 ];
 </script>
 
@@ -108,11 +109,13 @@ const columns = [
             :description="summary"
         >
             <template v-if="can.assignSelfAs" #actions>
-                <AddActionButton
-                    label="Ajouter un apprenti"
+                <Button
                     data-test="assign-apprentice-button"
                     @click="assignOpen = true"
-                />
+                >
+                    <UserPlusIcon aria-hidden="true" />
+                    Ajouter un apprenti
+                </Button>
             </template>
         </PageHeader>
 
@@ -145,42 +148,34 @@ const columns = [
         </Empty>
 
         <template v-else>
-            <div class="flex flex-col gap-3">
-                <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
+            <SituationTiles
+                v-model="filters.situation"
+                :apprentices="apprentices"
+                :total-label="
+                    can.assignSelfAs ? 'Apprentis suivis' : 'Apprentis actifs'
+                "
+            />
+
+            <section
+                class="flex flex-col gap-4"
+                aria-label="Liste des apprentis"
+            >
+                <div
+                    class="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center"
+                    role="group"
+                    aria-label="Recherche et filtres"
+                >
                     <SearchInput
                         v-model="filters.search"
-                        placeholder="Rechercher un apprenti, un coach ou un formateur"
-                        class="sm:max-w-sm"
-                    />
-                    <FilterSelect
-                        v-model="filters.sort"
-                        :options="SORT_OPTIONS"
-                        label="Trier la liste"
-                        class="sm:ml-auto sm:w-56"
-                    >
-                        <template #icon>
-                            <ArrowUpDownIcon
-                                class="text-muted-foreground"
-                                aria-hidden="true"
-                            />
-                        </template>
-                    </FilterSelect>
-                </div>
-
-                <div
-                    class="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center"
-                    role="group"
-                    aria-label="Filtres"
-                >
-                    <ListFilterIcon
-                        class="text-muted-foreground hidden size-4 sm:block"
-                        aria-hidden="true"
+                        placeholder="Rechercher par nom"
+                        class="col-span-2 sm:w-64"
                     />
                     <TabFilter
                         v-if="hasTrackFilter"
                         v-model="filters.track"
                         :options="TRACK_FILTER_OPTIONS"
                         label="Filtrer par filière"
+                        class="col-span-2 sm:col-span-1"
                     />
                     <FilterSelect
                         v-model="filters.year"
@@ -208,49 +203,107 @@ const columns = [
                         label="Filtrer par suivi"
                     />
                 </div>
-            </div>
 
-            <p
-                v-if="isFiltered"
-                class="text-muted-foreground -mt-2 flex items-center gap-2 text-sm"
-                aria-live="polite"
-            >
-                {{ plural(results.length, 'résultat') }}
-                <template v-if="activeCount > 0">
-                    · {{ activeCount }} filtre{{
-                        activeCount > 1 ? 's actifs' : ' actif'
-                    }}
-                </template>
-                <Button
-                    variant="link"
-                    size="sm"
-                    class="h-auto px-0"
-                    @click="reset"
+                <div
+                    class="flex flex-wrap items-center justify-between gap-x-4 gap-y-2"
                 >
-                    <XIcon aria-hidden="true" />
-                    Effacer les filtres
-                </Button>
-            </p>
+                    <p
+                        class="text-muted-foreground flex flex-wrap items-center gap-x-2 text-sm"
+                        aria-live="polite"
+                    >
+                        <template v-if="isFiltered">
+                            <span>
+                                <span
+                                    class="text-foreground font-medium tabular-nums"
+                                >
+                                    {{ results.length }}
+                                </span>
+                                sur {{ plural(apprentices.length, 'apprenti') }}
+                                <template v-if="activeCount > 0">
+                                    · {{ activeCount }} filtre{{
+                                        activeCount > 1 ? 's actifs' : ' actif'
+                                    }}
+                                </template>
+                            </span>
+                            <Button
+                                variant="link"
+                                size="sm"
+                                class="h-auto px-0"
+                                @click="reset"
+                            >
+                                <XIcon aria-hidden="true" />
+                                Effacer les filtres
+                            </Button>
+                        </template>
+                        <template v-else>
+                            {{ plural(apprentices.length, 'apprenti') }}
+                        </template>
+                    </p>
 
-            <DataTable :columns="columns" :data="results">
-                <template #row="{ item }">
-                    <ApprenticeRow
-                        :apprentice="item"
-                        :coaches="can.manageSupervision ? coaches : null"
-                        :trainers="can.manageSupervision ? trainers : null"
-                        @preview="openPreview"
-                    />
-                </template>
+                    <FilterSelect
+                        v-model="filters.sort"
+                        :options="SORT_OPTIONS"
+                        label="Trier la liste"
+                        class="w-auto"
+                    >
+                        <template #icon>
+                            <ArrowUpDownIcon
+                                class="text-muted-foreground"
+                                aria-hidden="true"
+                            />
+                        </template>
+                    </FilterSelect>
+                </div>
 
-                <template #empty>
-                    <div class="flex flex-col items-center gap-2 py-4">
-                        <p>Aucun apprenti ne correspond à ces critères.</p>
+                <Empty v-if="results.length === 0" class="border">
+                    <EmptyHeader>
+                        <EmptyMedia variant="icon">
+                            <SearchXIcon />
+                        </EmptyMedia>
+                        <EmptyTitle>Aucun résultat</EmptyTitle>
+                        <EmptyDescription>
+                            Aucun apprenti ne correspond à ces critères.
+                        </EmptyDescription>
+                    </EmptyHeader>
+                    <EmptyContent>
                         <Button variant="outline" size="sm" @click="reset">
+                            <XIcon aria-hidden="true" />
                             Effacer les filtres
                         </Button>
+                    </EmptyContent>
+                </Empty>
+
+                <template v-else>
+                    <!-- Petits écrans : une carte par apprenti·e. -->
+                    <div class="grid gap-3 sm:grid-cols-2 lg:hidden">
+                        <ApprenticeCard
+                            v-for="apprentice in results"
+                            :key="apprentice.id"
+                            :apprentice="apprentice"
+                            @preview="openPreview"
+                        />
                     </div>
+
+                    <DataTable
+                        :columns="columns"
+                        :data="results"
+                        class="hidden lg:block"
+                    >
+                        <template #row="{ item }">
+                            <ApprenticeRow
+                                :apprentice="item"
+                                :coaches="
+                                    can.manageSupervision ? coaches : null
+                                "
+                                :trainers="
+                                    can.manageSupervision ? trainers : null
+                                "
+                                @preview="openPreview"
+                            />
+                        </template>
+                    </DataTable>
                 </template>
-            </DataTable>
+            </section>
         </template>
 
         <ApprenticeDetailSheet

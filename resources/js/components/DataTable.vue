@@ -9,7 +9,13 @@ import {
 } from '@/components/ui/table';
 
 defineProps<{
-    columns: { key: string; label: string; class?: string }[];
+    columns: {
+        key: string;
+        label: string;
+        class?: string;
+        /** Libellé lu par les lecteurs d'écran seulement (ex. « Actions »). */
+        srOnly?: boolean;
+    }[];
     data: T[];
     emptyMessage?: string;
 }>();
@@ -26,7 +32,9 @@ defineProps<{
                         :class="col.class"
                         class="text-muted-foreground"
                     >
-                        {{ col.label }}
+                        <span :class="{ 'sr-only': col.srOnly }">
+                            {{ col.label }}
+                        </span>
                     </TableHead>
                 </TableRow>
             </TableHeader>
