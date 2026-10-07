@@ -79,10 +79,27 @@ const trainerOptions = computed(
         </TableCell>
 
         <TableCell>
-            <Badge v-if="apprentice.track" variant="outline">
-                {{ apprentice.track }}
-            </Badge>
-            <span v-else class="text-muted-foreground">—</span>
+            <div class="flex items-center gap-1.5">
+                <Badge v-if="apprentice.track" variant="outline">
+                    {{ apprentice.track }}
+                </Badge>
+                <span v-else class="text-muted-foreground">—</span>
+                <Badge
+                    v-if="apprentice.isMp"
+                    variant="secondary"
+                    title="Maturité professionnelle"
+                >
+                    MP
+                </Badge>
+            </div>
+            <p
+                v-if="apprentice.year"
+                class="text-muted-foreground mt-1 text-xs"
+                title="Déduite du dernier semestre noté"
+            >
+                {{ apprentice.year === 1 ? '1re' : `${apprentice.year}e` }}
+                année
+            </p>
         </TableCell>
 
         <TableCell class="text-right tabular-nums">

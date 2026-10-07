@@ -1,12 +1,19 @@
 <script setup lang="ts">
 import { Head } from '@inertiajs/vue3';
-import { ArrowUpDownIcon, UserPlusIcon, UsersIcon, XIcon } from '@lucide/vue';
+import {
+    ArrowUpDownIcon,
+    ListFilterIcon,
+    UserPlusIcon,
+    UsersIcon,
+    XIcon,
+} from '@lucide/vue';
 import { computed, ref, toRef } from 'vue';
 import AddActionButton from '@/components/AddActionButton.vue';
 import ApprenticeDetailSheet from '@/components/apprentice/ApprenticeDetailSheet.vue';
 import ApprenticeRow from '@/components/apprentice/ApprenticeRow.vue';
 import AssignApprenticeDialog from '@/components/apprentice/AssignApprenticeDialog.vue';
 import DataTable from '@/components/DataTable.vue';
+import FilterSelect from '@/components/FilterSelect.vue';
 import { PageContainer, PageHeader } from '@/components/page';
 import SearchInput from '@/components/SearchInput.vue';
 import TabFilter from '@/components/TabFilter.vue';
@@ -20,15 +27,12 @@ import {
     EmptyTitle,
 } from '@/components/ui/empty';
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
-import {
+    SITUATION_OPTIONS,
     SORT_OPTIONS,
+    SUPERVISION_OPTIONS,
     useApprenticeFilters,
+    VARIANT_OPTIONS,
+    YEAR_OPTIONS,
 } from '@/composables/useApprenticeFilters';
 import { TRACK_FILTER_OPTIONS } from '@/constants/constants';
 import type {
@@ -57,7 +61,7 @@ const props = defineProps<{
     };
 }>();
 
-const { filters, results, hasTrackFilter, isFiltered, reset } =
+const { filters, results, hasTrackFilter, activeCount, isFiltered, reset } =
     useApprenticeFilters(toRef(props, 'apprentices'));
 
 const plural = (count: number, word: string): string =>
@@ -72,10 +76,6 @@ const summary = computed(() => {
         ? `${followed} · ${plural(available, 'disponible')} à ajouter`
         : followed;
 });
-
-const sortLabel = computed(
-    () => SORT_OPTIONS.find(({ value }) => value === filters.sort)?.label,
-);
 
 const assignOpen = ref(false);
 
@@ -145,42 +145,69 @@ const columns = [
         </Empty>
 
         <template v-else>
-            <div
-                class="flex flex-col gap-3 lg:flex-row lg:flex-wrap lg:items-center"
-            >
-                <SearchInput
-                    v-model="filters.search"
-                    placeholder="Rechercher un apprenti ou un coach"
-                    class="lg:max-w-xs"
-                />
-                <TabFilter
-                    v-if="hasTrackFilter"
-                    v-model="filters.track"
-                    :options="TRACK_FILTER_OPTIONS"
-                    label="Filtrer par filière"
-                />
-
-                <Select v-model="filters.sort">
-                    <SelectTrigger
-                        class="w-full lg:ml-auto lg:w-56"
-                        aria-label="Trier la liste"
+            <div class="flex flex-col gap-3">
+                <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
+                    <SearchInput
+                        v-model="filters.search"
+                        placeholder="Rechercher un apprenti, un coach ou un formateur"
+                        class="sm:max-w-sm"
+                    />
+                    <FilterSelect
+                        v-model="filters.sort"
+                        :options="SORT_OPTIONS"
+                        label="Trier la liste"
+                        class="sm:ml-auto sm:w-56"
                     >
-                        <ArrowUpDownIcon
-                            class="text-muted-foreground"
-                            aria-hidden="true"
-                        />
-                        <SelectValue>{{ sortLabel }}</SelectValue>
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem
-                            v-for="option in SORT_OPTIONS"
-                            :key="option.value"
-                            :value="option.value"
-                        >
-                            {{ option.label }}
-                        </SelectItem>
-                    </SelectContent>
-                </Select>
+                        <template #icon>
+                            <ArrowUpDownIcon
+                                class="text-muted-foreground"
+                                aria-hidden="true"
+                            />
+                        </template>
+                    </FilterSelect>
+                </div>
+
+                <div
+                    class="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center"
+                    role="group"
+                    aria-label="Filtres"
+                >
+                    <ListFilterIcon
+                        class="text-muted-foreground hidden size-4 sm:block"
+                        aria-hidden="true"
+                    />
+                    <TabFilter
+                        v-if="hasTrackFilter"
+                        v-model="filters.track"
+                        :options="TRACK_FILTER_OPTIONS"
+                        label="Filtrer par filière"
+                    />
+                    <FilterSelect
+                        v-model="filters.year"
+                        :options="YEAR_OPTIONS"
+                        neutral="all"
+                        label="Filtrer par année d'apprentissage"
+                    />
+                    <FilterSelect
+                        v-model="filters.variant"
+                        :options="VARIANT_OPTIONS"
+                        neutral="all"
+                        label="Filtrer par variante"
+                    />
+                    <FilterSelect
+                        v-model="filters.situation"
+                        :options="SITUATION_OPTIONS"
+                        neutral="all"
+                        label="Filtrer par situation"
+                    />
+                    <FilterSelect
+                        v-if="can.manageSupervision"
+                        v-model="filters.supervision"
+                        :options="SUPERVISION_OPTIONS"
+                        neutral="all"
+                        label="Filtrer par suivi"
+                    />
+                </div>
             </div>
 
             <p
@@ -189,6 +216,11 @@ const columns = [
                 aria-live="polite"
             >
                 {{ plural(results.length, 'résultat') }}
+                <template v-if="activeCount > 0">
+                    · {{ activeCount }} filtre{{
+                        activeCount > 1 ? 's actifs' : ' actif'
+                    }}
+                </template>
                 <Button
                     variant="link"
                     size="sm"

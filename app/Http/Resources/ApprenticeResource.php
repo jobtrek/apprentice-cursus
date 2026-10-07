@@ -33,9 +33,10 @@ class ApprenticeResource extends JsonResource
             'id' => $this->id,
             'name' => $this->name,
             'track' => $track,
-            // Derived from the grades once the grade calculation lands; null until then.
+            // Filled in by ApprenticeList from the latest semester graded; null elsewhere.
             'year' => null,
             'isActive' => $this->is_active,
+            'isMp' => (bool) $this->is_mp,
             'coach' => $this->coach?->name,
             'trainer' => $this->trainer?->name,
             // Let the local admin's selects show the current coach and trainer.

@@ -2,6 +2,7 @@ import modulesData from '@/data/modules.json';
 import MONTHS from '@/data/months.json';
 import mpSubjects from '@/data/mp.json';
 import normalSubjects from '@/data/normal.json';
+import { Temporal } from 'temporal-polyfill';
 import { computed, ref } from 'vue';
 import {
     ALLOWED_FILE_MIME_TYPE,
@@ -18,11 +19,13 @@ export type GradeMode = 'notes' | 'modules';
 type Subject = (typeof normalSubjects)[number];
 type ModuleEntry = (typeof modulesData)[number];
 
+/** Pré-remplie avec la date du jour : une note se saisit souvent le jour du test. */
 const useDateParts = () => {
-    const today = new Date();
-    const dateDay = ref(String(today.getDate()));
-    const dateMonth = ref(String(today.getMonth() + 1));
-    const dateYear = ref(String(today.getFullYear()));
+    const today = Temporal.Now.plainDateISO();
+    // Mêmes formats que les champs : mois sans zéro, comme dans months.json.
+    const dateDay = ref(String(today.day));
+    const dateMonth = ref(String(today.month));
+    const dateYear = ref(String(today.year));
 
     const isoDate = computed(() => {
         if (!dateDay.value || !dateMonth.value || !dateYear.value) return '';

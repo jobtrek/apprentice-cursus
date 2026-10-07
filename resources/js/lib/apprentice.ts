@@ -1,3 +1,4 @@
+import { Temporal } from 'temporal-polyfill';
 import { PASSING_GRADE } from '@/data/dashboard';
 
 export type AverageStatus = {
@@ -39,3 +40,14 @@ export const averageStatus = (average: number): AverageStatus => {
 /** `02.03.2026` → `2026-03-02`, comparable comme une chaîne. */
 export const sortableDate = (date: string): string =>
     date.split('.').reverse().join('-');
+
+/** Au-delà, un·e apprenti·e sans nouvelle note est signalé·e. */
+export const STALE_AFTER_DAYS = 90;
+
+/** Aucune note, ou la dernière date de plus de STALE_AFTER_DAYS jours. */
+export const hasNoRecentGrade = (lastGradeDate: string | null): boolean =>
+    lastGradeDate === null ||
+    sortableDate(lastGradeDate) <
+        Temporal.Now.plainDateISO()
+            .subtract({ days: STALE_AFTER_DAYS })
+            .toString();

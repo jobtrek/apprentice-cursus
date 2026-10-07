@@ -4,9 +4,14 @@ export interface Apprentice {
     name: string;
     /** « IT », « EC », ou null sans filière. */
     track: 'IT' | 'EC' | null;
-    /** Déduite des notes une fois le calcul en place ; null en attendant. */
+    /**
+     * Année d'apprentissage (1 à 4) déduite du dernier semestre noté, faute de
+     * date de début en base. Null sans note.
+     */
     year: number | null;
     isActive: boolean;
+    /** Variante maturité professionnelle (MP). */
+    isMp: boolean;
     /** Nom du coach, null sans coach. */
     coach: string | null;
     coachId: number | null;
