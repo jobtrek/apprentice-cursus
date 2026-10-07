@@ -21,7 +21,10 @@ return new class extends Migration
             $table->index('subject_id');
         });
 
-        DB::statement('INSERT INTO domain_subject (domain_id, subject_id) SELECT domain_id, id FROM subjects');
+        DB::table('domain_subject')->insertUsing(
+            ['domain_id', 'subject_id'],
+            DB::table('subjects')->select('domain_id', 'id'),
+        );
 
         Schema::table('subjects', function (Blueprint $table) {
             // Postgres drops subjects_domain_id_index along with the column.
@@ -57,8 +60,13 @@ return new class extends Migration
             $table->index('domain_id');
         });
 
-        DB::statement('UPDATE subjects SET domain_id = domain_subject.domain_id FROM domain_subject WHERE domain_subject.subject_id = subjects.id');
-        DB::statement('ALTER TABLE subjects ALTER COLUMN domain_id SET NOT NULL');
+        DB::table('subjects')
+            ->join('domain_subject', 'domain_subject.subject_id', '=', 'subjects.id')
+            ->updateFrom(['domain_id' => DB::raw('domain_subject.domain_id')]);
+
+        Schema::table('subjects', function (Blueprint $table) {
+            $table->unsignedBigInteger('domain_id')->nullable(false)->change();
+        });
 
         Schema::dropIfExists('domain_subject');
     }
