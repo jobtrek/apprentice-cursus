@@ -19,6 +19,8 @@ Files owned by this package (no other package edits them):
 Migrations added by this package:
 
 - `../../database/migrations/2026_10_07_190000_rename_apprentice_id_to_user_id_on_apprenticeship_periods_table.php`
+- `../../database/migrations/2026_10_07_200000_add_indexes_to_grades_table.php`
+- `../../database/migrations/2026_10_07_210000_add_checks_to_apprenticeship_periods_table.php`
 
 `../../app/Models/User.php` is owned by package 5, but two of its relations were aligned here with the `user_id` decision: `grades()` and `apprenticeshipPeriods()` no longer pass `'apprentice_id'` and let Laravel derive `user_id`.
 
@@ -26,12 +28,12 @@ Migrations added by this package:
 
 - [x] **Comment 4 — Period foreign key has two spellings.** The migration creates `apprenticeship_period_id`. `Grade` (docblock, fillable, `apprenticeshipPeriod()`) and `ApprenticeshipPeriod::grades()` use `apprenticeship_periods_id`.
 - [x] **M2 — `Grade` uses `apprentice_id`, the table has `user_id`.** No migration renames the column. Fillable, `Grade::apprentice()` and `User::grades()` query a missing column, while `ApprenticeList.php` lines 65 to 69 still use `user_id`.
-- [ ] **G1 — `grades` loses its apprentice index.** The original index is `(user_id, evaluation_node_id, semester)`. PostgreSQL drops the whole index when `semester` is dropped (line 21), so "all grades of apprentice X" and the `restrictOnDelete` check become sequential scans.
-- [ ] **G2 — New foreign keys are not indexed:** `grades.subject_id` and `grades.apprenticeship_period_id`.
-- [ ] **Comment 7 — Rollback allows invalid semesters.** `down()` line 33 restores `semester` without `grades_semester_check` (1 to 8).
-- [ ] **G6 — `down()` fails on a non-empty table** (`semester` NOT NULL, no default) and does not restore the composite index.
+- [x] **G1 — `grades` loses its apprentice index.** The original index is `(user_id, evaluation_node_id, semester)`. PostgreSQL drops the whole index when `semester` is dropped (line 21), so "all grades of apprentice X" and the `restrictOnDelete` check become sequential scans.
+- [x] **G2 — New foreign keys are not indexed:** `grades.subject_id` and `grades.apprenticeship_period_id`.
+- [x] **Comment 7 — Rollback allows invalid semesters.** `down()` line 33 restores `semester` without `grades_semester_check` (1 to 8).
+- [x] **G6 — `down()` fails on a non-empty table** (`semester` NOT NULL, no default) and does not restore the composite index.
 - [ ] **Comment 2 — Saved grades block the migration.** `subject_id` and `apprenticeship_period_id` are added NOT NULL with no backfill, so `up()` fails if `grades` has rows.
-- [ ] **G5 — `apprenticeship_periods` has no CHECK.** `semester` is unconstrained (the `.d2` says "check"; 1 to 8 was the rule on `grades`), and nothing enforces `end_date >= start_date`.
+- [x] **G5 — `apprenticeship_periods` has no CHECK.** `semester` is unconstrained (the `.d2` says "check"; 1 to 8 was the rule on `grades`), and nothing enforces `end_date >= start_date`.
 
 # Fixes suggested
 
@@ -53,7 +55,7 @@ Migrations added by this package:
 3. **G1 and G2.** In a new migration on `grades`, add (and drop them in its `down()`):
 
    ```php
-   $table->index(['user_id', 'apprenticeship_period_id']);
+   $table->index('user_id');
    $table->index('subject_id');
    $table->index('apprenticeship_period_id');
    ```
@@ -76,6 +78,8 @@ Fix 4 (Comment 7 and G6) is the only one that cannot be done in a new migration:
 
 - **Make an exception** and edit only the `down()` of `2026_10_07_140000`. Its `up()` is unchanged, so nobody has to re-run anything.
 - **Leave the rollback as it is** and document that rolling back `2026_10_07_140000` is not supported (lost semester check, fails on a non-empty table). Reply to the reviewer of Comment 7 with this reason.
+
+**Decided (2026-10-07): the exception is made**, as package 2 already did for its own `down()` repairs (commit `19f6997a`). Only the `down()` of `2026_10_07_140000` is edited: `semester` comes back with a temporary default of 1 (dropped right after, as the original column had none), then the composite index `(user_id, evaluation_node_id, semester)` and `grades_semester_check` are restored. `up()` is unchanged, so nobody has to re-run anything.
 
 # Open question (needs a team decision, not a code fix)
 

@@ -20,13 +20,14 @@ Rule: when fixes need a migration, make as few migrations as possible. Before cr
 | `2026_10_07_170000_cascade_domain_link_deletes` | cascade on three foreign keys (`domain_links` ×2, `domain_link_weights`) | 1 |
 | `2026_10_07_180000_add_weight_range_check_to_domain_link_weights_table` | weight CHECK + drop of the default | 1 |
 | `2026_10_07_190000_rename_apprentice_id_to_user_id_on_apprenticeship_periods_table` | column, foreign key and index rename | 4 |
+| `2026_10_07_200000_add_indexes_to_grades_table` | indexes on `grades.user_id`, `grades.subject_id`, `grades.apprenticeship_period_id` (G1, G2) | 4 |
+| `2026_10_07_210000_add_checks_to_apprenticeship_periods_table` | `semester BETWEEN 1 AND 8` + `end_date >= start_date` (G5) | 4 |
 
 ## Remaining, grouped
 
 | Planned migration | Fixes that go in it | Packages | Note |
 |---|---|---|---|
-| **A. Missing indexes** (`2026_10_07_200000_add_indexes_to_grades_table`, local, not committed yet) | `grades` indexes (G1, G2) **+** `users.apprenticeship_context_id` index (G2) | 4 + 5 | The `users` index fits here instead of a migration of its own, as long as `200000` is not committed. Rename the file if it covers both tables. |
-| **B. Checks on `apprenticeship_periods`** | `semester BETWEEN 1 AND 8` + `end_date >= start_date` (G5) | 4 | Two CHECKs, one migration. |
+| **A. Missing index on `users`** | `users.apprenticeship_context_id` index (G2) | 5 | Can join `2026_10_07_200000_add_indexes_to_grades_table` only while that file is not committed (rename it if it covers both tables); otherwise a migration of its own. |
 | **C. Subject ↔ domain many-to-many** | create `domain_subject` + copy data + drop `subjects.domain_id` | 9 (+ 3) | Makes package 3 fix 4 (delete rule on `subjects.domain_id`) pointless: the column is dropped. Do not write a migration for that fix if package 9 is accepted. |
 | **D. Grade guard** | composite foreign key `grades (domain_id, subject_id)` → `domain_subject` | 9 + 4 | Only if accepted. Must run after C, so it goes in the same migration as C, at the end, not in A. |
 | **E. Drop `users.is_mp`** | drop the column | 5 | Waits for the "where does MP live" decision. If it is decided before A is committed, it can not join A (different kind of change): it is a migration on `users` of its own. |
@@ -39,6 +40,6 @@ These repair the `down()` of an existing file, so they can only be done in that 
 |---|---|---|
 | `2026_10_07_090000_drop_subject_id_and_aggregation_from_domains_table` | Comment 1 and two G6 items | 2 |
 | `2026_10_07_100000_drop_evaluation_node_id_from_apprenticeships_table` | G6 (index not restored) | 2 |
-| `2026_10_07_140000_rework_grades_table` | Comment 7 and G6 | 4 |
+| `2026_10_07_140000_rework_grades_table` | Comment 7 and G6 (done) | 4 |
 
 Do them together, in one commit, if the exception to "migrations are not edited in place" is accepted.
