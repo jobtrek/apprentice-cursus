@@ -20,6 +20,7 @@ class Skill extends Model
 
     const UPDATED_AT = null;
 
+    /** @return BelongsToMany<Project, $this> */
     public function projects(): BelongsToMany
     {
         return $this->belongsToMany(Project::class, 'project_skill');

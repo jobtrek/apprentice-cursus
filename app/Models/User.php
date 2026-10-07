@@ -84,36 +84,43 @@ class User extends Authenticatable
         return $this->belongsTo(ApprenticeshipContext::class);
     }
 
+    /** @return BelongsTo<User, $this> */
     public function coach(): BelongsTo
     {
         return $this->belongsTo(self::class, 'coach_id');
     }
 
+    /** @return BelongsTo<User, $this> */
     public function trainer(): BelongsTo
     {
         return $this->belongsTo(self::class, 'trainer_id');
     }
 
+    /** @return HasMany<User, $this> */
     public function coachees(): HasMany
     {
         return $this->hasMany(self::class, 'coach_id');
     }
 
+    /** @return HasMany<User, $this> */
     public function trainees(): HasMany
     {
         return $this->hasMany(self::class, 'trainer_id');
     }
 
+    /** @return HasMany<ApprenticeshipPeriod, $this> */
     public function apprenticeshipPeriods(): HasMany
     {
         return $this->hasMany(ApprenticeshipPeriod::class, 'apprentice_id');
     }
 
+    /** @return HasMany<Grade, $this> */
     public function grades(): HasMany
     {
         return $this->hasMany(Grade::class, 'apprentice_id');
     }
 
+    /** @return HasMany<Comment, $this> */
     public function comments(): HasMany
     {
         return $this->hasMany(Comment::class, 'author_id');

@@ -76,6 +76,7 @@ class Grade extends Model
         return $this->belongsTo(ApprenticeshipPeriod::class, 'apprenticeship_periods_id');
     }
 
+    /** @return MorphMany<Comment, $this> */
     public function comments(): MorphMany
     {
         return $this->morphMany(Comment::class, 'commentable');

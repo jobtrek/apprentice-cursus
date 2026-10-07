@@ -17,6 +17,7 @@ class SubjectCategory extends Model
 
     public $timestamps = false;
 
+    /** @return HasMany<Subject, $this> */
     public function subjects(): HasMany
     {
         return $this->hasMany(Subject::class);

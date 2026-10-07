@@ -16,16 +16,19 @@ class Subject extends Model
 {
     const UPDATED_AT = null;
 
+    /** @return BelongsTo<SubjectCategory, $this> */
     public function subjectCategory(): BelongsTo
     {
         return $this->belongsTo(SubjectCategory::class);
     }
 
+    /** @return BelongsTo<Domain, $this> */
     public function domain(): BelongsTo
     {
         return $this->belongsTo(Domain::class);
     }
 
+    /** @return HasMany<Grade, $this> */
     public function grades(): HasMany
     {
         return $this->hasMany(Grade::class);
