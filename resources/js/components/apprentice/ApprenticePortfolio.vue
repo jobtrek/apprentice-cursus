@@ -27,6 +27,8 @@ const props = defineProps<{
 }>();
 
 const ALL = 'all';
+/** Préfixe les technologies (saisie libre) pour qu'aucune ne puisse valoir ALL. */
+const TECH = 'tech:';
 
 const search = ref('');
 const technology = ref(ALL);
@@ -43,7 +45,7 @@ const technologyOptions = computed(() => [
         ),
     ]
         .sort((a, b) => a.localeCompare(b, 'fr'))
-        .map((name) => ({ value: name, label: name })),
+        .map((name) => ({ value: TECH + name, label: name })),
 ]);
 
 const skillOptions = computed(() => {
@@ -72,11 +74,18 @@ const projects = computed(() => {
     return props.portfolio.projects.filter(
         (project) =>
             (query === '' ||
-                [project.title, project.organization, project.description].some(
-                    (text) => text?.toLocaleLowerCase('fr').includes(query),
+                [
+                    project.title,
+                    project.organization,
+                    project.responsibilities,
+                    project.description,
+                ].some((text) =>
+                    text?.toLocaleLowerCase('fr').includes(query),
                 )) &&
             (technology.value === ALL ||
-                project.technologies.includes(technology.value)) &&
+                project.technologies.includes(
+                    technology.value.slice(TECH.length),
+                )) &&
             (skill.value === ALL ||
                 project.skill_ids.includes(Number(skill.value))),
     );
