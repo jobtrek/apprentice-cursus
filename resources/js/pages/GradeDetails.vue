@@ -1,5 +1,6 @@
 <script lang="ts" setup>
 import { Button } from '@/components/ui/button';
+import StatusChip from '@/components/gradebook/StatusChip.vue';
 import { Card, CardContent } from '@/components/ui/card';
 import { FieldError } from '@/components/ui/field';
 import { Textarea } from '@/components/ui/textarea';
@@ -9,6 +10,7 @@ import {
     SectionHeader,
     StatItem,
 } from '@/components/page';
+import { PASSING_GRADE } from '@/data/dashboard';
 import { apprentisdashboard } from '@/routes';
 import apprentices from '@/routes/apprentices';
 import commentRoutes from '@/routes/comments';
@@ -16,7 +18,12 @@ import grades from '@/routes/grades';
 import type { Apprentice } from '@/types/apprentice';
 import type { Grade } from '@/types/grade';
 import { Head, useForm } from '@inertiajs/vue3';
-import { PencilIcon } from '@lucide/vue';
+import {
+    ExternalLinkIcon,
+    FileXIcon,
+    MessageSquareIcon,
+    PencilIcon,
+} from '@lucide/vue';
 import { computed, ref } from 'vue';
 
 type Comment = {
@@ -69,6 +76,13 @@ const breadcrumbs = computed(() =>
         : [{ label: 'Carnet de notes', href: grades.dashboard() }],
 );
 
+/** Domaine › sous-groupe de la note, ou sa matière à défaut. */
+const gradePath = computed(() =>
+    props.grade.path.length > 0
+        ? props.grade.path.join(' › ')
+        : props.grade.subject,
+);
+
 const submitComment = () => {
     if (!props.can.comment || !form.body.trim() || form.processing) return;
 
@@ -106,37 +120,56 @@ const submitEdit = (comment: Comment) => {
     <PageContainer>
         <PageHeader
             :title="grade.title"
-            :description="`${grade.subject} · Semestre ${grade.semester}`"
+            :description="gradePath"
             :breadcrumbs="breadcrumbs"
         />
 
         <Card>
             <CardContent class="grid grid-cols-2 gap-6 sm:grid-cols-3">
-                <StatItem label="Note">
-                    <p class="text-3xl font-semibold tabular-nums">
-                        {{ grade.value.toFixed(1) }}
-                    </p>
+                <StatItem label="Note" class="col-span-2 sm:col-span-1">
+                    <div class="flex items-center gap-3">
+                        <p
+                            class="text-3xl font-semibold tabular-nums"
+                            :class="{
+                                'text-destructive': grade.value < PASSING_GRADE,
+                            }"
+                        >
+                            {{ grade.value.toFixed(1) }}
+                        </p>
+                        <StatusChip :value="grade.value" />
+                    </div>
                 </StatItem>
                 <StatItem label="Date du test">
-                    {{ grade.date }}
+                    <span class="tabular-nums">{{ grade.date }}</span>
                 </StatItem>
-                <StatItem label="Matière">
-                    {{ grade.subject }}
+                <StatItem label="Semestre">
+                    Semestre {{ grade.semester }}
                 </StatItem>
             </CardContent>
         </Card>
 
-        <Card class="overflow-hidden py-0">
-            <div class="bg-muted flex h-[70vh] justify-center overflow-auto">
-                <p v-if="!pdfUrl" class="text-muted-foreground m-auto text-sm">
-                    Aucun document déposé.
-                </p>
-                <embed
-                    v-else
-                    :src="pdfUrl"
-                    type="application/pdf"
-                    class="size-full"
-                />
+        <Card class="gap-0 overflow-hidden py-0">
+            <div
+                class="flex items-center justify-between gap-4 border-b px-6 py-3"
+            >
+                <h2 class="font-semibold">Justificatif</h2>
+                <!-- Les navigateurs mobiles affichent mal un PDF intégré. -->
+                <Button v-if="pdfUrl" as-child variant="outline" size="sm">
+                    <a :href="pdfUrl" target="_blank" rel="noopener noreferrer">
+                        <ExternalLinkIcon aria-hidden="true" />
+                        Ouvrir le PDF
+                    </a>
+                </Button>
+            </div>
+            <div
+                v-if="!pdfUrl"
+                class="text-muted-foreground flex flex-col items-center gap-2 px-6 py-12 text-sm"
+            >
+                <FileXIcon class="size-6" aria-hidden="true" />
+                Aucun justificatif déposé pour cette note.
+            </div>
+            <div v-else class="bg-muted h-[70vh]">
+                <embed :src="pdfUrl" type="application/pdf" class="size-full" />
             </div>
         </Card>
 
@@ -230,9 +263,16 @@ const submitEdit = (comment: Comment) => {
                     </template>
                 </div>
             </div>
-            <p v-else class="text-muted-foreground text-sm">
-                Aucun commentaire pour le moment.
-            </p>
+            <div
+                v-else
+                class="text-muted-foreground flex flex-col items-center gap-2 rounded-xl border border-dashed px-6 py-8 text-center text-sm"
+            >
+                <MessageSquareIcon class="size-5" aria-hidden="true" />
+                <p>Aucun commentaire pour le moment.</p>
+                <p v-if="!can.comment" class="text-xs">
+                    Vos coachs et formateurs peuvent commenter cette note.
+                </p>
+            </div>
 
             <div v-if="can.comment" class="flex flex-col gap-2 pt-2">
                 <Textarea
@@ -255,7 +295,10 @@ const submitEdit = (comment: Comment) => {
                     </Button>
                 </div>
             </div>
-            <p v-else class="text-muted-foreground text-sm">
+            <p
+                v-else-if="comments.length"
+                class="text-muted-foreground text-xs"
+            >
                 Seuls les coachs et formateurs peuvent commenter cette
                 évaluation.
             </p>

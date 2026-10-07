@@ -7,6 +7,13 @@ defineProps<{
 </script>
 
 <template>
-    <Badge v-if="!value" variant="destructive">Non assigné</Badge>
+    <!-- Signalé sans alarmer : un superviseur manquant n'est pas une erreur. -->
+    <Badge
+        v-if="!value"
+        variant="outline"
+        class="text-muted-foreground border-dashed font-normal"
+    >
+        Non assigné
+    </Badge>
     <span v-else>{{ value }}</span>
 </template>

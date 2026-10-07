@@ -51,3 +51,7 @@ export const hasNoRecentGrade = (lastGradeDate: string | null): boolean =>
         Temporal.Now.plainDateISO()
             .subtract({ days: STALE_AFTER_DAYS })
             .toString();
+
+/** `1` → `1re année`, `3` → `3e année`. */
+export const yearLabel = (year: number): string =>
+    `${year === 1 ? '1re' : `${year}e`} année`;

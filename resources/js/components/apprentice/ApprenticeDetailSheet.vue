@@ -17,7 +17,7 @@ import {
 } from '@/components/ui/sheet';
 import { getInitials } from '@/composables/useInitials';
 import { PASSING_GRADE } from '@/data/dashboard';
-import { averageStatus } from '@/lib/apprentice';
+import { averageStatus, yearLabel } from '@/lib/apprentice';
 import apprentices from '@/routes/apprentices';
 import type { ApprenticeListItem } from '@/types/apprentice';
 import ApprenticeMetaRow from './ApprenticeMetaRow.vue';
@@ -53,6 +53,16 @@ const status = computed(() =>
                                 {{ apprentice.track }}
                             </Badge>
                             <template v-else>Sans filière</template>
+                            <Badge
+                                v-if="apprentice?.isMp"
+                                variant="secondary"
+                                title="Maturité professionnelle"
+                            >
+                                MP
+                            </Badge>
+                            <span v-if="apprentice?.year">
+                                · {{ yearLabel(apprentice.year) }}
+                            </span>
                         </SheetDescription>
                     </div>
                 </div>

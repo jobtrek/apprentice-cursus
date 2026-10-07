@@ -249,6 +249,14 @@
     samp {
         font-family: var(--font-mono);
     }
+
+    /*
+     * <FieldError :errors="[undefined]"> (vendorisé) rend une liste vide qui
+     * prend une ligne de gap sous chaque champ valide : on la masque.
+     */
+    [data-slot='field-error']:has(> ul:empty) {
+        display: none;
+    }
 }
 
 /*

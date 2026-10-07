@@ -7,6 +7,11 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { TableCell, TableRow } from '@/components/ui/table';
 import { getInitials } from '@/composables/useInitials';
+import {
+    hasNoRecentGrade,
+    STALE_AFTER_DAYS,
+    yearLabel,
+} from '@/lib/apprentice';
 import apprentices from '@/routes/apprentices';
 import type {
     ApprenticeListItem,
@@ -36,6 +41,13 @@ const profile = (tab?: 'grades' | 'portfolio') =>
 
 const openProfile = () => router.visit(profile());
 
+/** Des notes, mais aucune récente : « Aucune note » est signalé ailleurs. */
+const stale = computed(
+    () =>
+        props.apprentice.stats.grades_count > 0 &&
+        hasNoRecentGrade(props.apprentice.stats.last_grade_date),
+);
+
 /** Superviseur actuel au format des options du select. */
 const current = (
     id: number | null,
@@ -64,17 +76,35 @@ const trainerOptions = computed(
     >
         <TableCell>
             <div class="flex items-center gap-3">
-                <Avatar>
-                    <AvatarFallback class="text-xs">
+                <Avatar class="size-9">
+                    <AvatarFallback class="text-xs font-medium">
                         {{ getInitials(apprentice.name) }}
                     </AvatarFallback>
                 </Avatar>
-                <span class="font-medium group-hover:underline">
-                    {{ apprentice.name }}
-                </span>
-                <Badge v-if="!apprentice.isActive" variant="outline">
-                    Inactif
-                </Badge>
+                <div class="flex min-w-0 flex-col">
+                    <span
+                        class="flex items-center gap-2 font-medium group-hover:underline"
+                    >
+                        {{ apprentice.name }}
+                        <Badge v-if="!apprentice.isActive" variant="outline">
+                            Inactif
+                        </Badge>
+                    </span>
+                    <span
+                        class="text-muted-foreground text-xs"
+                        :title="
+                            apprentice.year
+                                ? 'Déduite du dernier semestre noté'
+                                : undefined
+                        "
+                    >
+                        {{
+                            apprentice.year
+                                ? yearLabel(apprentice.year)
+                                : 'Année inconnue'
+                        }}
+                    </span>
+                </div>
             </div>
         </TableCell>
 
@@ -92,14 +122,6 @@ const trainerOptions = computed(
                     MP
                 </Badge>
             </div>
-            <p
-                v-if="apprentice.year"
-                class="text-muted-foreground mt-1 text-xs"
-                title="Déduite du dernier semestre noté"
-            >
-                {{ apprentice.year === 1 ? '1re' : `${apprentice.year}e` }}
-                année
-            </p>
         </TableCell>
 
         <TableCell class="text-right tabular-nums">
@@ -108,7 +130,15 @@ const trainerOptions = computed(
         <TableCell class="text-right">
             <AverageValue :average="apprentice.stats.average" />
         </TableCell>
-        <TableCell class="text-muted-foreground tabular-nums">
+        <TableCell
+            class="tabular-nums"
+            :class="stale ? 'text-warning' : 'text-muted-foreground'"
+            :title="
+                stale
+                    ? `Aucune note depuis plus de ${STALE_AFTER_DAYS} jours`
+                    : undefined
+            "
+        >
             {{ apprentice.stats.last_grade_date ?? '—' }}
         </TableCell>
 
@@ -126,12 +156,7 @@ const trainerOptions = computed(
             <AssignmentBadge :value="apprentice.coach ?? undefined" />
         </TableCell>
 
-        <TableCell
-            v-if="trainerOptions"
-            class="hidden lg:table-cell"
-            @click.stop
-            @keydown.stop
-        >
+        <TableCell v-if="trainerOptions" @click.stop @keydown.stop>
             <SupervisorSelect
                 :current="current(apprentice.trainerId, apprentice.trainer)"
                 :options="trainerOptions"
@@ -141,12 +166,14 @@ const trainerOptions = computed(
                 :label="`Formateur de ${apprentice.name}`"
             />
         </TableCell>
-        <TableCell v-else class="hidden lg:table-cell">
+        <TableCell v-else>
             <AssignmentBadge :value="apprentice.trainer ?? undefined" />
         </TableCell>
 
         <TableCell @click.stop>
-            <div class="flex justify-end gap-1">
+            <div
+                class="flex justify-end gap-0.5 opacity-70 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100"
+            >
                 <Button
                     variant="ghost"
                     size="icon-sm"
