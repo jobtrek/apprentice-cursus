@@ -13,6 +13,7 @@ use App\Models\Skill;
 use App\Models\User;
 use App\Support\ApprenticeList;
 use App\Support\Demo\DemoGrade;
+use App\Support\Gradebook\GradebookTree;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -90,6 +91,8 @@ class ApprenticeController extends Controller
                     ->orderBy('id')
                     ->get(),
             )->resolve(),
+            // Same tree as the apprentice's own gradebook, so both see the same averages.
+            'tree' => GradebookTree::for($apprentice),
             'portfolio' => $portfolio,
         ]);
     }

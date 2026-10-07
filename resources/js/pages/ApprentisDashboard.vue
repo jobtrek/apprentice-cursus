@@ -88,16 +88,22 @@ const openPreview = (apprentice: ApprenticeListItem) => {
     sheetOpen.value = true;
 };
 
-const columns = [
-    { key: 'apprentice', label: 'Apprenti·e' },
-    { key: 'track', label: 'Filière' },
-    { key: 'gradesCount', label: 'Notes', class: 'text-right' },
-    { key: 'average', label: 'Moyenne', class: 'text-right' },
-    { key: 'lastGrade', label: 'Dernière note' },
-    { key: 'coach', label: 'Coach' },
-    { key: 'trainer', label: 'Formateur' },
-    { key: 'actions', label: 'Actions', class: 'w-px', srOnly: true },
-];
+/**
+ * Un coach ne voit que ses coachés, un formateur que ses apprentis : la colonne
+ * de son propre rôle répéterait son nom sur chaque ligne.
+ */
+const columns = computed(() =>
+    [
+        { key: 'apprentice', label: 'Apprenti·e' },
+        { key: 'track', label: 'Filière' },
+        { key: 'gradesCount', label: 'Notes', class: 'text-right' },
+        { key: 'average', label: 'Moyenne', class: 'text-right' },
+        { key: 'lastGrade', label: 'Dernière note' },
+        { key: 'coach', label: 'Coach' },
+        { key: 'trainer', label: 'Formateur' },
+        { key: 'actions', label: 'Actions', class: 'w-px', srOnly: true },
+    ].filter(({ key }) => key !== props.can.assignSelfAs),
+);
 </script>
 
 <template>
@@ -280,6 +286,7 @@ const columns = [
                             v-for="apprentice in results"
                             :key="apprentice.id"
                             :apprentice="apprentice"
+                            :own-role="can.assignSelfAs"
                             @preview="openPreview"
                         />
                     </div>
@@ -292,6 +299,7 @@ const columns = [
                         <template #row="{ item }">
                             <ApprenticeRow
                                 :apprentice="item"
+                                :own-role="can.assignSelfAs"
                                 :coaches="
                                     can.manageSupervision ? coaches : null
                                 "

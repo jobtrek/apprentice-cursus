@@ -15,6 +15,7 @@ import {
 import apprentices from '@/routes/apprentices';
 import type {
     ApprenticeListItem,
+    AssignSelfAs,
     SupervisorOption,
     TrainerOption,
 } from '@/types/apprentice';
@@ -27,6 +28,8 @@ const props = defineProps<{
     /** Admin local : coachs et formateurs proposés dans les cellules. Null sinon. */
     coaches: SupervisorOption[] | null;
     trainers: TrainerOption[] | null;
+    /** Rôle de l'utilisateur : sa colonne est masquée (toujours lui-même). */
+    ownRole?: AssignSelfAs | null;
 }>();
 
 defineEmits<{
@@ -142,33 +145,37 @@ const trainerOptions = computed(
             {{ apprentice.stats.last_grade_date ?? '—' }}
         </TableCell>
 
-        <TableCell v-if="coaches" @click.stop @keydown.stop>
-            <SupervisorSelect
-                :current="current(apprentice.coachId, apprentice.coach)"
-                :options="coaches"
-                :url="apprentices.coach.update.url(apprentice.id)"
-                field="coach_id"
-                none-label="Aucun coach"
-                :label="`Coach de ${apprentice.name}`"
-            />
-        </TableCell>
-        <TableCell v-else>
-            <AssignmentBadge :value="apprentice.coach ?? undefined" />
-        </TableCell>
+        <template v-if="ownRole !== 'coach'">
+            <TableCell v-if="coaches" @click.stop @keydown.stop>
+                <SupervisorSelect
+                    :current="current(apprentice.coachId, apprentice.coach)"
+                    :options="coaches"
+                    :url="apprentices.coach.update.url(apprentice.id)"
+                    field="coach_id"
+                    none-label="Aucun coach"
+                    :label="`Coach de ${apprentice.name}`"
+                />
+            </TableCell>
+            <TableCell v-else>
+                <AssignmentBadge :value="apprentice.coach ?? undefined" />
+            </TableCell>
+        </template>
 
-        <TableCell v-if="trainerOptions" @click.stop @keydown.stop>
-            <SupervisorSelect
-                :current="current(apprentice.trainerId, apprentice.trainer)"
-                :options="trainerOptions"
-                :url="apprentices.trainer.update.url(apprentice.id)"
-                field="trainer_id"
-                none-label="Aucun formateur"
-                :label="`Formateur de ${apprentice.name}`"
-            />
-        </TableCell>
-        <TableCell v-else>
-            <AssignmentBadge :value="apprentice.trainer ?? undefined" />
-        </TableCell>
+        <template v-if="ownRole !== 'trainer'">
+            <TableCell v-if="trainerOptions" @click.stop @keydown.stop>
+                <SupervisorSelect
+                    :current="current(apprentice.trainerId, apprentice.trainer)"
+                    :options="trainerOptions"
+                    :url="apprentices.trainer.update.url(apprentice.id)"
+                    field="trainer_id"
+                    none-label="Aucun formateur"
+                    :label="`Formateur de ${apprentice.name}`"
+                />
+            </TableCell>
+            <TableCell v-else>
+                <AssignmentBadge :value="apprentice.trainer ?? undefined" />
+            </TableCell>
+        </template>
 
         <TableCell @click.stop>
             <div

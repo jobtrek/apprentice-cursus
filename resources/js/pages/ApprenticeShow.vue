@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { Head, Link, usePage, useRemember } from '@inertiajs/vue3';
 import { BookOpenIcon, ChartLineIcon, FolderOpenIcon } from '@lucide/vue';
-import { reactive } from 'vue';
+import { computed, reactive } from 'vue';
 import ApprenticeMetaRow from '@/components/apprentice/ApprenticeMetaRow.vue';
 import ApprenticeOverview from '@/components/apprentice/ApprenticeOverview.vue';
 import ApprenticePortfolio from '@/components/apprentice/ApprenticePortfolio.vue';
-import GradeBook from '@/components/gradeList/GradeBook.vue';
+import GradebookSummary from '@/components/gradebook/GradebookSummary.vue';
+import GradeList from '@/components/gradebook/GradeList.vue';
 import { PageContainer } from '@/components/page';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import {
@@ -20,6 +21,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { getInitials } from '@/composables/useInitials';
+import { createGradebook, type GradeTree } from '@/lib/gradebook';
 import { apprentisdashboard } from '@/routes';
 import apprentices from '@/routes/apprentices';
 import type { Apprentice } from '@/types/apprentice';
@@ -32,7 +34,14 @@ const props = defineProps<{
     grades: Grade[];
     /** Null quand l'utilisateur n'a pas le droit de voir le portfolio. */
     portfolio: SupervisedPortfolio | null;
+    /** Arbre d'évaluation de l'apprenti·e ; null sans filière. */
+    tree: GradeTree | null;
 }>();
+
+/** Même calcul que le carnet de l'apprenti·e : moyennes pondérées du CFC. */
+const gradebook = computed(() =>
+    props.tree ? createGradebook(props.tree, props.grades) : null,
+);
 
 const gradeHref = (grade: Grade) =>
     apprentices.grades.show({
@@ -126,7 +135,8 @@ function selectTab(tab: string | number): void {
             class="gap-6"
             @update:model-value="selectTab"
         >
-            <TabsList>
+            <!-- Pleine largeur sur mobile, icônes masquées : les trois onglets tiennent. -->
+            <TabsList class="w-full sm:w-fit [&_svg]:max-sm:hidden">
                 <TabsTrigger value="overview" data-test="profile-tab-overview">
                     <ChartLineIcon aria-hidden="true" />
                     Vue d'ensemble
@@ -149,11 +159,26 @@ function selectTab(tab: string | number): void {
             </TabsList>
 
             <TabsContent value="overview" class="flex flex-col gap-6">
-                <ApprenticeOverview :grades="grades" :grade-href="gradeHref" />
+                <ApprenticeOverview
+                    :grades="grades"
+                    :gradebook="gradebook"
+                    :grade-href="gradeHref"
+                />
             </TabsContent>
 
             <TabsContent value="grades" class="flex flex-col gap-6">
-                <GradeBook :grades="grades" :grade-href="gradeHref" />
+                <template v-if="gradebook">
+                    <GradebookSummary :gradebook="gradebook" />
+                    <GradeList
+                        :gradebook="gradebook"
+                        :grades="grades"
+                        :grade-href="gradeHref"
+                    />
+                </template>
+                <p v-else class="text-muted-foreground text-sm">
+                    Aucune filière n'est encore attribuée à cet apprenti : le
+                    carnet apparaîtra dès qu'elle le sera.
+                </p>
             </TabsContent>
 
             <TabsContent

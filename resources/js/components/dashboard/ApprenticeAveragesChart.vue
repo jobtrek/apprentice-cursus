@@ -5,7 +5,7 @@ import {
     VisPlotline,
     VisXYContainer,
 } from '@unovis/vue';
-import { useMounted } from '@vueuse/core';
+import { useMediaQuery, useMounted } from '@vueuse/core';
 import {
     ChartContainer,
     ChartCrosshair,
@@ -14,6 +14,7 @@ import {
     componentToString,
     type ChartConfig,
 } from '@/components/ui/chart';
+import { getInitials } from '@/composables/useInitials';
 import { PASSING_GRADE } from '@/data/dashboard';
 
 export interface ApprenticeAverage {
@@ -37,8 +38,14 @@ const y = [(d: ApprenticeAverage) => d.average];
 const nameAt = (position: number | Date) =>
     props.data.find((d) => d.position === position)?.name ?? '';
 
-/** Prénom sous la barre : le nom complet est dans l'infobulle. */
-const tickLabel = (position: number | Date) => nameAt(position).split(/\s+/)[0];
+/** Assez de place pour un prénom sous chaque barre ? Sinon, les initiales. */
+const wide = useMediaQuery('(min-width: 640px)');
+
+/** Prénom (ou initiales sur petit écran) : le nom complet est dans l'infobulle. */
+const tickLabel = (position: number | Date) =>
+    wide.value
+        ? nameAt(position).split(/\s+/)[0]
+        : getInitials(nameAt(position));
 
 // Unovis dessine dans le DOM : rien à rendre côté serveur (SSR).
 const isMounted = useMounted();
@@ -55,6 +62,7 @@ const isMounted = useMounted();
             <VisXYContainer
                 :data="data"
                 :y-domain="[0, 6]"
+                :x-domain="[0.5, data.length + 0.5]"
                 :margin="{ top: 8, right: 16 }"
             >
                 <VisGroupedBar

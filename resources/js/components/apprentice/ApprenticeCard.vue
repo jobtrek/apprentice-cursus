@@ -9,12 +9,14 @@ import { Button } from '@/components/ui/button';
 import { getInitials } from '@/composables/useInitials';
 import { hasNoRecentGrade, yearLabel } from '@/lib/apprentice';
 import apprentices from '@/routes/apprentices';
-import type { ApprenticeListItem } from '@/types/apprentice';
+import type { ApprenticeListItem, AssignSelfAs } from '@/types/apprentice';
 import AssignmentBadge from './AssignmentBadge.vue';
 import AverageValue from './AverageValue.vue';
 
 const props = defineProps<{
     apprentice: ApprenticeListItem;
+    /** Rôle de l'utilisateur : ce superviseur-là est toujours lui-même. */
+    ownRole?: AssignSelfAs | null;
 }>();
 
 defineEmits<{
@@ -98,10 +100,10 @@ const stale = computed(
                     {{ apprentice.stats.last_grade_date ?? '—' }}
                 </span>
             </StatItem>
-            <StatItem label="Coach">
+            <StatItem v-if="ownRole !== 'coach'" label="Coach">
                 <AssignmentBadge :value="apprentice.coach ?? undefined" />
             </StatItem>
-            <StatItem label="Formateur">
+            <StatItem v-if="ownRole !== 'trainer'" label="Formateur">
                 <AssignmentBadge :value="apprentice.trainer ?? undefined" />
             </StatItem>
         </div>

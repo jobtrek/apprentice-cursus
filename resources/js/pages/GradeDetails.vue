@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import StatusChip from '@/components/gradebook/StatusChip.vue';
 import { Card, CardContent } from '@/components/ui/card';
@@ -10,6 +11,7 @@ import {
     SectionHeader,
     StatItem,
 } from '@/components/page';
+import { getInitials } from '@/composables/useInitials';
 import { PASSING_GRADE } from '@/data/dashboard';
 import { apprentisdashboard } from '@/routes';
 import apprentices from '@/routes/apprentices';
@@ -17,12 +19,13 @@ import commentRoutes from '@/routes/comments';
 import grades from '@/routes/grades';
 import type { Apprentice } from '@/types/apprentice';
 import type { Grade } from '@/types/grade';
-import { Head, useForm } from '@inertiajs/vue3';
+import { Head, useForm, usePage } from '@inertiajs/vue3';
 import {
     ExternalLinkIcon,
     FileXIcon,
     MessageSquareIcon,
     PencilIcon,
+    SendIcon,
 } from '@lucide/vue';
 import { computed, ref } from 'vue';
 
@@ -47,6 +50,8 @@ const props = defineProps<{
     /** Décisions d'autorisation calculées côté serveur. */
     can: { comment: boolean };
 }>();
+
+const page = usePage();
 
 const form = useForm({ body: '' });
 const editForm = useForm({ body: '' });
@@ -174,7 +179,14 @@ const submitEdit = (comment: Comment) => {
         </Card>
 
         <section class="flex flex-col gap-4">
-            <SectionHeader title="Commentaires" />
+            <SectionHeader
+                title="Commentaires"
+                :description="
+                    can.comment && !comments.length
+                        ? 'Aucun commentaire pour le moment.'
+                        : undefined
+                "
+            />
 
             <div v-if="comments.length" class="relative flex flex-col">
                 <div class="bg-border absolute inset-y-2 left-[5px] w-px" />
@@ -263,36 +275,57 @@ const submitEdit = (comment: Comment) => {
                     </template>
                 </div>
             </div>
+            <!-- Apprenti·e : rien à écrire ici, on explique qui peut commenter. -->
             <div
-                v-else
+                v-else-if="!can.comment"
                 class="text-muted-foreground flex flex-col items-center gap-2 rounded-xl border border-dashed px-6 py-8 text-center text-sm"
             >
                 <MessageSquareIcon class="size-5" aria-hidden="true" />
                 <p>Aucun commentaire pour le moment.</p>
-                <p v-if="!can.comment" class="text-xs">
+                <p class="text-xs">
                     Vos coachs et formateurs peuvent commenter cette note.
                 </p>
             </div>
 
-            <div v-if="can.comment" class="flex flex-col gap-2 pt-2">
-                <Textarea
-                    v-model="form.body"
-                    placeholder="Écrire un commentaire…"
-                    maxlength="2000"
-                    class="min-h-20 resize-none"
-                    @keydown.meta.enter="submitComment"
-                    @keydown.ctrl.enter="submitComment"
-                    @keydown.enter.exact.prevent="submitComment"
-                />
-                <FieldError :errors="[form.errors.body]" />
-                <div class="flex justify-end">
-                    <Button
-                        size="sm"
-                        :disabled="!form.body.trim() || form.processing"
-                        @click="submitComment"
-                    >
-                        Publier
-                    </Button>
+            <!-- Coach ou formateur : zone de saisie avec ses initiales. -->
+            <div
+                v-if="can.comment"
+                class="bg-card focus-within:ring-ring/50 flex gap-3 rounded-xl border p-4 shadow-xs focus-within:ring-[3px]"
+            >
+                <Avatar class="size-8">
+                    <AvatarFallback class="text-xs font-medium">
+                        {{ getInitials(page.props.auth.user.name) }}
+                    </AvatarFallback>
+                </Avatar>
+                <div class="flex min-w-0 flex-1 flex-col gap-2">
+                    <Textarea
+                        v-model="form.body"
+                        :placeholder="`Laisser un retour à ${apprentice?.name ?? 'l’apprenti·e'}…`"
+                        aria-label="Nouveau commentaire"
+                        maxlength="2000"
+                        class="min-h-16 resize-none border-0 p-0 shadow-none focus-visible:ring-0 dark:bg-transparent"
+                        @keydown.meta.enter="submitComment"
+                        @keydown.ctrl.enter="submitComment"
+                        @keydown.enter.exact.prevent="submitComment"
+                    />
+                    <FieldError :errors="[form.errors.body]" />
+                    <div class="flex items-center justify-between gap-3">
+                        <p
+                            class="text-muted-foreground hidden text-xs sm:block"
+                        >
+                            Entrée pour publier · Maj + Entrée pour aller à la
+                            ligne
+                        </p>
+                        <Button
+                            size="sm"
+                            class="ml-auto"
+                            :disabled="!form.body.trim() || form.processing"
+                            @click="submitComment"
+                        >
+                            <SendIcon aria-hidden="true" />
+                            Publier
+                        </Button>
+                    </div>
                 </div>
             </div>
             <p

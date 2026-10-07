@@ -97,3 +97,22 @@ test('the dashboard query count does not depend on the number of grades', functi
 
     expect($countQueries())->toBe($single);
 });
+
+test('the coach profile gets the same evaluation tree as the apprentice gradebook', function () {
+    $coach = User::factory()->coach()->create();
+    $this->apprentice->forceFill([
+        'apprenticeship_id' => Apprenticeship::query()->where('name', ApprenticeshipSeeder::IT)->sole()->id,
+        'coach_id' => $coach->id,
+    ])->save();
+
+    $own = null;
+    $this->actingAs($this->apprentice)->get(route('grades.dashboard'))
+        ->assertInertia(function (Assert $page) use (&$own) {
+            $own = $page->toArray()['props']['tree'];
+        });
+
+    $this->actingAs($coach)->get(route('apprentices.show', $this->apprentice))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('tree.root', $this->itRoot->id)
+            ->where('tree', $own));
+});

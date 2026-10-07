@@ -6,10 +6,16 @@ import SearchInput from '@/components/SearchInput.vue';
 import { PASSING_GRADE } from '@/data/dashboard';
 import { fmt, fmtWeight, type Gradebook, plural } from '@/lib/gradebook';
 import type { Grade } from '@/types/grade';
+import type { RouteDefinition } from '@/wayfinder';
 import GradeTable from './GradeTable.vue';
 import Segmented from './Segmented.vue';
 
-const props = defineProps<{ gradebook: Gradebook; grades: Grade[] }>();
+const props = defineProps<{
+    gradebook: Gradebook;
+    grades: Grade[];
+    /** Page d'une note ; par défaut celle de l'apprenti·e. */
+    gradeHref?: (grade: Grade) => RouteDefinition<'get'>;
+}>();
 
 /** Toutes les notes, celles sous le seuil, ou celles qui ont des commentaires. */
 type ResultFilter = 'all' | 'insufficient' | 'commented';
@@ -238,18 +244,21 @@ function onToggle(id: number, event: Event): void {
                                             </span>
                                         </h4>
                                         <GradeTable
+                                            :grade-href="gradeHref"
                                             :grades="sub.visible"
                                             :parent="sub.name"
                                         />
                                     </template>
                                 </template>
                                 <GradeTable
+                                    :grade-href="gradeHref"
                                     v-if="group.rest.length"
                                     :grades="group.rest"
                                     :parent="group.name"
                                 />
                             </template>
                             <GradeTable
+                                :grade-href="gradeHref"
                                 v-else
                                 :grades="group.visible"
                                 :parent="group.name"

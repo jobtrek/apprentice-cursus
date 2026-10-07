@@ -5,12 +5,15 @@ import { computed } from 'vue';
 import { byDateDesc, fmt, PASS } from '@/lib/gradebook';
 import gradeRoutes from '@/routes/grades';
 import type { Grade } from '@/types/grade';
+import type { RouteDefinition } from '@/wayfinder';
 import CommentCount from './CommentCount.vue';
 
 const props = defineProps<{
     grades: Grade[];
     /** Domaine ou sous-groupe affiché : une catégorie identique n'apporte rien. */
     parent?: string;
+    /** Page d'une note ; par défaut celle de l'apprenti·e. Le coach passe la sienne. */
+    gradeHref?: (grade: Grade) => RouteDefinition<'get'>;
 }>();
 
 /** Catégorie masquée quand elle répète le nom du groupe pour toutes les notes. */
@@ -20,7 +23,8 @@ const showCategory = computed(() =>
 
 const sorted = computed(() => [...props.grades].sort(byDateDesc));
 
-const open = (grade: Grade) => router.visit(gradeRoutes.show(grade.id));
+const open = (grade: Grade) =>
+    router.visit(props.gradeHref?.(grade) ?? gradeRoutes.show(grade.id));
 </script>
 
 <template>

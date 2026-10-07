@@ -2,6 +2,7 @@
 import { Link } from '@inertiajs/vue3';
 import {
     ChevronRightIcon,
+    CircleCheckIcon,
     FileTextIcon,
     GraduationCapIcon,
     TrendingDownIcon,
@@ -24,13 +25,16 @@ import {
     type ProgressPeriod,
     type ProgressPoint,
 } from '@/data/dashboard';
-import { DOMAIN_GRADES, gradeTables, type DomainGrade } from '@/data/gradebook';
+import type { DomainGrade } from '@/data/gradebook';
+import { fmtWeight, type Gradebook } from '@/lib/gradebook';
 import type { Grade } from '@/types/grade';
 import type { RouteDefinition } from '@/wayfinder';
 
 const props = defineProps<{
     /** Notes de l'apprenti·e, de la plus ancienne à la plus récente. */
     grades: Grade[];
+    /** Arbre de l'apprenti·e ; null sans filière (pas de domaines affichés). */
+    gradebook: Gradebook | null;
     gradeHref: (grade: Grade) => RouteDefinition<'get'>;
 }>();
 
@@ -47,7 +51,23 @@ const mean = (grades: Grade[]): number | null =>
           ) / 10
         : null;
 
-const average = computed(() => mean(props.grades));
+/**
+ * Note finale CFC provisoire, la même que dans le carnet ; à défaut d'arbre
+ * (apprenti·e sans filière), la moyenne simple des notes.
+ */
+const final = computed(() =>
+    props.gradebook
+        ? props.gradebook.nodeValue(props.gradebook.root)
+        : mean(props.grades),
+);
+
+/** Domaines pas encore notés : la note finale est alors provisoire. */
+const pending = computed(
+    () =>
+        props.gradebook?.domains.filter(
+            (id) => props.gradebook?.nodeValue(id) === null,
+        ).length ?? 0,
+);
 
 const SEMESTER_PERIODS: ProgressPeriod[] = Array.from(
     { length: 8 },
@@ -78,25 +98,31 @@ const trend = computed(() => {
         : null;
 });
 
-/** Moyenne de chaque domaine noté, avec son poids dans le CFC. */
-const domains = computed<DomainGrade[]>(() =>
-    gradeTables(props.grades).flatMap((menu) => {
-        const value = mean(menu.grades);
+/**
+ * Moyenne pondérée de chaque domaine noté et son poids dans le CFC, tirés de
+ * l'arbre d'évaluation : les mêmes chiffres que dans le carnet de notes.
+ */
+const domains = computed<DomainGrade[]>(() => {
+    const book = props.gradebook;
+
+    if (!book) {
+        return [];
+    }
+
+    return book.domains.flatMap((id) => {
+        const value = book.nodeValue(id);
 
         return value === null
             ? []
             : [
                   {
-                      title: menu.title,
-                      weight:
-                          DOMAIN_GRADES.find(
-                              (domain) => domain.title === menu.title,
-                          )?.weight ?? '',
+                      title: book.name(id),
+                      weight: `${fmtWeight(book.weightOf(book.root, id))} %`,
                       grade: value,
                   },
               ];
-    }),
-);
+    });
+});
 
 const insufficient = computed(() =>
     props.grades.filter((grade) => grade.value < PASSING_GRADE),
@@ -107,18 +133,16 @@ const recentGrades = computed(() => props.grades.slice(-5).reverse());
 
 <template>
     <section
-        class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4"
+        class="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4"
         aria-label="Indicateurs"
     >
         <StatTile
-            label="Moyenne des notes"
-            :value="average !== null ? average.toFixed(1) : '—'"
+            :label="gradebook ? 'Note finale CFC' : 'Moyenne des notes'"
+            :value="final !== null ? final.toFixed(1) : '—'"
             :hint="
-                average === null
+                final === null
                     ? 'Aucune note pour l’instant'
-                    : average < PASSING_GRADE
-                      ? 'Insuffisante'
-                      : 'Suffisante'
+                    : `${final < PASSING_GRADE ? 'Insuffisante' : 'Suffisante'}${pending > 0 ? ' · provisoire' : ''}`
             "
             :icon="GraduationCapIcon"
         />
@@ -220,9 +244,24 @@ const recentGrades = computed(() => props.grades.slice(-5).reverse());
                         </Link>
                     </li>
                 </ul>
-                <p v-else class="text-muted-foreground text-sm">
-                    Aucune note insuffisante.
-                </p>
+                <div
+                    v-else
+                    class="flex items-center gap-3 rounded-lg border border-dashed p-4"
+                >
+                    <CircleCheckIcon
+                        class="text-success size-5 shrink-0"
+                        aria-hidden="true"
+                    />
+                    <div class="flex flex-col">
+                        <p class="text-sm font-medium">
+                            Aucune note insuffisante
+                        </p>
+                        <p class="text-muted-foreground text-xs">
+                            Toutes les notes sont au moins à
+                            {{ PASSING_GRADE.toFixed(1) }}.
+                        </p>
+                    </div>
+                </div>
             </CardContent>
         </Card>
 
