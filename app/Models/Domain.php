@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 /**
  * @property int $id
  * @property string $name
- * @property string $rounding_step Decimal cast: string at runtime.
+ * @property string|null $rounding_step Decimal cast: string at runtime.
  */
 #[Fillable(['name', 'rounding_step'])]
 class Domain extends Model
@@ -24,30 +24,28 @@ class Domain extends Model
         ];
     }
 
-    /** @return BelongsToMany<Domain, $this, DomainNode, 'pivot'> */
+    /** @return BelongsToMany<Domain, $this> */
     public function children(): BelongsToMany
     {
-        return $this->belongsToMany(self::class, 'domain_nodes', 'parent_id', 'child_id')
-            ->using(DomainNode::class);
+        return $this->belongsToMany(self::class, 'domain_links', 'parent_id', 'child_id');
     }
 
-    /** @return BelongsToMany<Domain, $this, DomainNode, 'pivot'> */
+    /** @return BelongsToMany<Domain, $this> */
     public function parents(): BelongsToMany
     {
-        return $this->belongsToMany(self::class, 'domain_nodes', 'child_id', 'parent_id')
-            ->using(DomainNode::class);
+        return $this->belongsToMany(self::class, 'domain_links', 'child_id', 'parent_id');
     }
 
-    /** @return HasMany<DomainNode, $this> */
-    public function childNodes(): HasMany
+    /** @return HasMany<DomainLink, $this> */
+    public function childLinks(): HasMany
     {
-        return $this->hasMany(DomainNode::class, 'parent_id');
+        return $this->hasMany(DomainLink::class, 'parent_id');
     }
 
-    /** @return HasMany<DomainNode, $this> */
-    public function parentNodes(): HasMany
+    /** @return HasMany<DomainLink, $this> */
+    public function parentLinks(): HasMany
     {
-        return $this->hasMany(DomainNode::class, 'child_id');
+        return $this->hasMany(DomainLink::class, 'child_id');
     }
 
     /** @return HasMany<Subject, $this> */

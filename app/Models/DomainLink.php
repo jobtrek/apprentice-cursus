@@ -2,20 +2,20 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\Pivot;
 
-/** @property int $parent_id @property int $child_id */
-class DomainNode extends Pivot
+/**
+ * @property int $id
+ * @property int $parent_id
+ * @property int $child_id
+ */
+class DomainLink extends Model
 {
-    protected $table = 'domain_nodes';
-
-    public $incrementing = false;
+    protected $table = 'domain_links';
 
     public $timestamps = false;
-
-    protected $primaryKey = null;
 
     /** @return BelongsTo<Domain, $this> */
     public function parent(): BelongsTo
@@ -29,9 +29,9 @@ class DomainNode extends Pivot
         return $this->belongsTo(Domain::class, 'child_id');
     }
 
-    /** @return HasMany<DomainEdge, $this> */
-    public function domainEdges(): HasMany
+    /** @return HasMany<DomainLinkWeight, $this> */
+    public function weights(): HasMany
     {
-        return $this->hasMany(DomainEdge::class, 'domain_node_id');
+        return $this->hasMany(DomainLinkWeight::class, 'domain_link_id');
     }
 }

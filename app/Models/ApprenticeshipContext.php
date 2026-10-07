@@ -43,9 +43,9 @@ class ApprenticeshipContext extends Model
         return $this->hasMany(User::class);
     }
 
-    /** @return HasMany<DomainEdge, $this> */
-    public function domainEdges(): HasMany
+    /** @return HasMany<DomainLinkWeight, $this> */
+    public function domainLinkWeights(): HasMany
     {
-        return $this->hasMany(DomainEdge::class);
+        return $this->hasMany(DomainLinkWeight::class);
     }
 }
