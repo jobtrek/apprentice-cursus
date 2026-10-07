@@ -9,18 +9,13 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * @property int $id
- * @property int $subject_category_id
+ * @property string $name
+ * @property int $domain_id
  */
-#[Fillable(['domain_id', 'subject_category_id'])]
+#[Fillable(['name', 'domain_id'])]
 class Subject extends Model
 {
     const UPDATED_AT = null;
-
-    /** @return BelongsTo<SubjectCategory, $this> */
-    public function subjectCategory(): BelongsTo
-    {
-        return $this->belongsTo(SubjectCategory::class);
-    }
 
     /** @return BelongsTo<Domain, $this> */
     public function domain(): BelongsTo
