@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { useRemember } from '@inertiajs/vue3';
-import { ChevronDownIcon, SearchIcon } from '@lucide/vue';
+import { ChevronDownIcon, CircleDashedIcon } from '@lucide/vue';
 import { computed, reactive } from 'vue';
+import SearchInput from '@/components/SearchInput.vue';
 import { PASSING_GRADE } from '@/data/dashboard';
 import { fmt, fmtWeight, type Gradebook, plural } from '@/lib/gradebook';
 import type { Grade } from '@/types/grade';
@@ -137,16 +138,11 @@ function onToggle(id: number, event: Event): void {
                 </span>
             </div>
             <div class="gb-toolbar__controls">
-                <label class="gb-search">
-                    <SearchIcon aria-hidden="true" />
-                    <span class="sr-only">Filtrer les notes</span>
-                    <input
-                        v-model="view.q"
-                        type="search"
-                        placeholder="Rechercher une note…"
-                        autocomplete="off"
-                    />
-                </label>
+                <SearchInput
+                    v-model="view.q"
+                    placeholder="Rechercher une note"
+                    class="w-full sm:w-64"
+                />
                 <Segmented
                     v-model="view.semester"
                     :options="semesterOptions"
@@ -174,8 +170,20 @@ function onToggle(id: number, event: Event): void {
 
             <template v-else>
                 <template v-for="group in groups" :key="group.id">
+                    <!-- Domaine sans note : une ligne discrète, rien à déplier. -->
+                    <div
+                        v-if="!group.all.length && !filtering"
+                        class="gb-group gb-group--empty"
+                    >
+                        <CircleDashedIcon
+                            class="gb-chevron"
+                            aria-hidden="true"
+                        />
+                        <span class="gb-group__name">{{ group.name }}</span>
+                        <span class="gb-group__avg">Pas encore de note</span>
+                    </div>
                     <details
-                        v-if="!filtering || group.visible.length"
+                        v-else-if="group.visible.length"
                         class="gb-group"
                         :open="!view.closed[group.id]"
                         @toggle="onToggle(group.id, $event)"
@@ -201,17 +209,18 @@ function onToggle(id: number, event: Event): void {
                                 >
                                 <template v-else
                                     >Moyenne
-                                    <strong>{{
-                                        fmt(group.average)
-                                    }}</strong></template
+                                    <strong
+                                        :class="{
+                                            'text-destructive':
+                                                group.average < PASSING_GRADE,
+                                        }"
+                                        >{{ fmt(group.average) }}</strong
+                                    ></template
                                 >
                             </span>
                         </summary>
                         <div class="gb-group__body">
-                            <p v-if="!group.all.length" class="gb-empty-row">
-                                Pas encore de note pour ce domaine.
-                            </p>
-                            <template v-else-if="group.subs.length">
+                            <template v-if="group.subs.length">
                                 <template
                                     v-for="sub in group.subs"
                                     :key="sub.id"
@@ -228,15 +237,23 @@ function onToggle(id: number, event: Event): void {
                                                 }}
                                             </span>
                                         </h4>
-                                        <GradeTable :grades="sub.visible" />
+                                        <GradeTable
+                                            :grades="sub.visible"
+                                            :parent="sub.name"
+                                        />
                                     </template>
                                 </template>
                                 <GradeTable
                                     v-if="group.rest.length"
                                     :grades="group.rest"
+                                    :parent="group.name"
                                 />
                             </template>
-                            <GradeTable v-else :grades="group.visible" />
+                            <GradeTable
+                                v-else
+                                :grades="group.visible"
+                                :parent="group.name"
+                            />
                         </div>
                     </details>
                 </template>

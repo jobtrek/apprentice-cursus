@@ -7,7 +7,16 @@ import gradeRoutes from '@/routes/grades';
 import type { Grade } from '@/types/grade';
 import CommentCount from './CommentCount.vue';
 
-const props = defineProps<{ grades: Grade[] }>();
+const props = defineProps<{
+    grades: Grade[];
+    /** Domaine ou sous-groupe affiché : une catégorie identique n'apporte rien. */
+    parent?: string;
+}>();
+
+/** Catégorie masquée quand elle répète le nom du groupe pour toutes les notes. */
+const showCategory = computed(() =>
+    props.grades.some((grade) => grade.subject !== props.parent),
+);
 
 const sorted = computed(() => [...props.grades].sort(byDateDesc));
 
@@ -19,8 +28,8 @@ const open = (grade: Grade) => router.visit(gradeRoutes.show(grade.id));
         <table class="gb-table">
             <thead>
                 <tr>
-                    <th>Évaluation</th>
-                    <th class="gb-col-cat">Catégorie</th>
+                    <th :colspan="showCategory ? 1 : 2">Évaluation</th>
+                    <th v-if="showCategory" class="gb-col-cat">Catégorie</th>
                     <th class="gb-col-sem">Semestre</th>
                     <th class="gb-col-date">Date</th>
                     <th class="gb-col-grade">Note</th>
@@ -38,14 +47,16 @@ const open = (grade: Grade) => router.visit(gradeRoutes.show(grade.id));
                     @keydown.enter.prevent="open(grade)"
                     @keydown.space.prevent="open(grade)"
                 >
-                    <td>
+                    <td :colspan="showCategory ? 1 : 2">
                         <span class="gb-subject">{{ grade.title }}</span>
                         <CommentCount
                             :count="grade.comments_count"
                             class="gb-comments"
                         />
                     </td>
-                    <td class="gb-col-cat">{{ grade.subject }}</td>
+                    <td v-if="showCategory" class="gb-col-cat">
+                        {{ grade.subject }}
+                    </td>
                     <td class="gb-col-sem">S{{ grade.semester }}</td>
                     <td class="gb-col-date">{{ grade.date }}</td>
                     <td class="gb-col-grade">

@@ -88,12 +88,19 @@ const missing = computed(() =>
                     <small>sur 6</small>
                 </div>
             </div>
-            <p class="gb-final__note">
-                Provisoire : moyenne pondérée des domaines déjà notés.
-                <template v-for="domain in missing" :key="domain.id">
-                    {{ shortName(domain.name) }} compte pour
-                    {{ fmtWeight(domain.weight) }} % une fois évalué.
-                </template>
+            <p v-if="missing.length" class="gb-final__note">
+                Provisoire, calculée sur les domaines déjà notés. En attente :
+                {{
+                    missing
+                        .map(
+                            (domain) =>
+                                `${shortName(domain.name)} (${fmtWeight(domain.weight)} %)`,
+                        )
+                        .join(', ')
+                }}.
+            </p>
+            <p v-else class="gb-final__note">
+                Moyenne pondérée de tous les domaines, comme pour le CFC.
             </p>
         </article>
 
@@ -101,7 +108,7 @@ const missing = computed(() =>
             <article
                 v-for="domain in domains"
                 :key="domain.id"
-                class="gb-domain"
+                :class="['gb-domain', { 'is-empty': domain.value === null }]"
             >
                 <div class="gb-domain__head">
                     <h3 class="gb-domain__name">{{ domain.name }}</h3>
