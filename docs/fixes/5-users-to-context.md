@@ -5,6 +5,7 @@ This file is the context for solving the issues below in the package of issue Us
 - **Depends on:** nothing. Can start immediately.
 - **Blocks:** package 6 (Tree app code), which needs the user → context → root domain path.
 - **Migrations are edited in place** (they are not on `main`). After pulling, everyone runs `./vendor/bin/sail artisan migrate:fresh`.
+- **Migration grouping:** see `./CONTEXT.md`. The `apprenticeship_context_id` index (fix 7) fits in the index migration of package 4 (group A) instead of a migration of its own. Dropping `users.is_mp`, if decided, is a separate migration (group E).
 - The file list below comes from a search for the stale names, not from reading each file in full. Some files may need no change.
 
 Files owned by this package (no other package edits them):

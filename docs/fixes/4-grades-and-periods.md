@@ -6,6 +6,7 @@ This file is the context for solving the issues below in the package of issue Gr
 - **Blocks:** package 7 (Grade app code).
 - **Names agreed across packages:** the apprentice foreign key is `user_id` on both tables: `grades.user_id` (kept as is) and `apprenticeship_periods.user_id` (renamed from `apprentice_id`); `grades.apprenticeship_period_id` (singular). Decided 2026-10-07, replacing the earlier plan to rename `grades.user_id` to `apprentice_id`.
 - **Migrations are NOT edited in place.** Every schema fix goes in a new migration; the existing files `2026_10_07_130000` and `2026_10_07_140000` stay untouched. After pulling, everyone runs `./vendor/bin/sail artisan migrate`.
+- **Migration grouping:** see `./CONTEXT.md`. G1 and G2 share one index migration (group A, which can also take package 5's `users` index); the two CHECKs of G5 share one migration (group B); Comment 7 and G6 are `down()` repairs, done together with package 2's.
 
 Files owned by this package (no other package edits them):
 

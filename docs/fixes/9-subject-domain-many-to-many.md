@@ -7,6 +7,7 @@ This file is the context for solving the issues below in the package of issue Su
 - **Touches package 4 (Grades and periods)** if the grade guard below is accepted: `grades` is owned by that package.
 - **Names proposed:** table `domain_subject` (Laravel pivot convention), relations `Domain::subjects()` and `Subject::domains()`.
 - **Done as a new migration**, not by editing an existing one.
+- **Migration grouping:** see `./CONTEXT.md`. One migration creates the pivot, copies the data and drops `subjects.domain_id` (group C). The grade guard, if accepted, goes at the end of that same migration (group D), because it needs `domain_subject` to exist.
 
 Files concerned:
 
