@@ -34,17 +34,13 @@ class Comment extends Model
     /** @use HasFactory<CommentFactory> */
     use HasFactory;
 
-    /**
-     * @return BelongsTo<User, $this>
-     */
+    /** @return BelongsTo<User, $this> */
     public function author(): BelongsTo
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(User::class, 'author_id');
     }
 
-    /**
-     * @return MorphTo<Model, $this>
-     */
+    /** @return MorphTo<Model, $this> */
     public function commentable(): MorphTo
     {
         return $this->morphTo();

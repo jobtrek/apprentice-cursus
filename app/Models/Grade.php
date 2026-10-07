@@ -11,21 +11,22 @@ use Illuminate\Support\Facades\DB;
 
 /**
  * @property int $id
- * @property int $user_id
- * @property int $evaluation_node_id
+ * @property int $apprentice_id
+ * @property int $domain_id
+ * @property int $subject_id
+ * @property int $apprenticeship_periods_id
  * @property string $value decimal cast: string at runtime, not float
  * @property CarbonImmutable $test_date
- * @property int $semester
  * @property string|null $file_path
  * @property string|null $original_filename
  * @property CarbonImmutable|null $notified_at
  */
-#[Fillable(['user_id', 'evaluation_node_id', 'value', 'test_date', 'semester', 'file_path', 'original_filename'])]
+#[Fillable(['apprentice_id', 'domain_id', 'subject_id', 'apprenticeship_periods_id', 'value', 'test_date', 'file_path', 'original_filename'])]
 class Grade extends Model
 {
     protected static function booted(): void
     {
-        static::deleting(fn (self $grade) => $grade->comments()->delete());
+        static::deleting(fn(self $grade) => $grade->comments()->delete());
     }
 
     /**
@@ -39,7 +40,7 @@ class Grade extends Model
      */
     public function delete(): ?bool
     {
-        return DB::transaction(fn (): ?bool => parent::delete());
+        return DB::transaction(fn(): ?bool => parent::delete());
     }
 
     protected function casts(): array
@@ -51,22 +52,31 @@ class Grade extends Model
         ];
     }
 
-    /**
-     * @return BelongsTo<User, $this>
-     */
-    public function user(): BelongsTo
+    /** @return BelongsTo<User, $this> */
+    public function apprentice(): BelongsTo
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(User::class, 'apprentice_id');
     }
 
-    /**
-     * @return BelongsTo<EvaluationNode, $this>
-     */
-    public function evaluationNode(): BelongsTo
+    /** @return BelongsTo<Domain, $this> */
+    public function domain(): BelongsTo
     {
-        return $this->belongsTo(EvaluationNode::class);
+        return $this->belongsTo(Domain::class);
     }
 
+    /** @return BelongsTo<Subject, $this> */
+    public function subject(): BelongsTo
+    {
+        return $this->belongsTo(Subject::class);
+    }
+
+    /** @return BelongsTo<ApprenticeshipPeriod, $this> */
+    public function apprenticeshipPeriod(): BelongsTo
+    {
+        return $this->belongsTo(ApprenticeshipPeriod::class, 'apprenticeship_periods_id');
+    }
+
+    /** @return MorphMany<Comment, $this> */
     public function comments(): MorphMany
     {
         return $this->morphMany(Comment::class, 'commentable');

@@ -70,6 +70,7 @@ class Project extends Model
         return $this->belongsTo(User::class);
     }
 
+    /** @return MorphMany<Comment, $this> */
     public function comments(): MorphMany
     {
         return $this->morphMany(Comment::class, 'commentable');
@@ -83,6 +84,7 @@ class Project extends Model
         return $this->hasMany(ProjectScreenshot::class);
     }
 
+    /** @return BelongsToMany<Skill, $this> */
     public function skills(): BelongsToMany
     {
         return $this->belongsToMany(Skill::class, 'project_skill');
