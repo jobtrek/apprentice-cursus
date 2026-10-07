@@ -48,10 +48,10 @@ class Domain extends Model
         return $this->hasMany(DomainLink::class, 'child_id');
     }
 
-    /** @return HasMany<Subject, $this> */
-    public function subjects(): HasMany
+    /** @return BelongsToMany<Subject, $this> */
+    public function subjects(): BelongsToMany
     {
-        return $this->hasMany(Subject::class);
+        return $this->belongsToMany(Subject::class);
     }
 
     /** @return HasMany<Grade, $this> */

@@ -4,23 +4,22 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * @property int $id
  * @property string $name
- * @property int $domain_id
  */
-#[Fillable(['name', 'domain_id'])]
+#[Fillable(['name'])]
 class Subject extends Model
 {
     const UPDATED_AT = null;
 
-    /** @return BelongsTo<Domain, $this> */
-    public function domain(): BelongsTo
+    /** @return BelongsToMany<Domain, $this> */
+    public function domains(): BelongsToMany
     {
-        return $this->belongsTo(Domain::class);
+        return $this->belongsToMany(Domain::class);
     }
 
     /** @return HasMany<Grade, $this> */
