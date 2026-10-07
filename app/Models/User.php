@@ -113,13 +113,13 @@ class User extends Authenticatable
     /** @return HasMany<ApprenticeshipPeriod, $this> */
     public function apprenticeshipPeriods(): HasMany
     {
-        return $this->hasMany(ApprenticeshipPeriod::class, 'apprentice_id');
+        return $this->hasMany(ApprenticeshipPeriod::class);
     }
 
     /** @return HasMany<Grade, $this> */
     public function grades(): HasMany
     {
-        return $this->hasMany(Grade::class, 'apprentice_id');
+        return $this->hasMany(Grade::class);
     }
 
     /** @return HasMany<Comment, $this> */

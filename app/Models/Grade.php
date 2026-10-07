@@ -11,22 +11,22 @@ use Illuminate\Support\Facades\DB;
 
 /**
  * @property int $id
- * @property int $apprentice_id
+ * @property int $user_id
  * @property int $domain_id
  * @property int $subject_id
- * @property int $apprenticeship_periods_id
+ * @property int $apprenticeship_period_id
  * @property string $value decimal cast: string at runtime, not float
  * @property CarbonImmutable $test_date
  * @property string|null $file_path
  * @property string|null $original_filename
  * @property CarbonImmutable|null $notified_at
  */
-#[Fillable(['apprentice_id', 'domain_id', 'subject_id', 'apprenticeship_periods_id', 'value', 'test_date', 'file_path', 'original_filename'])]
+#[Fillable(['user_id', 'domain_id', 'subject_id', 'apprenticeship_period_id', 'value', 'test_date', 'file_path', 'original_filename'])]
 class Grade extends Model
 {
     protected static function booted(): void
     {
-        static::deleting(fn(self $grade) => $grade->comments()->delete());
+        static::deleting(fn (self $grade) => $grade->comments()->delete());
     }
 
     /**
@@ -40,7 +40,7 @@ class Grade extends Model
      */
     public function delete(): ?bool
     {
-        return DB::transaction(fn(): ?bool => parent::delete());
+        return DB::transaction(fn (): ?bool => parent::delete());
     }
 
     protected function casts(): array
@@ -55,7 +55,7 @@ class Grade extends Model
     /** @return BelongsTo<User, $this> */
     public function apprentice(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'apprentice_id');
+        return $this->belongsTo(User::class, 'user_id');
     }
 
     /** @return BelongsTo<Domain, $this> */
@@ -73,7 +73,7 @@ class Grade extends Model
     /** @return BelongsTo<ApprenticeshipPeriod, $this> */
     public function apprenticeshipPeriod(): BelongsTo
     {
-        return $this->belongsTo(ApprenticeshipPeriod::class, 'apprenticeship_periods_id');
+        return $this->belongsTo(ApprenticeshipPeriod::class);
     }
 
     /** @return MorphMany<Comment, $this> */
