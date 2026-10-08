@@ -22,12 +22,12 @@ Files owned by this package (no other package edits them):
 
 1. **Comment 1.** In `2026_10_07_090000` `down()`, create the column and the constraint separately so the name is explicit:
 
-   ```php
-   $table->foreignId('subject_id')->nullable();
-   $table->foreign('subject_id', 'evaluation_nodes_subject_id_foreign')
-       ->references('id')->on('subjects')->nullOnDelete();
-   $table->index('subject_id', 'evaluation_nodes_subject_id_index');
-   ```
+    ```php
+    $table->foreignId('subject_id')->nullable();
+    $table->foreign('subject_id', 'evaluation_nodes_subject_id_foreign')
+        ->references('id')->on('subjects')->nullOnDelete();
+    $table->index('subject_id', 'evaluation_nodes_subject_id_index');
+    ```
 
 2. **`aggregation`.** Replace the `enum()` with what the original migration did: `$table->string('aggregation')->nullable();` then, after the `Schema::table` call,
    `DB::statement("ALTER TABLE domains ADD CONSTRAINT evaluation_nodes_aggregation_check CHECK (aggregation IS NULL OR aggregation IN ('weighted_average'))");`

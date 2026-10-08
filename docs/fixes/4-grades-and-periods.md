@@ -40,37 +40,39 @@ Migrations added by this package:
 1. **Comment 4.** Keep the migration's singular name. In `Grade.php`: docblock, fillable and `apprenticeshipPeriod()` → `apprenticeship_period_id` (the explicit key argument can then be dropped). In `ApprenticeshipPeriod.php`: `grades()` → `hasMany(Grade::class)`.
 2. **M2 — superseded, see the decision below.** The first plan was to rename the column. In `2026_10_07_140000` `up()`, add the rename and its constraint:
 
-   ```php
-   $table->renameColumn('user_id', 'apprentice_id');
-   $table->dropForeign('grades_user_id_foreign');
-   $table->foreign('apprentice_id')->references('id')->on('users')->restrictOnDelete();
-   ```
+    ```php
+    $table->renameColumn('user_id', 'apprentice_id');
+    $table->dropForeign('grades_user_id_foreign');
+    $table->foreign('apprentice_id')->references('id')->on('users')->restrictOnDelete();
+    ```
 
-   Mirror it in `down()`. In `ApprenticeList.php`, replace `user_id` with `apprentice_id` in `gradeStats()` (query, `groupBy`, `selectRaw`, `keyBy`).
+    Mirror it in `down()`. In `ApprenticeList.php`, replace `user_id` with `apprentice_id` in `gradeStats()` (query, `groupBy`, `selectRaw`, `keyBy`).
 
-   **Decided (2026-10-07): the models follow the migrations, and the column is `user_id` everywhere.**
-   - `grades.user_id` is kept. `Grade` (docblock, fillable, `apprentice()`) now uses `user_id`. No migration, and `ApprenticeList.php`, `GradePolicy`, `ApprenticeController`, the seeders and the tests need no change for this, since they already use `user_id`.
-   - `apprenticeship_periods.apprentice_id` is renamed to `user_id` by the new migration `2026_10_07_190000` (column, foreign key and index names). `ApprenticeshipPeriod` (docblock, fillable, `apprentice()`) follows.
-   - The relation methods keep their name `apprentice()`; only the column changes.
+    **Decided (2026-10-07): the models follow the migrations, and the column is `user_id` everywhere.**
+    - `grades.user_id` is kept. `Grade` (docblock, fillable, `apprentice()`) now uses `user_id`. No migration, and `ApprenticeList.php`, `GradePolicy`, `ApprenticeController`, the seeders and the tests need no change for this, since they already use `user_id`.
+    - `apprenticeship_periods.apprentice_id` is renamed to `user_id` by the new migration `2026_10_07_190000` (column, foreign key and index names). `ApprenticeshipPeriod` (docblock, fillable, `apprentice()`) follows.
+    - The relation methods keep their name `apprentice()`; only the column changes.
+
 3. **G1 and G2.** In a new migration on `grades`, add (and drop them in its `down()`):
 
-   ```php
-   $table->index('user_id');
-   $table->index('subject_id');
-   $table->index('apprenticeship_period_id');
-   ```
+    ```php
+    $table->index('user_id');
+    $table->index('subject_id');
+    $table->index('apprenticeship_period_id');
+    ```
 
-   `domain_id` keeps its own index (`grades_domain_id_index`, already renamed by `2026_10_07_140000`).
+    `domain_id` keeps its own index (`grades_domain_id_index`, already renamed by `2026_10_07_140000`).
+
 4. **Comment 7 and G6 — to decide, see "Conflict with the no-edit rule" below.** Both are defects of the `down()` of `2026_10_07_140000`, and a new migration cannot change what another migration's `down()` does. The fix as first written: in `down()`, add `semester` with `->default(1)`, then re-add the check after the `Schema::table` call:
    `DB::statement('ALTER TABLE grades ADD CONSTRAINT grades_semester_check CHECK (semester BETWEEN 1 AND 8)');`
    and restore `$table->index(['user_id', 'evaluation_node_id', 'semester']);` (add the `DB` facade import).
 5. **Comment 2: skip the backfill, on purpose.** The review asks to create matching subjects and periods for existing grades. That cannot be done honestly: `2026_10_01_112517` already drops every tree link and weight, and `2026_10_01_144037` already fails on a non-empty `subjects` table, so the chain never reaches this migration with data. No environment holds real grades (these migrations are not on `main`). No comment is added in `up()` (the file is not edited): package 8 (Docs) records in `../db/db.md` that the chain targets a fresh database. Reply to the reviewer with this reason.
 6. **G5.** In a new migration on `apprenticeship_periods` (its `down()` drops both constraints):
 
-   ```php
-   DB::statement('ALTER TABLE apprenticeship_periods ADD CONSTRAINT apprenticeship_periods_semester_check CHECK (semester BETWEEN 1 AND 8)');
-   DB::statement('ALTER TABLE apprenticeship_periods ADD CONSTRAINT apprenticeship_periods_dates_check CHECK (end_date >= start_date)');
-   ```
+    ```php
+    DB::statement('ALTER TABLE apprenticeship_periods ADD CONSTRAINT apprenticeship_periods_semester_check CHECK (semester BETWEEN 1 AND 8)');
+    DB::statement('ALTER TABLE apprenticeship_periods ADD CONSTRAINT apprenticeship_periods_dates_check CHECK (end_date >= start_date)');
+    ```
 
 # Conflict with the no-edit rule
 

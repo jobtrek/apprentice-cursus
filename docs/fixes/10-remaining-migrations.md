@@ -58,13 +58,13 @@ This replaces package 3 fix 4 (delete rule on `subjects.domain_id`): the column 
 
 # What the other packages do once these land
 
-| Migration | Package | What follows |
-|---|---|---|
-| U (`is_mp` dropped) | 5 | nothing to declare on `User` for `is_mp` (M6 closes itself) |
-| U (`is_mp` dropped) | 6, 7 | `GradebookTree` and `HomeController` read `apprenticeshipContext->is_mp` |
-| S | 3, 9 | `Subject` and `Domain` relations become `BelongsToMany`; `domain_id` leaves the `Subject` fillable |
-| S | 6 | the seeder attaches subjects through the pivot |
-| S (guard) | 7 | `GradeController` validates that the subject is attached to the domain, so the user gets a form error instead of a database error |
-| U, S, R | 8 | `db.md` and the `.d2` describe the new index, the pivot, the guard and the dropped columns |
+| Migration           | Package | What follows                                                                                                                      |
+| ------------------- | ------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| U (`is_mp` dropped) | 5       | nothing to declare on `User` for `is_mp` (M6 closes itself)                                                                       |
+| U (`is_mp` dropped) | 6, 7    | `GradebookTree` and `HomeController` read `apprenticeshipContext->is_mp`                                                          |
+| S                   | 3, 9    | `Subject` and `Domain` relations become `BelongsToMany`; `domain_id` leaves the `Subject` fillable                                |
+| S                   | 6       | the seeder attaches subjects through the pivot                                                                                    |
+| S (guard)           | 7       | `GradeController` validates that the subject is attached to the domain, so the user gets a form error instead of a database error |
+| U, S, R             | 8       | `db.md` and the `.d2` describe the new index, the pivot, the guard and the dropped columns                                        |
 
 Check when done: `migrate:fresh` passes; each new migration survives `migrate:rollback --step=1` then `migrate`; no foreign key is left without an index; `\d users`, `\d domain_subject`, `\d subjects` and `\d grades` match the decisions taken.

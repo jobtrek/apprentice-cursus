@@ -31,10 +31,10 @@ Files owned by this package (no other package edits them):
 1. **`GradeResource`.** `node_id` → `$this->domain_id`. Replace `semester` by the period: `$this->apprenticeshipPeriod->semester` (and `year` if the page shows it), with the relation eager-loaded by the caller. Rewrite `firstParent()` on `Domain` using the parent links of package 1; note a domain can have several parents, so decide which path is displayed (the one inside the apprentice's context).
 2. **`GradeResourceTest`.** Build `Domain` + `DomainLink` rows instead of `EvaluationNode`, and grades with `user_id`, `domain_id`, `subject_id`, `apprenticeship_period_id`. Ask the package 5 owner for the shared helper in `../../tests/Pest.php` instead of editing it.
 3. **`DemoGradeSeeder`.**
-   - Start from `$user->apprenticeshipContext->root_domain_id`.
-   - Walk `DomainLink` rows (breadth-first, visited set, as today) to collect leaf domains: leaves are domains with no child link.
-   - For each demo apprentice, create `ApprenticeshipPeriod` rows first (the current fixtures use semesters 1 and 2), then attach each grade to the period matching its fixture semester.
-   - Pick a `Subject` of the leaf domain for `subject_id` (through `domain_subject` once migration S of package 10 has landed).
+    - Start from `$user->apprenticeshipContext->root_domain_id`.
+    - Walk `DomainLink` rows (breadth-first, visited set, as today) to collect leaf domains: leaves are domains with no child link.
+    - For each demo apprentice, create `ApprenticeshipPeriod` rows first (the current fixtures use semesters 1 and 2), then attach each grade to the period matching its fixture semester.
+    - Pick a `Subject` of the leaf domain for `subject_id` (through `domain_subject` once migration S of package 10 has landed).
 4. **`DemoGradeSeederTest`.** Assert through the context root instead of `apprenticeship->evaluation_node_id`.
 5. **`HomeController`.** Read MP from `$user->apprenticeshipContext?->is_mp`. If the team keeps `users.is_mp` (decision D1 in package 10), leave it and add a comment naming the decision.
 6. **`GradeController`.** Validate `subject_id` (exists, belongs to the chosen domain) and resolve the period server-side rather than trusting a posted `semester`. "Belongs to the chosen domain" means a `domain_subject` row once migration S of package 10 has landed (`subjects.domain_id` before that). If the grade guard is accepted (decision D4), the database refuses an invalid pair too: the validation rule is what turns it into a form error.

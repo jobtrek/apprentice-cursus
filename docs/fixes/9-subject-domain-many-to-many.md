@@ -40,18 +40,18 @@ Today a subject belongs to exactly one domain: `subjects.domain_id` is a single 
 # Fixes suggested
 
 1. **New migration, `up()`.**
-   - Create `domain_subject` with `domain_id` → `domains` and `subject_id` → `subjects`.
-   - Primary key `(domain_id, subject_id)`, so the same pair cannot be inserted twice.
-   - Add `$table->index('subject_id')`: the primary key only covers lookups that start from the domain (PostgreSQL does not index foreign keys by itself).
-   - Copy the existing `subjects.domain_id` values into `domain_subject`, then drop `subjects.domain_id` and its index `subjects_domain_id_index`.
+    - Create `domain_subject` with `domain_id` → `domains` and `subject_id` → `subjects`.
+    - Primary key `(domain_id, subject_id)`, so the same pair cannot be inserted twice.
+    - Add `$table->index('subject_id')`: the primary key only covers lookups that start from the domain (PostgreSQL does not index foreign keys by itself).
+    - Copy the existing `subjects.domain_id` values into `domain_subject`, then drop `subjects.domain_id` and its index `subjects_domain_id_index`.
 2. **New migration, `down()`.** Re-add `subjects.domain_id`, fill it from `domain_subject`, drop `domain_subject`. This only works while every subject has a single domain: say so in a comment.
 3. **`Subject.php`.** Replace `domain()` by `domains(): BelongsToMany` on `domain_subject`. Remove `domain_id` from the fillable and from the docblock.
 4. **`Domain.php`.** `subjects()` becomes a `BelongsToMany` on `domain_subject`.
 5. **Docs.**
-   - `../db/db.md`: describe `domain_subject` and replace the "subjects hang under leaf domains" wording.
-   - `./3-subjects.md`: fix 1 (fillable `['name']` only), fix 4 (the delete rule moves to the pivot), and the final check (`Subject::create(['name' => 'x'])` then `$subject->domains()->attach($id)`).
-   - `./6-tree-app-code.md`: the seeder attaches each subject to its domain(s) through the pivot and creates a shared module only once.
-   - Ask package 8 (Docs) to record the decision in `../adr/ADR.md`.
+    - `../db/db.md`: describe `domain_subject` and replace the "subjects hang under leaf domains" wording.
+    - `./3-subjects.md`: fix 1 (fillable `['name']` only), fix 4 (the delete rule moves to the pivot), and the final check (`Subject::create(['name' => 'x'])` then `$subject->domains()->attach($id)`).
+    - `./6-tree-app-code.md`: the seeder attaches each subject to its domain(s) through the pivot and creates a shared module only once.
+    - Ask package 8 (Docs) to record the decision in `../adr/ADR.md`.
 
 # Decisions to take before starting
 

@@ -63,15 +63,15 @@ Open in the docs
 6. **`db.md`, new short section "Migrating".** State that the chain from `2026_10_01_095759` drops the old tree and requires `migrate:fresh` followed by seeding; existing grades are not carried over.
 7. **`.d2` `domain_links`.**
 
-   ```
-   domain_links: {
-     shape: sql_table
-     id: bigint {constraint: primary_key}
-     parent_id: bigint {constraint: foreign_key}
-     child_id: bigint {constraint: foreign_key}
-     # UNIQUE (parent_id, child_id), CHECK (parent_id <> child_id)
-   }
-   ```
+    ```
+    domain_links: {
+      shape: sql_table
+      id: bigint {constraint: primary_key}
+      parent_id: bigint {constraint: foreign_key}
+      child_id: bigint {constraint: foreign_key}
+      # UNIQUE (parent_id, child_id), CHECK (parent_id <> child_id)
+    }
+    ```
 
 8. **`.d2` subjects.** Remove `subject_category_id`, the `subject_category` table and its arrow; add `name: varchar`. Reverse line 239 to `domains -> subjects`.
 9. **`.d2` users and grades.** Remove `apprenticeship_periods` from `users`; add or drop `is_mp` according to decision D1 in package 10; rename line 86 to `apprenticeship_period_id`.

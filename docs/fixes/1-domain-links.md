@@ -41,8 +41,8 @@ Migrations added by this package:
 # Fixes suggested
 
 1. **Rename the models to match the tables.**
-   - `DomainNode.php` → `DomainLink.php`: extend `Model` (not `Pivot`), `protected $table = 'domain_links'`, `public $timestamps = false`, keep the default `id` key. Keep `parent()` and `child()`. Rename `domainEdges()` to `weights()` returning `HasMany<DomainLinkWeight>` on `domain_link_id`.
-   - `DomainEdge.php` → `DomainLinkWeight.php`: `protected $table = 'domain_link_weights'`, docblock `@property int $domain_link_id`, relation `domainLink()` → `belongsTo(DomainLink::class)`. It has a composite primary key, so keep `$incrementing = false` and `$primaryKey = null`, and do not call `save()`/`delete()` on an instance without scoping by both keys.
+    - `DomainNode.php` → `DomainLink.php`: extend `Model` (not `Pivot`), `protected $table = 'domain_links'`, `public $timestamps = false`, keep the default `id` key. Keep `parent()` and `child()`. Rename `domainEdges()` to `weights()` returning `HasMany<DomainLinkWeight>` on `domain_link_id`.
+    - `DomainEdge.php` → `DomainLinkWeight.php`: `protected $table = 'domain_link_weights'`, docblock `@property int $domain_link_id`, relation `domainLink()` → `belongsTo(DomainLink::class)`. It has a composite primary key, so keep `$incrementing = false` and `$primaryKey = null`, and do not call `save()`/`delete()` on an instance without scoping by both keys.
 2. **Update `Domain`.** `children()` / `parents()` → `belongsToMany(self::class, 'domain_links', …)`. If the pivot class is kept in `->using()`, it must be a `Pivot` subclass, so either drop `->using()` or keep a small pivot class separate from `DomainLink`. Simplest: drop `->using()`. `childNodes()` / `parentNodes()` → `childLinks()` / `parentLinks()` returning `DomainLink`.
 3. **Update `ApprenticeshipContext`.** `domainEdges()` → `domainLinkWeights()` returning `HasMany<DomainLinkWeight>`.
 4. **Comment 5.** In `2026_10_01_112517` `up()`, after `Schema::create`, add:
@@ -63,14 +63,14 @@ Nothing guards against longer cycles (A → B → A) any more: the old `Evaluati
 
 The model fixes (1, 2, 3, 10) were applied as suggested. The schema fixes (4 to 9) were applied through three new migrations instead of the original files:
 
-| Fix | Where | Note |
-|---|---|---|
-| 4. Comment 5 | `2026_10_07_160000` | `domain_links_no_self_loop_check CHECK (parent_id <> child_id)` |
-| 5. Comment 6 | `2026_10_07_160000` | index on `domain_links.child_id`. No separate `parent_id` index: the unique `(parent_id, child_id)` already covers it |
-| 7. G2 weights | `2026_10_07_160000` | index on `domain_link_weights.domain_link_id` |
-| 9. G2 contexts | `2026_10_07_160000` | index on `apprenticeship_contexts.root_domain_id` |
-| 6. G4 | `2026_10_07_170000` | cascade, see the decision under fix 6 |
-| 8. G5 | `2026_10_07_180000` | `domain_link_weights_weight_check CHECK (weight > 0 AND weight <= 1)`, and the `0.00` default is dropped |
+| Fix            | Where               | Note                                                                                                                  |
+| -------------- | ------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| 4. Comment 5   | `2026_10_07_160000` | `domain_links_no_self_loop_check CHECK (parent_id <> child_id)`                                                       |
+| 5. Comment 6   | `2026_10_07_160000` | index on `domain_links.child_id`. No separate `parent_id` index: the unique `(parent_id, child_id)` already covers it |
+| 7. G2 weights  | `2026_10_07_160000` | index on `domain_link_weights.domain_link_id`                                                                         |
+| 9. G2 contexts | `2026_10_07_160000` | index on `apprenticeship_contexts.root_domain_id`                                                                     |
+| 6. G4          | `2026_10_07_170000` | cascade, see the decision under fix 6                                                                                 |
+| 8. G5          | `2026_10_07_180000` | `domain_link_weights_weight_check CHECK (weight > 0 AND weight <= 1)`, and the `0.00` default is dropped              |
 
 Decision on weights (2026-10-07): a weight is mandatory, strictly above 0 and at most 1, with no default, so a forgotten weight fails instead of silently storing 0. Weighted averages are the rule. A plain average is not a separate mode: it is written as the same weight on every child of the domain (for example `1` each).
 

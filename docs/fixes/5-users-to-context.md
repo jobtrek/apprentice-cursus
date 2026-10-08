@@ -26,13 +26,13 @@ Files owned by this package (no other package edits them):
 # Problems encountered
 
 - [ ] **M3 — `users.apprenticeship_id` no longer exists but is used everywhere.** It was dropped by `2026_10_01_114802` and replaced by `apprenticeship_context_id`. Still read or written in:
-  - `User.php`: `listedApprentices()` (line 179), `assignableApprentices()` (lines 211 to 212), `supervises()` (lines 230 to 231)
-  - `UserPolicy.php` lines 30 to 31
-  - `SupervisionController.php` lines 54 to 55
-  - `AzureAccountSync.php` lines 86 to 97, `AzureDirectorySync.php` lines 124 and 132
-  - `HandleInertiaRequests.php` line 50 (shared prop `apprenticeship_id`)
-  - `UserSeeder.php` line 70, `DemoApprenticeSeeder.php` line 48
-  - `../../tests/Pest.php` line 68 and about ten test files (`forceFill(['apprenticeship_id' => …])`)
+    - `User.php`: `listedApprentices()` (line 179), `assignableApprentices()` (lines 211 to 212), `supervises()` (lines 230 to 231)
+    - `UserPolicy.php` lines 30 to 31
+    - `SupervisionController.php` lines 54 to 55
+    - `AzureAccountSync.php` lines 86 to 97, `AzureDirectorySync.php` lines 124 and 132
+    - `HandleInertiaRequests.php` line 50 (shared prop `apprenticeship_id`)
+    - `UserSeeder.php` line 70, `DemoApprenticeSeeder.php` line 48
+    - `../../tests/Pest.php` line 68 and about ten test files (`forceFill(['apprenticeship_id' => …])`)
 - [ ] **M3 — `User` has no `apprenticeship()` relation any more**, but `GradebookTree.php` (package 6) and `DemoGradeSeederTest.php` (package 7) call `$user->apprenticeship`.
 - [x] **G2 — `users.apprenticeship_context_id` has no index.** The old `apprenticeship_id` index disappeared with the column; the new column never got one. **Moved to package 10 (migration U).**
 - [x] **M6 — `users.is_mp` still exists but `User` does not declare it** (no docblock, no cast), while `HomeController.php` line 35 and `GradebookTree.php` line 29 still read it. **Closed by package 10:** the column is dropped by `2026_10_07_220000`. The two readers are fixed in packages 6 and 7.
@@ -42,16 +42,17 @@ Files owned by this package (no other package edits them):
 
 1. **Give `User` the section through its context.** Add a relation:
 
-   ```php
-   /** @return HasOneThrough<Apprenticeship, ApprenticeshipContext, $this> */
-   public function apprenticeship(): HasOneThrough
-   {
-       return $this->hasOneThrough(Apprenticeship::class, ApprenticeshipContext::class,
-           'id', 'id', 'apprenticeship_context_id', 'apprenticeship_id');
-   }
-   ```
+    ```php
+    /** @return HasOneThrough<Apprenticeship, ApprenticeshipContext, $this> */
+    public function apprenticeship(): HasOneThrough
+    {
+        return $this->hasOneThrough(Apprenticeship::class, ApprenticeshipContext::class,
+            'id', 'id', 'apprenticeship_context_id', 'apprenticeship_id');
+    }
+    ```
 
-   and a small accessor `apprenticeshipId(): ?int` returning `$this->apprenticeshipContext?->apprenticeship_id`, so call sites change in one predictable way.
+    and a small accessor `apprenticeshipId(): ?int` returning `$this->apprenticeshipContext?->apprenticeship_id`, so call sites change in one predictable way.
+
 2. **Rewrite the three `User` queries.** Replace `->where('apprenticeship_id', $this->apprenticeship_id)` with
    `->whereHas('apprenticeshipContext', fn ($q) => $q->where('apprenticeship_id', $this->apprenticeshipId()))`,
    and `whereNotNull('apprenticeship_id')` with `whereNotNull('apprenticeship_context_id')`. `supervises()` compares `apprenticeshipId()` on both sides.
