@@ -32,7 +32,7 @@ class HomeController extends Controller
             'tree' => $ownGrades ? GradebookTree::for($user) : null,
             'profile' => $ownGrades ? [
                 'track' => $user->apprenticeship?->shortName(),
-                'variant' => $user->is_mp ? 'mp' : 'standard',
+                'variant' => $user->apprenticeshipContext?->is_mp ? 'mp' : 'standard',
             ] : null,
             // Supervisor dashboard: the same rows as the apprentices page.
             'apprentices' => $user->can(Permission::ApprenticesViewList->value)

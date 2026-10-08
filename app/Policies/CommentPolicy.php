@@ -28,7 +28,11 @@ class CommentPolicy
     private function isAuthorOfActiveApprenticeComment(User $user, Comment $comment): bool
     {
         $commentable = $comment->commentable;
-        $owner = $commentable instanceof Grade || $commentable instanceof Project ? $commentable->user : null;
+        $owner = match (true) {
+            $commentable instanceof Grade => $commentable->apprentice,
+            $commentable instanceof Project => $commentable->user,
+            default => null,
+        };
 
         if ($commentable instanceof Grade && ! $user->can('view', $commentable)) {
             return false;

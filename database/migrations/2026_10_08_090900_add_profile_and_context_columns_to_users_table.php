@@ -2,7 +2,6 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -15,21 +14,21 @@ return new class extends Migration
         Schema::table('users', function (Blueprint $table) {
             $table->string('azure_id')->nullable()->unique();
             $table->string('tenant_id')->nullable();
-            $table->boolean('is_mp')->nullable();
             $table->boolean('is_active')->default(true);
-            $table->string('role')->default('apprentice');
-            $table->foreignId('apprenticeship_id')->nullable()->constrained('apprenticeships')->nullOnDelete();
+            $table->foreignId('apprenticeship_context_id')->nullable()->constrained('apprenticeship_contexts')->restrictOnDelete();
             $table->foreignId('coach_id')->nullable()->constrained('users')->nullOnDelete();
             $table->foreignId('trainer_id')->nullable()->constrained('users')->nullOnDelete();
+            // Last time the Entra account sync confirmed this user. NULL for accounts the sync never saw.
+            $table->timestamp('synced_at')->nullable();
 
-            // Postgres does not index foreign keys automatically. Without these, every
-            // nullOnDelete check and every "who does this coach follow" lookup is a seq scan.
-            $table->index('apprenticeship_id');
+            // Postgres does not index foreign keys automatically.
+            $table->index('apprenticeship_context_id');
             $table->index('coach_id');
             $table->index('trainer_id');
-        });
 
-        DB::statement("ALTER TABLE users ADD CONSTRAINT users_role_check CHECK (role IN ('apprentice', 'coach', 'trainer', 'admin', 'super_admin'))");
+            // Users are SSO/local accounts with no "remember me" and no timestamps of their own.
+            $table->dropColumn(['remember_token', 'created_at', 'updated_at']);
+        });
     }
 
     /**
@@ -37,13 +36,14 @@ return new class extends Migration
      */
     public function down(): void
     {
-        DB::statement('ALTER TABLE users DROP CONSTRAINT IF EXISTS users_role_check');
-
         Schema::table('users', function (Blueprint $table) {
+            $table->rememberToken();
+            $table->timestamps();
+
             $table->dropConstrainedForeignId('trainer_id');
             $table->dropConstrainedForeignId('coach_id');
-            $table->dropConstrainedForeignId('apprenticeship_id');
-            $table->dropColumn(['azure_id', 'tenant_id', 'is_mp', 'is_active', 'role']);
+            $table->dropConstrainedForeignId('apprenticeship_context_id');
+            $table->dropColumn(['azure_id', 'tenant_id', 'is_active', 'synced_at']);
         });
     }
 };

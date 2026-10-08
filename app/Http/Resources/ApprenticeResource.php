@@ -16,7 +16,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  */
 class ApprenticeResource extends JsonResource
 {
-    public const RELATIONS = ['apprenticeship', 'coach', 'trainer', 'roles'];
+    public const RELATIONS = ['apprenticeship', 'apprenticeshipContext', 'coach', 'trainer', 'roles'];
 
     /**
      * @return array<string, mixed>

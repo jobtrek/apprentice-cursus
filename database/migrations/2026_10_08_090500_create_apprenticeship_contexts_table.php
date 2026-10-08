@@ -11,13 +11,15 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('subjects', function (Blueprint $table) {
+        Schema::create('apprenticeship_contexts', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('subject_category_id')->constrained('subject_category')->cascadeOnDelete();
-            $table->timestamp('created_at')->useCurrent();
+            $table->boolean('is_mp');
+            $table->foreignId('apprenticeship_id')->constrained('apprenticeships');
+            $table->foreignId('root_domain_id')->constrained('domains');
 
+            $table->unique(['apprenticeship_id', 'is_mp']);
             // Postgres does not index foreign keys automatically.
-            $table->index('subject_category_id');
+            $table->index('root_domain_id');
         });
     }
 
@@ -26,6 +28,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('subjects');
+        Schema::dropIfExists('apprenticeship_contexts');
     }
 };

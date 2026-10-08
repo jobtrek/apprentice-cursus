@@ -49,7 +49,5 @@ class DatabaseSeeder extends Seeder
                 ->whereNull('trainer_id')
                 ->update(['trainer_id' => User::query()->where('email', $trainerEmail)->value('id')]);
         }
-
-        $this->call(DemoGradeSeeder::class);
     }
 }

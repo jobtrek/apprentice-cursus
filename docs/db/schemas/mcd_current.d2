@@ -8,31 +8,34 @@ domains: {
   created_at: timestamp
 }
 
-domain_nodes: {
+domain_links: {
   shape: sql_table
-  parent_id: bigint {constraint: [primary_key; foreign_key]}
-  child_id: bigint {constraint: [primary_key; foreign_key]}
+  id: bigint {constraint: primary_key}
+  parent_id: bigint {constraint: foreign_key}
+  child_id: bigint {constraint: foreign_key}
+  # UNIQUE (parent_id, child_id), CHECK (parent_id <> child_id)
 }
 
-domain_edges: {
+domain_link_weights: {
   shape: sql_table
   apprenticeship_context_id: bigint {constraint: [primary_key; foreign_key]}
-  domain_node_id: bigint {constraint: [primary_key; foreign_key]}
-  weight: "decimal(5,2)"
+  domain_link_id: bigint {constraint: [primary_key; foreign_key]}
+  weight: "decimal(3,2)"
+  # CHECK (weight > 0 AND weight <= 1), no default
 }
 
 subjects: {
   shape: sql_table
   id: bigint {constraint: primary_key}
-  domain_id: bigint {constraint: foreign_key}
-  subject_category_id: bigint {constraint: foreign_key}
+  name: varchar
   created_at: timestamp
 }
 
-subject_category: {
+domain_subject: {
   shape: sql_table
-  id: bigint {constraint: primary_key}
-  name: varchar
+  domain_id: bigint {constraint: [primary_key; foreign_key]}
+  subject_id: bigint {constraint: [primary_key; foreign_key]}
+  # cascadeOnDelete on both foreign keys
 }
 
 apprenticeships: {
@@ -43,7 +46,7 @@ apprenticeships: {
   updated_at: timestamp
 }
 
-apprenticeship_context: {
+apprenticeship_contexts: {
   shape: sql_table
   id: bigint {constraint: primary_key}
   is_mp: boolean
@@ -54,11 +57,11 @@ apprenticeship_context: {
 apprenticeship_periods: {
   shape: sql_table
   id: bigint {constraint: primary_key}
-  apprentice_id: bigint {constraint: foreign_key} # Reference user
-  semester: smallint # check
-  year: smallint # generated
+  user_id: bigint {constraint: foreign_key} # Reference user
+  semester: smallint # CHECK (semester BETWEEN 1 AND 8)
+  year: smallint # generated: (semester + 1) / 2
   start_date: date
-  end_date: date
+  end_date: date # CHECK (end_date >= start_date)
 }
 
 users: {
@@ -71,8 +74,8 @@ users: {
   email_verified_at: timestamp
   password: varchar
   is_active: boolean
+  synced_at: timestamp
   apprenticeship_context_id: bigint {constraint: foreign_key}
-  apprenticeship_periods: bigint {constraint: foreign_key}
   coach_id: bigint {constraint: foreign_key}
   trainer_id: bigint {constraint: foreign_key}
 }
@@ -80,17 +83,18 @@ users: {
 grades: {
   shape: sql_table
   id: bigint {constraint: primary_key}
-  apprentice_id: bigint {constraint: foreign_key} # Reference users
+  user_id: bigint {constraint: foreign_key} # Reference users
   domain_id: bigint {constraint: foreign_key}
   subject_id: bigint {constraint: foreign_key}
-  apprenticeship_periods_id: bigint { constraint: foreign_key }
-  value: "decimal(2,1)"
+  apprenticeship_period_id: bigint {constraint: foreign_key}
+  value: "decimal(2,1)" # CHECK (value BETWEEN 1.0 AND 6.0)
   test_date: date
   file_path: varchar
   original_filename: varchar
   notified_at: timestamp
   created_at: timestamp
   updated_at: timestamp
+  # FOREIGN KEY (domain_id, subject_id) -> domain_subject: the subject must be attached to the domain
 }
 
 comments: {
@@ -191,32 +195,27 @@ role_has_permissions: {
 }
 
 
-apprenticeships -> apprenticeship_context: contexts {
+apprenticeships -> apprenticeship_contexts: contexts {
   source-arrowhead: {shape: cf-one-required}
   target-arrowhead: {shape: cf-many}
 }
 
-apprenticeship_context -> domain_edges: context {
+apprenticeship_contexts -> domain_link_weights: context {
   source-arrowhead: {shape: cf-one-required}
   target-arrowhead: {shape: cf-many}
 }
 
-domain_nodes -> domain_edges: domain {
+domain_links -> domain_link_weights: domain {
   source-arrowhead: {shape: cf-one-required}
   target-arrowhead: {shape: cf-many}
 }
 
-domains -> domain_nodes: parent {
+domains -> domain_links: parent {
   source-arrowhead: {shape: cf-one-required}
   target-arrowhead: {shape: cf-many}
 }
 
-domains -> domain_nodes: child {
-  source-arrowhead: {shape: cf-one-required}
-  target-arrowhead: {shape: cf-many}
-}
-
-subject_category -> subjects: category {
+domains -> domain_links: child {
   source-arrowhead: {shape: cf-one-required}
   target-arrowhead: {shape: cf-many}
 }
@@ -236,7 +235,17 @@ subjects -> grades: subject {
   target-arrowhead: {shape: cf-many}
 }
 
-subjects -> domains: subject {
+domains -> domain_subject: domain {
+  source-arrowhead: {shape: cf-one-required}
+  target-arrowhead: {shape: cf-many}
+}
+
+subjects -> domain_subject: subject {
+  source-arrowhead: {shape: cf-one-required}
+  target-arrowhead: {shape: cf-many}
+}
+
+domain_subject -> grades: domain-subject pair {
   source-arrowhead: {shape: cf-one-required}
   target-arrowhead: {shape: cf-many}
 }
@@ -276,7 +285,7 @@ skills -> project_skill: skills {
   target-arrowhead: {shape: cf-many}
 }
 
-apprenticeship_context -> users: context {
+apprenticeship_contexts -> users: context {
   source-arrowhead: {shape: cf-one-required}
   target-arrowhead: {shape: cf-many}
 }
@@ -301,7 +310,7 @@ domains -> grades: domains-grade {
   target-arrowhead: {shape: cf-many}
 }
 
-domains -> apprenticeship_context: root {
+domains -> apprenticeship_contexts: root {
   source-arrowhead: {shape: cf-one-required}
   target-arrowhead: {shape: cf-many}
 }

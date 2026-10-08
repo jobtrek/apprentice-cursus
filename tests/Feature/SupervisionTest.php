@@ -75,8 +75,8 @@ describe('local admin', function () {
         $it = section(ApprenticeshipSeeder::IT);
         $first = User::factory()->trainer()->create();
         $second = User::factory()->trainer()->create();
-        $first->forceFill(['apprenticeship_id' => $it->id])->save();
-        $second->forceFill(['apprenticeship_id' => $it->id])->save();
+        $first->forceFill(['apprenticeship_context_id' => contextFor($it)->id])->save();
+        $second->forceFill(['apprenticeship_context_id' => contextFor($it)->id])->save();
         $apprentice = makeApprentice($it);
 
         $this->actingAs($admin)->put(route('apprentices.trainer.update', $apprentice), ['trainer_id' => $first->id])->assertRedirect();
@@ -93,7 +93,7 @@ describe('local admin', function () {
     test('cannot give an apprentice a trainer of another section', function () {
         $admin = User::factory()->admin()->create();
         $itTrainer = User::factory()->trainer()->create();
-        $itTrainer->forceFill(['apprenticeship_id' => section(ApprenticeshipSeeder::IT)->id])->save();
+        $itTrainer->forceFill(['apprenticeship_context_id' => contextFor(section(ApprenticeshipSeeder::IT))->id])->save();
         $ecApprentice = makeApprentice(section(ApprenticeshipSeeder::EC));
 
         $this->actingAs($admin)
@@ -106,7 +106,7 @@ describe('local admin', function () {
     test('offers the trainers with their section', function () {
         $admin = User::factory()->admin()->create();
         $trainer = User::factory()->trainer()->create();
-        $trainer->forceFill(['apprenticeship_id' => section(ApprenticeshipSeeder::IT)->id])->save();
+        $trainer->forceFill(['apprenticeship_context_id' => contextFor(section(ApprenticeshipSeeder::IT))->id])->save();
 
         $this->actingAs($admin)
             ->get(route('apprentisdashboard'))

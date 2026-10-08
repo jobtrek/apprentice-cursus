@@ -3,7 +3,7 @@
 namespace Database\Seeders;
 
 use App\Enums\UserRole;
-use App\Models\Apprenticeship;
+use App\Models\ApprenticeshipContext;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
@@ -11,7 +11,9 @@ use Illuminate\Support\Str;
 
 /**
  * Seeds local demo apprentices, with the ids the demo averages in
- * resources/js/data/dashboard.ts are keyed on.
+ * resources/js/data/dashboard.ts are keyed on. Each one is put in the standard
+ * (non-MP) context of its section (created by EvaluationTreeSeeder), or seeded
+ * with no context when the section has none yet.
  */
 class DemoApprenticeSeeder extends Seeder
 {
@@ -27,10 +29,14 @@ class DemoApprenticeSeeder extends Seeder
         /** @var list<array{id: string, name: string, track: string}> $demo */
         $demo = json_decode((string) file_get_contents(database_path('seeders/data/demo_apprentices.json')), true);
 
-        $apprenticeships = [
-            'IT' => Apprenticeship::where('name', ApprenticeshipSeeder::IT)->value('id'),
-            'EC' => Apprenticeship::where('name', ApprenticeshipSeeder::EC)->value('id'),
-        ];
+        // Standard (non-MP) context of each section, keyed by its short name ("IT", "EC").
+        $contexts = ApprenticeshipContext::query()
+            ->where('is_mp', false)
+            ->with('apprenticeship')
+            ->get()
+            ->mapWithKeys(fn (ApprenticeshipContext $context): array => [
+                $context->apprenticeship->shortName() => $context->id,
+            ]);
 
         foreach ($demo as $row) {
             // Never overwrite an existing account (name, password, role, active state).
@@ -45,7 +51,7 @@ class DemoApprenticeSeeder extends Seeder
                 // Random, unknown password: demo accounts have no usable local credentials.
                 'password' => Str::password(32),
                 'is_active' => true,
-                'apprenticeship_id' => $apprenticeships[$row['track']] ?? null,
+                'apprenticeship_context_id' => $contexts[$row['track']] ?? null,
             ]);
 
             $user->assignRole(UserRole::Apprentice->value);

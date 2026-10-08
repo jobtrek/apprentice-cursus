@@ -2,62 +2,57 @@
 
 namespace Database\Seeders;
 
-use App\Enums\AggregationType;
-use App\Enums\EvaluationVariant;
-use App\Enums\PeriodScope;
 use App\Models\Apprenticeship;
-use App\Models\EvaluationNode;
+use App\Models\ApprenticeshipContext;
+use App\Models\Domain;
+use App\Models\DomainLinkWeight;
 use App\Models\Subject;
-use App\Models\SubjectCategory;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use LogicException;
 
 /**
- * Seeds the IT and EC grade trees (docs/project-docs/grade_tree_*.md and
- * *-schema.mmd) into `evaluation_nodes` / `evaluation_node_connections`.
- *
- * Every leaf is a subject that grades are entered against; every composite
- * node is a weighted average of its children. Weights are percentages of
- * their parent and are meant to be normalized by their sum.
- *
- * Each root is linked to its apprenticeship (ApprenticeshipSeeder must run
- * first). That link is the tree's stable identifier: an apprenticeship that
- * already has a tree is left untouched, otherwise a complete tree is created
- * and linked. Node names are never used to find an existing tree.
+ * Seeds the IT and EC grade trees as domains, shared links, and
+ * apprenticeship-context-specific link weights.
  */
 class EvaluationTreeSeeder extends Seeder
 {
-    /** Rounding of composite (domain and final) grades. */
     private const COMPOSITE_ROUNDING = 0.1;
 
-    /** Rounding of semester grades (half points). */
     private const SEMESTER_ROUNDING = 0.5;
 
     public const IT_ROOT = 'Note finale CFC — Informaticien·ne';
 
     public const EC_ROOT = 'Note finale CFC — Employé·e de commerce';
 
-    /**
-     * Nodes declared with a `key`, reusable through `ref` (shared DAG children).
-     *
-     * @var array<string, EvaluationNode>
-     */
-    private array $nodesByKey = [];
+    /** @var array<string, Domain> */
+    private array $domainsByKey = [];
+
+    /** @var array<string, array<int, float>> */
+    private array $weightsByContext = [];
 
     public function run(): void
     {
         DB::transaction(function (): void {
-            $this->seedTree(ApprenticeshipSeeder::IT, fn (): array => $this->itTree());
-            $this->seedTree(ApprenticeshipSeeder::EC, fn (): array => $this->ecTree());
+            $this->seedTree(
+                ApprenticeshipSeeder::IT,
+                fn (): array => $this->itTree(),
+                ['standard' => false],
+            );
+            $this->seedTree(
+                ApprenticeshipSeeder::EC,
+                fn (): array => $this->ecTree(),
+                ['standard' => false, 'mp' => true],
+            );
         });
     }
 
     /**
      * @param  callable(): array<string, mixed>  $tree
+     * @param  array<string, bool>  $contexts
      */
-    private function seedTree(string $apprenticeshipName, callable $tree): void
+    private function seedTree(string $apprenticeshipName, callable $tree, array $contexts): void
     {
         $apprenticeship = Apprenticeship::query()
             ->where('name', $apprenticeshipName)
@@ -65,68 +60,73 @@ class EvaluationTreeSeeder extends Seeder
                 "Apprenticeship [{$apprenticeshipName}] not found: run ApprenticeshipSeeder first.",
             ));
 
-        if ($apprenticeship->evaluation_node_id !== null) {
+        if ($apprenticeship->contexts()->count() === count($contexts)) {
             return;
         }
 
-        $this->nodesByKey = [];
-        $root = $this->createNode($tree());
+        $this->domainsByKey = [];
+        $this->weightsByContext = array_fill_keys(array_keys($contexts), []);
+        $root = $this->createDomain($tree());
 
-        $apprenticeship->update(['evaluation_node_id' => $root->id]);
+        foreach ($contexts as $key => $isMp) {
+            $context = ApprenticeshipContext::query()->updateOrCreate(
+                ['apprenticeship_id' => $apprenticeship->id, 'is_mp' => $isMp],
+                ['root_domain_id' => $root->id],
+            );
+
+            if ($this->weightsByContext[$key] === []) {
+                continue;
+            }
+
+            foreach ($this->weightsByContext[$key] as $linkId => $weight) {
+                DomainLinkWeight::query()->updateOrCreate(
+                    [
+                        'apprenticeship_context_id' => $context->id,
+                        'domain_link_id' => $linkId,
+                    ],
+                    ['weight' => $weight],
+                );
+            }
+        }
     }
 
     /**
-     * Creates a node and, recursively, its children.
-     *
      * @param  array<string, mixed>  $spec
+     *
+     * @phpstan-impure
      */
-    private function createNode(array $spec): EvaluationNode
+    private function createDomain(array $spec): Domain
     {
-        /** @var list<array<string, mixed>> $children */
         $children = $spec['children'] ?? [];
-        $isComposite = $children !== [];
-        $scope = $spec['scope'] ?? PeriodScope::Cursus;
-
-        $node = EvaluationNode::query()->create([
+        $key = $spec['key'] ?? $spec['name'];
+        $domain = $this->domainsByKey[$key] ??= Domain::query()->create([
             'name' => $spec['name'],
-            'subject_id' => $isComposite ? null : $this->createSubject($spec['name'])->id,
-            'aggregation' => $isComposite ? AggregationType::WeightedAverage : null,
             'rounding_step' => $spec['rounding']
-                ?? ($isComposite ? self::COMPOSITE_ROUNDING : ($scope === PeriodScope::Semester ? self::SEMESTER_ROUNDING : null)),
-            'period_scope' => $scope,
-            'variant' => $spec['variant'] ?? null,
+                ?? ($children === []
+                    ? (($spec['scope'] ?? null) === 'semester' ? self::SEMESTER_ROUNDING : null)
+                    : self::COMPOSITE_ROUNDING),
         ]);
 
-        if (isset($spec['key'])) {
-            $this->nodesByKey[$spec['key']] = $node;
+        if ($children === []) {
+            $subject = Subject::query()->firstOrCreate(['name' => $spec['name']]);
+            $domain->subjects()->syncWithoutDetaching([$subject->id]);
+
+            return $domain;
         }
 
         foreach ($children as $childSpec) {
-            $child = isset($childSpec['ref'])
-                ? $this->nodesByKey[$childSpec['ref']] ?? throw new LogicException("Unknown node ref [{$childSpec['ref']}].")
-                : $this->createNode($childSpec);
+            $child = $this->createDomain($childSpec);
+            $link = $domain->linkChild($child);
 
-            $node->addChild($child, (float) $childSpec['weight']);
+            foreach ($childSpec['weights'] ?? [] as $context => $weight) {
+                $this->weightsByContext[$context][$link->id] = (float) $weight;
+            }
         }
 
-        return $node;
+        return $domain;
     }
 
-    /**
-     * A leaf's displayed name lives on its subject category (see ADR).
-     */
-    private function createSubject(string $name): Subject
-    {
-        $category = SubjectCategory::query()->firstOrCreate(['name' => $name]);
-
-        return Subject::query()->create(['subject_category_id' => $category->id]);
-    }
-
-    /**
-     * Informaticienne/Informaticien CFC — docs/project-docs/IT-schema.mmd.
-     *
-     * @return array<string, mixed>
-     */
+    /** @return array<string, mixed> */
     private function itTree(): array
     {
         $modules = $this->itModules();
@@ -136,57 +136,51 @@ class EvaluationTreeSeeder extends Seeder
             'children' => [
                 [
                     'name' => 'Travail pratique individuel (TPI)',
-                    'weight' => 40,
+                    'weights' => ['standard' => 0.40],
                     'children' => [
-                        ['name' => 'TPI — Exécution et résultat du travail', 'weight' => 50],
-                        ['name' => 'TPI — Documentation', 'weight' => 20],
-                        ['name' => 'TPI — Présentation et entretien professionnel', 'weight' => 30],
+                        ['name' => 'TPI — Exécution et résultat du travail', 'weights' => ['standard' => 0.50]],
+                        ['name' => 'TPI — Documentation', 'weights' => ['standard' => 0.20]],
+                        ['name' => 'TPI — Présentation et entretien professionnel', 'weights' => ['standard' => 0.30]],
                     ],
                 ],
                 [
                     'name' => 'Culture générale',
-                    'weight' => 20,
+                    'weights' => ['standard' => 0.20],
                     'children' => [
-                        ['name' => 'Culture générale — Travail personnel d\'approfondissement (TPA)', 'weight' => 33.33],
-                        ['name' => 'Culture générale — Examen final', 'weight' => 33.33],
-                        ['name' => 'Culture générale — Note d\'expérience', 'weight' => 33.34, 'scope' => PeriodScope::Semester],
+                        ['name' => 'Culture générale — Travail personnel d\'approfondissement (TPA)', 'weights' => ['standard' => 0.33]],
+                        ['name' => 'Culture générale — Examen final', 'weights' => ['standard' => 0.33]],
+                        ['name' => 'Culture générale — Note d\'expérience', 'weights' => ['standard' => 0.34], 'scope' => 'semester'],
                     ],
                 ],
                 [
                     'name' => 'Compétences en informatique',
-                    'weight' => 30,
+                    'weights' => ['standard' => 0.30],
                     'children' => [
                         [
                             'name' => 'Modules école professionnelle',
-                            'weight' => 80,
+                            'weights' => ['standard' => 0.80],
                             'children' => $modules['EPSIC'],
                         ],
                         [
                             'name' => 'Modules cours interentreprises',
-                            'weight' => 20,
+                            'weights' => ['standard' => 0.20],
                             'children' => $modules['CIE'],
                         ],
                     ],
                 ],
                 [
                     'name' => 'Compétences de base élargies',
-                    'weight' => 10,
+                    'weights' => ['standard' => 0.10],
                     'children' => [
-                        ['name' => 'Mathématiques', 'weight' => 50, 'scope' => PeriodScope::Semester],
-                        ['name' => 'Anglais', 'weight' => 50, 'scope' => PeriodScope::Semester],
+                        ['name' => 'Mathématiques', 'weights' => ['standard' => 0.50], 'scope' => 'semester'],
+                        ['name' => 'Anglais', 'weights' => ['standard' => 0.50], 'scope' => 'semester'],
                     ],
                 ],
             ],
         ];
     }
 
-    /**
-     * Employée/Employé de commerce CFC — docs/project-docs/EC-schema.mmd.
-     * The MP variant is a sibling of the standard one (see ADR), sharing the
-     * CIE and workplace-training leaves with different weights.
-     *
-     * @return array<string, mixed>
-     */
+    /** @return array<string, mixed> */
     private function ecTree(): array
     {
         return [
@@ -194,78 +188,60 @@ class EvaluationTreeSeeder extends Seeder
             'children' => [
                 [
                     'name' => 'Note d\'expérience',
-                    'weight' => 40,
+                    'weights' => ['standard' => 0.40, 'mp' => 0.40],
                     'children' => [
                         [
-                            'name' => 'Note d\'expérience — Standard',
-                            'weight' => 100,
-                            'variant' => EvaluationVariant::Standard,
-                            'children' => [
-                                [
-                                    'name' => 'Enseignement des connaissances professionnelles et de la culture générale',
-                                    'weight' => 50,
-                                    'scope' => PeriodScope::Semester,
-                                ],
-                                ['key' => 'ec-cie', 'name' => 'Cours interentreprises', 'weight' => 25],
-                                [
-                                    'key' => 'ec-workplace',
-                                    'name' => 'Formation à la pratique professionnelle',
-                                    'weight' => 25,
-                                    'scope' => PeriodScope::Semester,
-                                ],
-                            ],
+                            'name' => 'Enseignement des connaissances professionnelles et de la culture générale',
+                            'weights' => ['standard' => 0.50],
+                            'scope' => 'semester',
                         ],
                         [
-                            'name' => 'Note d\'expérience — Maturité professionnelle',
-                            'weight' => 100,
-                            'variant' => EvaluationVariant::Mp,
-                            'children' => [
-                                ['ref' => 'ec-workplace', 'weight' => 50],
-                                ['ref' => 'ec-cie', 'weight' => 50],
-                            ],
+                            'key' => 'ec-cie',
+                            'name' => 'Cours interentreprises',
+                            'weights' => ['standard' => 0.25, 'mp' => 0.50],
+                        ],
+                        [
+                            'key' => 'ec-workplace',
+                            'name' => 'Formation à la pratique professionnelle',
+                            'weights' => ['standard' => 0.25, 'mp' => 0.50],
+                            'scope' => 'semester',
                         ],
                     ],
                 ],
                 [
                     'name' => 'Travail pratique',
-                    'weight' => 30,
+                    'weights' => ['standard' => 0.30, 'mp' => 0.30],
                     'children' => [
-                        ['name' => 'Étude de cas spécifique à la branche', 'weight' => 100],
+                        ['name' => 'Étude de cas spécifique à la branche', 'weights' => ['standard' => 1.0, 'mp' => 1.0]],
                     ],
                 ],
                 [
                     'name' => 'Connaissances professionnelles et culture générale',
-                    'weight' => 30,
+                    'weights' => ['standard' => 0.30, 'mp' => 0.30],
                     'children' => [
-                        ['name' => '1. Travail au sein de structures d\'activité et d\'organisation dynamiques', 'weight' => 20],
-                        ['name' => '2. Interaction dans un milieu de travail interconnecté', 'weight' => 20],
-                        ['name' => '3. Coordination des processus de travail en entreprise', 'weight' => 20],
-                        ['name' => '4. Gestion des relations avec les clients et les fournisseurs', 'weight' => 20],
-                        ['name' => '5. Utilisation des technologies numériques du monde du travail', 'weight' => 20],
+                        ['name' => '1. Travail au sein de structures d\'activité et d\'organisation dynamiques', 'weights' => ['standard' => 0.20, 'mp' => 0.20]],
+                        ['name' => '2. Interaction dans un milieu de travail interconnecté', 'weights' => ['standard' => 0.20, 'mp' => 0.20]],
+                        ['name' => '3. Coordination des processus de travail en entreprise', 'weights' => ['standard' => 0.20, 'mp' => 0.20]],
+                        ['name' => '4. Gestion des relations avec les clients et les fournisseurs', 'weights' => ['standard' => 0.20, 'mp' => 0.20]],
+                        ['name' => '5. Utilisation des technologies numériques du monde du travail', 'weights' => ['standard' => 0.20, 'mp' => 0.20]],
                     ],
                 ],
             ],
         ];
     }
 
-    /**
-     * IT modules grouped by school, from the list the grade form already uses.
-     * Each module is a leaf with an equal weight inside its school.
-     *
-     * @return array{EPSIC: list<array<string, mixed>>, CIE: list<array<string, mixed>>}
-     */
+    /** @return array{EPSIC: list<array<string, mixed>>, CIE: list<array<string, mixed>>} */
     private function itModules(): array
     {
         /** @var list<array{code: int, school: string, name: string}> $modules */
         $modules = File::json(resource_path('js/data/modules.json'));
-
         $epsic = [];
         $cie = [];
 
         foreach ($modules as $module) {
             $leaf = [
                 'name' => "{$module['code']} — {$module['name']}",
-                'weight' => 1,
+                'weights' => ['standard' => 1.0],
             ];
 
             match ($module['school']) {

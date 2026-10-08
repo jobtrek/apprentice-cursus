@@ -1,8 +1,11 @@
 <?php
 
 use App\Models\Apprenticeship;
-use App\Models\EvaluationNode;
+use App\Models\ApprenticeshipContext;
+use App\Models\ApprenticeshipPeriod;
+use App\Models\Domain;
 use App\Models\Grade;
+use App\Models\Subject;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -48,16 +51,25 @@ expect()->extend('toBeOne', function () {
 |
 */
 
-function makeGrade(User $apprentice): Grade
+function makeGrade(User $apprentice, ?Domain $domain = null): Grade
 {
-    $node = EvaluationNode::query()->firstOrCreate(['name' => 'Test node', 'period_scope' => 'semester']);
+    $domain ??= Domain::query()->firstOrCreate(['name' => 'Test node']);
+    $subject = Subject::query()->firstOrCreate(['name' => 'Test subject']);
+    // A grade is only accepted on a subject attached to its domain.
+    $domain->subjects()->syncWithoutDetaching([$subject->id]);
+
+    $period = ApprenticeshipPeriod::query()->firstOrCreate(
+        ['user_id' => $apprentice->id, 'semester' => 2],
+        ['start_date' => '2026-01-01', 'end_date' => '2026-07-31'],
+    );
 
     return Grade::query()->create([
         'user_id' => $apprentice->id,
-        'evaluation_node_id' => $node->id,
+        'domain_id' => $domain->id,
+        'subject_id' => $subject->id,
+        'apprenticeship_period_id' => $period->id,
         'value' => 5.0,
         'test_date' => '2026-01-15',
-        'semester' => 1,
     ]);
 }
 
@@ -65,12 +77,27 @@ function makeApprentice(?Apprenticeship $section = null, ?User $coach = null, ?U
 {
     $apprentice = User::factory()->create();
     $apprentice->forceFill([
-        'apprenticeship_id' => $section?->id,
+        'apprenticeship_context_id' => $section === null ? null : contextFor($section)->id,
         'coach_id' => $coach?->id,
         'trainer_id' => $trainer?->id,
     ])->save();
 
     return $apprentice;
+}
+
+/**
+ * The context of a section, created when missing. Contexts of one section
+ * share their root domain, like the seeded trees.
+ */
+function contextFor(Apprenticeship $section, bool $mp = false): ApprenticeshipContext
+{
+    return ApprenticeshipContext::query()->firstOrCreate(
+        ['apprenticeship_id' => $section->id, 'is_mp' => $mp],
+        fn (): array => [
+            'root_domain_id' => $section->contexts()->value('root_domain_id')
+                ?? Domain::query()->create(['name' => "Root {$section->name}"])->id,
+        ],
+    );
 }
 
 function section(string $name): Apprenticeship

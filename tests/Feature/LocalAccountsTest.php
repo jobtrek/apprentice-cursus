@@ -38,7 +38,7 @@ it('seeds one active account per role with the right section', function (string 
     expect($user)->not->toBeNull();
     expect($user->roles()->count())->toBe(1);
     expect($user->role)->toBe($role);
-    expect($user->apprenticeship_id)->toBe($section === null ? null : Apprenticeship::where('name', $section)->value('id'));
+    expect($user->apprenticeshipId())->toBe($section === null ? null : Apprenticeship::where('name', $section)->value('id'));
     expect($user->is_active)->toBeTrue();
 })->with('local accounts');
 

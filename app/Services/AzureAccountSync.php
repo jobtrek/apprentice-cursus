@@ -59,44 +59,53 @@ class AzureAccountSync
     }
 
     /**
-     * Apply the group's role (Spatie) and apprenticeship to the user and (re)activate it.
-     * A group without a section (coach) clears the apprenticeship.
-     * An apprentice keeps a different existing apprenticeship (moving grades needs
-     * a confirmation); a trainer follows its group's section.
+     * Apply the group's role (Spatie) and section to the user and (re)activate it.
+     * A group without a section (coach) clears the context.
+     * An apprentice keeps its context when it is already in the group's section
+     * (so an MP context is not reset) and also when it is in another section
+     * (moving grades needs a confirmation); otherwise it gets the standard
+     * context of the group's section. A trainer always follows its group's
+     * section, in the standard context. A section without a context yet leaves
+     * the user without one.
      *
      * @throws ApprenticeshipNotSeededException before anything is modified
      */
     public function apply(User $user, AzureGroup $group): void
     {
         $name = $group->apprenticeship();
-        $apprenticeshipId = null;
-
-        if ($name !== null) {
-            $id = Apprenticeship::where('name', $name)->value('id');
-
-            if ($id === null) {
-                throw new ApprenticeshipNotSeededException($name);
-            }
-
-            $apprenticeshipId = (int) $id;
-        }
-
+        $contextId = null;
         $roleUnchanged = $user->role === $group->role();
 
-        if ($apprenticeshipId !== null && $roleUnchanged && $group->role() === UserRole::Apprentice && $user->apprenticeship_id !== null && $user->apprenticeship_id !== $apprenticeshipId) {
-            Log::warning('Microsoft SSO: section change pending confirmation, apprenticeship kept.', [
-                'user_id' => $user->id,
-                'from' => $user->apprenticeship_id,
-                'to' => $apprenticeshipId,
-            ]);
+        if ($name !== null) {
+            $apprenticeship = Apprenticeship::where('name', $name)->first()
+                ?? throw new ApprenticeshipNotSeededException($name);
 
-            $apprenticeshipId = $user->apprenticeship_id;
+            $currentId = $user->apprenticeshipId();
+            $isApprentice = $group->role() === UserRole::Apprentice;
+
+            if ($isApprentice && $roleUnchanged && $currentId !== null && $currentId !== $apprenticeship->id) {
+                Log::warning('Microsoft SSO: section change pending confirmation, apprenticeship kept.', [
+                    'user_id' => $user->id,
+                    'from' => $currentId,
+                    'to' => $apprenticeship->id,
+                ]);
+
+                $contextId = $user->apprenticeship_context_id;
+            } elseif ($isApprentice && $currentId === $apprenticeship->id) {
+                $contextId = $user->apprenticeship_context_id;
+            } else {
+                $contextId = $apprenticeship->contexts()->where('is_mp', false)->value('id');
+            }
         }
 
         $user->forceFill([
-            'apprenticeship_id' => $apprenticeshipId,
+            'apprenticeship_context_id' => $contextId,
             'is_active' => true,
         ]);
+
+        if ($user->isDirty('apprenticeship_context_id')) {
+            $user->unsetRelation('apprenticeshipContext')->unsetRelation('apprenticeship');
+        }
 
         if (! $user->exists || $user->isDirty()) {
             $user->save();

@@ -121,7 +121,7 @@ class AzureDirectorySync
                 $this->sync->apply($user, $group);
                 $created++;
             } else {
-                $before = [$user->name, $user->is_active, $user->apprenticeship_id, $user->role];
+                $before = [$user->name, $user->is_active, $user->apprenticeship_context_id, $user->role];
 
                 if ($member['name'] !== '') {
                     $user->name = $member['name'];
@@ -129,7 +129,7 @@ class AzureDirectorySync
 
                 $this->sync->apply($user, $group);
 
-                if (isset($renamed[$azureId]) || $before !== [$user->name, $user->is_active, $user->apprenticeship_id, $user->role]) {
+                if (isset($renamed[$azureId]) || $before !== [$user->name, $user->is_active, $user->apprenticeship_context_id, $user->role]) {
                     $updated++;
                 }
             }

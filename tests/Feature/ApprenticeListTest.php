@@ -49,7 +49,7 @@ test('each listed apprentice carries its coach and can be opened', function () {
 
 test('a trainer lists only its own apprentices of its own section', function () {
     $trainer = User::factory()->trainer()->create();
-    $trainer->forceFill(['apprenticeship_id' => $this->it->id])->save();
+    $trainer->forceFill(['apprenticeship_context_id' => contextFor($this->it)->id])->save();
     makeApprentice($this->it, trainer: $trainer)->forceFill(['name' => 'IT mine'])->save();
     makeApprentice($this->it)->forceFill(['name' => 'IT none'])->save();
     // Assigned but moved to another section: no longer followed.
@@ -72,7 +72,7 @@ test('a trainer without a section lists nobody', function () {
 test('supervisors are never listed as apprentices', function () {
     $coach = User::factory()->coach()->create();
     // Even with this coach as coach_id, a trainer is not an apprentice.
-    User::factory()->trainer()->create()->forceFill(['apprenticeship_id' => $this->it->id, 'coach_id' => $coach->id])->save();
+    User::factory()->trainer()->create()->forceFill(['apprenticeship_context_id' => contextFor($this->it)->id, 'coach_id' => $coach->id])->save();
 
     $this->actingAs($coach)
         ->get(route('apprentisdashboard'))
@@ -117,7 +117,7 @@ test('the list query count does not depend on the number of apprentices', functi
     $coach = User::factory()->coach()->create();
     // With a trainer already, so the eager load of `trainer` runs in both counts.
     $trainer = User::factory()->trainer()->create();
-    $trainer->forceFill(['apprenticeship_id' => $this->it->id])->save();
+    $trainer->forceFill(['apprenticeship_context_id' => contextFor($this->it)->id])->save();
     makeApprentice($this->it, $coach, $trainer);
 
     // Warm-up request: the first one also loads Spatie's permission cache.
@@ -129,7 +129,7 @@ test('the list query count does not depend on the number of apprentices', functi
 
     foreach (range(1, 5) as $_) {
         $trainer = User::factory()->trainer()->create();
-        $trainer->forceFill(['apprenticeship_id' => $this->ec->id])->save();
+        $trainer->forceFill(['apprenticeship_context_id' => contextFor($this->ec)->id])->save();
         makeApprentice($this->ec, $coach, $trainer);
     }
 
@@ -142,7 +142,7 @@ test('the list query count does not depend on the number of apprentices', functi
 test('each apprentice carries its own trainer', function () {
     $coach = User::factory()->coach()->create();
     $trainer = User::factory()->trainer()->create(['name' => 'Bastien Nicoud']);
-    $trainer->forceFill(['apprenticeship_id' => $this->it->id])->save();
+    $trainer->forceFill(['apprenticeship_context_id' => contextFor($this->it)->id])->save();
     $trained = makeApprentice($this->it, $coach, $trainer);
     $untrained = makeApprentice($this->it, $coach);
 

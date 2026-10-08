@@ -11,12 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('users', function (Blueprint $table) {
-            $table->dropColumn([
-                'remember_token',
-                'created_at',
-                'updated_at',
-            ]);
+        Schema::create('domains', function (Blueprint $table) {
+            $table->id();
+            $table->string('name');
+            $table->decimal('rounding_step', 2, 1)->nullable();
+            $table->timestamp('created_at')->useCurrent();
         });
     }
 
@@ -25,9 +24,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('users', function (Blueprint $table) {
-            $table->rememberToken();
-            $table->timestamps();
-        });
+        Schema::dropIfExists('domains');
     }
 };

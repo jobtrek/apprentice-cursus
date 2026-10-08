@@ -9,10 +9,12 @@ use Carbon\CarbonImmutable;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
+use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOneThrough;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Carbon;
@@ -24,11 +26,9 @@ use Spatie\Permission\Traits\HasRoles;
  * @property string|null $tenant_id
  * @property string $name
  * @property string $email
- * @property bool|null $is_mp Maturité professionnelle track. NULL = not applicable (non-apprentice roles).
  * @property bool $is_active Deactivation flag. Users are never deleted, only deactivated.
  * @property-read UserRole|null $role Derived from the Spatie role; use syncRoles() to change it.
- * @property string|null $apprenticeship_name
- * @property int|null $apprenticeship_id
+ * @property int|null $apprenticeship_context_id
  * @property int|null $coach_id
  * @property int|null $trainer_id
  * @property Carbon|null $email_verified_at
@@ -41,7 +41,7 @@ use Spatie\Permission\Traits\HasRoles;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
-#[Fillable(['name', 'email', 'password', 'azure_id', 'tenant_id'])]
+#[Fillable(['name', 'email', 'password', 'azure_id', 'tenant_id', 'apprenticeship_context_id'])]
 #[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
 class User extends Authenticatable
 {
@@ -65,7 +65,6 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
-            'is_mp' => 'boolean',
             'is_active' => 'boolean',
             'synced_at' => 'datetime',
         ];
@@ -85,50 +84,92 @@ class User extends Authenticatable
         return $name === null ? null : UserRole::tryFrom($name);
     }
 
-    /**
-     * @return BelongsTo<Apprenticeship, $this>
-     */
-    public function apprenticeship(): BelongsTo
+    /** @return BelongsTo<ApprenticeshipContext, $this> */
+    public function apprenticeshipContext(): BelongsTo
     {
-        return $this->belongsTo(Apprenticeship::class);
+        return $this->belongsTo(ApprenticeshipContext::class);
     }
 
     /**
-     * @return BelongsTo<self, $this>
+     * The section, reached through the context. Read-only: to change it,
+     * write `apprenticeship_context_id`.
+     *
+     * @return HasOneThrough<Apprenticeship, ApprenticeshipContext, $this>
      */
+    public function apprenticeship(): HasOneThrough
+    {
+        return $this->hasOneThrough(
+            Apprenticeship::class,
+            ApprenticeshipContext::class,
+            firstKey: 'id',                          // apprenticeship_contexts.id
+            secondKey: 'id',                         // apprenticeships.id
+            localKey: 'apprenticeship_context_id',   // users.apprenticeship_context_id
+            secondLocalKey: 'apprenticeship_id',     // apprenticeship_contexts.apprenticeship_id
+        );
+    }
+
+    /** Id of the section, null for a user without a context (coach, admin). */
+    public function apprenticeshipId(): ?int
+    {
+        return $this->apprenticeshipContext?->apprenticeship_id;
+    }
+
+    /**
+     * Users of a section, whatever their context (standard or MP). A null
+     * section matches nobody.
+     *
+     * @param  Builder<self>  $query
+     */
+    #[Scope]
+    protected function inSection(Builder $query, ?int $apprenticeshipId): void
+    {
+        if ($apprenticeshipId === null) {
+            $query->whereRaw('false');
+
+            return;
+        }
+
+        $query->whereHas(
+            'apprenticeshipContext',
+            fn (Builder $context) => $context->where('apprenticeship_id', $apprenticeshipId),
+        );
+    }
+
     public function coach(): BelongsTo
     {
         return $this->belongsTo(self::class, 'coach_id');
     }
 
-    /**
-     * @return BelongsTo<self, $this>
-     */
     public function trainer(): BelongsTo
     {
         return $this->belongsTo(self::class, 'trainer_id');
     }
 
+    /** @return HasMany<User, $this> */
     public function coachees(): HasMany
     {
         return $this->hasMany(self::class, 'coach_id');
     }
 
+    /** @return HasMany<User, $this> */
     public function trainees(): HasMany
     {
         return $this->hasMany(self::class, 'trainer_id');
     }
 
+    /** @return HasMany<ApprenticeshipPeriod, $this> */
+    public function apprenticeshipPeriods(): HasMany
+    {
+        return $this->hasMany(ApprenticeshipPeriod::class);
+    }
+
+    /** @return HasMany<Grade, $this> */
     public function grades(): HasMany
     {
         return $this->hasMany(Grade::class);
     }
 
-    public function evaluationResults(): HasMany
-    {
-        return $this->hasMany(EvaluationResult::class);
-    }
-
+    /** @return HasMany<Comment, $this> */
     public function comments(): HasMany
     {
         return $this->hasMany(Comment::class, 'author_id');
@@ -182,7 +223,7 @@ class User extends Authenticatable
         return match ($this->role) {
             UserRole::Coach => $query->where('coach_id', $this->id),
             UserRole::Trainer => $query->where('trainer_id', $this->id)
-                ->where('apprenticeship_id', $this->apprenticeship_id),
+                ->inSection($this->apprenticeshipId()),
             default => $query->whereRaw('false'),
         };
     }
@@ -214,8 +255,7 @@ class User extends Authenticatable
         return match ($this->selfAssignmentColumn()) {
             'coach_id' => $query->whereNull('coach_id'),
             'trainer_id' => $query->whereNull('trainer_id')
-                ->whereNotNull('apprenticeship_id')
-                ->where('apprenticeship_id', $this->apprenticeship_id),
+                ->inSection($this->apprenticeshipId()),
             default => $query->whereRaw('false'),
         };
     }
@@ -232,10 +272,9 @@ class User extends Authenticatable
 
         return match ($this->role) {
             UserRole::Coach => $apprentice->coach_id === $this->id,
-            // Assigned to this trainer, and still in the trainer's section.
             UserRole::Trainer => $apprentice->trainer_id === $this->id
-                && $this->apprenticeship_id !== null
-                && $apprentice->apprenticeship_id === $this->apprenticeship_id,
+                && $this->apprenticeshipId() !== null
+                && $apprentice->apprenticeshipId() === $this->apprenticeshipId(),
             default => false,
         };
     }
