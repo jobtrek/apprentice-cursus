@@ -61,12 +61,12 @@ const final = computed(() =>
         : mean(props.grades),
 );
 
-/** Domaines pas encore notés : la note finale est alors provisoire. */
-const pending = computed(
-    () =>
-        props.gradebook?.domains.filter(
-            (id) => props.gradebook?.nodeValue(id) === null,
-        ).length ?? 0,
+/**
+ * Note finale provisoire tant qu'une évaluation comptée n'a pas de note, même
+ * si chaque domaine en a déjà une (la moyenne se calcule alors sans elle).
+ */
+const provisional = computed(
+    () => props.gradebook !== null && !props.gradebook.isComplete(),
 );
 
 const SEMESTER_PERIODS: ProgressPeriod[] = Array.from(
@@ -142,7 +142,7 @@ const recentGrades = computed(() => props.grades.slice(-5).reverse());
             :hint="
                 final === null
                     ? 'Aucune note pour l’instant'
-                    : `${final < PASSING_GRADE ? 'Insuffisante' : 'Suffisante'}${pending > 0 ? ' · provisoire' : ''}`
+                    : `${final < PASSING_GRADE ? 'Insuffisante' : 'Suffisante'}${provisional ? ' · provisoire' : ''}`
             "
             :icon="GraduationCapIcon"
         />
@@ -244,6 +244,12 @@ const recentGrades = computed(() => props.grades.slice(-5).reverse());
                         </Link>
                     </li>
                 </ul>
+                <p
+                    v-else-if="grades.length === 0"
+                    class="text-muted-foreground rounded-lg border border-dashed p-4 text-sm"
+                >
+                    Aucune note pour l’instant.
+                </p>
                 <div
                     v-else
                     class="flex items-center gap-3 rounded-lg border border-dashed p-4"
