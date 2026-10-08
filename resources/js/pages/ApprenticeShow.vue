@@ -8,7 +8,8 @@ import ApprenticePortfolio from '@/components/apprentice/ApprenticePortfolio.vue
 import AssignmentBadge from '@/components/apprentice/AssignmentBadge.vue';
 import StatusBadge from '@/components/apprentice/StatusBadge.vue';
 import TrackBadges from '@/components/apprentice/TrackBadges.vue';
-import GradeBook from '@/components/gradeList/GradeBook.vue';
+import GradebookSummary from '@/components/gradebook/GradebookSummary.vue';
+import GradeList from '@/components/gradebook/GradeList.vue';
 import { PageContainer } from '@/components/page';
 import {
     Breadcrumb,
@@ -25,22 +26,31 @@ import {
     averageStatus,
     relativeDate,
     situationOf,
-    sortableDate,
     yearLabel,
 } from '@/lib/apprentice';
 import { apprentisdashboard } from '@/routes';
 import apprentices from '@/routes/apprentices';
-import type { Apprentice } from '@/types/apprentice';
+import type { Apprentice, ApprenticeStats } from '@/types/apprentice';
+import { createGradebook, type GradeTree } from '@/lib/gradebook';
 import type { Grade } from '@/types/grade';
 import type { SupervisedPortfolio } from '@/types/portfolio';
 
 const props = defineProps<{
     apprenticeId: number;
     apprentice: Apprentice;
+    /** Mêmes statistiques que la ligne de la liste (`ApprenticeList::statsFor`). */
+    stats: ApprenticeStats;
     grades: Grade[];
     /** Null quand l'utilisateur n'a pas le droit de voir le portfolio. */
     portfolio: SupervisedPortfolio | null;
+    /** Arbre de notes de l'apprenti·e ; null sans filière attribuée. */
+    tree: GradeTree | null;
 }>();
+
+/** Moyennes pondérées du CFC, comme sur le carnet de l'apprenti·e. */
+const gradebook = computed(() =>
+    props.tree ? createGradebook(props.tree, props.grades) : null,
+);
 
 const gradeHref = (grade: Grade) =>
     apprentices.grades.show({
@@ -48,30 +58,12 @@ const gradeHref = (grade: Grade) =>
         grade: grade.id,
     });
 
-/** Chiffres clés du bandeau, tirés des notes reçues. */
-const stats = computed(() => {
-    const count = props.grades.length;
-    const average =
-        count > 0
-            ? Math.round(
-                  (props.grades.reduce((sum, grade) => sum + grade.value, 0) /
-                      count) *
-                      10,
-              ) / 10
-            : null;
-    const last = props.grades
-        .map((grade) => grade.date)
-        .sort((a, b) => sortableDate(b).localeCompare(sortableDate(a)))[0];
-
-    return { grades_count: count, average, last_grade_date: last ?? null };
-});
-
-const situation = computed(() => situationOf({ stats: stats.value }));
+const situation = computed(() => situationOf({ stats: props.stats }));
 
 const averageClass = computed(() =>
-    stats.value.average === null
+    props.stats.average === null
         ? 'text-muted-foreground'
-        : averageStatus(stats.value.average).class,
+        : averageStatus(props.stats.average).class,
 );
 
 /** Onglets soulignés plutôt qu'en pastilles. */
@@ -293,11 +285,32 @@ function selectTab(tab: string | number): void {
             </TabsList>
 
             <TabsContent value="overview" class="flex flex-col gap-6">
-                <ApprenticeOverview :grades="grades" :grade-href="gradeHref" />
+                <ApprenticeOverview
+                    v-if="gradebook"
+                    :apprentice="apprentice"
+                    :gradebook="gradebook"
+                    :grades="grades"
+                    :grade-href="gradeHref"
+                />
+                <p v-else class="text-muted-foreground text-sm">
+                    Aucune filière n'est encore attribuée à cet·te apprenti·e :
+                    ses indicateurs apparaîtront dès qu'elle le sera.
+                </p>
             </TabsContent>
 
             <TabsContent value="grades" class="flex flex-col gap-6">
-                <GradeBook :grades="grades" :grade-href="gradeHref" />
+                <template v-if="gradebook">
+                    <GradebookSummary :gradebook="gradebook" />
+                    <GradeList
+                        :gradebook="gradebook"
+                        :grades="grades"
+                        :grade-href="gradeHref"
+                    />
+                </template>
+                <p v-else class="text-muted-foreground text-sm">
+                    Aucune filière n'est encore attribuée à cet·te apprenti·e :
+                    son carnet apparaîtra dès qu'elle le sera.
+                </p>
             </TabsContent>
 
             <TabsContent

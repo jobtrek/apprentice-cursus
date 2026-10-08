@@ -18,9 +18,11 @@ import TrainingPath from '@/components/gradebook/TrainingPath.vue';
 import { PageContainer, PageHeader } from '@/components/page';
 import { useAddGradeDialog } from '@/composables/useAddGradeDialog';
 import { useNavigation } from '@/composables/useNavigation';
-import { DEMO_APPRENTICESHIP_START_YEAR } from '@/data/dashboard';
-import { createGradebook, SEMESTERS, type GradeTree } from '@/lib/gradebook';
-import { trainingPeriod } from '@/lib/semester';
+import {
+    createGradebook,
+    type GradeTree,
+    lastGradedSemester,
+} from '@/lib/gradebook';
 import gradeRoutes from '@/routes/grades';
 import portfolio from '@/routes/portfolio';
 import type { ApprenticeListItem } from '@/types/apprentice';
@@ -51,11 +53,7 @@ const gradebook = computed(() =>
     props.tree ? createGradebook(props.tree, props.grades) : null,
 );
 
-// TODO: date de début réelle de l'apprentissage, quand elle sera en base.
-const currentSemester = Math.min(
-    SEMESTERS,
-    trainingPeriod(DEMO_APPRENTICESHIP_START_YEAR).semester,
-);
+const currentSemester = computed(() => lastGradedSemester(props.grades));
 
 const shortcuts: Shortcut[] = [
     {
@@ -93,6 +91,7 @@ const shortcuts: Shortcut[] = [
                     :gradebook="gradebook"
                     :current-semester="currentSemester"
                     :profile="profile"
+                    derived
                 />
 
                 <StatTiles :gradebook="gradebook" :grades="grades" />

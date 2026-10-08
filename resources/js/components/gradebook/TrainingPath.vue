@@ -22,6 +22,11 @@ const props = defineProps<{
     gradebook: Gradebook;
     currentSemester: number;
     profile: { track: string | null; variant: 'standard' | 'mp' } | null;
+    /**
+     * Le semestre courant est déduit du dernier semestre noté (vue coach),
+     * faute de date de début en base : le sous-titre le précise.
+     */
+    derived?: boolean;
 }>();
 
 const STATUS_TEXT: Record<Status, string> = {
@@ -84,7 +89,13 @@ const progress = computed(() =>
                     </h2>
                     <p class="text-muted-foreground text-sm">
                         {{ year }}<sup>{{ year === 1 ? 're' : 'e' }}</sup> année
-                        · semestre {{ currentSemester }} sur
+                        ·
+                        {{
+                            derived
+                                ? `dernier semestre noté : ${currentSemester}`
+                                : `semestre ${currentSemester}`
+                        }}
+                        sur
                         {{ SEMESTERS }}
                     </p>
                 </div>

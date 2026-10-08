@@ -1,23 +1,9 @@
 <script setup lang="ts">
 import { Link, router } from '@inertiajs/vue3';
-import {
-    BookOpenIcon,
-    EllipsisIcon,
-    EyeIcon,
-    FolderOpenIcon,
-    UserRoundIcon,
-} from '@lucide/vue';
+import { BookOpenIcon, EyeIcon, FolderOpenIcon } from '@lucide/vue';
 import { computed } from 'vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuLabel,
-    DropdownMenuSeparator,
-    DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import { TableCell, TableRow } from '@/components/ui/table';
 import {
     hasNoRecentGrade,
@@ -84,7 +70,7 @@ const trainerOptions = computed(
 </script>
 
 <template>
-    <!-- Toute la ligne ouvre le profil ; le menu mène droit à une section. -->
+    <!-- Toute la ligne ouvre le profil ; les boutons mènent droit à une section. -->
     <TableRow
         class="group focus-visible:bg-muted/50 cursor-pointer focus-visible:outline-none"
         tabindex="0"
@@ -187,61 +173,37 @@ const trainerOptions = computed(
             <AssignmentBadge :value="apprentice.trainer ?? undefined" />
         </TableCell>
 
-        <TableCell @click.stop @keydown.stop>
-            <div class="flex justify-end gap-0.5">
+        <TableCell @click.stop>
+            <div
+                class="flex justify-end gap-0.5 opacity-70 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100"
+            >
                 <Button
                     variant="ghost"
                     size="icon-sm"
-                    class="opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100 focus-visible:opacity-100"
                     :aria-label="`Aperçu de ${apprentice.name}`"
                     :title="`Aperçu de ${apprentice.name}`"
                     @click="$emit('preview', apprentice)"
                 >
                     <EyeIcon aria-hidden="true" />
                 </Button>
-                <DropdownMenu>
-                    <DropdownMenuTrigger as-child>
-                        <Button
-                            variant="ghost"
-                            size="icon-sm"
-                            :aria-label="`Actions pour ${apprentice.name}`"
-                            :data-test="`apprentice-actions-${apprentice.id}`"
-                        >
-                            <EllipsisIcon aria-hidden="true" />
-                        </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" class="w-52">
-                        <DropdownMenuLabel class="truncate">
-                            {{ apprentice.name }}
-                        </DropdownMenuLabel>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem as-child>
-                            <Link :href="profile()">
-                                <UserRoundIcon aria-hidden="true" />
-                                Voir le profil
-                            </Link>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem as-child>
-                            <Link :href="profile('grades')">
-                                <BookOpenIcon aria-hidden="true" />
-                                Carnet de notes
-                            </Link>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem as-child>
-                            <Link :href="profile('portfolio')">
-                                <FolderOpenIcon aria-hidden="true" />
-                                Portfolio
-                            </Link>
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem
-                            @select="$emit('preview', apprentice)"
-                        >
-                            <EyeIcon aria-hidden="true" />
-                            Aperçu rapide
-                        </DropdownMenuItem>
-                    </DropdownMenuContent>
-                </DropdownMenu>
+                <Button as-child variant="ghost" size="icon-sm">
+                    <Link
+                        :href="profile('grades')"
+                        :aria-label="`Carnet de notes de ${apprentice.name}`"
+                        :title="`Carnet de notes de ${apprentice.name}`"
+                    >
+                        <BookOpenIcon aria-hidden="true" />
+                    </Link>
+                </Button>
+                <Button as-child variant="ghost" size="icon-sm">
+                    <Link
+                        :href="profile('portfolio')"
+                        :aria-label="`Portfolio de ${apprentice.name}`"
+                        :title="`Portfolio de ${apprentice.name}`"
+                    >
+                        <FolderOpenIcon aria-hidden="true" />
+                    </Link>
+                </Button>
             </div>
         </TableCell>
     </TableRow>

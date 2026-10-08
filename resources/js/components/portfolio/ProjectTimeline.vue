@@ -10,7 +10,11 @@ import type { PortfolioProject } from '@/types/portfolio';
  * Projets sur une frise verticale, du plus récent au plus ancien. Adaptée de
  * la Timeline de reui.io (https://reui.io/components/timeline).
  */
-const props = defineProps<{ projects: PortfolioProject[] }>();
+const props = defineProps<{
+    projects: PortfolioProject[];
+    /** Coach et formateur : pas de modification. */
+    readonly?: boolean;
+}>();
 
 defineEmits<{ edit: [project: PortfolioProject] }>();
 
@@ -66,7 +70,11 @@ const sorted = computed(() =>
                 >
                     <div class="flex min-w-0 flex-1 flex-col gap-1.5">
                         <div class="flex flex-wrap items-center gap-2">
+                            <span v-if="readonly" class="font-medium">
+                                {{ project.title }}
+                            </span>
                             <button
+                                v-else
                                 type="button"
                                 class="focus-visible:ring-ring/50 rounded-sm text-left font-medium hover:underline focus-visible:ring-[3px] focus-visible:outline-none"
                                 @click="$emit('edit', project)"
@@ -126,6 +134,7 @@ const sorted = computed(() =>
                             />
                         </div>
                         <Button
+                            v-if="!readonly"
                             variant="ghost"
                             size="icon-sm"
                             :aria-label="`Modifier ${project.title}`"
