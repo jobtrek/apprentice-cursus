@@ -45,6 +45,8 @@ class CommentResource extends JsonResource
             'date' => $this->created_at->format('d.m.Y'),
             'text' => $this->body,
             'edited' => $this->updated_at->gt($this->created_at),
+            // The viewer's own comments sit on the other side of the thread.
+            'mine' => $request->user()?->id === $this->author_id,
             'can' => ['update' => $request->user()?->can('update', $this->resource) === true],
         ];
     }
