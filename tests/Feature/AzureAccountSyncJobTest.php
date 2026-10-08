@@ -27,6 +27,8 @@ beforeEach(function () {
     config()->set('services.azure.groups', SYNC_GROUPS);
     $this->it = Apprenticeship::query()->create(['name' => ApprenticeshipSeeder::IT]);
     $this->ec = Apprenticeship::query()->create(['name' => ApprenticeshipSeeder::EC]);
+    contextFor($this->it);
+    contextFor($this->ec);
 });
 
 /**
@@ -72,38 +74,38 @@ test('it creates a user for each mapped group with the right role and section', 
 
     $it = User::where('azure_id', 'a-it')->firstOrFail();
     expect($it->role)->toBe(UserRole::Apprentice)
-        ->and($it->apprenticeship_id)->toBe($this->it->id)
+        ->and($it->apprenticeshipId())->toBe($this->it->id)
         ->and($it->email)->toBe('a-it@example.test')
         ->and($it->name)->toBe('Name a-it')
         ->and($it->is_active)->toBeTrue()
         ->and($it->synced_at)->not->toBeNull();
-    expect(User::where('azure_id', 'a-ec')->firstOrFail()->apprenticeship_id)->toBe($this->ec->id);
+    expect(User::where('azure_id', 'a-ec')->firstOrFail()->apprenticeshipId())->toBe($this->ec->id);
 
     $trainer = User::where('azure_id', 'a-trainer')->firstOrFail();
     expect($trainer->role)->toBe(UserRole::Trainer)
-        ->and($trainer->apprenticeship_id)->toBe($this->it->id);
+        ->and($trainer->apprenticeshipId())->toBe($this->it->id);
 
     $trainerEc = User::where('azure_id', 'a-trainer-ec')->firstOrFail();
     expect($trainerEc->role)->toBe(UserRole::Trainer)
-        ->and($trainerEc->apprenticeship_id)->toBe($this->ec->id);
+        ->and($trainerEc->apprenticeshipId())->toBe($this->ec->id);
 
     $coach = User::where('azure_id', 'a-coach')->firstOrFail();
     expect($coach->role)->toBe(UserRole::Coach)
-        ->and($coach->apprenticeship_id)->toBeNull()
+        ->and($coach->apprenticeshipId())->toBeNull()
         ->and($coach->synced_at)->not->toBeNull();
 });
 
 test('it updates the role and name of an existing user and keeps the section on a section change', function () {
     Log::spy();
     $user = User::factory()->create(['azure_id' => 'a-1', 'name' => 'Old']);
-    $user->forceFill(['apprenticeship_id' => $this->ec->id])->save();
+    $user->forceFill(['apprenticeship_context_id' => contextFor($this->ec)->id])->save();
     fakeDirectory(['g-it' => [member('a-1', 'New Name')]]);
 
     $this->artisan('azure:sync')->assertExitCode(0);
 
     $user = $user->fresh();
     expect($user->name)->toBe('New Name')
-        ->and($user->apprenticeship_id)->toBe($this->ec->id)
+        ->and($user->apprenticeshipId())->toBe($this->ec->id)
         ->and($user->synced_at)->not->toBeNull();
     Log::shouldHaveReceived('warning')
         ->with('Microsoft SSO: section change pending confirmation, apprenticeship kept.', Mockery::type('array'))
@@ -115,15 +117,44 @@ test('it updates the role and name of an existing user and keeps the section on 
     expect($user->fresh()->role)->toBe(UserRole::Trainer);
 });
 
+test('an apprentice already in the MP context of its section keeps it', function () {
+    $user = User::factory()->create(['azure_id' => 'a-mp']);
+    $mp = contextFor($this->it, mp: true);
+    $user->forceFill(['apprenticeship_context_id' => $mp->id])->save();
+    fakeDirectory(['g-it' => [member('a-mp')]]);
+
+    $this->artisan('azure:sync')->assertExitCode(0);
+
+    expect($user->fresh()->apprenticeship_context_id)->toBe($mp->id);
+});
+
+test('a new account gets the standard context, or none when its section has no context yet', function () {
+    contextFor($this->it, mp: true);
+    $this->ec->contexts()->delete();
+    fakeDirectory([
+        'g-it' => [member('a-it')],
+        'g-ec' => [member('a-ec')],
+    ]);
+
+    $this->artisan('azure:sync')->assertExitCode(0);
+
+    expect(User::where('azure_id', 'a-it')->firstOrFail()->apprenticeship_context_id)->toBe(contextFor($this->it)->id);
+
+    $ec = User::where('azure_id', 'a-ec')->firstOrFail();
+    expect($ec->apprenticeship_context_id)->toBeNull()
+        ->and($ec->is_active)->toBeTrue()
+        ->and($ec->role)->toBe(UserRole::Apprentice);
+});
+
 test('a trainer moved to the other trainer group follows the new section', function () {
     Log::spy();
     $user = User::factory()->trainer()->create(['azure_id' => 'a-3']);
-    $user->forceFill(['apprenticeship_id' => $this->it->id])->save();
+    $user->forceFill(['apprenticeship_context_id' => contextFor($this->it)->id])->save();
     fakeDirectory(['g-trainer-ec' => [member('a-3')]]);
 
     $this->artisan('azure:sync')->assertExitCode(0);
 
-    expect($user->fresh()->apprenticeship_id)->toBe($this->ec->id);
+    expect($user->fresh()->apprenticeshipId())->toBe($this->ec->id);
     Log::shouldNotHaveReceived('warning', ['Microsoft SSO: section change pending confirmation, apprenticeship kept.', Mockery::type('array')]);
 });
 

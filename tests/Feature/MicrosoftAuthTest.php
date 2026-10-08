@@ -25,7 +25,7 @@ beforeEach(function () {
         AzureGroup::TrainerEc->value => TRAINER_EC_GROUP,
         AzureGroup::Coach->value => COACH_GROUP,
     ]);
-    Apprenticeship::query()->create(['name' => ApprenticeshipSeeder::IT]);
+    contextFor(Apprenticeship::query()->create(['name' => ApprenticeshipSeeder::IT]));
 });
 
 const NO_ACCESS_MESSAGE = 'Your Microsoft account has no access to this application. Please contact an administrator.';
@@ -109,7 +109,7 @@ test('an unknown azure id is refused as not synced and no account is created', f
 test('a synced coach logs in with the coach role and no section', function () {
     $it = Apprenticeship::query()->where('name', ApprenticeshipSeeder::IT)->firstOrFail();
     $user = User::factory()->create(['azure_id' => 'azure-coach']);
-    $user->forceFill(['apprenticeship_id' => $it->id])->save();
+    $user->forceFill(['apprenticeship_context_id' => contextFor($it)->id])->save();
     fakeSso('azure-coach', $user->email, COACH_GROUP);
 
     $this->get(route('microsoft.callback'))->assertRedirect(route('apprentisdashboard'));
@@ -117,7 +117,7 @@ test('a synced coach logs in with the coach role and no section', function () {
     $this->assertAuthenticatedAs($user);
     $user = $user->fresh();
     expect($user->role)->toBe(UserRole::Coach)
-        ->and($user->apprenticeship_id)->toBeNull();
+        ->and($user->apprenticeshipId())->toBeNull();
 });
 
 test('a trainer logs in with the IT apprenticeship and can view a grade of its IT apprentice', function () {
@@ -150,7 +150,7 @@ test('login primes the periodic account re-check cache', function () {
 test('a section change mid-session keeps the old apprenticeship and does not log out', function () {
     $ec = Apprenticeship::query()->create(['name' => ApprenticeshipSeeder::EC]);
     $user = User::factory()->create(['azure_id' => 'azure-4']);
-    $user->forceFill(['apprenticeship_id' => $ec->id])->save();
+    $user->forceFill(['apprenticeship_context_id' => contextFor($ec)->id])->save();
 
     Log::spy();
     fakeGraphRecheck('azure-4', [IT_GROUP]);
@@ -158,7 +158,7 @@ test('a section change mid-session keeps the old apprenticeship and does not log
     $this->actingAs($user)->get(route('home'))->assertOk();
 
     $this->assertAuthenticatedAs($user);
-    expect($user->fresh()->apprenticeship_id)->toBe($ec->id)
+    expect($user->fresh()->apprenticeshipId())->toBe($ec->id)
         ->and(Cache::has(AzureAccountSync::checkCacheKey($user)))->toBeTrue();
     Log::shouldHaveReceived('warning')->with(SECTION_CHANGE_WARNING, Mockery::type('array'))->once();
 });
@@ -166,14 +166,14 @@ test('a section change mid-session keeps the old apprenticeship and does not log
 test('a section change at login keeps the old apprenticeship, logs a warning and logs in', function () {
     $ec = Apprenticeship::query()->create(['name' => ApprenticeshipSeeder::EC]);
     $user = User::factory()->create(['azure_id' => 'azure-8']);
-    $user->forceFill(['apprenticeship_id' => $ec->id])->save();
+    $user->forceFill(['apprenticeship_context_id' => contextFor($ec)->id])->save();
     Log::spy();
     fakeSso('azure-8', $user->email, IT_GROUP);
 
     $this->get(route('microsoft.callback'))->assertRedirect(route('grades.dashboard'));
 
     $this->assertAuthenticatedAs($user);
-    expect($user->fresh()->apprenticeship_id)->toBe($ec->id);
+    expect($user->fresh()->apprenticeshipId())->toBe($ec->id);
     Log::shouldHaveReceived('warning')->with(SECTION_CHANGE_WARNING, Mockery::type('array'))->once();
 });
 
@@ -314,7 +314,7 @@ test('a user in several mapped groups is deactivated and logged out by the middl
 test('a role change mid-session updates the Spatie role and keeps the session', function () {
     $it = Apprenticeship::query()->where('name', ApprenticeshipSeeder::IT)->firstOrFail();
     $user = User::factory()->create(['azure_id' => 'azure-16']);
-    $user->forceFill(['apprenticeship_id' => $it->id])->save();
+    $user->forceFill(['apprenticeship_context_id' => contextFor($it)->id])->save();
     expect($user->role)->toBe(UserRole::Apprentice);
     fakeGraphRecheck('azure-16', [TRAINER_GROUP]);
 
@@ -324,7 +324,7 @@ test('a role change mid-session updates the Spatie role and keeps the session', 
     $user = $user->fresh();
     expect($user->role)->toBe(UserRole::Trainer)
         ->and($user->roles->pluck('name')->all())->toBe(['trainer'])
-        ->and($user->apprenticeship_id)->toBe($it->id);
+        ->and($user->apprenticeshipId())->toBe($it->id);
 });
 
 test('a disabled Entra account is deactivated and logged out by the middleware', function () {
@@ -351,6 +351,7 @@ test('an account missing from Entra (Graph 404) is deactivated and logged out by
 
 test('an EC trainer logs in with the EC apprenticeship and cannot view an IT apprentice grade', function () {
     $ec = Apprenticeship::query()->create(['name' => ApprenticeshipSeeder::EC]);
+    contextFor($ec);
     $it = Apprenticeship::query()->where('name', ApprenticeshipSeeder::IT)->firstOrFail();
     User::factory()->create(['azure_id' => 'azure-trainer-ec', 'email' => 'trainer-ec@example.test']);
     fakeSso('azure-trainer-ec', 'trainer-ec@example.test', TRAINER_EC_GROUP);
@@ -359,7 +360,7 @@ test('an EC trainer logs in with the EC apprenticeship and cannot view an IT app
 
     $trainer = User::where('azure_id', 'azure-trainer-ec')->firstOrFail();
     expect($trainer->role)->toBe(UserRole::Trainer)
-        ->and($trainer->apprenticeship_id)->toBe($ec->id);
+        ->and($trainer->apprenticeshipId())->toBe($ec->id);
 
     $this->get(route('grades.show', makeGrade(makeApprentice($ec, trainer: $trainer))))->assertOk();
     $this->get(route('grades.show', makeGrade(makeApprentice($it, trainer: $trainer))))->assertForbidden();
@@ -369,7 +370,7 @@ test('an apprentice moved to the trainer group mid-session gets the trainer role
     $ec = Apprenticeship::query()->create(['name' => ApprenticeshipSeeder::EC]);
     $it = Apprenticeship::query()->where('name', ApprenticeshipSeeder::IT)->firstOrFail();
     $user = User::factory()->create(['azure_id' => 'azure-19']);
-    $user->forceFill(['apprenticeship_id' => $ec->id])->save();
+    $user->forceFill(['apprenticeship_context_id' => contextFor($ec)->id])->save();
 
     Log::spy();
     fakeGraphRecheck('azure-19', [TRAINER_GROUP]);
@@ -379,7 +380,7 @@ test('an apprentice moved to the trainer group mid-session gets the trainer role
     $this->assertAuthenticatedAs($user);
     $user = $user->fresh();
     expect($user->role)->toBe(UserRole::Trainer)
-        ->and($user->apprenticeship_id)->toBe($it->id);
+        ->and($user->apprenticeshipId())->toBe($it->id);
     Log::shouldNotHaveReceived('warning', [SECTION_CHANGE_WARNING, Mockery::type('array')]);
 });
 
@@ -387,7 +388,7 @@ test('a missing apprenticeship row on re-check ends the session without deactiva
     config()->set('services.azure.groups.'.AzureGroup::ApprenticesEc->value, 'group-ec');
     $it = Apprenticeship::query()->where('name', ApprenticeshipSeeder::IT)->firstOrFail();
     $user = User::factory()->trainer()->create(['azure_id' => 'azure-20']);
-    $user->forceFill(['apprenticeship_id' => $it->id])->save();
+    $user->forceFill(['apprenticeship_context_id' => contextFor($it)->id])->save();
     fakeGraphRecheck('azure-20', ['group-ec']);
 
     $this->actingAs($user)->get(route('home'))
@@ -398,6 +399,6 @@ test('a missing apprenticeship row on re-check ends the session without deactiva
     $user = $user->fresh();
     expect($user->is_active)->toBeTrue()
         ->and($user->role)->toBe(UserRole::Trainer)
-        ->and($user->apprenticeship_id)->toBe($it->id)
+        ->and($user->apprenticeshipId())->toBe($it->id)
         ->and(Cache::has(AzureAccountSync::checkCacheKey($user)))->toBeFalse();
 });

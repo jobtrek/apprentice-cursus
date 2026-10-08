@@ -25,7 +25,7 @@ Files owned by this package (no other package edits them):
 
 # Problems encountered
 
-- [ ] **M3 — `users.apprenticeship_id` no longer exists but is used everywhere.** It was dropped by `2026_10_01_114802` and replaced by `apprenticeship_context_id`. Still read or written in:
+- [x] **M3 — `users.apprenticeship_id` no longer exists but is used everywhere.** It was dropped by `2026_10_01_114802` and replaced by `apprenticeship_context_id`. Still read or written in:
     - `User.php`: `listedApprentices()` (line 179), `assignableApprentices()` (lines 211 to 212), `supervises()` (lines 230 to 231)
     - `UserPolicy.php` lines 30 to 31
     - `SupervisionController.php` lines 54 to 55
@@ -53,13 +53,13 @@ Files owned by this package (no other package edits them):
 
     and a small accessor `apprenticeshipId(): ?int` returning `$this->apprenticeshipContext?->apprenticeship_id`, so call sites change in one predictable way.
 
-2. **Rewrite the three `User` queries.** Replace `->where('apprenticeship_id', $this->apprenticeship_id)` with
+2. **Rewrite the three `User` queries. Done (`6e2a32ce`), through the `User::inSection()` scope.** Replace `->where('apprenticeship_id', $this->apprenticeship_id)` with
    `->whereHas('apprenticeshipContext', fn ($q) => $q->where('apprenticeship_id', $this->apprenticeshipId()))`,
    and `whereNotNull('apprenticeship_id')` with `whereNotNull('apprenticeship_context_id')`. `supervises()` compares `apprenticeshipId()` on both sides.
-3. **Same substitution** in `UserPolicy`, `SupervisionController` and the `HandleInertiaRequests` shared prop (keep the prop name `apprenticeship_id` so `../../resources/js/types/auth.ts` and the pages do not change).
-4. **Sync services.** `AzureAccountSync` / `AzureDirectorySync` must now resolve an `apprenticeship_contexts` row instead of an apprenticeship id. That needs a rule for `is_mp` at sync time (see open question). Until decided, pick the non-MP context of the section.
-5. **Trainers.** A trainer has a section but no MP notion. Confirm trainers also point at a context (the non-MP one), since `supervises()` compares sections for trainers.
-6. **Seeders and tests. Seeders done (`adb47571`); `Pest.php` helpers done; the `forceFill` call sites in the test files remain.** Replace `forceFill(['apprenticeship_id' => $x->id])` with the context id. Add a helper in `../../tests/Pest.php` (for example `contextFor(Apprenticeship $section, bool $mp = false)`) so the ten test files change one call each. Replace the `EvaluationNode` use on line 53 with `Domain`, and the grade it creates with the columns from package 4 (`user_id`, `domain_id`, `subject_id`, `apprenticeship_period_id`).
+3. **Same substitution. Done (`6e2a32ce`).** in `UserPolicy`, `SupervisionController` and the `HandleInertiaRequests` shared prop (keep the prop name `apprenticeship_id` so `../../resources/js/types/auth.ts` and the pages do not change).
+4. **Sync services. Done.** A new account gets the standard context of its section; an apprentice already in its section keeps its context (MP included); a section without a context leaves the user without one. `AzureAccountSync` / `AzureDirectorySync` must now resolve an `apprenticeship_contexts` row instead of an apprenticeship id. That needs a rule for `is_mp` at sync time (see open question). Until decided, pick the non-MP context of the section.
+5. **Trainers. Done: a trainer always gets the standard context of its group's section.** A trainer has a section but no MP notion. Confirm trainers also point at a context (the non-MP one), since `supervises()` compares sections for trainers.
+6. **Seeders and tests. Seeders done (`adb47571`); `Pest.php` helpers done; the `forceFill` call sites in the test files done.** Replace `forceFill(['apprenticeship_id' => $x->id])` with the context id. Add a helper in `../../tests/Pest.php` (for example `contextFor(Apprenticeship $section, bool $mp = false)`) so the ten test files change one call each. Replace the `EvaluationNode` use on line 53 with `Domain`, and the grade it creates with the columns from package 4 (`user_id`, `domain_id`, `subject_id`, `apprenticeship_period_id`).
 7. **G2 — moved to package 10 (migration U).** `2026_10_07_150000` is committed and is not edited.
 
 # Open question (needs a team decision, not a code fix)
