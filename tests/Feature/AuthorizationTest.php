@@ -322,6 +322,19 @@ describe('commenting', function () {
             ->and($other->can('delete', $comment))->toBeFalse();
     });
 
+    test('a comment is marked as the viewer\'s own only for its author', function () {
+        $coach = User::factory()->coach()->create();
+        $apprentice = makeApprentice(coach: $coach);
+        $grade = makeGrade($apprentice);
+        makeComment($grade, $coach);
+
+        $this->actingAs($coach)->get(route('apprentices.grades.show', [$apprentice, $grade]))
+            ->assertInertia(fn (Assert $page) => $page->where('comments.0.mine', true));
+
+        $this->actingAs($apprentice)->get(route('grades.show', $grade))
+            ->assertInertia(fn (Assert $page) => $page->where('comments.0.mine', false));
+    });
+
     test('an author who lost supervision of the apprentice cannot change their comment', function () {
         $coach = User::factory()->coach()->create();
         $apprentice = makeApprentice(coach: $coach);
