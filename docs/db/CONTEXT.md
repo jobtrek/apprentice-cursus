@@ -16,7 +16,7 @@ Others files are optional and are more of an history of decision that we've take
 you can check them if we ask you to check on older database version, else ignore.
 
 db/ [//]: # (Root)
-├── AGENT.md [//]: # (Your context and documentation)
+├── CONTEXT.md [//]: # (Your context and documentation)
 ├── db.md [//]: # (Structural choices and how they work documentation)
 └── schemas/ [//]: # (database modelling folder)
 ├── mcd_current.d2 [//]: # (LATEST VERSION)
@@ -30,7 +30,7 @@ db/ [//]: # (Root)
 ├── mcd_v2-1.mmd [//]: # (mcd BEFORE Migrations and decision with Agent)
 └── mcd_v2-2.mermaid [//]: # (LATEST V2 database model)
 
-- AGENT.md: `docs/db/AGENT.md`
+- CONTEXT.md: `docs/db/CONTEXT.md`
 - db.md: `docs/db/db.md`
 - mcd_current.d2: `docs/db/schemas/mcd_current.d2`
 - mcd.drawio: `docs/db/schemas/history/V1/mcd.drawio`
