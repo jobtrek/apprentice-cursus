@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOneThrough;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Carbon;
@@ -86,6 +87,30 @@ class User extends Authenticatable
     public function apprenticeshipContext(): BelongsTo
     {
         return $this->belongsTo(ApprenticeshipContext::class);
+    }
+
+    /**
+     * The section, reached through the context. Read-only: to change it,
+     * write `apprenticeship_context_id`.
+     *
+     * @return HasOneThrough<Apprenticeship, ApprenticeshipContext, $this>
+     */
+    public function apprenticeship(): HasOneThrough
+    {
+        return $this->hasOneThrough(
+            Apprenticeship::class,
+            ApprenticeshipContext::class,
+            firstKey: 'id',                          // apprenticeship_contexts.id
+            secondKey: 'id',                         // apprenticeships.id
+            localKey: 'apprenticeship_context_id',   // users.apprenticeship_context_id
+            secondLocalKey: 'apprenticeship_id',     // apprenticeship_contexts.apprenticeship_id
+        );
+    }
+
+    /** Id of the section, null for a user without a context (coach, admin). */
+    public function apprenticeshipId(): ?int
+    {
+        return $this->apprenticeshipContext?->apprenticeship_id;
     }
 
     public function coach(): BelongsTo
