@@ -18,12 +18,12 @@ Files owned by this package (no other package edits them):
 
 # Problems encountered
 
-- [ ] **`GradeResource` uses the deleted `EvaluationNode`** (lines 5, 75 to 77) and reads dropped columns: `evaluation_node_id` (line 39) and `semester` (line 47).
-- [ ] **`GradeResourceTest`** builds nodes with `EvaluationNode` and grades with `user_id`, `evaluation_node_id`, `semester` (lines 15 to 33).
-- [ ] **`DemoGradeSeeder` cannot run.** Imports `EvaluationNode` and `EvaluationNodeConnection` (lines 6, 7), reads `$apprenticeship->evaluation_node_id` (lines 70, 79), inserts `user_id`, `evaluation_node_id`, `semester` (lines 87 to 90), and filters leaves with `aggregation` and `period_scope` (lines 127 to 128).
-- [ ] **`DemoGradeSeeder` does not supply the new required columns.** `grades.subject_id` and `grades.apprenticeship_period_id` are NOT NULL; no demo periods exist.
-- [ ] **`DemoGradeSeederTest`** reads `$user->apprenticeship->evaluation_node_id` (line 26).
-- [ ] **`HomeController` line 35** sends `'variant' => $user->is_mp ? 'mp' : 'standard'`, based on `users.is_mp`.
+- [x] **`GradeResource` uses the deleted `EvaluationNode`** (lines 5, 75 to 77) and reads dropped columns: `evaluation_node_id` (line 39) and `semester` (line 47).
+- [x] **`GradeResourceTest`** builds nodes with `EvaluationNode` and grades with `user_id`, `evaluation_node_id`, `semester` (lines 15 to 33).
+- [x] **`DemoGradeSeeder` cannot run.** _Removed, see "What was done"._ Imports `EvaluationNode` and `EvaluationNodeConnection` (lines 6, 7), reads `$apprenticeship->evaluation_node_id` (lines 70, 79), inserts `user_id`, `evaluation_node_id`, `semester` (lines 87 to 90), and filters leaves with `aggregation` and `period_scope` (lines 127 to 128).
+- [x] **`DemoGradeSeeder` does not supply the new required columns.** _Removed._ `grades.subject_id` and `grades.apprenticeship_period_id` are NOT NULL; no demo periods exist.
+- [x] **`DemoGradeSeederTest`** _Removed._ reads `$user->apprenticeship->evaluation_node_id` (line 26).
+- [x] **`HomeController` line 35** sends `'variant' => $user->is_mp ? 'mp' : 'standard'`, based on `users.is_mp`.
 - [ ] **`GradeController`** was flagged by the search for grade writes: check that it validates and stores `subject_id` and a period, and no longer `semester`.
 
 # Fixes suggested
@@ -40,8 +40,17 @@ Files owned by this package (no other package edits them):
 6. **`GradeController`.** Validate `subject_id` (exists, belongs to the chosen domain) and resolve the period server-side rather than trusting a posted `semester`. "Belongs to the chosen domain" means a `domain_subject` row once migration S of package 10 has landed (`subjects.domain_id` before that). If the grade guard is accepted (decision D4), the database refuses an invalid pair too: the validation rule is what turns it into a form error.
 7. **`../../resources/js/data/gradebook.ts`.** Update the grade type if `semester` / `node_id` changed shape in the resource.
 
+# What was done
+
+- **Fixes 1 and 2 (`bed8e5be`).** `GradeResource` reads the domain, its parents through `domain_links`, and the semester of the grade's period. The payload keys `node_id` and `semester` are unchanged, so fix 7 needs no change. `GradeResourceTest` builds its own domains and links instead of running the tree seeder.
+- **Groundwork (`dfc84539`).** `GradePolicy` and `CommentPolicy` read `$grade->user`; the relation is `apprentice()`.
+- **Fixes 3 and 4: not done, removed instead (decided 2026-10-08).** `DemoGradeSeeder`, its test and its call in `DatabaseSeeder` are deleted. The demo grades will be rebuilt later on the new schema.
+- **Fix 5 (`b3777a17`).** `HomeController` reads MP from `apprenticeshipContext->is_mp`.
+- **Fix 6: waiting.** `GradeController` has no route that stores a grade yet, so there is nothing to validate. To do with that route.
+- **Period rule (decided 2026-10-08).** A grade's period is found from `test_date`. Semester 1 runs from August to January, semester 2 until June/July. EC has 6 semesters, IT 8. A repeated year adds a period row with the same semester number, so `(user_id, semester)` is not unique.
+
 # Open question (shared with package 4)
 
 - **How does a new grade pick its period?** Derived from `test_date` against the apprentice's `apprenticeship_periods` date ranges, or chosen by the user? Fix 3 and fix 6 depend on the answer. Recommendation: derive it from `test_date`, which matches the user story ("the application automatically derives the year and semester from the test date").
 
-Check when done: `./vendor/bin/sail artisan migrate:fresh --seed` passes, `./vendor/bin/sail artisan test --filter=GradeResource` and `--filter=DemoGradeSeeder` are green, and the grades dashboard loads for a demo apprentice.
+Check when done: `./vendor/bin/sail artisan test --filter=GradeResource`, `--filter=Home` and `--filter=Authorization` are green. `./vendor/bin/sail artisan migrate:fresh --seed` and the grades dashboard for a seeded apprentice also need the tree seeder and `GradebookTree` of package 6.
