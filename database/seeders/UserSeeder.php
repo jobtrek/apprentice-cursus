@@ -3,7 +3,7 @@
 namespace Database\Seeders;
 
 use App\Enums\UserRole;
-use App\Models\Apprenticeship;
+use App\Models\ApprenticeshipContext;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 
@@ -20,6 +20,10 @@ class UserSeeder extends Seeder
      * - trainer-ec@example.com (EC trainer, trainer of apprentice-ec)
      * - apprentice-it@example.com (IT apprentice)
      * - apprentice-ec@example.com (EC apprentice)
+     *
+     * Trainers and apprentices are put in the standard (non-MP) context of
+     * their section (created by EvaluationTreeSeeder). Without it, they are
+     * seeded with no context.
      */
     public function run(): void
     {
@@ -33,19 +37,19 @@ class UserSeeder extends Seeder
             'trainer@example.com',
             'Bastien Nicoud',
             UserRole::Trainer,
-            Apprenticeship::where('name', ApprenticeshipSeeder::IT)->value('id'),
+            $this->contextId(ApprenticeshipSeeder::IT),
         );
         $trainerEc = $this->seed(
             'trainer-ec@example.com',
             'Local Trainer EC',
             UserRole::Trainer,
-            Apprenticeship::where('name', ApprenticeshipSeeder::EC)->value('id'),
+            $this->contextId(ApprenticeshipSeeder::EC),
         );
         $this->seed(
             'apprentice-it@example.com',
             'Local Apprentice IT',
             UserRole::Apprentice,
-            Apprenticeship::where('name', ApprenticeshipSeeder::IT)->value('id'),
+            $this->contextId(ApprenticeshipSeeder::IT),
             $coach->id,
             $trainer->id,
         );
@@ -53,21 +57,21 @@ class UserSeeder extends Seeder
             'apprentice-ec@example.com',
             'Local Apprentice EC',
             UserRole::Apprentice,
-            Apprenticeship::where('name', ApprenticeshipSeeder::EC)->value('id'),
+            $this->contextId(ApprenticeshipSeeder::EC),
             $coach->id,
             $trainerEc->id,
         );
     }
 
-    private function seed(string $email, string $name, UserRole $role, ?int $apprenticeshipId, ?int $coachId = null, ?int $trainerId = null): User
+    private function seed(string $email, string $name, UserRole $role, ?int $contextId, ?int $coachId = null, ?int $trainerId = null): User
     {
-        // is_active, apprenticeship_id, coach_id and trainer_id are not mass assignable.
+        // is_active, coach_id and trainer_id are not mass assignable.
         $user = User::query()->firstOrNew(['email' => $email]);
         $user->forceFill([
             'name' => $name,
             'password' => 'password',
             'is_active' => true,
-            'apprenticeship_id' => $apprenticeshipId,
+            'apprenticeship_context_id' => $contextId,
             'coach_id' => $coachId,
             'trainer_id' => $trainerId,
         ])->save();
@@ -75,5 +79,14 @@ class UserSeeder extends Seeder
         $user->syncRoles($role->value);
 
         return $user;
+    }
+
+    /** Id of the standard (non-MP) context of a section, null when it has none yet. */
+    private function contextId(string $apprenticeship): ?int
+    {
+        return ApprenticeshipContext::query()
+            ->where('is_mp', false)
+            ->whereRelation('apprenticeship', 'name', $apprenticeship)
+            ->value('id');
     }
 }
