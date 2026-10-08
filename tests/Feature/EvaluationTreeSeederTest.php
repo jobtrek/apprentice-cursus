@@ -98,20 +98,25 @@ test('EC contexts use different weights and share their leaves', function () {
         ->toBe(childNamed($mp->rootDomain->children()->where('name', 'Note d\'expérience')->sole(), 'Cours interentreprises')->id);
 });
 
-test('weights under every context parent sum to one and leaves have subjects', function () {
+test('weights under every context parent sum to one, except module leaves which share an equal weight, and leaves have subjects', function () {
     seedReferential();
+
+    $moduleParentIds = Domain::query()
+        ->whereIn('name', ['Modules école professionnelle', 'Modules cours interentreprises'])
+        ->pluck('id');
 
     $contexts = DB::table('apprenticeship_contexts')->get();
     foreach ($contexts as $context) {
         $sums = DB::table('domain_link_weights')
             ->join('domain_links', 'domain_links.id', '=', 'domain_link_weights.domain_link_id')
             ->where('apprenticeship_context_id', $context->id)
-            ->select('domain_links.parent_id', DB::raw('sum(weight) as sum_weight'))
+            ->select('domain_links.parent_id', DB::raw('sum(weight) as sum_weight'), DB::raw('count(*) as leaf_count'))
             ->groupBy('domain_links.parent_id')
-            ->pluck('sum_weight', 'domain_links.parent_id');
+            ->get();
 
-        foreach ($sums as $sum) {
-            expect((float) $sum)->toBe(1.0);
+        foreach ($sums as $row) {
+            $expected = $moduleParentIds->contains($row->parent_id) ? (float) $row->leaf_count : 1.0;
+            expect((float) $row->sum_weight)->toBe($expected);
         }
     }
 

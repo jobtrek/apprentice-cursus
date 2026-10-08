@@ -237,19 +237,11 @@ class EvaluationTreeSeeder extends Seeder
         $modules = File::json(resource_path('js/data/modules.json'));
         $epsic = [];
         $cie = [];
-        $schoolCounts = array_count_values(array_column($modules, 'school'));
-        $schoolIndexes = ['EPSIC' => 0, 'CIE' => 0];
 
         foreach ($modules as $module) {
-            $schoolIndexes[$module['school']]++;
-            $index = $schoolIndexes[$module['school']];
-            $count = $schoolCounts[$module['school']];
-            $weight = $index === $count
-                ? round(1 - round(1 / $count, 2) * ($count - 1), 2)
-                : round(1 / $count, 2);
             $leaf = [
                 'name' => "{$module['code']} — {$module['name']}",
-                'weights' => ['standard' => $weight],
+                'weights' => ['standard' => 1.0],
             ];
 
             match ($module['school']) {
