@@ -287,7 +287,7 @@ const submitEdit = (comment: Comment) => {
                             <p
                                 :class="
                                     cn(
-                                        'rounded-2xl px-4 py-2.5 text-sm/relaxed break-words whitespace-pre-line',
+                                        'max-w-full rounded-2xl px-4 py-2.5 text-sm/relaxed break-words whitespace-pre-line',
                                         comment.mine
                                             ? 'bg-primary text-primary-foreground rounded-tr-sm'
                                             : 'bg-muted rounded-tl-sm',
@@ -373,6 +373,13 @@ const submitEdit = (comment: Comment) => {
                     </Button>
                 </div>
             </div>
+            <p
+                v-else-if="comments.length"
+                class="text-muted-foreground text-xs"
+            >
+                Seuls les coachs et formateurs peuvent commenter cette
+                évaluation.
+            </p>
         </section>
     </PageContainer>
 </template>
