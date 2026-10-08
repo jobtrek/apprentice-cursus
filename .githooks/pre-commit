@@ -3,84 +3,58 @@
 set -u
 
 ROOT="$(git rev-parse --show-toplevel)" || {
-    echo "❌ Unable to determine the repository root. Commit aborted."
+    echo "Unable to determine the repository root. Commit aborted."
     exit 1
 }
 cd "$ROOT" || exit 1
 
 SAIL="./vendor/bin/sail"
 if [ ! -x "$SAIL" ]; then
-    echo "❌ Laravel Sail is not available. Install dependencies and start Sail before committing."
+    echo "Laravel Sail is not available. Install dependencies before committing."
     exit 1
 fi
 
-STASH_NEEDED=0
-
-if ! git diff --quiet || [ -n "$(git ls-files --others --exclude-standard)" ]; then
-    STASH_NEEDED=1
-    if ! git stash push --keep-index --include-untracked -m "pre-commit hook backup" >/dev/null; then
-        echo "❌ Unable to temporarily save unstaged changes. Commit aborted."
-        exit 1
-    fi
-fi
-
-restore_unstaged_changes() {
-    status=$?
-    trap - EXIT
-
-    if [ "$STASH_NEEDED" -eq 1 ] && ! git stash pop >/dev/null; then
-        echo "❌ Unable to restore unstaged changes. Resolve the stash conflict before committing."
-        status=1
-    fi
-
-    exit "$status"
+RUNNING_SERVICES="$("$SAIL" ps --status=running --services 2>/dev/null)" || {
+    echo "Unable to check Laravel Sail. Start Sail with './vendor/bin/sail up -d' and try again."
+    exit 1
 }
 
-trap restore_unstaged_changes EXIT
-
-echo "🎨 Running Laravel Pint through Sail..."
-
-"$SAIL" php vendor/bin/pint --dirty
-if [ $? -ne 0 ]; then
-    echo "❌ Pint failed. Commit aborted."
+if [ -z "$RUNNING_SERVICES" ]; then
+    echo "Laravel Sail is not running. Start it with './vendor/bin/sail up -d' and try again."
     exit 1
 fi
 
-git diff --cached --name-only -z --diff-filter=ACM -- '*.php' |
-    xargs -0 -r git add -- || {
-        echo "❌ Unable to stage Pint changes. Commit aborted."
+STAGED_PHP_FILES="$(git diff --cached --name-only --diff-filter=ACM -- '*.php')"
+if [ -z "$STAGED_PHP_FILES" ]; then
+    echo "No staged PHP files to format."
+else
+    while IFS= read -r file; do
+        if [ -n "$(git diff -- "$file")" ]; then
+            echo "PHP file '$file' is partially staged."
+            echo "Stage the whole file or commit the staged changes separately, then try again."
+            exit 1
+        fi
+    done <<EOF
+$STAGED_PHP_FILES
+EOF
+
+    echo "Running Laravel Pint on staged PHP files..."
+    printf '%s\n' "$STAGED_PHP_FILES" |
+        xargs -r "$SAIL" php vendor/bin/pint || {
+            echo "Pint failed. Commit aborted."
+            exit 1
+        }
+
+    printf '%s\n' "$STAGED_PHP_FILES" | xargs -r git add -- || {
+        echo "Unable to stage Pint changes. Commit aborted."
         exit 1
     }
-
-echo "🔍 Running Larastan through Sail..."
-
-"$SAIL" php vendor/bin/phpstan analyse --memory-limit=512M
-PHPSTAN_STATUS=$?
-
-if [ "$PHPSTAN_STATUS" -ne 0 ]; then
-    echo ""
-    echo "⚠️  Larastan found errors."
-    printf "Do you want to ignore them and continue with commit? [y/N]: "
-
-    if read -r answer < /dev/tty; then
-        case "$answer" in
-            y|Y)
-                echo "⚠️  Larastan errors ignored. Continuing commit..."
-                ;;
-            *)
-                echo "❌ Static analysis failed. Commit aborted."
-                exit 1
-                ;;
-        esac
-    else
-        echo ""
-        echo "❌ Unable to read your answer. Commit aborted."
-        exit 1
-    fi
 fi
 
-if [ "$PHPSTAN_STATUS" -eq 0 ]; then
-    echo "✅ All checks passed."
-else
-    echo "⚠️  Commit allowed with Larastan errors ignored."
-fi
+echo "Running staged JavaScript and Vue checks..."
+"$SAIL" pnpm exec lint-staged --concurrent false || {
+    echo "JavaScript or Vue checks failed. Commit aborted."
+    exit 1
+}
+
+echo "Pre-commit checks passed."
