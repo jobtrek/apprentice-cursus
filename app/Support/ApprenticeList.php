@@ -38,6 +38,22 @@ class ApprenticeList
     }
 
     /**
+     * Grade statistics of one apprentice, the same as their row in the list.
+     *
+     * @return array{grades_count: int, average: float|null, last_grade_date: string|null}
+     */
+    public static function statsFor(User $apprentice): array
+    {
+        $stats = self::gradeStats([$apprentice->id])[$apprentice->id];
+
+        return [
+            'grades_count' => $stats['grades_count'],
+            'average' => $stats['average'],
+            'last_grade_date' => $stats['last_grade_date'],
+        ];
+    }
+
+    /**
      * Apprentices the user can take on, for the "Ajouter un apprenti" dialog.
      *
      * @return array<int, array{id: int, name: string, track: string|null}>

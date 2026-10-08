@@ -132,6 +132,7 @@ const describe = ({ track, stats }: ApprenticeListItem): string =>
                 :value="String(atRisk.length)"
                 :hint="`Moyenne sous ${PASSING_GRADE.toFixed(1)}`"
                 :icon="TriangleAlertIcon"
+                :tone="atRisk.length > 0 ? 'destructive' : 'muted'"
             />
             <!-- Mène à la liste, où se trouve « Ajouter un apprenti ». -->
             <Link

@@ -2,13 +2,13 @@
 import { Link, router } from '@inertiajs/vue3';
 import { BookOpenIcon, EyeIcon, FolderOpenIcon } from '@lucide/vue';
 import { computed } from 'vue';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { TableCell, TableRow } from '@/components/ui/table';
-import { getInitials } from '@/composables/useInitials';
 import {
     hasNoRecentGrade,
+    relativeDate,
+    situationOf,
     STALE_AFTER_DAYS,
     yearLabel,
 } from '@/lib/apprentice';
@@ -19,8 +19,11 @@ import type {
     SupervisorOption,
     TrainerOption,
 } from '@/types/apprentice';
+import ApprenticeAvatar from './ApprenticeAvatar.vue';
 import AssignmentBadge from './AssignmentBadge.vue';
-import AverageValue from './AverageValue.vue';
+import AverageMeter from './AverageMeter.vue';
+import StatusBadge from './StatusBadge.vue';
+import TrackBadges from './TrackBadges.vue';
 import SupervisorSelect from './SupervisorSelect.vue';
 
 const props = defineProps<{
@@ -51,6 +54,8 @@ const stale = computed(
         hasNoRecentGrade(props.apprentice.stats.last_grade_date),
 );
 
+const situation = computed(() => situationOf(props.apprentice));
+
 /** Superviseur actuel au format des options du select. */
 const current = (
     id: number | null,
@@ -79,11 +84,10 @@ const trainerOptions = computed(
     >
         <TableCell>
             <div class="flex items-center gap-3">
-                <Avatar class="size-9">
-                    <AvatarFallback class="text-xs font-medium">
-                        {{ getInitials(apprentice.name) }}
-                    </AvatarFallback>
-                </Avatar>
+                <ApprenticeAvatar
+                    :name="apprentice.name"
+                    :tone="situation.tone"
+                />
                 <div class="flex min-w-0 flex-col">
                     <span
                         class="flex items-center gap-2 font-medium group-hover:underline"
@@ -112,37 +116,36 @@ const trainerOptions = computed(
         </TableCell>
 
         <TableCell>
-            <div class="flex items-center gap-1.5">
-                <Badge v-if="apprentice.track" variant="outline">
-                    {{ apprentice.track }}
-                </Badge>
-                <span v-else class="text-muted-foreground">—</span>
-                <Badge
-                    v-if="apprentice.isMp"
-                    variant="secondary"
-                    title="Maturité professionnelle"
-                >
-                    MP
-                </Badge>
-            </div>
+            <TrackBadges :track="apprentice.track" :is-mp="apprentice.isMp" />
         </TableCell>
 
-        <TableCell class="text-right tabular-nums">
-            {{ apprentice.stats.grades_count }}
+        <TableCell>
+            <StatusBadge :tone="situation.tone" :label="situation.label" />
         </TableCell>
-        <TableCell class="text-right">
-            <AverageValue :average="apprentice.stats.average" />
+
+        <TableCell>
+            <AverageMeter :average="apprentice.stats.average" />
         </TableCell>
-        <TableCell
-            class="tabular-nums"
-            :class="stale ? 'text-warning' : 'text-muted-foreground'"
-            :title="
-                stale
-                    ? `Aucune note depuis plus de ${STALE_AFTER_DAYS} jours`
-                    : undefined
-            "
-        >
-            {{ apprentice.stats.last_grade_date ?? '—' }}
+
+        <TableCell>
+            <div class="flex flex-col">
+                <span class="tabular-nums">
+                    {{ apprentice.stats.grades_count }}
+                    note{{ apprentice.stats.grades_count > 1 ? 's' : '' }}
+                </span>
+                <span
+                    v-if="apprentice.stats.last_grade_date"
+                    class="text-xs"
+                    :class="stale ? 'text-warning' : 'text-muted-foreground'"
+                    :title="
+                        stale
+                            ? `Aucune note depuis plus de ${STALE_AFTER_DAYS} jours (${apprentice.stats.last_grade_date})`
+                            : apprentice.stats.last_grade_date
+                    "
+                >
+                    {{ relativeDate(apprentice.stats.last_grade_date) }}
+                </span>
+            </div>
         </TableCell>
 
         <template v-if="ownRole !== 'coach'">

@@ -1,7 +1,15 @@
 <script setup lang="ts">
-import { ExternalLinkIcon, FolderOpenIcon } from '@lucide/vue';
+import { useRemember } from '@inertiajs/vue3';
+import {
+    ExternalLinkIcon,
+    FolderOpenIcon,
+    GitCommitVerticalIcon,
+    LayoutGridIcon,
+} from '@lucide/vue';
 import { computed, ref } from 'vue';
 import FilterSelect from '@/components/FilterSelect.vue';
+import PortfolioStats from '@/components/portfolio/PortfolioStats.vue';
+import ProjectTimeline from '@/components/portfolio/ProjectTimeline.vue';
 import SearchInput from '@/components/SearchInput.vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -19,6 +27,7 @@ import {
     EmptyMedia,
     EmptyTitle,
 } from '@/components/ui/empty';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { formatPeriod, skillNames } from '@/composables/usePortfolio';
 import type { SupervisedPortfolio } from '@/types/portfolio';
 
@@ -91,6 +100,20 @@ const projects = computed(() => {
     );
 });
 
+/** Cartes détaillées, ou chronologie triée par date de début. */
+type PortfolioView = 'cards' | 'timeline';
+const view = useRemember(
+    ref<PortfolioView>('cards'),
+    'ApprenticePortfolio:view',
+);
+
+const selectView = (value: unknown): void => {
+    // Un ToggleGroup « single » renvoie une valeur vide si on reclique l'actif.
+    if (value === 'cards' || value === 'timeline') {
+        view.value = value;
+    }
+};
+
 function reset(): void {
     search.value = '';
     technology.value = ALL;
@@ -100,6 +123,11 @@ function reset(): void {
 
 <template>
     <!-- Lecture seule : le coach et le formateur ne modifient jamais le portfolio. -->
+    <PortfolioStats
+        v-if="portfolio.projects.length > 0"
+        :projects="portfolio.projects"
+    />
+
     <div
         v-if="portfolio.projects.length > 0"
         class="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center"
@@ -133,6 +161,24 @@ function reset(): void {
             {{ projects.length }} sur {{ portfolio.projects.length }} · Effacer
             les filtres
         </Button>
+        <ToggleGroup
+            :model-value="view"
+            type="single"
+            variant="outline"
+            size="sm"
+            class="sm:ml-auto"
+            aria-label="Affichage des projets"
+            @update:model-value="selectView"
+        >
+            <ToggleGroupItem value="cards" class="px-3">
+                <LayoutGridIcon aria-hidden="true" />
+                Cartes
+            </ToggleGroupItem>
+            <ToggleGroupItem value="timeline" class="px-3">
+                <GitCommitVerticalIcon aria-hidden="true" />
+                Chronologie
+            </ToggleGroupItem>
+        </ToggleGroup>
     </div>
 
     <p
@@ -142,8 +188,18 @@ function reset(): void {
         Aucun projet ne correspond à ces critères.
     </p>
 
-    <div v-if="projects.length > 0" class="grid gap-4 lg:grid-cols-2">
-        <Card v-for="project in projects" :key="project.id" class="gap-4">
+    <ProjectTimeline
+        v-if="projects.length > 0 && view === 'timeline'"
+        :projects="projects"
+        readonly
+    />
+
+    <div v-else-if="projects.length > 0" class="grid gap-4 lg:grid-cols-2">
+        <Card
+            v-for="project in projects"
+            :key="project.id"
+            class="gap-4 shadow-xs"
+        >
             <CardHeader>
                 <CardTitle>{{ project.title }}</CardTitle>
                 <CardDescription>

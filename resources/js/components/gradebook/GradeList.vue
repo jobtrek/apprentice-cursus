@@ -13,7 +13,7 @@ import Segmented from './Segmented.vue';
 const props = defineProps<{
     gradebook: Gradebook;
     grades: Grade[];
-    /** Page d'une note ; par défaut celle de l'apprenti·e. */
+    /** Page d'une note ; par défaut celle de l'apprenti·e connecté·e. */
     gradeHref?: (grade: Grade) => RouteDefinition<'get'>;
 }>();
 
@@ -244,24 +244,24 @@ function onToggle(id: number, event: Event): void {
                                             </span>
                                         </h4>
                                         <GradeTable
-                                            :grade-href="gradeHref"
                                             :grades="sub.visible"
                                             :parent="sub.name"
+                                            :grade-href="gradeHref"
                                         />
                                     </template>
                                 </template>
                                 <GradeTable
-                                    :grade-href="gradeHref"
                                     v-if="group.rest.length"
                                     :grades="group.rest"
                                     :parent="group.name"
+                                    :grade-href="gradeHref"
                                 />
                             </template>
                             <GradeTable
-                                :grade-href="gradeHref"
                                 v-else
                                 :grades="group.visible"
                                 :parent="group.name"
+                                :grade-href="gradeHref"
                             />
                         </div>
                     </details>

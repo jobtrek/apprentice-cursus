@@ -12,7 +12,7 @@ const props = defineProps<{
     grades: Grade[];
     /** Domaine ou sous-groupe affiché : une catégorie identique n'apporte rien. */
     parent?: string;
-    /** Page d'une note ; par défaut celle de l'apprenti·e. Le coach passe la sienne. */
+    /** Page d'une note ; par défaut celle de l'apprenti·e connecté·e. */
     gradeHref?: (grade: Grade) => RouteDefinition<'get'>;
 }>();
 
