@@ -10,8 +10,10 @@ domains: {
 
 domain_links: {
   shape: sql_table
-  parent_id: bigint {constraint: [primary_key; foreign_key]}
-  child_id: bigint {constraint: [primary_key; foreign_key]}
+  id: bigint {constraint: primary_key}
+  parent_id: bigint {constraint: foreign_key}
+  child_id: bigint {constraint: foreign_key}
+  # UNIQUE (parent_id, child_id), CHECK (parent_id <> child_id)
 }
 
 domain_link_weights: {
@@ -19,20 +21,21 @@ domain_link_weights: {
   apprenticeship_context_id: bigint {constraint: [primary_key; foreign_key]}
   domain_link_id: bigint {constraint: [primary_key; foreign_key]}
   weight: "decimal(3,2)"
+  # CHECK (weight > 0 AND weight <= 1), no default
 }
 
 subjects: {
   shape: sql_table
   id: bigint {constraint: primary_key}
-  domain_id: bigint {constraint: foreign_key}
-  subject_category_id: bigint {constraint: foreign_key}
+  name: varchar
   created_at: timestamp
 }
 
-subject_category: {
+domain_subject: {
   shape: sql_table
-  id: bigint {constraint: primary_key}
-  name: varchar
+  domain_id: bigint {constraint: [primary_key; foreign_key]}
+  subject_id: bigint {constraint: [primary_key; foreign_key]}
+  # cascadeOnDelete on both foreign keys
 }
 
 apprenticeships: {
@@ -55,10 +58,10 @@ apprenticeship_periods: {
   shape: sql_table
   id: bigint {constraint: primary_key}
   user_id: bigint {constraint: foreign_key} # Reference user
-  semester: smallint # check
-  year: smallint # generated
+  semester: smallint # CHECK (semester BETWEEN 1 AND 8)
+  year: smallint # generated: (semester + 1) / 2
   start_date: date
-  end_date: date
+  end_date: date # CHECK (end_date >= start_date)
 }
 
 users: {
@@ -71,8 +74,8 @@ users: {
   email_verified_at: timestamp
   password: varchar
   is_active: boolean
+  synced_at: timestamp
   apprenticeship_context_id: bigint {constraint: foreign_key}
-  apprenticeship_periods: bigint {constraint: foreign_key}
   coach_id: bigint {constraint: foreign_key}
   trainer_id: bigint {constraint: foreign_key}
 }
@@ -83,14 +86,15 @@ grades: {
   user_id: bigint {constraint: foreign_key} # Reference users
   domain_id: bigint {constraint: foreign_key}
   subject_id: bigint {constraint: foreign_key}
-  apprenticeship_periods_id: bigint { constraint: foreign_key }
-  value: "decimal(2,1)"
+  apprenticeship_period_id: bigint {constraint: foreign_key}
+  value: "decimal(2,1)" # CHECK (value BETWEEN 1.0 AND 6.0)
   test_date: date
   file_path: varchar
   original_filename: varchar
   notified_at: timestamp
   created_at: timestamp
   updated_at: timestamp
+  # FOREIGN KEY (domain_id, subject_id) -> domain_subject: the subject must be attached to the domain
 }
 
 comments: {
@@ -216,11 +220,6 @@ domains -> domain_links: child {
   target-arrowhead: {shape: cf-many}
 }
 
-subject_category -> subjects: category {
-  source-arrowhead: {shape: cf-one-required}
-  target-arrowhead: {shape: cf-many}
-}
-
 users -> users: coach {
   source-arrowhead: {shape: cf-one}
   target-arrowhead: {shape: cf-many}
@@ -236,7 +235,17 @@ subjects -> grades: subject {
   target-arrowhead: {shape: cf-many}
 }
 
-subjects -> domains: subject {
+domains -> domain_subject: domain {
+  source-arrowhead: {shape: cf-one-required}
+  target-arrowhead: {shape: cf-many}
+}
+
+subjects -> domain_subject: subject {
+  source-arrowhead: {shape: cf-one-required}
+  target-arrowhead: {shape: cf-many}
+}
+
+domain_subject -> grades: domain-subject pair {
   source-arrowhead: {shape: cf-one-required}
   target-arrowhead: {shape: cf-many}
 }
