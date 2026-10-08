@@ -16,11 +16,10 @@ return new class extends Migration
             $table->boolean('is_mp');
             $table->foreignId('apprenticeship_id')->constrained('apprenticeships');
             $table->foreignId('root_domain_id')->constrained('domains');
-        });
 
-        Schema::table('users', function (Blueprint $table) {
-            $table->dropConstrainedForeignId('apprenticeship_id');
-            $table->foreignId('context_id')->nullable()->constrained('apprenticeship_contexts');
+            $table->unique(['apprenticeship_id', 'is_mp']);
+            // Postgres does not index foreign keys automatically.
+            $table->index('root_domain_id');
         });
     }
 
@@ -29,12 +28,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('users', function (Blueprint $table) {
-            $table->dropConstrainedForeignId('context_id');
-            $table->foreignId('apprenticeship_id')->nullable()->constrained('apprenticeships')->nullOnDelete();
-            $table->index('apprenticeship_id');
-        });
-
         Schema::dropIfExists('apprenticeship_contexts');
     }
 };

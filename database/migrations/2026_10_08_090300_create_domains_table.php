@@ -11,8 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('apprenticeship_contexts', function (Blueprint $table) {
-            $table->unique(['apprenticeship_id', 'is_mp']);
+        Schema::create('domains', function (Blueprint $table) {
+            $table->id();
+            $table->string('name');
+            $table->decimal('rounding_step', 2, 1)->nullable();
+            $table->timestamp('created_at')->useCurrent();
         });
     }
 
@@ -21,8 +24,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('apprenticeship_contexts', function (Blueprint $table) {
-            $table->dropUnique(['apprenticeship_id', 'is_mp']);
-        });
+        Schema::dropIfExists('domains');
     }
 };

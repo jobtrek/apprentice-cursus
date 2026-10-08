@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -13,14 +14,17 @@ return new class extends Migration
     {
         Schema::create('apprenticeship_periods', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('apprentice_id')->constrained('users')->restrictOnDelete();
+            $table->foreignId('user_id')->constrained('users')->restrictOnDelete();
             $table->smallInteger('semester');
             $table->smallInteger('year')->storedAs('((semester + 1) / 2)::smallint');
             $table->date('start_date');
             $table->date('end_date');
 
-            $table->index(['apprentice_id', 'year', 'semester']);
+            $table->index(['user_id', 'year', 'semester']);
         });
+
+        DB::statement('ALTER TABLE apprenticeship_periods ADD CONSTRAINT apprenticeship_periods_semester_check CHECK (semester BETWEEN 1 AND 8)');
+        DB::statement('ALTER TABLE apprenticeship_periods ADD CONSTRAINT apprenticeship_periods_dates_check CHECK (end_date >= start_date)');
     }
 
     /**
