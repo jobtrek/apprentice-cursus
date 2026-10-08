@@ -79,6 +79,9 @@
             "@types:check",
             "@php artisan test"
         ],
+    "post-install-cmd": [
+        "@php scripts/setup-git-hooks.php"
+    ],
         "post-autoload-dump": [
             "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",
             "@php artisan package:discover --ansi"

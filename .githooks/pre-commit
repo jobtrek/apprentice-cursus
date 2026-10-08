@@ -11,4 +11,30 @@ fi
 
 git add -u
 
-echo "✅ Pint passed."
+echo "🔍 Running Larastan..."
+
+./vendor/bin/phpstan analyse --memory-limit=512M
+
+if [ $? -ne 0 ]; then
+    echo ""
+    echo "⚠️  Larastan found errors."
+    printf "Do you want to ignore them and continue with commit? [y/N]: "
+
+    if read -r answer < /dev/tty; then
+        case "$answer" in
+            y|Y)
+                echo "⚠️  Larastan errors ignored. Continuing commit..."
+                ;;
+            *)
+                echo "❌ Static analysis failed. Commit aborted."
+                exit 1
+                ;;
+        esac
+    else
+        echo ""
+        echo "❌ Unable to read your answer. Commit aborted."
+        exit 1
+    fi
+fi
+
+echo "✅ All checks passed."
