@@ -1,0 +1,14 @@
+#!/bin/sh
+
+echo "🎨 Running Laravel Pint..."
+
+./vendor/bin/pint --dirty
+
+if [ $? -ne 0 ]; then
+    echo "❌ Pint failed. Commit aborted."
+    exit 1
+fi
+
+git add -u
+
+echo "✅ Pint passed."
