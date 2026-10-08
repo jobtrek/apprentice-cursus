@@ -66,10 +66,6 @@ class Domain extends Model
         while ($reachable !== []) {
             $ids = array_values(array_diff($reachable, $seen));
 
-            if ($ids === []) {            DemoApprenticeSeeder
-                break;
-            }
-
             if (in_array($this->getKey(), $ids, true)) {
                 throw new LogicException('Linking these domains would create a cycle.');
             }
