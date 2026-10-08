@@ -78,15 +78,21 @@ class EvaluationTreeSeeder extends Seeder
                 continue;
             }
 
+            $rows = [];
+
             foreach ($this->weightsByContext[$key] as $linkId => $weight) {
-                DomainLinkWeight::query()->updateOrCreate(
-                    [
-                        'apprenticeship_context_id' => $context->id,
-                        'domain_link_id' => $linkId,
-                    ],
-                    ['weight' => $weight],
-                );
+                $rows[] = [
+                    'apprenticeship_context_id' => $context->id,
+                    'domain_link_id' => $linkId,
+                    'weight' => $weight,
+                ];
             }
+
+            DomainLinkWeight::query()->upsert(
+                $rows,
+                ['apprenticeship_context_id', 'domain_link_id'],
+                ['weight'],
+            );
         }
     }
 
