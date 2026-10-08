@@ -112,7 +112,7 @@ const describe = ({ track, stats }: ApprenticeListItem): string =>
 
     <template v-else>
         <section
-            class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4"
+            class="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4"
             aria-label="Indicateurs"
         >
             <StatTile
@@ -134,12 +134,23 @@ const describe = ({ track, stats }: ApprenticeListItem): string =>
                 :icon="TriangleAlertIcon"
                 :tone="atRisk.length > 0 ? 'destructive' : 'muted'"
             />
-            <StatTile
-                label="À ajouter"
-                :value="String(assignableCount)"
-                hint="Apprentis disponibles dans la liste"
-                :icon="UserPlusIcon"
-            />
+            <!-- Mène à la liste, où se trouve « Ajouter un apprenti ». -->
+            <Link
+                :href="apprentisdashboard()"
+                class="group focus-visible:ring-ring/50 rounded-xl focus-visible:ring-[3px] focus-visible:outline-none"
+            >
+                <StatTile
+                    label="À ajouter"
+                    :value="String(assignableCount)"
+                    :hint="
+                        assignableCount > 0
+                            ? 'Sans suivi, à ajouter depuis la liste'
+                            : 'Aucun apprenti en attente'
+                    "
+                    :icon="UserPlusIcon"
+                    class="group-hover:border-primary/50 group-hover:bg-accent/40 h-full transition-colors"
+                />
+            </Link>
         </section>
 
         <section class="grid gap-4 lg:grid-cols-3">

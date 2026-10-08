@@ -12,11 +12,3 @@ export interface Grade {
     /** Présent quand le serveur a compté les commentaires. */
     comments_count?: number;
 }
-
-/** Nœud de l'arbre d'affichage du carnet de notes (domaine ou sous-domaine). */
-export interface GradeMenu {
-    title: string;
-    columns: { key: string; label: string; class?: string }[];
-    grades: Grade[];
-    subMenu?: GradeMenu[];
-}

@@ -99,8 +99,11 @@ const missing = computed(() =>
                         .join(', ')
                 }}.
             </p>
+            <p v-else-if="!gradebook.isComplete()" class="gb-final__note">
+                Provisoire : certaines évaluations ne sont pas encore notées.
+            </p>
             <p v-else class="gb-final__note">
-                Moyenne pondérée de tous les domaines, comme pour le CFC.
+                Moyenne pondérée de toutes les évaluations, comme pour le CFC.
             </p>
         </article>
 

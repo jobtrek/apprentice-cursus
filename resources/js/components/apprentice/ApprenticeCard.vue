@@ -12,7 +12,7 @@ import {
     yearLabel,
 } from '@/lib/apprentice';
 import apprentices from '@/routes/apprentices';
-import type { ApprenticeListItem } from '@/types/apprentice';
+import type { ApprenticeListItem, AssignSelfAs } from '@/types/apprentice';
 import ApprenticeAvatar from './ApprenticeAvatar.vue';
 import AssignmentBadge from './AssignmentBadge.vue';
 import AverageMeter from './AverageMeter.vue';
@@ -21,6 +21,8 @@ import TrackBadges from './TrackBadges.vue';
 
 const props = defineProps<{
     apprentice: ApprenticeListItem;
+    /** Rôle de l'utilisateur : ce superviseur-là est toujours lui-même. */
+    ownRole?: AssignSelfAs | null;
 }>();
 
 defineEmits<{
@@ -106,10 +108,10 @@ const situation = computed(() => situationOf(props.apprentice));
         </div>
 
         <div class="grid grid-cols-2 gap-x-4 gap-y-3">
-            <StatItem label="Coach">
+            <StatItem v-if="ownRole !== 'coach'" label="Coach">
                 <AssignmentBadge :value="apprentice.coach ?? undefined" />
             </StatItem>
-            <StatItem label="Formateur">
+            <StatItem v-if="ownRole !== 'trainer'" label="Formateur">
                 <AssignmentBadge :value="apprentice.trainer ?? undefined" />
             </StatItem>
         </div>

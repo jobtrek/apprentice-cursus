@@ -77,9 +77,13 @@ const failed = computed(
             <span class="stat__foot">
                 <template v-if="final !== null">
                     <StatusChip :value="final" />
-                    provisoire{{
-                        missing.length ? `, sans ${missing.join(', ')}` : ''
-                    }}
+                    <!-- Provisoire tant qu'une évaluation comptée n'a pas de note. -->
+                    <template v-if="!gradebook.isComplete()">
+                        provisoire{{
+                            missing.length ? `, sans ${missing.join(', ')}` : ''
+                        }}
+                    </template>
+                    <template v-else>toutes les évaluations notées</template>
                 </template>
                 <template v-else>Aucune note pour l'instant</template>
             </span>

@@ -162,6 +162,28 @@ export function createGradebook(tree: GradeTree, allGrades: Grade[]) {
             (leaf) => node(leaf)?.period_scope === 'semester',
         );
 
+    /**
+     * Toutes les évaluations comptées sous ce nœud ont une note : chaque
+     * feuille notée, et chaque enfant de poids non nul complet. `nodeValue`
+     * ignore les enfants sans note et répartit leur poids sur les autres :
+     * tant que ce n'est pas le cas, la moyenne reste provisoire.
+     */
+    function isComplete(id: number = tree.root): boolean {
+        const current = node(id);
+
+        if (!current) {
+            return false;
+        }
+
+        if (!current.aggregated) {
+            return allGrades.some((grade) => grade.node_id === id);
+        }
+
+        return current.children
+            .filter((child) => child.weight > 0)
+            .every((child) => isComplete(child.id));
+    }
+
     /** Domaines = enfants de la racine (TPI, Culture générale…). */
     const domains = node(tree.root)?.children.map((child) => child.id) ?? [];
 
@@ -171,6 +193,7 @@ export function createGradebook(tree: GradeTree, allGrades: Grade[]) {
         name: (id: number) => node(id)?.name ?? '',
         node,
         nodeValue,
+        isComplete,
         leavesOf,
         gradesUnder,
         weightOf,

@@ -186,7 +186,9 @@ const submitEdit = (comment: Comment) => {
                 :description="
                     comments.length
                         ? `${comments.length} commentaire${comments.length > 1 ? 's' : ''}`
-                        : undefined
+                        : can.comment
+                          ? 'Aucun commentaire pour le moment.'
+                          : undefined
                 "
             />
 
@@ -319,13 +321,14 @@ const submitEdit = (comment: Comment) => {
                     </div>
                 </li>
             </ol>
+            <!-- Apprenti·e : rien à écrire ici, on explique qui peut commenter. -->
             <div
-                v-else
+                v-else-if="!can.comment"
                 class="text-muted-foreground flex flex-col items-center gap-2 rounded-xl border border-dashed px-6 py-8 text-center text-sm"
             >
                 <MessageSquareIcon class="size-5" aria-hidden="true" />
                 <p>Aucun commentaire pour le moment.</p>
-                <p v-if="!can.comment" class="text-xs">
+                <p class="text-xs">
                     Vos coachs et formateurs peuvent commenter cette note.
                 </p>
             </div>
@@ -343,7 +346,7 @@ const submitEdit = (comment: Comment) => {
                     </Avatar>
                     <Textarea
                         v-model="form.body"
-                        placeholder="Écrire un commentaire…"
+                        :placeholder="`Laisser un retour à ${apprentice?.name ?? 'l’apprenti·e'}…`"
                         aria-label="Nouveau commentaire"
                         maxlength="2000"
                         class="min-h-16 flex-1 resize-none border-0 p-1 shadow-none focus-visible:ring-0 dark:bg-transparent"
