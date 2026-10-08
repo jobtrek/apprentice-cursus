@@ -2,16 +2,16 @@
 
 namespace App\Support\Gradebook;
 
-use App\Enums\EvaluationVariant;
-use App\Models\EvaluationNode;
-use App\Models\EvaluationNodeConnection;
+use App\Models\Domain;
+use App\Models\DomainLinkWeight;
 use App\Models\User;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 
 /**
  * The apprentice's grade tree, as the gradebook pages need it to compute the
- * CFC averages: every node reachable from the apprenticeship's root, with its
- * rounding step and its weighted children. Nodes of the other variant
- * (standard vs MP) are left out. Matches `GradeTree` in resources/js/lib/gradebook.ts.
+ * CFC averages: every domain reachable from the apprentice's context root,
+ * with only the links weighted for that context.
  */
 final class GradebookTree
 {
@@ -20,65 +20,61 @@ final class GradebookTree
      */
     public static function for(User $user): ?array
     {
-        $rootId = $user->apprenticeship?->evaluation_node_id;
+        $context = $user->apprenticeshipContext;
+        $rootId = $context?->root_domain_id;
 
-        if ($rootId === null) {
+        if ($context === null || $rootId === null) {
             return null;
         }
 
-        $variant = $user->is_mp ? EvaluationVariant::Mp : EvaluationVariant::Standard;
+        /** @var Collection<int, object{id: int, parent_id: int, child_id: int}> $links */
+        $links = collect(DB::select(<<<'SQL'
+            WITH RECURSIVE reachable AS (
+                SELECT id, parent_id, child_id
+                FROM domain_links
+                WHERE parent_id = ?
+
+                UNION
+
+                SELECT dl.id, dl.parent_id, dl.child_id
+                FROM domain_links dl
+                JOIN reachable r ON r.child_id = dl.parent_id
+            )
+            SELECT id, parent_id, child_id
+            FROM reachable
+            ORDER BY id
+        SQL, [$rootId]));
+
+        $weights = DomainLinkWeight::query()
+            ->where('apprenticeship_context_id', $context->id)
+            ->whereIn('domain_link_id', $links->pluck('id'))
+            ->get()
+            ->keyBy('domain_link_id');
+
+        $weightedLinks = $links->filter(fn (object $link): bool => $weights->has($link->id));
+        $domainIds = [$rootId, ...$weightedLinks->pluck('child_id')->all()];
+        $domains = Domain::query()->whereIn('id', $domainIds)->get()->keyBy('id');
+        $childrenByParent = $weightedLinks->groupBy('parent_id');
         $nodes = [];
-        $level = [$rootId];
 
-        // A few queries per tree level (the trees are 3–4 levels deep).
-        while ($level !== []) {
-            $connections = EvaluationNodeConnection::query()
-                ->whereIn('parent_id', $level)
-                ->orderBy('id')
-                ->get();
+        foreach ($domains as $domain) {
+            $children = [];
 
-            $related = EvaluationNode::query()
-                ->whereIn('id', [...$level, ...$connections->pluck('child_id')->all()])
-                ->get()
-                ->keyBy('id');
-
-            // Children of the other variant (standard vs MP) are left out.
-            $connections = $connections->filter(function (EvaluationNodeConnection $connection) use ($related, $variant): bool {
-                $child = $related->get($connection->child_id);
-
-                return $child !== null && ($child->variant === null || $child->variant === $variant);
-            });
-
-            $next = [];
-
-            foreach ($level as $id) {
-                $node = $related->get($id);
-
-                if ($node === null) {
-                    continue;
-                }
-
-                $children = [];
-
-                foreach ($connections->where('parent_id', $id) as $connection) {
-                    $children[] = ['id' => $connection->child_id, 'weight' => (float) $connection->weight];
-
-                    if (! isset($nodes[$connection->child_id])) {
-                        $next[$connection->child_id] = $connection->child_id;
-                    }
-                }
-
-                $nodes[$id] = [
-                    'id' => $node->id,
-                    'name' => $node->name,
-                    'aggregated' => ! $node->isLeaf(),
-                    'rounding_step' => $node->rounding_step === null ? null : (float) $node->rounding_step,
-                    'period_scope' => $node->period_scope->value,
-                    'children' => $children,
+            foreach ($childrenByParent->get($domain->id, []) as $link) {
+                $children[] = [
+                    'id' => (int) $link->child_id,
+                    'weight' => (float) $weights->get($link->id)->weight,
                 ];
             }
 
-            $level = array_values($next);
+            $nodes[$domain->id] = [
+                'id' => $domain->id,
+                'name' => $domain->name,
+                'aggregated' => $children !== [],
+                'rounding_step' => $domain->rounding_step === null ? null : (float) $domain->rounding_step,
+                'period_scope' => (float) $domain->rounding_step === 0.5 ? 'semester' : 'cursus',
+                'children' => $children,
+            ];
         }
 
         return ['root' => $rootId, 'nodes' => $nodes];

@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use LogicException;
 
 /**
  * @property int $id
@@ -46,6 +47,57 @@ class Domain extends Model
     public function parentLinks(): HasMany
     {
         return $this->hasMany(DomainLink::class, 'child_id');
+    }
+
+    /**
+     * Attach a child while preserving the acyclic domain graph invariant.
+     *
+     * @throws LogicException
+     */
+    public function linkChild(self $child): DomainLink
+    {
+        if ($this->is($child)) {
+            throw new LogicException('A domain cannot be linked to itself.');
+        }
+
+        $reachable = [$child->getKey()];
+        $seen = [];
+
+        while ($reachable !== []) {
+            $ids = array_values(array_diff($reachable, $seen));
+
+            if ($ids === []) {            DemoApprenticeSeeder
+                break;
+            }
+
+            if (in_array($this->getKey(), $ids, true)) {
+                throw new LogicException('Linking these domains would create a cycle.');
+            }
+
+            $seen = [...$seen, ...$ids];
+            $reachable = DomainLink::query()
+                ->whereIn('parent_id', $ids)
+                ->pluck('child_id')
+                ->map(static fn (int|string $id): int => (int) $id)
+                ->all();
+        }
+
+        $link = DomainLink::query()
+            ->where('parent_id', $this->getKey())
+            ->where('child_id', $child->getKey())
+            ->first();
+
+        if ($link !== null) {
+            return $link;
+        }
+
+        $link = new DomainLink;
+        $link->forceFill([
+            'parent_id' => $this->getKey(),
+            'child_id' => $child->getKey(),
+        ])->save();
+
+        return $link;
     }
 
     /** @return BelongsToMany<Subject, $this> */
