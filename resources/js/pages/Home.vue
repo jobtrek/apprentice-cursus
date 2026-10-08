@@ -14,12 +14,15 @@ import ShortcutGrid, {
     type Shortcut,
 } from '@/components/gradebook/ShortcutGrid.vue';
 import StatTiles from '@/components/gradebook/StatTiles.vue';
+import TrainingPath from '@/components/gradebook/TrainingPath.vue';
 import { PageContainer, PageHeader } from '@/components/page';
 import { useAddGradeDialog } from '@/composables/useAddGradeDialog';
 import { useNavigation } from '@/composables/useNavigation';
-import { DEMO_APPRENTICESHIP_START_YEAR } from '@/data/dashboard';
-import { createGradebook, SEMESTERS, type GradeTree } from '@/lib/gradebook';
-import { trainingPeriod } from '@/lib/semester';
+import {
+    createGradebook,
+    type GradeTree,
+    lastGradedSemester,
+} from '@/lib/gradebook';
 import gradeRoutes from '@/routes/grades';
 import portfolio from '@/routes/portfolio';
 import type { ApprenticeListItem } from '@/types/apprentice';
@@ -50,11 +53,7 @@ const gradebook = computed(() =>
     props.tree ? createGradebook(props.tree, props.grades) : null,
 );
 
-// TODO: date de début réelle de l'apprentissage, quand elle sera en base.
-const currentSemester = Math.min(
-    SEMESTERS,
-    trainingPeriod(DEMO_APPRENTICESHIP_START_YEAR).semester,
-);
+const currentSemester = computed(() => lastGradedSemester(props.grades));
 
 const shortcuts: Shortcut[] = [
     {
@@ -85,31 +84,16 @@ const shortcuts: Shortcut[] = [
             <PageHeader
                 :title="firstName ? `Bonjour ${firstName}` : 'Accueil'"
                 description="Voici où vous en êtes dans votre formation."
-            >
-                <template #actions>
-                    <div class="home-hero__meta">
-                        <span v-if="profile?.track" class="pill">
-                            Filière <strong>{{ profile.track }}</strong>
-                        </span>
-                        <span v-if="profile" class="pill">
-                            Variante
-                            <strong>{{
-                                profile.variant === 'mp'
-                                    ? 'maturité'
-                                    : 'standard'
-                            }}</strong>
-                        </span>
-                        <span class="pill">
-                            Semestre
-                            <strong
-                                >{{ currentSemester }} / {{ SEMESTERS }}</strong
-                            >
-                        </span>
-                    </div>
-                </template>
-            </PageHeader>
+            />
 
             <template v-if="gradebook">
+                <TrainingPath
+                    :gradebook="gradebook"
+                    :current-semester="currentSemester"
+                    :profile="profile"
+                    derived
+                />
+
                 <StatTiles :gradebook="gradebook" :grades="grades" />
 
                 <div class="chart-grid">

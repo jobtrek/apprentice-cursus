@@ -7,8 +7,9 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
+import { cn } from '@/lib/utils';
 
-defineProps<{
+const props = defineProps<{
     columns: {
         key: string;
         label: string;
@@ -18,11 +19,12 @@ defineProps<{
     }[];
     data: T[];
     emptyMessage?: string;
+    class?: string;
 }>();
 </script>
 
 <template>
-    <div class="bg-card overflow-hidden rounded-xl border">
+    <div :class="cn('bg-card overflow-hidden rounded-xl border', props.class)">
         <Table class="[&_td]:px-4 [&_th]:px-4">
             <TableHeader class="bg-muted/50">
                 <TableRow class="hover:bg-transparent">

@@ -13,6 +13,7 @@ use App\Models\Skill;
 use App\Models\User;
 use App\Support\ApprenticeList;
 use App\Support\Demo\DemoGrade;
+use App\Support\Gradebook\GradebookTree;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -81,6 +82,7 @@ class ApprenticeController extends Controller
         return Inertia::render('ApprenticeShow', [
             'apprenticeId' => $apprentice->id,
             'apprentice' => (new ApprenticeResource($apprentice->load(ApprenticeResource::RELATIONS)))->resolve(),
+            'stats' => ApprenticeList::statsFor($apprentice),
             'grades' => GradeResource::collection(
                 $apprentice->grades()
                     ->with(GradeResource::RELATIONS)
@@ -90,6 +92,8 @@ class ApprenticeController extends Controller
                     ->orderBy('id')
                     ->get(),
             )->resolve(),
+            // Same tree as the apprentice's own gradebook: the profile shows the real CFC averages.
+            'tree' => GradebookTree::for($apprentice),
             'portfolio' => $portfolio,
         ]);
     }
@@ -129,6 +133,7 @@ class ApprenticeController extends Controller
             'comments' => CommentResource::forGrade($grade),
             'apprenticeId' => $apprentice->id,
             'apprentice' => (new ApprenticeResource($apprentice->load(ApprenticeResource::RELATIONS)))->resolve(),
+            'stats' => ApprenticeList::statsFor($apprentice),
             'grade' => (new GradeResource($grade->load(GradeResource::RELATIONS)))->resolve(),
             'can' => [
                 'comment' => request()->user()->can('comment', $grade),

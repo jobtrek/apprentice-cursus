@@ -45,6 +45,13 @@ export const shortName = (name: string): string =>
 /** `d.m.Y` → valeur triable `Ymd`. */
 const sortKey = (date: string): string => date.split('.').reverse().join('');
 
+/**
+ * Semestre courant, faute de date de début d'apprentissage en base : le
+ * dernier semestre noté (1 sans note).
+ */
+export const lastGradedSemester = (grades: Grade[]): number =>
+    Math.min(SEMESTERS, Math.max(1, ...grades.map((grade) => grade.semester)));
+
 export const byDateDesc = (a: Grade, b: Grade): number =>
     sortKey(b.date).localeCompare(sortKey(a.date)) || b.id - a.id;
 
