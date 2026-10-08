@@ -1,7 +1,9 @@
 <script setup lang="ts">
-import { Head } from '@inertiajs/vue3';
+import { Head, useRemember } from '@inertiajs/vue3';
 import {
     ArrowUpDownIcon,
+    LayoutGridIcon,
+    ListIcon,
     SearchXIcon,
     UserPlusIcon,
     UsersIcon,
@@ -27,6 +29,7 @@ import {
     EmptyMedia,
     EmptyTitle,
 } from '@/components/ui/empty';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import {
     SITUATION_OPTIONS,
     SORT_OPTIONS,
@@ -36,6 +39,7 @@ import {
     YEAR_OPTIONS,
 } from '@/composables/useApprenticeFilters';
 import { TRACK_FILTER_OPTIONS } from '@/constants/constants';
+import { PASSING_GRADE } from '@/data/dashboard';
 import type {
     ApprenticeListItem,
     AssignableApprentice,
@@ -78,6 +82,20 @@ const summary = computed(() => {
         : followed;
 });
 
+/** Grands écrans : tableau ou cartes. Les petits écrans ont toujours les cartes. */
+type ListLayout = 'table' | 'grid';
+const layout = useRemember(
+    ref<ListLayout>('table'),
+    'ApprentisDashboard:layout',
+);
+
+const selectLayout = (value: unknown): void => {
+    // Un ToggleGroup « single » renvoie une valeur vide si on reclique l'actif.
+    if (value === 'table' || value === 'grid') {
+        layout.value = value;
+    }
+};
+
 const assignOpen = ref(false);
 
 const selected = ref<ApprenticeListItem | null>(null);
@@ -91,9 +109,9 @@ const openPreview = (apprentice: ApprenticeListItem) => {
 const columns = [
     { key: 'apprentice', label: 'Apprenti·e' },
     { key: 'track', label: 'Filière' },
-    { key: 'gradesCount', label: 'Notes', class: 'text-right' },
-    { key: 'average', label: 'Moyenne', class: 'text-right' },
-    { key: 'lastGrade', label: 'Dernière note' },
+    { key: 'situation', label: 'Situation' },
+    { key: 'average', label: 'Moyenne' },
+    { key: 'activity', label: 'Activité' },
     { key: 'coach', label: 'Coach' },
     { key: 'trainer', label: 'Formateur' },
     { key: 'actions', label: 'Actions', class: 'w-px', srOnly: true },
@@ -157,105 +175,135 @@ const columns = [
             />
 
             <section
-                class="flex flex-col gap-4"
+                class="bg-card flex flex-col overflow-hidden rounded-xl border shadow-xs"
                 aria-label="Liste des apprentis"
             >
-                <div
-                    class="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center"
-                    role="group"
-                    aria-label="Recherche et filtres"
-                >
-                    <SearchInput
-                        v-model="filters.search"
-                        placeholder="Rechercher par nom"
-                        class="col-span-2 sm:w-64"
-                    />
-                    <TabFilter
-                        v-if="hasTrackFilter"
-                        v-model="filters.track"
-                        :options="TRACK_FILTER_OPTIONS"
-                        label="Filtrer par filière"
-                        class="col-span-2 sm:col-span-1"
-                    />
-                    <FilterSelect
-                        v-model="filters.year"
-                        :options="YEAR_OPTIONS"
-                        neutral="all"
-                        label="Filtrer par année d'apprentissage"
-                    />
-                    <FilterSelect
-                        v-model="filters.variant"
-                        :options="VARIANT_OPTIONS"
-                        neutral="all"
-                        label="Filtrer par variante"
-                    />
-                    <FilterSelect
-                        v-model="filters.situation"
-                        :options="SITUATION_OPTIONS"
-                        neutral="all"
-                        label="Filtrer par situation"
-                    />
-                    <FilterSelect
-                        v-if="can.manageSupervision"
-                        v-model="filters.supervision"
-                        :options="SUPERVISION_OPTIONS"
-                        neutral="all"
-                        label="Filtrer par suivi"
-                    />
-                </div>
-
-                <div
-                    class="flex flex-wrap items-center justify-between gap-x-4 gap-y-2"
-                >
-                    <p
-                        class="text-muted-foreground flex flex-wrap items-center gap-x-2 text-sm"
-                        aria-live="polite"
+                <div class="flex flex-col gap-3 border-b p-4">
+                    <div
+                        class="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center"
+                        role="group"
+                        aria-label="Recherche et filtres"
                     >
-                        <template v-if="isFiltered">
-                            <span>
-                                <span
-                                    class="text-foreground font-medium tabular-nums"
-                                >
-                                    {{ results.length }}
+                        <SearchInput
+                            v-model="filters.search"
+                            placeholder="Rechercher un apprenti, un coach…"
+                            class="col-span-2 sm:w-72"
+                        />
+                        <TabFilter
+                            v-if="hasTrackFilter"
+                            v-model="filters.track"
+                            :options="TRACK_FILTER_OPTIONS"
+                            label="Filtrer par filière"
+                            class="col-span-2 sm:col-span-1"
+                        />
+                        <FilterSelect
+                            v-model="filters.year"
+                            :options="YEAR_OPTIONS"
+                            neutral="all"
+                            label="Filtrer par année d'apprentissage"
+                        />
+                        <FilterSelect
+                            v-model="filters.variant"
+                            :options="VARIANT_OPTIONS"
+                            neutral="all"
+                            label="Filtrer par variante"
+                        />
+                        <FilterSelect
+                            v-model="filters.situation"
+                            :options="SITUATION_OPTIONS"
+                            neutral="all"
+                            label="Filtrer par situation"
+                        />
+                        <FilterSelect
+                            v-if="can.manageSupervision"
+                            v-model="filters.supervision"
+                            :options="SUPERVISION_OPTIONS"
+                            neutral="all"
+                            label="Filtrer par suivi"
+                        />
+                    </div>
+
+                    <div
+                        class="flex flex-wrap items-center justify-between gap-x-4 gap-y-2"
+                    >
+                        <p
+                            class="text-muted-foreground flex flex-wrap items-center gap-x-2 text-sm"
+                            aria-live="polite"
+                        >
+                            <template v-if="isFiltered">
+                                <span>
+                                    <span
+                                        class="text-foreground font-medium tabular-nums"
+                                    >
+                                        {{ results.length }}
+                                    </span>
+                                    sur
+                                    {{ plural(apprentices.length, 'apprenti') }}
+                                    <template v-if="activeCount > 0">
+                                        · {{ activeCount }} filtre{{
+                                            activeCount > 1
+                                                ? 's actifs'
+                                                : ' actif'
+                                        }}
+                                    </template>
                                 </span>
-                                sur {{ plural(apprentices.length, 'apprenti') }}
-                                <template v-if="activeCount > 0">
-                                    · {{ activeCount }} filtre{{
-                                        activeCount > 1 ? 's actifs' : ' actif'
-                                    }}
-                                </template>
-                            </span>
-                            <Button
-                                variant="link"
-                                size="sm"
-                                class="h-auto px-0"
-                                @click="reset"
-                            >
-                                <XIcon aria-hidden="true" />
-                                Effacer les filtres
-                            </Button>
-                        </template>
-                        <template v-else>
-                            {{ plural(apprentices.length, 'apprenti') }}
-                        </template>
-                    </p>
+                                <Button
+                                    variant="link"
+                                    size="sm"
+                                    class="h-auto px-0"
+                                    @click="reset"
+                                >
+                                    <XIcon aria-hidden="true" />
+                                    Effacer les filtres
+                                </Button>
+                            </template>
+                            <template v-else>
+                                {{ plural(apprentices.length, 'apprenti') }}
+                            </template>
+                        </p>
 
-                    <FilterSelect
-                        v-model="filters.sort"
-                        :options="SORT_OPTIONS"
-                        label="Trier la liste"
-                        class="w-auto"
-                    >
-                        <template #icon>
-                            <ArrowUpDownIcon
-                                class="text-muted-foreground"
-                                aria-hidden="true"
-                            />
-                        </template>
-                    </FilterSelect>
+                        <div class="flex items-center gap-2">
+                            <FilterSelect
+                                v-model="filters.sort"
+                                :options="SORT_OPTIONS"
+                                label="Trier la liste"
+                                class="w-auto"
+                            >
+                                <template #icon>
+                                    <ArrowUpDownIcon
+                                        class="text-muted-foreground"
+                                        aria-hidden="true"
+                                    />
+                                </template>
+                            </FilterSelect>
+                            <ToggleGroup
+                                :model-value="layout"
+                                type="single"
+                                variant="outline"
+                                class="hidden lg:flex"
+                                aria-label="Affichage de la liste"
+                                @update:model-value="selectLayout"
+                            >
+                                <ToggleGroupItem
+                                    value="table"
+                                    aria-label="Afficher en tableau"
+                                    title="Tableau"
+                                >
+                                    <ListIcon aria-hidden="true" />
+                                </ToggleGroupItem>
+                                <ToggleGroupItem
+                                    value="grid"
+                                    aria-label="Afficher en cartes"
+                                    title="Cartes"
+                                >
+                                    <LayoutGridIcon aria-hidden="true" />
+                                </ToggleGroupItem>
+                            </ToggleGroup>
+                        </div>
+                    </div>
                 </div>
 
-                <Empty v-if="results.length === 0" class="border">
+                <Empty v-if="results.length === 0" class="rounded-none">
                     <EmptyHeader>
                         <EmptyMedia variant="icon">
                             <SearchXIcon />
@@ -274,8 +322,13 @@ const columns = [
                 </Empty>
 
                 <template v-else>
-                    <!-- Petits écrans : une carte par apprenti·e. -->
-                    <div class="grid gap-3 sm:grid-cols-2 lg:hidden">
+                    <!-- Petits écrans, ou affichage « cartes » choisi. -->
+                    <div
+                        class="bg-muted/30 grid gap-3 p-4 sm:grid-cols-2"
+                        :class="
+                            layout === 'grid' ? 'lg:grid-cols-3' : 'lg:hidden'
+                        "
+                    >
                         <ApprenticeCard
                             v-for="apprentice in results"
                             :key="apprentice.id"
@@ -285,9 +338,10 @@ const columns = [
                     </div>
 
                     <DataTable
+                        v-if="layout === 'table'"
                         :columns="columns"
                         :data="results"
-                        class="hidden lg:block"
+                        class="hidden rounded-none border-0 lg:block"
                     >
                         <template #row="{ item }">
                             <ApprenticeRow
@@ -302,6 +356,16 @@ const columns = [
                             />
                         </template>
                     </DataTable>
+
+                    <p class="text-muted-foreground border-t px-4 py-3 text-xs">
+                        Affichage de
+                        <span class="text-foreground font-medium tabular-nums">
+                            {{ results.length }}
+                        </span>
+                        sur {{ plural(apprentices.length, 'apprenti') }} ·
+                        moyennes simples des notes saisies, seuil de réussite à
+                        {{ PASSING_GRADE.toFixed(1) }}
+                    </p>
                 </template>
             </section>
         </template>

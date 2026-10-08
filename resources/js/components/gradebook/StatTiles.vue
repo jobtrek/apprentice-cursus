@@ -1,5 +1,12 @@
 <script setup lang="ts">
+import {
+    CalendarRangeIcon,
+    FileTextIcon,
+    GraduationCapIcon,
+    TriangleAlertIcon,
+} from '@lucide/vue';
 import { computed } from 'vue';
+import IconTile from '@/components/IconTile.vue';
 import { fmt, type Gradebook, PASS, shortName } from '@/lib/gradebook';
 import CountUp from './CountUp.vue';
 import type { Grade } from '@/types/grade';
@@ -55,7 +62,12 @@ const failed = computed(
 <template>
     <section class="stat-grid" aria-label="Statistiques">
         <div class="stat">
-            <span class="stat__label">Note finale CFC</span>
+            <span class="flex items-start justify-between gap-2">
+                <span class="stat__label">Note finale CFC</span>
+                <IconTile size="sm">
+                    <GraduationCapIcon />
+                </IconTile>
+            </span>
             <span class="stat__value">
                 <template v-if="final !== null">
                     <CountUp :value="final" :format="fmt" /> <small>/ 6</small>
@@ -74,12 +86,17 @@ const failed = computed(
         </div>
 
         <div class="stat">
-            <span class="stat__label">
-                {{
-                    current === null
-                        ? 'Moyenne du semestre'
-                        : `Moyenne du semestre ${current}`
-                }}
+            <span class="flex items-start justify-between gap-2">
+                <span class="stat__label">
+                    {{
+                        current === null
+                            ? 'Moyenne du semestre'
+                            : `Moyenne du semestre ${current}`
+                    }}
+                </span>
+                <IconTile size="sm">
+                    <CalendarRangeIcon />
+                </IconTile>
             </span>
             <span class="stat__value">
                 <CountUp
@@ -107,7 +124,12 @@ const failed = computed(
         </div>
 
         <div class="stat">
-            <span class="stat__label">Notes saisies</span>
+            <span class="flex items-start justify-between gap-2">
+                <span class="stat__label">Notes saisies</span>
+                <IconTile size="sm">
+                    <FileTextIcon />
+                </IconTile>
+            </span>
             <span class="stat__value"
                 ><CountUp :value="grades.length" :delay="120"
             /></span>
@@ -121,7 +143,19 @@ const failed = computed(
         </div>
 
         <div class="stat">
-            <span class="stat__label">Notes insuffisantes</span>
+            <span class="flex items-start justify-between gap-2">
+                <span class="stat__label">Notes insuffisantes</span>
+                <IconTile
+                    size="sm"
+                    :class="
+                        failed > 0
+                            ? 'text-destructive'
+                            : 'text-muted-foreground'
+                    "
+                >
+                    <TriangleAlertIcon />
+                </IconTile>
+            </span>
             <span class="stat__value"
                 ><CountUp :value="failed" :delay="180"
             /></span>

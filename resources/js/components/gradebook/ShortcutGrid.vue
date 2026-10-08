@@ -3,6 +3,7 @@ import type { LinkComponentBaseProps } from '@inertiajs/core';
 import { Link } from '@inertiajs/vue3';
 import type { Component } from 'vue';
 import { ChevronRightIcon } from '@lucide/vue';
+import IconTile from '@/components/IconTile.vue';
 import { Card, CardDescription, CardTitle } from '@/components/ui/card';
 
 export interface Shortcut {
@@ -29,17 +30,11 @@ defineEmits<{ select: [item: Shortcut] }>();
             @click="item.href ? undefined : $emit('select', item)"
         >
             <Card
-                class="group-hover:border-primary/50 group-hover:bg-accent/40 h-full flex-row items-center gap-4 px-5 py-4 transition-colors"
+                class="group-hover:border-primary/50 h-full flex-row items-center gap-4 px-5 py-4 shadow-xs transition-all group-hover:-translate-y-0.5 group-hover:shadow-md"
             >
-                <div
-                    class="bg-primary/10 text-primary flex size-10 flex-none items-center justify-center rounded-lg"
-                >
-                    <component
-                        :is="item.icon"
-                        class="size-5"
-                        aria-hidden="true"
-                    />
-                </div>
+                <IconTile size="lg">
+                    <component :is="item.icon" />
+                </IconTile>
                 <div class="flex min-w-0 flex-1 flex-col gap-0.5">
                     <CardTitle>{{ item.title }}</CardTitle>
                     <CardDescription>{{ item.description }}</CardDescription>

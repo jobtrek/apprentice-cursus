@@ -1,14 +1,28 @@
 <script setup lang="ts">
 import { Link, router } from '@inertiajs/vue3';
-import { BookOpenIcon, EyeIcon, FolderOpenIcon } from '@lucide/vue';
+import {
+    BookOpenIcon,
+    EllipsisIcon,
+    EyeIcon,
+    FolderOpenIcon,
+    UserRoundIcon,
+} from '@lucide/vue';
 import { computed } from 'vue';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { TableCell, TableRow } from '@/components/ui/table';
-import { getInitials } from '@/composables/useInitials';
 import {
     hasNoRecentGrade,
+    relativeDate,
+    situationOf,
     STALE_AFTER_DAYS,
     yearLabel,
 } from '@/lib/apprentice';
@@ -18,8 +32,11 @@ import type {
     SupervisorOption,
     TrainerOption,
 } from '@/types/apprentice';
+import ApprenticeAvatar from './ApprenticeAvatar.vue';
 import AssignmentBadge from './AssignmentBadge.vue';
-import AverageValue from './AverageValue.vue';
+import AverageMeter from './AverageMeter.vue';
+import StatusBadge from './StatusBadge.vue';
+import TrackBadges from './TrackBadges.vue';
 import SupervisorSelect from './SupervisorSelect.vue';
 
 const props = defineProps<{
@@ -48,6 +65,8 @@ const stale = computed(
         hasNoRecentGrade(props.apprentice.stats.last_grade_date),
 );
 
+const situation = computed(() => situationOf(props.apprentice));
+
 /** Superviseur actuel au format des options du select. */
 const current = (
     id: number | null,
@@ -65,7 +84,7 @@ const trainerOptions = computed(
 </script>
 
 <template>
-    <!-- Toute la ligne ouvre le profil ; les boutons mènent droit à une section. -->
+    <!-- Toute la ligne ouvre le profil ; le menu mène droit à une section. -->
     <TableRow
         class="group focus-visible:bg-muted/50 cursor-pointer focus-visible:outline-none"
         tabindex="0"
@@ -76,11 +95,10 @@ const trainerOptions = computed(
     >
         <TableCell>
             <div class="flex items-center gap-3">
-                <Avatar class="size-9">
-                    <AvatarFallback class="text-xs font-medium">
-                        {{ getInitials(apprentice.name) }}
-                    </AvatarFallback>
-                </Avatar>
+                <ApprenticeAvatar
+                    :name="apprentice.name"
+                    :tone="situation.tone"
+                />
                 <div class="flex min-w-0 flex-col">
                     <span
                         class="flex items-center gap-2 font-medium group-hover:underline"
@@ -109,37 +127,36 @@ const trainerOptions = computed(
         </TableCell>
 
         <TableCell>
-            <div class="flex items-center gap-1.5">
-                <Badge v-if="apprentice.track" variant="outline">
-                    {{ apprentice.track }}
-                </Badge>
-                <span v-else class="text-muted-foreground">—</span>
-                <Badge
-                    v-if="apprentice.isMp"
-                    variant="secondary"
-                    title="Maturité professionnelle"
-                >
-                    MP
-                </Badge>
-            </div>
+            <TrackBadges :track="apprentice.track" :is-mp="apprentice.isMp" />
         </TableCell>
 
-        <TableCell class="text-right tabular-nums">
-            {{ apprentice.stats.grades_count }}
+        <TableCell>
+            <StatusBadge :tone="situation.tone" :label="situation.label" />
         </TableCell>
-        <TableCell class="text-right">
-            <AverageValue :average="apprentice.stats.average" />
+
+        <TableCell>
+            <AverageMeter :average="apprentice.stats.average" />
         </TableCell>
-        <TableCell
-            class="tabular-nums"
-            :class="stale ? 'text-warning' : 'text-muted-foreground'"
-            :title="
-                stale
-                    ? `Aucune note depuis plus de ${STALE_AFTER_DAYS} jours`
-                    : undefined
-            "
-        >
-            {{ apprentice.stats.last_grade_date ?? '—' }}
+
+        <TableCell>
+            <div class="flex flex-col">
+                <span class="tabular-nums">
+                    {{ apprentice.stats.grades_count }}
+                    note{{ apprentice.stats.grades_count > 1 ? 's' : '' }}
+                </span>
+                <span
+                    v-if="apprentice.stats.last_grade_date"
+                    class="text-xs"
+                    :class="stale ? 'text-warning' : 'text-muted-foreground'"
+                    :title="
+                        stale
+                            ? `Aucune note depuis plus de ${STALE_AFTER_DAYS} jours (${apprentice.stats.last_grade_date})`
+                            : apprentice.stats.last_grade_date
+                    "
+                >
+                    {{ relativeDate(apprentice.stats.last_grade_date) }}
+                </span>
+            </div>
         </TableCell>
 
         <TableCell v-if="coaches" @click.stop @keydown.stop>
@@ -170,37 +187,61 @@ const trainerOptions = computed(
             <AssignmentBadge :value="apprentice.trainer ?? undefined" />
         </TableCell>
 
-        <TableCell @click.stop>
-            <div
-                class="flex justify-end gap-0.5 opacity-70 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100"
-            >
+        <TableCell @click.stop @keydown.stop>
+            <div class="flex justify-end gap-0.5">
                 <Button
                     variant="ghost"
                     size="icon-sm"
+                    class="opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100 focus-visible:opacity-100"
                     :aria-label="`Aperçu de ${apprentice.name}`"
                     :title="`Aperçu de ${apprentice.name}`"
                     @click="$emit('preview', apprentice)"
                 >
                     <EyeIcon aria-hidden="true" />
                 </Button>
-                <Button as-child variant="ghost" size="icon-sm">
-                    <Link
-                        :href="profile('grades')"
-                        :aria-label="`Carnet de notes de ${apprentice.name}`"
-                        :title="`Carnet de notes de ${apprentice.name}`"
-                    >
-                        <BookOpenIcon aria-hidden="true" />
-                    </Link>
-                </Button>
-                <Button as-child variant="ghost" size="icon-sm">
-                    <Link
-                        :href="profile('portfolio')"
-                        :aria-label="`Portfolio de ${apprentice.name}`"
-                        :title="`Portfolio de ${apprentice.name}`"
-                    >
-                        <FolderOpenIcon aria-hidden="true" />
-                    </Link>
-                </Button>
+                <DropdownMenu>
+                    <DropdownMenuTrigger as-child>
+                        <Button
+                            variant="ghost"
+                            size="icon-sm"
+                            :aria-label="`Actions pour ${apprentice.name}`"
+                            :data-test="`apprentice-actions-${apprentice.id}`"
+                        >
+                            <EllipsisIcon aria-hidden="true" />
+                        </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" class="w-52">
+                        <DropdownMenuLabel class="truncate">
+                            {{ apprentice.name }}
+                        </DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem as-child>
+                            <Link :href="profile()">
+                                <UserRoundIcon aria-hidden="true" />
+                                Voir le profil
+                            </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem as-child>
+                            <Link :href="profile('grades')">
+                                <BookOpenIcon aria-hidden="true" />
+                                Carnet de notes
+                            </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem as-child>
+                            <Link :href="profile('portfolio')">
+                                <FolderOpenIcon aria-hidden="true" />
+                                Portfolio
+                            </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                            @select="$emit('preview', apprentice)"
+                        >
+                            <EyeIcon aria-hidden="true" />
+                            Aperçu rapide
+                        </DropdownMenuItem>
+                    </DropdownMenuContent>
+                </DropdownMenu>
             </div>
         </TableCell>
     </TableRow>

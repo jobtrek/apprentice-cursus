@@ -14,6 +14,7 @@ import ShortcutGrid, {
     type Shortcut,
 } from '@/components/gradebook/ShortcutGrid.vue';
 import StatTiles from '@/components/gradebook/StatTiles.vue';
+import TrainingPath from '@/components/gradebook/TrainingPath.vue';
 import { PageContainer, PageHeader } from '@/components/page';
 import { useAddGradeDialog } from '@/composables/useAddGradeDialog';
 import { useNavigation } from '@/composables/useNavigation';
@@ -85,31 +86,15 @@ const shortcuts: Shortcut[] = [
             <PageHeader
                 :title="firstName ? `Bonjour ${firstName}` : 'Accueil'"
                 description="Voici où vous en êtes dans votre formation."
-            >
-                <template #actions>
-                    <div class="home-hero__meta">
-                        <span v-if="profile?.track" class="pill">
-                            Filière <strong>{{ profile.track }}</strong>
-                        </span>
-                        <span v-if="profile" class="pill">
-                            Variante
-                            <strong>{{
-                                profile.variant === 'mp'
-                                    ? 'maturité'
-                                    : 'standard'
-                            }}</strong>
-                        </span>
-                        <span class="pill">
-                            Semestre
-                            <strong
-                                >{{ currentSemester }} / {{ SEMESTERS }}</strong
-                            >
-                        </span>
-                    </div>
-                </template>
-            </PageHeader>
+            />
 
             <template v-if="gradebook">
+                <TrainingPath
+                    :gradebook="gradebook"
+                    :current-semester="currentSemester"
+                    :profile="profile"
+                />
+
                 <StatTiles :gradebook="gradebook" :grades="grades" />
 
                 <div class="chart-grid">

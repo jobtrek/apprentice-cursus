@@ -1,13 +1,15 @@
 <script setup lang="ts">
 import { Head, Link, usePage, useRemember } from '@inertiajs/vue3';
 import { BookOpenIcon, ChartLineIcon, FolderOpenIcon } from '@lucide/vue';
-import { reactive } from 'vue';
-import ApprenticeMetaRow from '@/components/apprentice/ApprenticeMetaRow.vue';
+import { computed, reactive } from 'vue';
+import ApprenticeAvatar from '@/components/apprentice/ApprenticeAvatar.vue';
 import ApprenticeOverview from '@/components/apprentice/ApprenticeOverview.vue';
 import ApprenticePortfolio from '@/components/apprentice/ApprenticePortfolio.vue';
+import AssignmentBadge from '@/components/apprentice/AssignmentBadge.vue';
+import StatusBadge from '@/components/apprentice/StatusBadge.vue';
+import TrackBadges from '@/components/apprentice/TrackBadges.vue';
 import GradeBook from '@/components/gradeList/GradeBook.vue';
 import { PageContainer } from '@/components/page';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import {
     Breadcrumb,
     BreadcrumbItem,
@@ -17,9 +19,15 @@ import {
     BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { getInitials } from '@/composables/useInitials';
+import {
+    averageStatus,
+    relativeDate,
+    situationOf,
+    sortableDate,
+    yearLabel,
+} from '@/lib/apprentice';
 import { apprentisdashboard } from '@/routes';
 import apprentices from '@/routes/apprentices';
 import type { Apprentice } from '@/types/apprentice';
@@ -39,6 +47,36 @@ const gradeHref = (grade: Grade) =>
         apprentice: props.apprenticeId,
         grade: grade.id,
     });
+
+/** Chiffres clés du bandeau, tirés des notes reçues. */
+const stats = computed(() => {
+    const count = props.grades.length;
+    const average =
+        count > 0
+            ? Math.round(
+                  (props.grades.reduce((sum, grade) => sum + grade.value, 0) /
+                      count) *
+                      10,
+              ) / 10
+            : null;
+    const last = props.grades
+        .map((grade) => grade.date)
+        .sort((a, b) => sortableDate(b).localeCompare(sortableDate(a)))[0];
+
+    return { grades_count: count, average, last_grade_date: last ?? null };
+});
+
+const situation = computed(() => situationOf({ stats: stats.value }));
+
+const averageClass = computed(() =>
+    stats.value.average === null
+        ? 'text-muted-foreground'
+        : averageStatus(stats.value.average).class,
+);
+
+/** Onglets soulignés plutôt qu'en pastilles. */
+const TAB_TRIGGER_CLASS =
+    'text-muted-foreground hover:text-foreground data-[state=active]:text-foreground data-[state=active]:border-primary dark:data-[state=active]:border-primary h-auto flex-none rounded-none border-0 border-b-2 border-transparent px-3 pt-2 pb-3 data-[state=active]:bg-transparent data-[state=active]:shadow-none dark:data-[state=active]:bg-transparent';
 
 type ProfileTab = 'overview' | 'grades' | 'portfolio';
 
@@ -83,42 +121,128 @@ function selectTab(tab: string | number): void {
             </BreadcrumbList>
         </Breadcrumb>
 
-        <Card>
-            <CardContent
-                class="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between"
+        <Card class="gap-0 overflow-hidden py-0 shadow-xs">
+            <!-- Bandeau décoratif : dégradé de la marque et trame de points. -->
+            <div
+                class="from-primary/25 via-primary/10 to-chart-2/25 relative h-28 bg-linear-to-r sm:h-32"
+                aria-hidden="true"
             >
-                <div class="flex min-w-0 items-center gap-4">
-                    <Avatar class="size-16 text-lg">
-                        <AvatarFallback>
-                            {{ getInitials(apprentice.name) }}
-                        </AvatarFallback>
-                    </Avatar>
-                    <div class="flex min-w-0 flex-1 flex-col gap-1.5">
-                        <h1
-                            class="truncate text-2xl font-semibold tracking-tight"
-                        >
-                            {{ apprentice.name }}
-                        </h1>
-                        <div class="flex flex-wrap gap-1.5">
-                            <Badge v-if="apprentice.track">
-                                {{ apprentice.track }}
-                            </Badge>
-                            <Badge
-                                v-if="!apprentice.isActive"
-                                variant="outline"
+                <div
+                    class="absolute inset-0 bg-[radial-gradient(var(--color-foreground)_1px,transparent_1px)] [background-size:16px_16px] opacity-[0.07]"
+                />
+            </div>
+
+            <div class="flex flex-col gap-5 px-6 pb-6">
+                <div
+                    class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between"
+                >
+                    <div
+                        class="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-end"
+                    >
+                        <ApprenticeAvatar
+                            :name="apprentice.name"
+                            class="ring-card -mt-14 size-24 shadow-sm ring-4"
+                            fallback-class="text-2xl"
+                        />
+                        <div class="flex min-w-0 flex-col gap-1.5 pt-2 sm:pb-1">
+                            <h1
+                                class="truncate text-2xl font-semibold tracking-tight"
                             >
-                                Inactif
-                            </Badge>
+                                {{ apprentice.name }}
+                            </h1>
+                            <div class="flex flex-wrap items-center gap-1.5">
+                                <StatusBadge
+                                    :tone="situation.tone"
+                                    :label="situation.label"
+                                />
+                                <TrackBadges
+                                    :track="apprentice.track"
+                                    :is-mp="apprentice.isMp"
+                                />
+                                <span
+                                    v-if="apprentice.year"
+                                    class="text-muted-foreground text-sm"
+                                    title="Déduite du dernier semestre noté"
+                                >
+                                    · {{ yearLabel(apprentice.year) }}
+                                </span>
+                                <Badge
+                                    v-if="!apprentice.isActive"
+                                    variant="outline"
+                                >
+                                    Inactif
+                                </Badge>
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <ApprenticeMetaRow
-                    class="sm:w-80 sm:shrink-0"
-                    :coach="apprentice.coach ?? undefined"
-                    :formateur="apprentice.trainer ?? undefined"
-                />
-            </CardContent>
+                <!-- Chiffres clés et suivi, séparés par des filets. -->
+                <dl
+                    class="bg-border grid grid-cols-2 gap-px overflow-hidden rounded-xl border lg:grid-cols-5"
+                >
+                    <div class="bg-card flex flex-col gap-1 p-4">
+                        <dt class="text-muted-foreground text-xs font-medium">
+                            Moyenne
+                        </dt>
+                        <dd
+                            class="text-xl font-semibold tabular-nums"
+                            :class="averageClass"
+                        >
+                            {{
+                                stats.average !== null
+                                    ? stats.average.toFixed(1)
+                                    : '—'
+                            }}
+                        </dd>
+                    </div>
+                    <div class="bg-card flex flex-col gap-1 p-4">
+                        <dt class="text-muted-foreground text-xs font-medium">
+                            Notes saisies
+                        </dt>
+                        <dd class="text-xl font-semibold tabular-nums">
+                            {{ stats.grades_count }}
+                        </dd>
+                    </div>
+                    <div class="bg-card flex flex-col gap-1 p-4">
+                        <dt class="text-muted-foreground text-xs font-medium">
+                            Dernière note
+                        </dt>
+                        <dd
+                            class="text-xl font-semibold first-letter:uppercase"
+                            :title="stats.last_grade_date ?? undefined"
+                        >
+                            {{
+                                stats.last_grade_date
+                                    ? relativeDate(stats.last_grade_date)
+                                    : '—'
+                            }}
+                        </dd>
+                    </div>
+                    <div class="bg-card flex flex-col gap-1.5 p-4">
+                        <dt class="text-muted-foreground text-xs font-medium">
+                            Coach
+                        </dt>
+                        <dd class="text-sm">
+                            <AssignmentBadge
+                                :value="apprentice.coach ?? undefined"
+                            />
+                        </dd>
+                    </div>
+                    <div
+                        class="bg-card col-span-2 flex flex-col gap-1.5 p-4 lg:col-span-1"
+                    >
+                        <dt class="text-muted-foreground text-xs font-medium">
+                            Formateur
+                        </dt>
+                        <dd class="text-sm">
+                            <AssignmentBadge
+                                :value="apprentice.trainer ?? undefined"
+                            />
+                        </dd>
+                    </div>
+                </dl>
+            </div>
         </Card>
 
         <Tabs
@@ -126,23 +250,43 @@ function selectTab(tab: string | number): void {
             class="gap-6"
             @update:model-value="selectTab"
         >
-            <TabsList>
-                <TabsTrigger value="overview" data-test="profile-tab-overview">
+            <TabsList
+                class="h-auto w-full justify-start gap-2 overflow-x-auto rounded-none border-b bg-transparent p-0"
+            >
+                <TabsTrigger
+                    value="overview"
+                    :class="TAB_TRIGGER_CLASS"
+                    data-test="profile-tab-overview"
+                >
                     <ChartLineIcon aria-hidden="true" />
                     Vue d'ensemble
                 </TabsTrigger>
-                <TabsTrigger value="grades" data-test="profile-tab-grades">
+                <TabsTrigger
+                    value="grades"
+                    :class="TAB_TRIGGER_CLASS"
+                    data-test="profile-tab-grades"
+                >
                     <BookOpenIcon aria-hidden="true" />
                     Carnet de notes
+                    <Badge
+                        variant="secondary"
+                        class="h-5 min-w-5 rounded-full px-1.5 tabular-nums"
+                    >
+                        {{ grades.length }}
+                    </Badge>
                 </TabsTrigger>
                 <TabsTrigger
                     v-if="portfolio"
                     value="portfolio"
+                    :class="TAB_TRIGGER_CLASS"
                     data-test="profile-tab-portfolio"
                 >
                     <FolderOpenIcon aria-hidden="true" />
                     Portfolio
-                    <Badge variant="secondary" class="tabular-nums">
+                    <Badge
+                        variant="secondary"
+                        class="h-5 min-w-5 rounded-full px-1.5 tabular-nums"
+                    >
                         {{ portfolio.projects.length }}
                     </Badge>
                 </TabsTrigger>

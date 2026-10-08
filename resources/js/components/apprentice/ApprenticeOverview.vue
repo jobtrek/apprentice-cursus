@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { Link } from '@inertiajs/vue3';
 import {
-    ChevronRightIcon,
+    ArrowDownRightIcon,
+    ArrowUpRightIcon,
     FileTextIcon,
     GraduationCapIcon,
     TrendingDownIcon,
@@ -25,8 +25,10 @@ import {
     type ProgressPoint,
 } from '@/data/dashboard';
 import { DOMAIN_GRADES, gradeTables, type DomainGrade } from '@/data/gradebook';
+import { averageStatus } from '@/lib/apprentice';
 import type { Grade } from '@/types/grade';
 import type { RouteDefinition } from '@/wayfinder';
+import GradeLinkList from './GradeLinkList.vue';
 
 const props = defineProps<{
     /** Notes de l'apprenti·e, de la plus ancienne à la plus récente. */
@@ -116,11 +118,10 @@ const recentGrades = computed(() => props.grades.slice(-5).reverse());
             :hint="
                 average === null
                     ? 'Aucune note pour l’instant'
-                    : average < PASSING_GRADE
-                      ? 'Insuffisante'
-                      : 'Suffisante'
+                    : `Appréciation ${averageStatus(average).label.toLowerCase()}`
             "
             :icon="GraduationCapIcon"
+            :tone="average === null ? 'muted' : averageStatus(average).tone"
         />
         <StatTile
             label="Notes saisies"
@@ -145,17 +146,47 @@ const recentGrades = computed(() => props.grades.slice(-5).reverse());
                     : 'Il faut deux semestres notés'
             "
             :icon="trend && trend.delta < 0 ? TrendingDownIcon : TrendingUpIcon"
-        />
+            :tone="
+                trend === null
+                    ? 'muted'
+                    : trend.delta < 0
+                      ? 'destructive'
+                      : 'success'
+            "
+        >
+            <template v-if="trend" #badge>
+                <span
+                    class="flex items-center gap-0.5 rounded-md px-1.5 py-0.5 text-xs font-medium"
+                    :class="
+                        trend.delta < 0
+                            ? 'bg-destructive/10 text-destructive'
+                            : 'bg-success/15 text-success'
+                    "
+                >
+                    <component
+                        :is="
+                            trend.delta < 0
+                                ? ArrowDownRightIcon
+                                : ArrowUpRightIcon
+                        "
+                        class="size-3.5"
+                        aria-hidden="true"
+                    />
+                    {{ trend.delta < 0 ? 'En baisse' : 'En hausse' }}
+                </span>
+            </template>
+        </StatTile>
         <StatTile
             label="Notes insuffisantes"
             :value="String(insufficient.length)"
             :hint="`Notes sous ${PASSING_GRADE.toFixed(1)}`"
             :icon="TriangleAlertIcon"
+            :tone="insufficient.length > 0 ? 'destructive' : 'muted'"
         />
     </section>
 
     <section class="grid gap-4 lg:grid-cols-3">
-        <Card class="lg:col-span-2">
+        <Card class="shadow-xs lg:col-span-2">
             <CardHeader>
                 <CardTitle>Progression</CardTitle>
                 <CardDescription>
@@ -171,7 +202,7 @@ const recentGrades = computed(() => props.grades.slice(-5).reverse());
             </CardContent>
         </Card>
 
-        <Card>
+        <Card class="shadow-xs">
             <CardHeader>
                 <CardTitle>Domaines</CardTitle>
                 <CardDescription>Moyenne et poids dans le CFC</CardDescription>
@@ -186,85 +217,41 @@ const recentGrades = computed(() => props.grades.slice(-5).reverse());
     </section>
 
     <section class="grid gap-4 lg:grid-cols-2">
-        <Card>
+        <Card class="shadow-xs">
             <CardHeader>
-                <CardTitle>À surveiller</CardTitle>
+                <CardTitle class="flex items-center gap-2">
+                    À surveiller
+                    <span
+                        v-if="insufficient.length"
+                        class="bg-destructive/10 text-destructive rounded-md px-1.5 py-0.5 text-xs font-medium tabular-nums"
+                    >
+                        {{ insufficient.length }}
+                    </span>
+                </CardTitle>
                 <CardDescription>
                     Notes sous {{ PASSING_GRADE.toFixed(1) }}
                 </CardDescription>
             </CardHeader>
             <CardContent>
-                <ul v-if="insufficient.length" class="divide-y">
-                    <li v-for="grade in insufficient" :key="grade.id">
-                        <Link
-                            :href="gradeHref(grade)"
-                            class="hover:bg-muted/50 focus-visible:ring-ring/50 -mx-2 flex items-center gap-4 rounded-md px-2 py-3 transition-colors focus-visible:ring-[3px] focus-visible:outline-none"
-                        >
-                            <div class="min-w-0 flex-1">
-                                <p class="truncate text-sm font-medium">
-                                    {{ grade.title }}
-                                </p>
-                                <p class="text-muted-foreground text-xs">
-                                    {{ grade.subject }} · {{ grade.date }}
-                                </p>
-                            </div>
-                            <span
-                                class="text-destructive text-lg font-semibold tabular-nums"
-                            >
-                                {{ grade.value.toFixed(1) }}
-                            </span>
-                            <ChevronRightIcon
-                                class="text-muted-foreground size-4"
-                                aria-hidden="true"
-                            />
-                        </Link>
-                    </li>
-                </ul>
-                <p v-else class="text-muted-foreground text-sm">
-                    Aucune note insuffisante.
-                </p>
+                <GradeLinkList
+                    :grades="insufficient"
+                    :grade-href="gradeHref"
+                    empty="Aucune note insuffisante."
+                />
             </CardContent>
         </Card>
 
-        <Card>
+        <Card class="shadow-xs">
             <CardHeader>
                 <CardTitle>Dernières notes</CardTitle>
                 <CardDescription>Les 5 notes les plus récentes</CardDescription>
             </CardHeader>
             <CardContent>
-                <ul v-if="recentGrades.length" class="divide-y">
-                    <li v-for="grade in recentGrades" :key="grade.id">
-                        <Link
-                            :href="gradeHref(grade)"
-                            class="hover:bg-muted/50 focus-visible:ring-ring/50 -mx-2 flex items-center gap-4 rounded-md px-2 py-3 transition-colors focus-visible:ring-[3px] focus-visible:outline-none"
-                        >
-                            <div class="min-w-0 flex-1">
-                                <p class="truncate text-sm font-medium">
-                                    {{ grade.title }}
-                                </p>
-                                <p class="text-muted-foreground text-xs">
-                                    {{ grade.subject }} · {{ grade.date }}
-                                </p>
-                            </div>
-                            <span
-                                class="text-lg font-semibold tabular-nums"
-                                :class="{
-                                    'text-destructive':
-                                        grade.value < PASSING_GRADE,
-                                }"
-                            >
-                                {{ grade.value.toFixed(1) }}
-                            </span>
-                            <ChevronRightIcon
-                                class="text-muted-foreground size-4"
-                                aria-hidden="true"
-                            />
-                        </Link>
-                    </li>
-                </ul>
-                <p v-else class="text-muted-foreground text-sm">
-                    Aucune note pour l'instant.
-                </p>
+                <GradeLinkList
+                    :grades="recentGrades"
+                    :grade-href="gradeHref"
+                    empty="Aucune note pour l'instant."
+                />
             </CardContent>
         </Card>
     </section>
