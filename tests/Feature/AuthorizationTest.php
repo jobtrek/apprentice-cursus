@@ -117,7 +117,7 @@ describe('trainer', function () {
         $it = section('IT');
         $ec = section('EC');
         $trainer = User::factory()->trainer()->create();
-        $trainer->forceFill(['apprenticeship_id' => $it->id])->save();
+        $trainer->forceFill(['apprenticeship_context_id' => contextFor($it)->id])->save();
 
         $ownGrade = makeGrade(makeApprentice($it, trainer: $trainer));
         $unassignedGrade = makeGrade(makeApprentice($it));
@@ -180,7 +180,7 @@ describe('apprentice pages', function () {
     test('a trainer cannot open an apprentice of another section', function () {
         $it = section('IT');
         $trainer = User::factory()->trainer()->create();
-        $trainer->forceFill(['apprenticeship_id' => $it->id])->save();
+        $trainer->forceFill(['apprenticeship_context_id' => contextFor($it)->id])->save();
         $ec = makeApprentice(section('EC'));
 
         $this->actingAs($trainer)->get(route('apprentices.show', $ec))->assertForbidden();
@@ -238,9 +238,9 @@ describe('supervision scoping', function () {
     test('a trainer cannot open the page of another trainer or of itself', function () {
         $it = section('IT');
         $trainer = User::factory()->trainer()->create();
-        $trainer->forceFill(['apprenticeship_id' => $it->id])->save();
+        $trainer->forceFill(['apprenticeship_context_id' => contextFor($it)->id])->save();
         $otherTrainer = User::factory()->trainer()->create();
-        $otherTrainer->forceFill(['apprenticeship_id' => $it->id])->save();
+        $otherTrainer->forceFill(['apprenticeship_context_id' => contextFor($it)->id])->save();
 
         $this->actingAs($trainer)->get(route('apprentices.show', $otherTrainer))->assertForbidden();
         $this->actingAs($trainer)->get(route('apprentices.show', $trainer))->assertForbidden();
@@ -284,7 +284,7 @@ describe('commenting', function () {
         $it = section('IT');
         $ec = section('EC');
         $trainer = User::factory()->trainer()->create();
-        $trainer->forceFill(['apprenticeship_id' => $it->id])->save();
+        $trainer->forceFill(['apprenticeship_context_id' => contextFor($it)->id])->save();
 
         $itGrade = makeGrade(makeApprentice($it, trainer: $trainer));
         $ecGrade = makeGrade(makeApprentice($ec, trainer: $trainer));
@@ -295,7 +295,7 @@ describe('commenting', function () {
             ->and($trainer->can('comment', $ecGrade))->toBeFalse();
 
         $otherTrainer = User::factory()->trainer()->create();
-        $otherTrainer->forceFill(['apprenticeship_id' => $it->id])->save();
+        $otherTrainer->forceFill(['apprenticeship_context_id' => contextFor($it)->id])->save();
 
         expect($trainer->supervises($otherTrainer))->toBeFalse()
             ->and($trainer->supervises($trainer))->toBeFalse();

@@ -27,8 +27,8 @@ class UserPolicy
         return match ($user->selfAssignmentColumn()) {
             'coach_id' => $apprentice->coach_id === null,
             'trainer_id' => $apprentice->trainer_id === null
-                && $user->apprenticeship_id !== null
-                && $apprentice->apprenticeship_id === $user->apprenticeship_id,
+                && $user->apprenticeshipId() !== null
+                && $apprentice->apprenticeshipId() === $user->apprenticeshipId(),
             default => false,
         };
     }

@@ -9,6 +9,7 @@ use Carbon\CarbonImmutable;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
+use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -113,6 +114,27 @@ class User extends Authenticatable
         return $this->apprenticeshipContext?->apprenticeship_id;
     }
 
+    /**
+     * Users of a section, whatever their context (standard or MP). A null
+     * section matches nobody.
+     *
+     * @param  Builder<self>  $query
+     */
+    #[Scope]
+    protected function inSection(Builder $query, ?int $apprenticeshipId): void
+    {
+        if ($apprenticeshipId === null) {
+            $query->whereRaw('false');
+
+            return;
+        }
+
+        $query->whereHas(
+            'apprenticeshipContext',
+            fn (Builder $context) => $context->where('apprenticeship_id', $apprenticeshipId),
+        );
+    }
+
     public function coach(): BelongsTo
     {
         return $this->belongsTo(self::class, 'coach_id');
@@ -201,7 +223,7 @@ class User extends Authenticatable
         return match ($this->role) {
             UserRole::Coach => $query->where('coach_id', $this->id),
             UserRole::Trainer => $query->where('trainer_id', $this->id)
-                ->where('apprenticeship_id', $this->apprenticeship_id),
+                ->inSection($this->apprenticeshipId()),
             default => $query->whereRaw('false'),
         };
     }
@@ -233,8 +255,7 @@ class User extends Authenticatable
         return match ($this->selfAssignmentColumn()) {
             'coach_id' => $query->whereNull('coach_id'),
             'trainer_id' => $query->whereNull('trainer_id')
-                ->whereNotNull('apprenticeship_id')
-                ->where('apprenticeship_id', $this->apprenticeship_id),
+                ->inSection($this->apprenticeshipId()),
             default => $query->whereRaw('false'),
         };
     }
@@ -252,8 +273,8 @@ class User extends Authenticatable
         return match ($this->role) {
             UserRole::Coach => $apprentice->coach_id === $this->id,
             UserRole::Trainer => $apprentice->trainer_id === $this->id
-                && $this->apprenticeship_id !== null
-                && $apprentice->apprenticeship_id === $this->apprenticeship_id,
+                && $this->apprenticeshipId() !== null
+                && $apprentice->apprenticeshipId() === $this->apprenticeshipId(),
             default => false,
         };
     }

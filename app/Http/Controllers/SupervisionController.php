@@ -51,8 +51,7 @@ class SupervisionController extends Controller
                 'integer',
                 Rule::in(
                     User::role(UserRole::Trainer->value)
-                        ->whereNotNull('apprenticeship_id')
-                        ->where('apprenticeship_id', $apprentice->apprenticeship_id)
+                        ->inSection($apprentice->apprenticeshipId())
                         ->pluck('id'),
                 ),
             ],

@@ -13,7 +13,7 @@ beforeEach(function () {
 function trainerOf(object $section): User
 {
     $trainer = User::factory()->trainer()->create();
-    $trainer->forceFill(['apprenticeship_id' => $section->id])->save();
+    $trainer->forceFill(['apprenticeship_context_id' => contextFor($section)->id])->save();
 
     return $trainer;
 }
