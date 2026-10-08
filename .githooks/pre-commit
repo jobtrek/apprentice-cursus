@@ -1,0 +1,60 @@
+#!/bin/sh
+
+set -u
+
+ROOT="$(git rev-parse --show-toplevel)" || {
+    echo "Unable to determine the repository root. Commit aborted."
+    exit 1
+}
+cd "$ROOT" || exit 1
+
+SAIL="./vendor/bin/sail"
+if [ ! -x "$SAIL" ]; then
+    echo "Laravel Sail is not available. Install dependencies before committing."
+    exit 1
+fi
+
+RUNNING_SERVICES="$("$SAIL" ps --status=running --services 2>/dev/null)" || {
+    echo "Unable to check Laravel Sail. Start Sail with './vendor/bin/sail up -d' and try again."
+    exit 1
+}
+
+if [ -z "$RUNNING_SERVICES" ]; then
+    echo "Laravel Sail is not running. Start it with './vendor/bin/sail up -d' and try again."
+    exit 1
+fi
+
+STAGED_PHP_FILES="$(git diff --cached --name-only --diff-filter=ACM -- '*.php')"
+if [ -z "$STAGED_PHP_FILES" ]; then
+    echo "No staged PHP files to format."
+else
+    while IFS= read -r file; do
+        if [ -n "$(git diff -- "$file")" ]; then
+            echo "PHP file '$file' is partially staged."
+            echo "Stage the whole file or commit the staged changes separately, then try again."
+            exit 1
+        fi
+    done <<EOF
+$STAGED_PHP_FILES
+EOF
+
+    echo "Running Laravel Pint on staged PHP files..."
+    printf '%s\n' "$STAGED_PHP_FILES" |
+        xargs -r "$SAIL" php vendor/bin/pint || {
+            echo "Pint failed. Commit aborted."
+            exit 1
+        }
+
+    printf '%s\n' "$STAGED_PHP_FILES" | xargs -r git add -- || {
+        echo "Unable to stage Pint changes. Commit aborted."
+        exit 1
+    }
+fi
+
+echo "Running staged JavaScript and Vue checks..."
+"$SAIL" pnpm exec lint-staged --concurrent false || {
+    echo "JavaScript or Vue checks failed. Commit aborted."
+    exit 1
+}
+
+echo "Pre-commit checks passed."
