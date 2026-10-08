@@ -31,16 +31,16 @@ Files owned by this package (no other package edits them):
     - `SupervisionController.php` lines 54 to 55
     - `AzureAccountSync.php` lines 86 to 97, `AzureDirectorySync.php` lines 124 and 132
     - `HandleInertiaRequests.php` line 50 (shared prop `apprenticeship_id`)
-    - `UserSeeder.php` line 70, `DemoApprenticeSeeder.php` line 48
+    - `UserSeeder.php` line 70, `DemoApprenticeSeeder.php` line 48 **(done, `adb47571`)**
     - `../../tests/Pest.php` line 68 and about ten test files (`forceFill(['apprenticeship_id' => …])`)
-- [ ] **M3 — `User` has no `apprenticeship()` relation any more**, but `GradebookTree.php` (package 6) and `DemoGradeSeederTest.php` (package 7) call `$user->apprenticeship`.
+- [x] **M3 — `User` has no `apprenticeship()` relation any more**, but `GradebookTree.php` (package 6) and `DemoGradeSeederTest.php` (package 7) call `$user->apprenticeship`.
 - [x] **G2 — `users.apprenticeship_context_id` has no index.** The old `apprenticeship_id` index disappeared with the column; the new column never got one. **Moved to package 10 (migration U).**
 - [x] **M6 — `users.is_mp` still exists but `User` does not declare it** (no docblock, no cast), while `HomeController.php` line 35 and `GradebookTree.php` line 29 still read it. **Closed by package 10:** the column is dropped by `2026_10_07_220000`. The two readers are fixed in packages 6 and 7.
-- [ ] **`../../tests/Pest.php` line 53** creates an `EvaluationNode`, a class that was deleted.
+- [x] **`../../tests/Pest.php` line 53** creates an `EvaluationNode`, a class that was deleted.
 
 # Fixes suggested
 
-1. **Give `User` the section through its context.** Add a relation:
+1. **Give `User` the section through its context. Done (`b3d35209`).** Add a relation:
 
     ```php
     /** @return HasOneThrough<Apprenticeship, ApprenticeshipContext, $this> */
@@ -59,7 +59,7 @@ Files owned by this package (no other package edits them):
 3. **Same substitution** in `UserPolicy`, `SupervisionController` and the `HandleInertiaRequests` shared prop (keep the prop name `apprenticeship_id` so `../../resources/js/types/auth.ts` and the pages do not change).
 4. **Sync services.** `AzureAccountSync` / `AzureDirectorySync` must now resolve an `apprenticeship_contexts` row instead of an apprenticeship id. That needs a rule for `is_mp` at sync time (see open question). Until decided, pick the non-MP context of the section.
 5. **Trainers.** A trainer has a section but no MP notion. Confirm trainers also point at a context (the non-MP one), since `supervises()` compares sections for trainers.
-6. **Seeders and tests.** Replace `forceFill(['apprenticeship_id' => $x->id])` with the context id. Add a helper in `../../tests/Pest.php` (for example `contextFor(Apprenticeship $section, bool $mp = false)`) so the ten test files change one call each. Replace the `EvaluationNode` use on line 53 with `Domain`, and the grade it creates with the columns from package 4 (`user_id`, `domain_id`, `subject_id`, `apprenticeship_period_id`).
+6. **Seeders and tests. Seeders done (`adb47571`); `Pest.php` helpers done; the `forceFill` call sites in the test files remain.** Replace `forceFill(['apprenticeship_id' => $x->id])` with the context id. Add a helper in `../../tests/Pest.php` (for example `contextFor(Apprenticeship $section, bool $mp = false)`) so the ten test files change one call each. Replace the `EvaluationNode` use on line 53 with `Domain`, and the grade it creates with the columns from package 4 (`user_id`, `domain_id`, `subject_id`, `apprenticeship_period_id`).
 7. **G2 — moved to package 10 (migration U).** `2026_10_07_150000` is committed and is not edited.
 
 # Open question (needs a team decision, not a code fix)
