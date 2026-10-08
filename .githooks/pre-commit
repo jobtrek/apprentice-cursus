@@ -1,21 +1,63 @@
 #!/bin/sh
 
-echo "🎨 Running Laravel Pint..."
+set -u
 
-./vendor/bin/pint --dirty
+ROOT="$(git rev-parse --show-toplevel)" || {
+    echo "❌ Unable to determine the repository root. Commit aborted."
+    exit 1
+}
+cd "$ROOT" || exit 1
 
+SAIL="./vendor/bin/sail"
+if [ ! -x "$SAIL" ]; then
+    echo "❌ Laravel Sail is not available. Install dependencies and start Sail before committing."
+    exit 1
+fi
+
+STASH_NEEDED=0
+
+if ! git diff --quiet || [ -n "$(git ls-files --others --exclude-standard)" ]; then
+    STASH_NEEDED=1
+    if ! git stash push --keep-index --include-untracked -m "pre-commit hook backup" >/dev/null; then
+        echo "❌ Unable to temporarily save unstaged changes. Commit aborted."
+        exit 1
+    fi
+fi
+
+restore_unstaged_changes() {
+    status=$?
+    trap - EXIT
+
+    if [ "$STASH_NEEDED" -eq 1 ] && ! git stash pop >/dev/null; then
+        echo "❌ Unable to restore unstaged changes. Resolve the stash conflict before committing."
+        status=1
+    fi
+
+    exit "$status"
+}
+
+trap restore_unstaged_changes EXIT
+
+echo "🎨 Running Laravel Pint through Sail..."
+
+"$SAIL" php vendor/bin/pint --dirty
 if [ $? -ne 0 ]; then
     echo "❌ Pint failed. Commit aborted."
     exit 1
 fi
 
-git add -u
+git diff --cached --name-only -z --diff-filter=ACM -- '*.php' |
+    xargs -0 -r git add -- || {
+        echo "❌ Unable to stage Pint changes. Commit aborted."
+        exit 1
+    }
 
-echo "🔍 Running Larastan..."
+echo "🔍 Running Larastan through Sail..."
 
-./vendor/bin/phpstan analyse --memory-limit=512M
+"$SAIL" php vendor/bin/phpstan analyse --memory-limit=512M
+PHPSTAN_STATUS=$?
 
-if [ $? -ne 0 ]; then
+if [ "$PHPSTAN_STATUS" -ne 0 ]; then
     echo ""
     echo "⚠️  Larastan found errors."
     printf "Do you want to ignore them and continue with commit? [y/N]: "
@@ -37,4 +79,8 @@ if [ $? -ne 0 ]; then
     fi
 fi
 
-echo "✅ All checks passed."
+if [ "$PHPSTAN_STATUS" -eq 0 ]; then
+    echo "✅ All checks passed."
+else
+    echo "⚠️  Commit allowed with Larastan errors ignored."
+fi
