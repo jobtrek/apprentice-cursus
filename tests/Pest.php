@@ -51,9 +51,9 @@ expect()->extend('toBeOne', function () {
 |
 */
 
-function makeGrade(User $apprentice): Grade
+function makeGrade(User $apprentice, ?Domain $domain = null): Grade
 {
-    $domain = Domain::query()->firstOrCreate(['name' => 'Test node']);
+    $domain ??= Domain::query()->firstOrCreate(['name' => 'Test node']);
     $subject = Subject::query()->firstOrCreate(['name' => 'Test subject']);
     // A grade is only accepted on a subject attached to its domain.
     $domain->subjects()->syncWithoutDetaching([$subject->id]);
