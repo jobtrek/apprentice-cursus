@@ -1,0 +1,53 @@
+grades: {
+  shape: sql_table
+  id: bigint {constraint: primary_key}
+  user_id: bigint {constraint: foreign_key} # Reference users
+  domain_id: bigint {constraint: foreign_key}
+  subject_id: bigint {constraint: foreign_key}
+  apprenticeship_period_id: bigint {constraint: foreign_key}
+  value: "decimal(2,1)" # CHECK (value BETWEEN 1.0 AND 6.0)
+  test_date: date
+  file_path: varchar
+  original_filename: varchar
+  notified_at: timestamp
+  created_at: timestamp
+  updated_at: timestamp
+  # FOREIGN KEY (domain_id, subject_id) -> domain_subject: the subject must be attached to the domain
+}
+
+domains: {
+  shape: sql_table
+  id: bigint {constraint: primary_key}
+  name: varchar
+  rounding_step: "decimal(2,1)"
+  created_at: timestamp
+}
+
+domain_links: {
+  shape: sql_table
+  parent_id: bigint {constraint: foreign_key}
+  child_id: bigint {constraint: foreign_key}
+  weight: "decmial(3, 2)"
+  # UNIQUE (parent_id, child_id), CHECK (parent_id <> child_id)
+}
+
+subjects: {
+  shape: sql_table
+  id: bigint {constraint: primary_key}
+  name: varchar
+  created_at: timestamp
+}
+
+domain_links <-> domains: child-parent relationship {
+  source-arrowhead: {shape: cf-many}
+  target-arrowhead: {shape: cf-many}
+}
+
+subjects -> domains: belong to {
+  source-arrowhead: {shape: cf-many}
+  target-arrowhead: {shape: cf-one-required}
+}
+grades -> subjects: belong to {
+  source-arrowhead: {shape: cf-many}
+  target-arrowhead: {shape: cf-one-required}
+}
