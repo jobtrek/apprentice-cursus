@@ -88,11 +88,11 @@ projects.projects -> comments: commentable {
   target-arrowhead: {shape: cf-many}
 }
 
-"""
+
 spatie: {
   label: Spatie
 
-  ...@mcd_spatie
+  ...@mcd_roles
 }
 
 users -> spatie.model_has_roles: model {
@@ -106,4 +106,3 @@ users -> spatie.model_has_permissions: model {
   source-arrowhead: {shape: cf-one-required}
   target-arrowhead: {shape: cf-many}
 }
-"""
