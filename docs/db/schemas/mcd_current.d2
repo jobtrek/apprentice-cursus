@@ -8,6 +8,7 @@ vars: {
 sectors: {
   shape: sql_table
   id: bigint {constraint: primary_key}
+  root_domain_id: bigint {constraint: [foreign_key; unique]} # reference a root domain, domain with no parent that serve as the final grade for that sector.
   name: varchar
 }
 
@@ -31,14 +32,14 @@ comments: {
   shape: sql_table
   id: bigint {constraint: primary_key}
   author_id: bigint {constraint: foreign_key}
-  project_id: bigint {constraint: foreign_key}
-  grade_id: bigint {constraint: foreign_key}
+  project_id: bigint {constraint: [foreign_key; nullable]}
+  grade_id: bigint {constraint: [foreign_key; nullable]}
   body: text
   created_at: timestamp
   updated_at: timestamp
 }
 
-sectors -> users: apprentices {
+sectors -> users: professional sector {
   source-arrowhead: {shape: cf-one-required}
   target-arrowhead: {shape: cf-many}
 }
@@ -58,6 +59,10 @@ users -> projects.projects: apprentice {
   target-arrowhead: {shape: cf-many}
 }
 
+sectors -> grades.domains {
+  source-arrowhead: {shape: cf-one-required}
+  target-arrowhead: {shape: cf-one}
+}
 projects: {
   label: Projects
 

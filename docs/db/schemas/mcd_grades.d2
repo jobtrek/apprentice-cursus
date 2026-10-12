@@ -2,20 +2,13 @@ grades: {
   shape: sql_table
   id: bigint {constraint: primary_key}
   user_id: bigint {constraint: foreign_key} # Reference users
-  subject_id: bigint {constraint: foreign_key}
+  domain_id: bigint {constraint: foreign_key}
   value: "decimal(2,1)" # CHECK (value BETWEEN 1.0 AND 6.0)
   test_date: date
   file_path: varchar
   notified_at: timestamp
   created_at: timestamp
   updated_at: timestamp
-}
-
-subjects: {
-  shape: sql_table
-  id: bigint {constraint: primary_key}
-  domain_id: bigint {constraint: foreign_key}
-  name: varchar
 }
 
 domains: {
@@ -29,21 +22,23 @@ domain_links: {
   shape: sql_table
   parent_id: bigint {constraint: foreign_key}
   child_id: bigint {constraint: foreign_key}
-  weight: "decmial(3, 2)"
+  is_mpi: boolean
+  weight: "decimal(3, 2)"
   # UNIQUE (parent_id, child_id)
   # CHECK (parent_id <> child_id)
 }
 
-domain_links <-> domains: child-parent relationship {
-  source-arrowhead: {shape: cf-many}
+domain_links -> domains: child relationship {
+  source-arrowhead: {shape: cf-one-required}
   target-arrowhead: {shape: cf-many}
 }
 
-subjects -> domains: belong to {
-  source-arrowhead: {shape: cf-many}
-  target-arrowhead: {shape: cf-one-required}
+domain_links -> domains: parent relationship {
+  source-arrowhead: {shape: cf-one-required}
+  target-arrowhead: {shape: cf-many}
 }
-grades -> subjects: belong to {
+
+grades -> domains: belong to {
   source-arrowhead: {shape: cf-many}
   target-arrowhead: {shape: cf-one-required}
 }
