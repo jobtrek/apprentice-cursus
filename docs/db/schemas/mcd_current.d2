@@ -28,6 +28,27 @@ users: {
   coach_id: bigint {constraint: foreign_key}
 }
 
+trainers_formation_plans: {
+  trainer_id: bigint {constraint: FK} # Reference a selected id within users that is a trainers.
+  formation_plan_id: bigint {constraint: FK} # Reference the formation plan that trainer work for. Who he's training (DEV ? EC ?)
+}
+
+# Allow to refer through this table for trainers specifically, so we can separate both.
+users -> trainers_formation_plans: a trainer that train a plan{
+  source-arrowhead: {shape: cf-one},
+  target-arrowhead: {shape: cf-many}
+}
+
+formation_plans -> trainers_formation_plans: a plan that is trained {
+  source-arrowhead: {shape: cf-one},
+  target-arrowhead: {shape: cf-many}
+}
+
+# For apprentices
+formation_plans -> users: apprentice following a formation plan{
+  source-arrowhead: {shape: cf-one-required}
+  target-arrowhead: {shape: cf-many}
+}
 comments: {
   shape: sql_table
   id: bigint {constraint: primary_key}
@@ -39,10 +60,7 @@ comments: {
   updated_at: timestamp
 }
 
-formation_plans -> users: followed formation plan version{
-  source-arrowhead: {shape: cf-one-required}
-  target-arrowhead: {shape: cf-many}
-}
+
 
 users -> grades.grades: user-grade {
   source-arrowhead: {shape: cf-one-required}
