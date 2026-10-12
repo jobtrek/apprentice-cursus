@@ -41,7 +41,7 @@ apprenticeships -> users: apprentices {
   target-arrowhead: {shape: cf-many}
 }
 
-users -> grades: user-grade {
+users -> grades.grades: user-grade {
   source-arrowhead: {shape: cf-one-required}
   target-arrowhead: {shape: cf-many}
 }
@@ -56,7 +56,7 @@ users -> users: trainer {
   target-arrowhead: {shape: cf-many}
 }
 
-users -> projects: apprentice {
+users -> projects.projects: apprentice {
   source-arrowhead: {shape: cf-one-required}
   target-arrowhead: {shape: cf-many}
 }
@@ -78,12 +78,12 @@ users -> comments: author {
   target-arrowhead: {shape: cf-many}
 }
 
-grades -> comments: commentable {
+grades.grades -> comments: commentable {
   source-arrowhead: {shape: cf-one-required}
   target-arrowhead: {shape: cf-many}
 }
 
-projects -> comments: commentable {
+projects.projects -> comments: commentable {
   source-arrowhead: {shape: cf-one-required}
   target-arrowhead: {shape: cf-many}
 }
