@@ -29,18 +29,19 @@ users: {
 }
 
 trainers_formation_plans: {
+  shape: sql_table
   trainer_id: bigint {constraint: FK} # Reference a selected id within users that is a trainers.
   formation_plan_id: bigint {constraint: FK} # Reference the formation plan that trainer work for. Who he's training (DEV ? EC ?)
 }
 
 # Allow to refer through this table for trainers specifically, so we can separate both.
 users -> trainers_formation_plans: a trainer that train a plan{
-  source-arrowhead: {shape: cf-one},
+  source-arrowhead: {shape: cf-one}
   target-arrowhead: {shape: cf-many}
 }
 
 formation_plans -> trainers_formation_plans: a plan that is trained {
-  source-arrowhead: {shape: cf-one},
+  source-arrowhead: {shape: cf-one}
   target-arrowhead: {shape: cf-many}
 }
 
