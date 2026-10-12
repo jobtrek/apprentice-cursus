@@ -11,34 +11,27 @@ grades: {
   updated_at: timestamp
 }
 
-domains: {
+average_nodes: {
   shape: sql_table
   id: bigint {constraint: primary_key}
-  name: varchar
-  rounding_step: "decimal(2,1)"
-}
-
-domain_links: {
-  shape: sql_table
   parent_id: bigint {constraint: [PK; FK]}
   child_id: bigint {constraint: [PK; FK]}
-  is_mpi: boolean {constrain: PK}
+  name: varchar
+  rounding_step: "decimal(2,1)"
   weight: "decimal(3, 2)"
-  # UNIQUE (parent_id, child_id. is_mpi)
-  # CHECK (parent_id <> child_id)
 }
 
-domain_links -> domains: child relationship {
-  source-arrowhead: {shape: cf-one-required}
-  target-arrowhead: {shape: cf-many}
+grades -> average_nodes: belong to {
+  source-arrowhead: {shape: cf-many}
+  target-arrowhead: {shape: cf-one-required}
 }
 
-domain_links -> domains: parent relationship {
-  source-arrowhead: {shape: cf-one-required}
-  target-arrowhead: {shape: cf-many}
+average_nodes.parent_id -> average_nodes.id: parent_node {
+  source-arrowhead: {shape: cf-many}
+  target-arrowhead: {shape: cf-one-required}
 }
 
-grades -> domains: belong to {
+average_nodes.child_id -> average_nodes.id: child_node {
   source-arrowhead: {shape: cf-many}
   target-arrowhead: {shape: cf-one-required}
 }

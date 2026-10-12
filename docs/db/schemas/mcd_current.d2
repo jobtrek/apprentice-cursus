@@ -5,10 +5,10 @@ vars: {
   }
 }
 
-sectors: {
+formation_plans: {
   shape: sql_table
   id: bigint {constraint: primary_key}
-  root_domain_id: bigint {constraint: [foreign_key; unique]} # reference a root domain, domain with no parent that serve as the final grade for that sector.
+  root_domain_id: bigint {constraint: [foreign_key; unique]} # reference a root domain, domain with no parent that serve as the final grade for that formation_plan.
   name: varchar
 }
 
@@ -17,7 +17,7 @@ users: {
   id: bigint {constraint: primary_key}
   azure_id: varchar {constraint: unique}
   tenant_id: varchar
-  sector_id: bigint {constraint: [foreign_key; nullable]}
+  formation_plan_id: bigint {constraint: [foreign_key; nullable]}
   name: varchar
   email: varchar {constraint: unique}
   email_verified_at: timestamp
@@ -39,7 +39,7 @@ comments: {
   updated_at: timestamp
 }
 
-sectors -> users: professional sector {
+formation_plans -> users: followed formation plan version{
   source-arrowhead: {shape: cf-one-required}
   target-arrowhead: {shape: cf-many}
 }
@@ -54,19 +54,22 @@ users.coach_id -> users.id: coach {
   target-arrowhead: {shape: cf-many}
 }
 
-users -> projects.projects: apprentice {
-  source-arrowhead: {shape: cf-one-required}
-  target-arrowhead: {shape: cf-many}
-}
 
-sectors -> grades.domains {
+
+formation_plans -> grades.average_nodes {
   source-arrowhead: {shape: cf-one-required}
   target-arrowhead: {shape: cf-one}
 }
+
 projects: {
   label: Projects
 
   ...@mcd_projects
+}
+
+users -> projects.projects: apprentice {
+  source-arrowhead: {shape: cf-one-required}
+  target-arrowhead: {shape: cf-many}
 }
 
 grades: {
@@ -90,6 +93,7 @@ projects.projects -> comments: commentable {
   target-arrowhead: {shape: cf-many}
 }
 
+"""
 spatie: {
   label: Spatie
 
@@ -107,3 +111,4 @@ users -> spatie.model_has_permissions: model {
   source-arrowhead: {shape: cf-one-required}
   target-arrowhead: {shape: cf-many}
 }
+"""
