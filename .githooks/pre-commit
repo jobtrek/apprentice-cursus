@@ -49,6 +49,13 @@ EOF
         echo "Unable to stage Pint changes. Commit aborted."
         exit 1
     }
+
+    echo "Running Larastan on staged PHP files..."
+    printf '%s\n' "$STAGED_PHP_FILES" |
+        xargs -r "$SAIL" php vendor/bin/phpstan analyse --configuration=phpstan.neon || {
+            echo "Larastan failed. Commit aborted."
+            exit 1
+        }
 fi
 
 echo "Running staged JavaScript and Vue checks..."
