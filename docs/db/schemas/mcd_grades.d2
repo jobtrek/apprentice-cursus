@@ -14,7 +14,7 @@ grades: {
 subjects: {
   shape: sql_table
   id: bigint {constraint: primary_key}
-  domain_id: bigint {constraint: primary_key}
+  domain_id: bigint {constraint: foreign_key}
   name: varchar
 }
 
