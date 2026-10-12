@@ -1,4 +1,9 @@
 direction: right
+vars: {
+  d2-config: {
+    layout-engine: tala
+  }
+}
 
 apprenticeships: {
   shape: sql_table
@@ -29,8 +34,8 @@ comments: {
   shape: sql_table
   id: bigint {constraint: primary_key}
   author_id: bigint {constraint: foreign_key}
-  commentable_type: varchar
-  commentable_id: bigint
+  project_id: bigint {constraint: foreign_key}
+  grade_id: bigint {constraint: foreign_key}
   body: text
   created_at: timestamp
   updated_at: timestamp
@@ -46,12 +51,12 @@ users -> grades.grades: user-grade {
   target-arrowhead: {shape: cf-many}
 }
 
-users -> users: coach {
+users.coach_id -> users.id: coach {
   source-arrowhead: {shape: cf-one}
   target-arrowhead: {shape: cf-many}
 }
 
-users -> users: trainer {
+users.trainer_id -> users.id: trainer {
   source-arrowhead: {shape: cf-one}
   target-arrowhead: {shape: cf-many}
 }
@@ -68,9 +73,9 @@ projects: {
 }
 
 grades: {
-    label: Grades
+  label: Grades
 
-    ...@mcd_grades
+  ...@mcd_grades
 }
 
 users -> comments: author {
@@ -87,7 +92,6 @@ projects.projects -> comments: commentable {
   source-arrowhead: {shape: cf-one-required}
   target-arrowhead: {shape: cf-many}
 }
-
 
 spatie: {
   label: Spatie

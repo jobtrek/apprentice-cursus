@@ -11,23 +11,19 @@ projects: {
   demo_path: varchar
   date_start: date
   date_end: date
-  created_at: timestamp
-  updated_at: timestamp
 }
 
 project_screenshots: {
   shape: sql_table
   id: bigint {constraint: primary_key}
   project_id: bigint {constraint: foreign_key}
-  created_at: timestamp
-  updated_at: timestamp
+  path: string
 }
 
 skills: {
   shape: sql_table
   id: bigint {constraint: primary_key}
   name: varchar {constraint: unique}
-  created_at: timestamp
 }
 
 project_skill: {
