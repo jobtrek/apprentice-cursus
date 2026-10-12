@@ -5,12 +5,10 @@ vars: {
   }
 }
 
-apprenticeships: {
+sectors: {
   shape: sql_table
   id: bigint {constraint: primary_key}
   name: varchar
-  created_at: timestamp
-  updated_at: timestamp
 }
 
 users: {
@@ -18,7 +16,7 @@ users: {
   id: bigint {constraint: primary_key}
   azure_id: varchar {constraint: unique}
   tenant_id: varchar
-  apprenticeship_id: {constraint: foreign_key}
+  sector_id: {constraint: [foreign_key; nullable]}
   name: varchar
   email: varchar {constraint: unique}
   email_verified_at: timestamp
@@ -27,7 +25,6 @@ users: {
   is_mpi: boolean
   synced_at: timestamp
   coach_id: bigint {constraint: foreign_key}
-  trainer_id: bigint {constraint: foreign_key}
 }
 
 comments: {
@@ -41,7 +38,7 @@ comments: {
   updated_at: timestamp
 }
 
-apprenticeships -> users: apprentices {
+sectors -> users: apprentices {
   source-arrowhead: {shape: cf-one-required}
   target-arrowhead: {shape: cf-many}
 }
@@ -52,11 +49,6 @@ users -> grades.grades: user-grade {
 }
 
 users.coach_id -> users.id: coach {
-  source-arrowhead: {shape: cf-one}
-  target-arrowhead: {shape: cf-many}
-}
-
-users.trainer_id -> users.id: trainer {
   source-arrowhead: {shape: cf-one}
   target-arrowhead: {shape: cf-many}
 }
