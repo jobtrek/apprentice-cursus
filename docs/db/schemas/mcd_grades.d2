@@ -20,11 +20,11 @@ domains: {
 
 domain_links: {
   shape: sql_table
-  parent_id: bigint {constraint: foreign_key}
-  child_id: bigint {constraint: foreign_key}
-  is_mpi: boolean
+  parent_id: bigint {constraint: [PK; FK]}
+  child_id: bigint {constraint: [PK; FK]}
+  is_mpi: boolean {constrain: PK}
   weight: "decimal(3, 2)"
-  # UNIQUE (parent_id, child_id)
+  # UNIQUE (parent_id, child_id. is_mpi)
   # CHECK (parent_id <> child_id)
 }
 

@@ -17,7 +17,7 @@ users: {
   id: bigint {constraint: primary_key}
   azure_id: varchar {constraint: unique}
   tenant_id: varchar
-  sector_id: {constraint: [foreign_key; nullable]}
+  sector_id: bigint {constraint: [foreign_key; nullable]}
   name: varchar
   email: varchar {constraint: unique}
   email_verified_at: timestamp
