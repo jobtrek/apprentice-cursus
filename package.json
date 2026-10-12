@@ -11,7 +11,7 @@
         "types:check": "vue-tsc --noEmit"
     },
     "lint-staged": {
-        "*.{js,ts,vue}": "pnpm exec eslint --fix"
+        "*.{js,ts,vue}": "pnpm exec vp check --fix"
     },
     "dependencies": {
         "@inertiajs/vite": "^3.0.0",

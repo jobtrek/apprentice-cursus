@@ -24,7 +24,7 @@ if [ -z "$RUNNING_SERVICES" ]; then
     exit 1
 fi
 
-STAGED_PHP_FILES="$(git diff --cached --name-only --diff-filter=ACM -- '*.php')"
+STAGED_PHP_FILES="$(git diff --cached --name-only --diff-filter=ACMR -- '*.php')"
 if [ -z "$STAGED_PHP_FILES" ]; then
     echo "No staged PHP files to format."
 else
@@ -39,20 +39,21 @@ $STAGED_PHP_FILES
 EOF
 
     echo "Running Laravel Pint on staged PHP files..."
-    printf '%s\n' "$STAGED_PHP_FILES" |
-        xargs -r "$SAIL" php vendor/bin/pint || {
+    git diff --cached --name-only -z --diff-filter=ACMR -- '*.php' |
+        xargs -0 -r "$SAIL" php vendor/bin/pint || {
             echo "Pint failed. Commit aborted."
             exit 1
         }
 
-    printf '%s\n' "$STAGED_PHP_FILES" | xargs -r git add -- || {
+    git diff --cached --name-only -z --diff-filter=ACMR -- '*.php' |
+        xargs -0 -r git add -- || {
         echo "Unable to stage Pint changes. Commit aborted."
         exit 1
     }
 
     echo "Running Larastan on staged PHP files..."
-    printf '%s\n' "$STAGED_PHP_FILES" |
-        xargs -r "$SAIL" php vendor/bin/phpstan analyse --configuration=phpstan.neon || {
+    git diff --cached --name-only -z --diff-filter=ACMR -- '*.php' |
+        xargs -0 -r "$SAIL" php vendor/bin/phpstan analyse --configuration=phpstan.neon || {
             echo "Larastan failed. Commit aborted."
             exit 1
         }
