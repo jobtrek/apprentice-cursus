@@ -8,7 +8,6 @@ import {
     plural,
     shortName,
 } from '@/lib/gradebook';
-import CountUp from './CountUp.vue';
 import StatusChip from './StatusChip.vue';
 
 const props = defineProps<{ gradebook: Gradebook }>();
@@ -78,12 +77,7 @@ const missing = computed(() =>
                 </svg>
                 <div class="gb-final__value">
                     <span>
-                        <CountUp
-                            v-if="final !== null"
-                            :value="final"
-                            :format="fmt"
-                        />
-                        <template v-else>—</template>
+                        {{ final !== null ? fmt(final) : '—' }}
                     </span>
                     <small>sur 6</small>
                 </div>
@@ -126,7 +120,7 @@ const missing = computed(() =>
                 </template>
                 <template v-else>
                     <p class="gb-domain__value">
-                        <CountUp :value="domain.value" :format="fmt" />
+                        {{ fmt(domain.value) }}
                     </p>
                     <div
                         class="gb-meter"

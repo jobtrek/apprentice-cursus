@@ -72,6 +72,13 @@ export function status(value: number): [Status, string] {
     return ['bad', 'À risque'];
 }
 
+/**
+ * Classe de couleur d'une note (`is-good`, `is-warn`, `is-bad`) : mêmes seuils
+ * que `status()` et que les teintes du profil, pour qu'une note ait la même
+ * couleur sur toutes les pages.
+ */
+export const gradeTone = (value: number): string => `is-${status(value)[0]}`;
+
 const roundTo = (value: number, step: number | null): number =>
     step ? Math.round(value / step) * step : value;
 

@@ -8,6 +8,8 @@ export type User = {
     email: string;
     role: UserRole | null;
     apprenticeship_id: number | null;
+    /** Variante maturité professionnelle ; false hors apprenti·e. */
+    is_mp: boolean;
 };
 
 /** Booléens de permission partagés par `HandleInertiaRequests` (`auth.can`). */

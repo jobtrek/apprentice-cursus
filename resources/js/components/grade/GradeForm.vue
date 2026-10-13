@@ -60,8 +60,6 @@ const emit = defineEmits<{
 
 const {
     subjects,
-    MatureSubjects,
-    isMp,
     isModuleTest,
     modules,
     isOral,
@@ -106,24 +104,16 @@ function onSubmit(): void {
                     aria-labelledby="grade-mode-label"
                     class="ml-auto"
                 >
-                    <ToggleGroupItem value="notes">Notes</ToggleGroupItem>
-                    <ToggleGroupItem value="modules">Modules</ToggleGroupItem>
+                    <ToggleGroupItem value="notes">
+                        Branche scolaire
+                    </ToggleGroupItem>
+                    <ToggleGroupItem value="modules">Module</ToggleGroupItem>
                 </ToggleGroup>
             </Field>
 
             <Field v-if="!isModuleTest" :data-invalid="Boolean(errors.subject)">
-                <div class="flex items-center justify-between gap-2">
-                    <FieldLabel for="matiere">Matière</FieldLabel>
-                    <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        @click="isMp = !isMp"
-                    >
-                        <span v-if="isMp">Voir les matières du CFC</span>
-                        <span v-else>Voir les matières de maturité</span>
-                    </Button>
-                </div>
+                <!-- Matières du CFC ou de maturité, selon le profil. -->
+                <FieldLabel for="matiere">Matière</FieldLabel>
                 <Combobox v-model="selectedSubject" by="name">
                     <ComboboxAnchor as-child>
                         <ComboboxTrigger as-child>
@@ -146,9 +136,7 @@ function onSubmit(): void {
                         <ComboboxEmpty>Aucune matière trouvée.</ComboboxEmpty>
                         <ComboboxGroup>
                             <ComboboxItem
-                                v-for="subject in isMp
-                                    ? MatureSubjects
-                                    : subjects"
+                                v-for="subject in subjects"
                                 :key="subject.name"
                                 :value="subject"
                             >
@@ -247,8 +235,17 @@ function onSubmit(): void {
                 </Field>
 
                 <Field :data-invalid="Boolean(errors.date)">
-                    <FieldLabel for="date-month">Date du test</FieldLabel>
+                    <FieldLabel for="date-day">Date du test</FieldLabel>
                     <div class="flex gap-2">
+                        <Input
+                            id="date-day"
+                            v-model="dateDay"
+                            type="number"
+                            :min="1"
+                            :max="31"
+                            placeholder="Jour"
+                            class="w-20"
+                        />
                         <Select v-model="dateMonth">
                             <SelectTrigger id="date-month" class="flex-1">
                                 <SelectValue placeholder="Mois" />
@@ -265,15 +262,6 @@ function onSubmit(): void {
                                 </SelectGroup>
                             </SelectContent>
                         </Select>
-                        <Input
-                            id="date-day"
-                            v-model="dateDay"
-                            type="number"
-                            :min="1"
-                            :max="31"
-                            placeholder="Jour"
-                            class="w-20"
-                        />
                         <Input
                             id="date-year"
                             v-model="dateYear"

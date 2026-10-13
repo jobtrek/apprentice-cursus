@@ -40,8 +40,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->group(function () {
             Route::get('/', 'index')->name('index');
             Route::get('/preview', 'preview')->name('preview');
+            // Created and edited in the portfolio page's dialog: no create/edit pages.
             Route::resource('projects', DossierController::class)
-                ->except(['index', 'show'])
+                ->only(['store', 'update', 'destroy'])
                 ->middlewareFor(['store', 'update'], HandlePrecognitiveRequests::class)
                 ->whereNumber('project');
         });

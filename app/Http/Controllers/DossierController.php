@@ -46,15 +46,6 @@ class DossierController extends Controller
         ]);
     }
 
-    public function create(): Response
-    {
-        Gate::authorize('create', Project::class);
-
-        return Inertia::render('PortfolioProjectForm', [
-            'skills' => $this->skills(),
-        ]);
-    }
-
     public function store(PortfolioProjectRequest $request): RedirectResponse
     {
         $data = $request->validated();
@@ -67,16 +58,6 @@ class DossierController extends Controller
         });
 
         return redirect()->route('portfolio.index');
-    }
-
-    public function edit(Project $project): Response
-    {
-        Gate::authorize('update', $project);
-
-        return Inertia::render('PortfolioProjectForm', [
-            'project' => (new ProjectResource($project->load(['skills:id', 'screenshots'])))->resolve(),
-            'skills' => $this->skills(),
-        ]);
     }
 
     public function update(PortfolioProjectRequest $request, Project $project): RedirectResponse

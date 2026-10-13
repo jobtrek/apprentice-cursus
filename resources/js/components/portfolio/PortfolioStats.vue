@@ -32,32 +32,3 @@ const stats = computed(() => {
     ];
 });
 </script>
-
-<template>
-    <!--
-        Cadre à panneaux, d'après le Frame de reui.io : un fond atténué qui
-        entoure des cartes en retrait.
-    -->
-    <dl
-        class="bg-muted/50 grid grid-cols-3 gap-1 rounded-xl border p-1"
-        aria-label="Chiffres du portfolio"
-    >
-        <div
-            v-for="stat in stats"
-            :key="stat.label"
-            class="bg-card flex items-center gap-3 rounded-lg border p-3 shadow-xs"
-        >
-            <IconTile size="sm" class="hidden sm:inline-flex">
-                <component :is="stat.icon" />
-            </IconTile>
-            <div class="flex min-w-0 flex-col">
-                <dt class="text-muted-foreground truncate text-xs">
-                    {{ stat.label }}
-                </dt>
-                <dd class="text-lg leading-tight font-semibold tabular-nums">
-                    {{ stat.value }}
-                </dd>
-            </div>
-        </div>
-    </dl>
-</template>

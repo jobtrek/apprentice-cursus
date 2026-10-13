@@ -63,11 +63,6 @@ const steps = computed<Step[]>(() =>
 
 /** Année d'apprentissage en cours, à partir de 1. */
 const year = computed(() => Math.ceil(props.currentSemester / 2));
-
-/** Avancement du cursus : semestres terminés, plus la moitié du courant. */
-const progress = computed(() =>
-    Math.round(((props.currentSemester - 0.5) / SEMESTERS) * 100),
-);
 </script>
 
 <template>
@@ -111,9 +106,6 @@ const progress = computed(() =>
                             ? 'Maturité professionnelle'
                             : 'Variante standard'
                     }}
-                </Badge>
-                <Badge variant="secondary" class="tabular-nums">
-                    {{ progress }} % du cursus
                 </Badge>
             </div>
         </div>

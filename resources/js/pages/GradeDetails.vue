@@ -388,13 +388,6 @@ const submitEdit = (comment: Comment) => {
                         </Button>
                     </div>
                 </div>
-                <p
-                    v-else-if="comments.length"
-                    class="text-muted-foreground text-xs"
-                >
-                    Seuls les coachs et formateurs peuvent commenter cette
-                    évaluation.
-                </p>
             </section>
         </div>
     </PageContainer>

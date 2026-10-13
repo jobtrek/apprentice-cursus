@@ -104,7 +104,6 @@ test('an apprentice cannot touch another apprentice\'s project', function () {
 
     $this->actingAs(User::factory()->create());
 
-    $this->get(route('portfolio.projects.edit', $project))->assertForbidden();
     $this->put(route('portfolio.projects.update', $project), projectPayload())->assertForbidden();
     $this->delete(route('portfolio.projects.destroy', $project))->assertForbidden();
 

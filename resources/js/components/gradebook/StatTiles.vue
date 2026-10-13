@@ -8,7 +8,6 @@ import {
 import { computed } from 'vue';
 import IconTile from '@/components/IconTile.vue';
 import { fmt, type Gradebook, PASS, shortName } from '@/lib/gradebook';
-import CountUp from './CountUp.vue';
 import type { Grade } from '@/types/grade';
 import StatusChip from './StatusChip.vue';
 
@@ -70,7 +69,7 @@ const failed = computed(
             </span>
             <span class="stat__value">
                 <template v-if="final !== null">
-                    <CountUp :value="final" :format="fmt" /> <small>/ 6</small>
+                    {{ fmt(final) }} <small>/ 6</small>
                 </template>
                 <template v-else>—</template>
             </span>
@@ -103,13 +102,7 @@ const failed = computed(
                 </IconTile>
             </span>
             <span class="stat__value">
-                <CountUp
-                    v-if="currentValue !== null"
-                    :value="currentValue"
-                    :format="fmt"
-                    :delay="60"
-                />
-                <template v-else>—</template>
+                {{ currentValue !== null ? fmt(currentValue) : '—' }}
             </span>
             <span class="stat__foot">
                 <template v-if="delta === null">
@@ -134,9 +127,7 @@ const failed = computed(
                     <FileTextIcon />
                 </IconTile>
             </span>
-            <span class="stat__value"
-                ><CountUp :value="grades.length" :delay="120"
-            /></span>
+            <span class="stat__value">{{ grades.length }}</span>
             <span class="stat__foot">
                 {{
                     current === null
@@ -160,9 +151,7 @@ const failed = computed(
                     <TriangleAlertIcon />
                 </IconTile>
             </span>
-            <span class="stat__value"
-                ><CountUp :value="failed" :delay="180"
-            /></span>
+            <span class="stat__value">{{ failed }}</span>
             <span class="stat__foot"
                 >sur {{ grades.length }} notes, seuil 4.0</span
             >
