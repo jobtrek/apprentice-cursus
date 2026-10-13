@@ -66,11 +66,11 @@ The 0.5 threshold was picked on the same PDFs it was scored on. Re-check it once
 | Progress | Inertia `usePoll` (2 s) on the reading status | No websockets |
 | State until Confirmation | `test_readings` table | `pdf_sha256`, `config_hash`, `result` JSON, `confirmed_type`, `confirmed_grade`, `edited`. The edit rate is the production accuracy signal |
 | Same-PDF cache | Lookup on `test_readings` (`pdf_sha256`, `config_hash`) | Config hash covers models, prompt, threshold, `subjects.json`. A hit makes no model calls |
-| Gemini | `Http` facade → `…/models/gemini-3.5-flash-lite:generateContent` | Not `laravel/ai`: the loop guard needs `finishReason`, cost needs `usageMetadata` (thinking tokens included), and the call needs the exact JSON schema |
+| Gemini | `laravel/ai` agent (`GeminiService`), `gemini-3.5-flash-lite`, Gemini `interactions` endpoint | Loop guard reads the last step's `finishReason`; cost from `usage` (thinking tokens included). Prompt is sent before the image, unlike notar: `ocr:bench` decides if that matters, else fall back to `Http::post` on `generateContent` |
 | Jev | `laravel/ai` v1.0 Classification, `typesafe` provider | `Classification::of($text)->questions(['subject' => new Choice($instructions, $criteria)])->classify(provider: 'typesafe', model: 'jev-1.13.0')`. Criteria = Test types from `subjects.json`, keyed by name. Answer gives `choice`, `probabilities`, `confidence` (nullable), plus `$result->usage`. Experimental API: pin the package version |
 | PDF → PNG | Imagick + Ghostscript | `setResolution(200, 200)`, `readImage("$path[$n]")`, flatten, PNG |
 | Config | `config/ocr.php` + `resources/ocr/subjects.json` + `config/ai.php` + `.env` | `config/ocr.php`: pinned Gemini model, dpi, pages, token cap, prices, threshold 0.5. `config/ai.php`: the TypeSafe provider. `GEMINI_API_KEY`, `TYPESAFE_API_KEY` |
-| Tests | Pest; `Http::fake()` for Gemini, `Classification::fake()` with `ChoiceAnswer` for Jev | Offline only |
+| Tests | Pest; `GeminiService::fake()` for Gemini, `Classification::fake()` with `ChoiceAnswer` for Jev | Offline only |
 
 ## Packages and infra
 
@@ -97,7 +97,7 @@ app/
   Jobs/ReadTest.php                          # runs TestReader, writes the test_readings row
   Services/Ocr/
     TestReader.php                           # process() port: page loop, module rule, Jev Classification call, decisions, flags, cost
-    Gemini.php                               # one Http::post; text, subject, grade, grade_box, truncated, cost
+    GeminiService.php                        # laravel/ai agent: text, grade, grade_box, truncated, usage
     PdfPage.php                              # Imagick: page N → PNG at 200 dpi
   Console/Commands/OcrBench.php              # php artisan ocr:bench
 config/ocr.php
