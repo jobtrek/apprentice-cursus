@@ -1,0 +1,337 @@
+[
+  {
+    "pdf_path": "pdfs/1_1_Allemand_2_student_A.pdf",
+    "type": "Allemand",
+    "grade": 2.0
+  },
+  {
+    "pdf_path": "pdfs/1_1_Anglais_5_student_B.pdf",
+    "type": "Anglais",
+    "grade": 5.0
+  },
+  {
+    "pdf_path": "pdfs/1_1_Anglais_5_student_A.pdf",
+    "type": "Anglais",
+    "grade": 5.0
+  },
+  {
+    "pdf_path": "pdfs/1_1_CG_5_student_B.pdf",
+    "type": "CG",
+    "grade": 5.0
+  },
+  {
+    "pdf_path": "pdfs/1_1_ECG_6_student_C.pdf",
+    "type": "ECG",
+    "grade": 6.0
+  },
+  {
+    "pdf_path": "pdfs/1_1_Eco&Droit_5_student_A.pdf",
+    "type": "Eco&Droit",
+    "grade": 5.0
+  },
+  {
+    "pdf_path": "pdfs/1_1_Histoire_5_student_A.pdf",
+    "type": "Histoire",
+    "grade": 5.0
+  },
+  {
+    "pdf_path": "pdfs/1_1_Maths_4_student_C.pdf",
+    "type": "Maths",
+    "grade": 4.0
+  },
+  {
+    "pdf_path": "pdfs/1_1_Maths_4_student_A.pdf",
+    "type": "Maths",
+    "grade": 4.0
+  },
+  {
+    "pdf_path": "pdfs/1_1_Maths_5.5_student_B.pdf",
+    "type": "Maths",
+    "grade": 5.5
+  },
+  {
+    "pdf_path": "pdfs/1_2_Allemand_5_student_A.pdf",
+    "type": "Allemand",
+    "grade": 5.0
+  },
+  {
+    "pdf_path": "pdfs/1_2_Anglais_4.5_student_B.pdf",
+    "type": "Anglais",
+    "grade": 4.5
+  },
+  {
+    "pdf_path": "pdfs/1_2_Anglais_5,5_student_A.pdf",
+    "type": "Anglais",
+    "grade": 5.5
+  },
+  {
+    "pdf_path": "pdfs/1_2_Anglais_5.5_student_C.pdf",
+    "type": "Anglais",
+    "grade": 5.5
+  },
+  {
+    "pdf_path": "pdfs/1_2_CG_4_student_B.pdf",
+    "type": "CG",
+    "grade": 4.0
+  },
+  {
+    "pdf_path": "pdfs/1_2_ECG_3.5_student_C.pdf",
+    "type": "ECG",
+    "grade": 3.5
+  },
+  {
+    "pdf_path": "pdfs/1_2_Eco&Droit_5,5_student_A.pdf",
+    "type": "Eco&Droit",
+    "grade": 5.5
+  },
+  {
+    "pdf_path": "pdfs/1_2_Histoire_3_student_A.pdf",
+    "type": "Histoire",
+    "grade": 3.0
+  },
+  {
+    "pdf_path": "pdfs/1_2_Maths_4_student_A.pdf",
+    "type": "Maths",
+    "grade": 4.0
+  },
+  {
+    "pdf_path": "pdfs/1_2_Maths_5_student_B.pdf",
+    "type": "Maths",
+    "grade": 5.0
+  },
+  {
+    "pdf_path": "pdfs/1_2_Maths_5_student_C.pdf",
+    "type": "Maths",
+    "grade": 5.0
+  },
+  {
+    "pdf_path": "pdfs/1_3_Allemand_3,5_student_A.pdf",
+    "type": "Allemand",
+    "grade": 3.5
+  },
+  {
+    "pdf_path": "pdfs/1_3_Anglais_5,5_student_A.pdf",
+    "type": "Anglais",
+    "grade": 5.5
+  },
+  {
+    "pdf_path": "pdfs/1_3_Anglais_5.5_student_C.pdf",
+    "type": "Anglais",
+    "grade": 5.5
+  },
+  {
+    "pdf_path": "pdfs/1_3_Anglais_6_student_B.pdf",
+    "type": "Anglais",
+    "grade": 6.0
+  },
+  {
+    "pdf_path": "pdfs/1_3_ECG_4.5_student_C.pdf",
+    "type": "ECG",
+    "grade": 4.5
+  },
+  {
+    "pdf_path": "pdfs/1_3_Eco&Droit_3,5_student_A.pdf",
+    "type": "Eco&Droit",
+    "grade": 3.5
+  },
+  {
+    "pdf_path": "pdfs/1_3_Histoire_5_student_A.pdf",
+    "type": "Histoire",
+    "grade": 5.0
+  },
+  {
+    "pdf_path": "pdfs/1_3_Math_4.5_student_C.pdf",
+    "type": "Maths",
+    "grade": 4.5
+  },
+  {
+    "pdf_path": "pdfs/1_3_Maths_5_student_A.pdf",
+    "type": "Maths",
+    "grade": 5.0
+  },
+  {
+    "pdf_path": "pdfs/2026-02-09_sem1_student_C.pdf",
+    "type": null,
+    "grade": null
+  },
+  {
+    "pdf_path": "pdfs/2_1_Allemand_2_student_A.pdf",
+    "type": "Allemand",
+    "grade": 2.0
+  },
+  {
+    "pdf_path": "pdfs/2_1_Allemand_4.5_student_A.pdf",
+    "type": "Allemand",
+    "grade": 4.5
+  },
+  {
+    "pdf_path": "pdfs/2_1_Anglais_5.5_student_A.pdf",
+    "type": "Anglais",
+    "grade": 5.5
+  },
+  {
+    "pdf_path": "pdfs/2_1_Anglais_5_student_C.pdf",
+    "type": "Anglais",
+    "grade": 5.0
+  },
+  {
+    "pdf_path": "pdfs/2_1_ECG_5_student_C.pdf",
+    "type": "ECG",
+    "grade": 5.0
+  },
+  {
+    "pdf_path": "pdfs/2_1_Eco&Droit_5_student_A.pdf",
+    "type": "Eco&Droit",
+    "grade": 5.0
+  },
+  {
+    "pdf_path": "pdfs/2_1_Histoire_4.5_student_A.pdf",
+    "type": "Histoire",
+    "grade": 4.5
+  },
+  {
+    "pdf_path": "pdfs/2_1_Maths_4.5_student_C.pdf",
+    "type": "Maths",
+    "grade": 4.5
+  },
+  {
+    "pdf_path": "pdfs/2_1_Maths_5_student_A.pdf",
+    "type": "Maths",
+    "grade": 5.0
+  },
+  {
+    "pdf_path": "pdfs/2_2_Allemand_4.5_student_A.pdf",
+    "type": "Allemand",
+    "grade": 4.5
+  },
+  {
+    "pdf_path": "pdfs/2_2_Allemands_4_student_A.pdf",
+    "type": "Allemand",
+    "grade": 4.0
+  },
+  {
+    "pdf_path": "pdfs/2_2_Anglais_6_student_A.pdf",
+    "type": "Anglais",
+    "grade": 6.0
+  },
+  {
+    "pdf_path": "pdfs/2_2_ECG_6_student_C.pdf",
+    "type": "ECG",
+    "grade": 6.0
+  },
+  {
+    "pdf_path": "pdfs/2_2_Eco&Droit_4_student_A.pdf",
+    "type": "Eco&Droit",
+    "grade": 4.0
+  },
+  {
+    "pdf_path": "pdfs/2_2_Histoire_4.5_student_A.pdf",
+    "type": "Histoire",
+    "grade": 4.5
+  },
+  {
+    "pdf_path": "pdfs/2_2_Maths_5_student_C.pdf",
+    "type": "Maths",
+    "grade": 5.0
+  },
+  {
+    "pdf_path": "pdfs/2_2_Maths_5_student_A.pdf",
+    "type": "Maths",
+    "grade": 5.0
+  },
+  {
+    "pdf_path": "pdfs/2_3_Allemand_5_student_A.pdf",
+    "type": "Allemand",
+    "grade": 5.0
+  },
+  {
+    "pdf_path": "pdfs/2_3_Anglais_6_student_A.pdf",
+    "type": "Anglais",
+    "grade": 6.0
+  },
+  {
+    "pdf_path": "pdfs/2_3_Anglais_student_C.pdf",
+    "type": "Anglais",
+    "grade": null
+  },
+  {
+    "pdf_path": "pdfs/2_3_Eco&Droit_5_student_A.pdf",
+    "type": "Eco&Droit",
+    "grade": 5.0
+  },
+  {
+    "pdf_path": "pdfs/2_3_Histoire_5_student_A.pdf",
+    "type": "Histoire",
+    "grade": 5.0
+  },
+  {
+    "pdf_path": "pdfs/2_3_Maths_5.5_student_A.pdf",
+    "type": "Maths",
+    "grade": 5.5
+  },
+  {
+    "pdf_path": "pdfs/2_3_Maths_5_student_C.pdf",
+    "type": "Maths",
+    "grade": 5.0
+  },
+  {
+    "pdf_path": "pdfs/2_4_Allemand_4_student_A.pdf",
+    "type": "Allemand",
+    "grade": 4.0
+  },
+  {
+    "pdf_path": "pdfs/2_4_Anglais_5_student_B.pdf",
+    "type": "Anglais",
+    "grade": 5.0
+  },
+  {
+    "pdf_path": "pdfs/2_5_Anglais_5.5_student_B.pdf",
+    "type": "Anglais",
+    "grade": 5.5
+  },
+  {
+    "pdf_path": "pdfs/3_1_Allemand_4_student_A.pdf",
+    "type": "Allemand",
+    "grade": 4.0
+  },
+  {
+    "pdf_path": "pdfs/3_1_Français_5_student_A.pdf.pdf",
+    "type": "Français",
+    "grade": 5.0
+  },
+  {
+    "pdf_path": "pdfs/3_1_Histoire_4_student_A.pdf",
+    "type": "Histoire",
+    "grade": 4.0
+  },
+  {
+    "pdf_path": "pdfs/3_1_Maths_4_student_A.pdf.pdf",
+    "type": "Maths",
+    "grade": 4.0
+  },
+  {
+    "pdf_path": "pdfs/ALLEMAND.pdf",
+    "type": "Allemand",
+    "grade": 4.5
+  },
+  {
+    "pdf_path": "pdfs/ECG.pdf",
+    "type": "ECG",
+    "grade": 5.5
+  },
+  {
+    "pdf_path": "pdfs/ENGLISH.pdf",
+    "type": "Anglais",
+    "grade": 5.5
+  },
+  {
+    "pdf_path": "pdfs/MATH.pdf",
+    "type": "Maths",
+    "grade": 4.5
+  },
+  {
+    "pdf_path": "pdfs/grade.pdf",
+    "type": "Anglais",
+    "grade": 5
+  }
+]

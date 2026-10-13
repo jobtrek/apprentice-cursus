@@ -197,6 +197,8 @@ What each role can do and how the sync behaves: `docs/project-docs/role_permissi
 
 **Decision:** notar v2 is ported 1:1 to PHP and runs in a Laravel queue job, following `~/dev/ocr_evaluation/RECOMMENDATION.md`. Gemini is one REST call through the `Http` facade. Jev goes through `laravel/ai` v1.0's Classification API (`typesafe` provider, one `Choice` question). PDF pages are rendered with Imagick + Ghostscript at 200 dpi. The Test type is the Module rule's code, else Jev's pick. A reading is Flagged when the grade is missing, Jev's confidence is below 0.5, or no page could be read. Flagged readings still open the pre-filled confirm form, with a warning. The FastAPI service from `docs/specs/service-spec.md`, the Python benchmark, phase 2 (tie-break) and the embeddings vote are dropped.
 
+**Verdict:** Feasible. The proposed pipeline reads both the Test type and the Grade correctly on 89.6% of the 67 test PDFs, at $0.0014 per PDF. The apprentice confirms every result, so the cases it gets wrong are fixed before anything is saved. The feature is an extra (tagged `[OCR] [EXTRA]` in `docs/user_stories/user_story_final.md`) and is built only after the base features.
+
 **Why:** One codebase and one deployment. A second container, a shared secret and a Python toolchain are too much to run and maintain for this app. The evaluation of all 27 saved runs (`RECOMMENDATION.md`) shows:
 - notar v2 is the best setup measured: both fields right on 89.6% of the 67 PDFs (95% CI 80.0–94.8%), $0.0014 per PDF. Local models (GLM-OCR, Chandra) lose significantly.
 - Jev alone decides the Test type (97.0%). Gemini's own subject is wrong in all 8 disagreements, so it is not used.

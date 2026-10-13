@@ -138,6 +138,62 @@ so that oral results can still be recorded even when there is nothing to scan.
 
 ---
 
+## Automatic Reading (OCR) — EXTRA
+
+Not urgent. Build these only after every base feature is done. Spec: `docs/specs/stack.md`.
+
+[OCR] [EXTRA]
+As an apprentice,
+I want to choose between typing my grade and having it read from my scan,
+so that I can skip typing when I want to.
+
+[OCR] [EXTRA]
+As an apprentice,
+I want to tick a box agreeing that my scan is sent to Google and TypeSafe before it is read,
+so that nothing leaves the app without my consent.
+
+[OCR] [EXTRA]
+As an apprentice,
+I want to see that my scan is being read, and get the subject and grade filled in within about 10 seconds,
+so that I don't have to type them.
+
+[OCR] [EXTRA]
+As an apprentice,
+I want the same scan uploaded twice to be filled in instantly,
+so that I don't wait again.
+
+[OCR] [EXTRA]
+As an apprentice,
+I want to confirm a correct result in one click, and nothing saved before I confirm,
+so that every stored grade has been checked by me.
+
+[OCR] [EXTRA]
+As an apprentice,
+I want to fix a wrong subject or grade before it is saved,
+so that my record is right.
+
+[OCR] [EXTRA]
+As an apprentice,
+I want a warning and every reading shown when the app is unsure,
+so that I look closer where it matters.
+
+[OCR] [EXTRA]
+As an apprentice,
+I want an empty grade field when no grade was found,
+so that I can type it myself or cancel.
+
+[OCR] [EXTRA]
+As an apprentice,
+I want to fall back to typing my grade if the reading fails, without uploading again,
+so that a failure never blocks me.
+
+[OCR] [EXTRA]
+As an apprentice,
+I want a scan I never confirmed to be deleted after 7 days,
+so that my test isn't kept for nothing.
+
+---
+
 ## My Grade Record
 
 As an apprentice,
