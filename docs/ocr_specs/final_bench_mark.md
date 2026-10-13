@@ -257,4 +257,4 @@ Dropped from OCR_recognition: `mlx-vlm` + Chandra (local model, row 12), `openai
 | 3 | Grade re-read on a crop around `grade_box` when the grade is missing (phase 2, call 2) | 3 grade-not-found misses | one more Gemini call + crop | ≲ $0.0002, only on those PDFs |
 | 4 | Grade tie-break: flag when crop and full-page grades differ | 2 silent misreads become flagged | builds on 3 | ≲ $0.0002 |
 
-Ship gate (from `docs/specs/pipeline-spec.md`), on the ~100-test holdout: unflagged pre-fill accuracy ≥ 98%, flagged share ≤ 15%, cost ≤ $0.003 per test.
+Ship gate (from `docs/ocr_specs/pipeline-spec.md`), on the ~100-test holdout: unflagged pre-fill accuracy ≥ 98%, flagged share ≤ 15%, cost ≤ $0.003 per test.

@@ -44,7 +44,9 @@ All 27 runs, every confusion matrix (subject and grade), per-class precision/rec
 
 ## 3. Recommendation: notar_v2, ported 1:1 to Laravel, with the new flag rule
 
-The existing `Notar/docs/specs/service-spec.md` picked a Python service because "Jev has no PHP SDK". **That's no longer a blocker:** Jev is one REST call (`POST https://api.typesafe.ai/v1/systemone`, `Authorization: Bearer`, read from `typesafe_sdk/_core/constants.py`). Gemini is one REST call too. Laravel's `Http` facade covers both. No new Composer package is needed for either.
+The existing `Notar/docs/specs/service-spec.md` picked a Python service because "Jev has no PHP SDK". **That's no longer a blocker:** `laravel/ai` v1.0 (2026-09-23) added Jev classification (`typesafe` provider, `Classification::of($text)`). Gemini is one REST call through Laravel's `Http` facade. The only new Composer package is `laravel/ai`, pinned to an exact version (Classification is experimental). See `docs/adr/ADR.md` and `stack.md`.
+
+> An earlier draft of this section proposed a hand-written Jev HTTP client (`POST /v1/systemone`) and no new package. Superseded by the `laravel/ai` decision in `docs/adr/ADR.md`.
 
 Keep the parameters identical, so the 89.6% still applies: model `gemini-3.5-flash-lite`, temperature 0, `maxOutputTokens` 8192, the same prompt (`CALL1_PROMPT` in `Notar/src/notar/providers.py`), PNG at 200 dpi, full page, image before prompt, `jev-1.13.0`, the same `subjects.json`.
 
@@ -60,7 +62,7 @@ upload (FormRequest: mimes:pdf, max size)
              finishReason != STOP → truncated, next page
            stop at the first page with a grade
       → module regex on the text  → Test type = code
-        else Jev::choose(text)    → Test type = Jev pick
+        else Classification (Jev)  → Test type = Jev pick
       → grade ∈ {1.0 … 6.0 step 0.5} else null
       → flagged = grade null OR jev_conf < 0.5 OR no readable page
   → test_readings row (result JSON) → confirm screen pre-filled, warning if flagged
@@ -72,14 +74,13 @@ upload (FormRequest: mimes:pdf, max size)
 |---|---|
 | `app/Http/Requests/StoreTestUploadRequest.php` | PDF only, size limit |
 | `app/Jobs/ReadTest.php` | runs the pipeline, `tries` + backoff; retries 5xx/429 only |
-| `app/Services/Ocr/TestReader.php` | the `process()` port: page loop, module rule, decisions, flags, cost |
+| `app/Services/Ocr/TestReader.php` | the `process()` port: page loop, module rule, Jev `Classification` call (`laravel/ai`, `typesafe` provider), decisions, flags, cost |
 | `app/Services/Ocr/Gemini.php` | one `Http::post` to `…/models/gemini-3.5-flash-lite:generateContent`; returns text, subject, grade, grade_box, truncated, cost |
-| `app/Services/Ocr/Jev.php` | one `Http::withToken()->post('/v1/systemone')` with `{state, model, questions: {subject: {type: "choice", instructions, criteria}}}` |
 | `app/Services/Ocr/PdfPage.php` | `Imagick::setResolution(200, 200)`, `readImage("$path[$n]")`, flatten, PNG |
 | `config/ocr.php` + `resources/ocr/subjects.json` | pinned models, dpi, pages, token cap, prices, threshold 0.5 |
 | migration `test_readings` | `pdf_sha256`, `config_hash`, `result` JSON, `confirmed_type`, `confirmed_grade`, `edited` |
 | `app/Console/Commands/OcrBench.php` | runs `TestReader` on `real_table.json` and prints subject/grade/both, so the Laravel number can be compared with 89.6% |
-| `tests/Feature/TestReaderTest.php` | `Http::fake()` for Gemini + Jev: module rule, page fallback, truncated page, invalid grade, flag rule |
+| `tests/Feature/TestReaderTest.php` | `Http::fake()` for Gemini, `Classification::fake()` for Jev: module rule, page fallback, truncated page, invalid grade, flag rule |
 
 Why the `Http` facade and not `laravel/ai` for Gemini: the pipeline needs `finishReason` (loop guard), `usageMetadata` including thinking tokens (cost), and an exact JSON schema. The `laravel/ai` docs show usage and structured output, but no finish reason. Raw HTTP keeps parity with the Python call for about the same number of lines.
 
@@ -98,5 +99,5 @@ Why the `Http` facade and not `laravel/ai` for Gemini: the pipeline needs `finis
 
 ### Unverified before coding
 
-- The exact JSON fields in the Jev REST response (the SDK reads `choices.subject.choice` and `.confidence`). Check with one `curl` before writing `Jev.php`.
+- Whether `laravel/ai`'s `Choice` `confidence` is the same number notar's Python SDK returned (the 0.5 threshold was set on it), and how to pin `jev-1.13.0`. See `stack.md`.
 - Imagick and Ghostscript are installed on the server (`php -m | grep imagick`, `gs --version`). The PNG must match pymupdf's at 200 dpi: compare 1 page by eye.
