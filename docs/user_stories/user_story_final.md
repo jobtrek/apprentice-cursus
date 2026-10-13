@@ -140,7 +140,7 @@ so that oral results can still be recorded even when there is nothing to scan.
 
 ## Automatic Reading (OCR) — EXTRA
 
-Not urgent. Build these only after every base feature is done. Spec: `docs/specs/stack.md`.
+Not urgent. Build these only after every base feature is done. Spec: `docs/ocr_specs/stack.md`.
 
 [OCR] [EXTRA]
 As an apprentice,

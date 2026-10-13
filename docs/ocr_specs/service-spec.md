@@ -2,7 +2,7 @@
 
 > **Superseded in part (2026-10-13):** the pipeline is ported to Laravel. See `docs/adr/ADR.md` ("Automatic reading runs inside Laravel") and [`stack.md`](stack.md) for what is kept and dropped.
 
-Written 2026-10-13 from [`final_bench_mark.md`](../final_bench_mark.md). Builds on [`pipeline-spec.md`](pipeline-spec.md) and respects [ADR 0001](../adr/0001-uploader-confirms-every-result.md) (the uploader confirms every result). Status: ready for an agent.
+Written 2026-10-13 from [`final_bench_mark.md`](final_bench_mark.md). Builds on [`pipeline-spec.md`](pipeline-spec.md) and respects [ADR 0001](../adr/0001-uploader-confirms-every-result.md) (the uploader confirms every result). Status: ready for an agent.
 
 ## Problem Statement
 

@@ -1,8 +1,22 @@
 # Stack: Automatic reading in Laravel
 
-Written 2026-10-13, updated the same day from `~/dev/ocr_evaluation/RECOMMENDATION.md` (all 27 saved OCR runs scored on the same 67 PDFs). Decision record: `docs/adr/ADR.md` → "Automatic reading runs inside Laravel, not as a Python service". Terms follow the root [`CONTEXT.md`](../../CONTEXT.md) (Manual entry, Automatic reading, Reading, Pre-fill, Flagged, Confirmation, Processing consent).
+Written 2026-10-13, updated the same day from [`RECOMMENDATION.md`](RECOMMENDATION.md) (all 27 saved OCR runs scored on the same 67 PDFs). Decision record: `docs/adr/ADR.md` → "Automatic reading runs inside Laravel, not as a Python service". Terms follow the root [`CONTEXT.md`](../../CONTEXT.md) (Manual entry, Automatic reading, Reading, Pre-fill, Flagged, Confirmation, Processing consent).
 
 Flow diagram: [`diagrams/laravel.d2`](diagrams/laravel.d2).
+
+## Reference files
+
+Copied from notar (private repo `ThomasLucking/Notar`) so the port needs nothing outside this repo:
+
+| File | What it is |
+|---|---|
+| [`config/prompt.md`](config/prompt.md) | notar's `CALL1_PROMPT`, verbatim. Do not reword it |
+| [`config/subjects.json`](config/subjects.json) | notar's `subjects.json` (Test types; `modules` still empty) |
+| [`config/jev.json`](config/jev.json) | The Jev `Choice` request built from `subjects.json` |
+| [`data/ground_truth.json`](data/ground_truth.json) | Answer key for the 67 benchmark PDFs (notar's `real_table.json`) |
+| [`final_bench_mark.md`](final_bench_mark.md), [`RECOMMENDATION.md`](RECOMMENDATION.md) | Where the 89.6% and the flag-rule numbers come from |
+
+**Benchmark PDFs are not committed** (real student tests with names and grades; `docs/ocr_specs/pdf_data` is gitignored). Ask Thomas Lucking for the archive and unpack it to `docs/ocr_specs/pdf_data/`, so `pdf_data/pdfs/<file>.pdf` matches each `pdf_path` in `ground_truth.json`.
 
 ## Scope
 
@@ -95,7 +109,7 @@ tests/Feature/TestReaderTest.php
 ## Checking the port
 
 Rollout, in order:
-1. Port with notar v2's **current** flag rule and run `php artisan ocr:bench` on notar's 67 PDFs (`real_table.json`). Pass = both fields right on ≥ 56/67 (89.6% minus the ~4-file run-to-run noise). About $0.10 per run. A gain under ~4 PDFs needs 3 runs to trust.
+1. Port with notar v2's **current** flag rule and run `php artisan ocr:bench` on notar's 67 PDFs (answer key: [`data/ground_truth.json`](data/ground_truth.json), a copy of notar's `real_table.json`). Pass = both fields right on ≥ 56/67 (89.6% minus the ~4-file run-to-run noise). About $0.10 per run. A gain under ~4 PDFs needs 3 runs to trust.
 2. Switch to the new flag rule. Pure PHP, $0.
 3. The "later" items in Scope.
 
