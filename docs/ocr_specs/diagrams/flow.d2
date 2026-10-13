@@ -1,0 +1,88 @@
+vars: {
+  d2-config: {
+    layout-engine: elk
+  }
+}
+
+direction: down
+
+classes: {
+  decision: {
+    shape: diamond
+  }
+  ok: {
+    style: {
+      fill: "#dcfce7"
+      stroke: "#16a34a"
+    }
+  }
+  flag: {
+    style: {
+      fill: "#fee2e2"
+      stroke: "#dc2626"
+    }
+  }
+  future: {
+    style: {
+      stroke-dash: 4
+      fill: "#f3f4f6"
+      font-color: "#6b7280"
+    }
+  }
+}
+
+pdf: PDF {shape: page}
+cache: "Cache\n(SHA-256)" {class: decision}
+stored: "Stored result JSON" {shape: cylinder}
+render: "Render page 1\n200 dpi · PNG · full page"
+call1: "Call 1 — Gemini flash-lite\n→ {text, subject, grade, grade_box}\n\npage 2–3 fallback if no grade\nloop guard on token cap"
+
+pdf -> cache
+cache -> stored: hit
+cache -> render: miss
+render -> call1
+
+# ── Test type branch ──────────────────────────
+test_type: "Test type" {
+  rules: "Rules on text" {class: decision}
+  rules_prefill: "Pre-fill" {class: ok}
+  rules_flag: "Flag" {class: flag}
+  jev: "Jev on text\nvote vs Gemini subject" {class: decision}
+  module_miss: "Flag module_rule_miss" {class: flag}
+  jev_agree: "Pre-fill" {class: ok}
+  conf: "Jev conf ≥ T?" {class: decision}
+  jev_prefill: "Pre-fill Jev" {class: ok}
+  jev_flag: "Flag" {class: flag}
+
+  rules -> rules_prefill: "hit + Gemini Module/OTHER"
+  rules -> rules_flag: "hit + Gemini Subject"
+  rules -> jev: miss
+  jev -> module_miss: "a Module reading"
+  jev -> jev_agree: agree
+  jev -> conf: disagree
+  conf -> jev_prefill: yes
+  conf -> jev_flag: no
+}
+
+# ── Grade branch ──────────────────────────────
+grade: "Grade (phase 1: call 1 only)" {
+  valid: "Valid?" {class: decision}
+  prefill: "Pre-fill" {class: ok}
+  invalid: "Flag grade_invalid" {class: flag}
+  phase2: "Phase 2\ncall 2: crop re-read\ncall 3: tie-break" {class: future}
+
+  valid -> prefill: yes
+  valid -> invalid: no
+  invalid -> phase2: {style.stroke-dash: 4}
+}
+
+call1 -> test_type.rules
+call1 -> grade.valid
+
+# ── Output ────────────────────────────────────
+result: "Result JSON" {shape: cylinder}
+confirm: "Uploader confirms\n(image deleted after confirmation unless opt-in)"
+
+test_type -> result
+grade -> result
+result -> confirm

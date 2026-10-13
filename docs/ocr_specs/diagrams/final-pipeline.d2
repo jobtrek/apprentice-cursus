@@ -1,0 +1,114 @@
+# Final pipeline (notar v2), as implemented in Notar/src/notar/pipeline.py. Winner of the benchmark in docs/ocr_specs/final_bench_mark.md.
+# Render: d2 docs/ocr_specs/diagrams/final-pipeline.d2 docs/ocr_specs/svg/final-pipeline.svg
+# Classes copied from Notar/docs/d2/pipeline-spec.d2 (Notar repo).
+
+direction: right
+
+classes: {
+  paid: {
+    shape: hexagon
+    style.fill: "#F4CCCC"
+    style.stroke: "#A94442"
+  }
+  local: {
+    shape: rectangle
+    style.fill: "#D9EAD3"
+    style.stroke: "#38761D"
+  }
+  data: {
+    shape: cylinder
+    style.fill: "#E3E3E3"
+    style.stroke: "#666666"
+  }
+  decision: {
+    shape: diamond
+    style.fill: "#D9EAD3"
+    style.stroke: "#38761D"
+  }
+  agree: {
+    shape: diamond
+    style.fill: "#DDEBF7"
+    style.stroke: "#1F4E99"
+    style.stroke-width: 3
+    style.bold: true
+  }
+  human: {
+    shape: rectangle
+    style.fill: "#FCE5CD"
+    style.stroke: "#B45F06"
+  }
+}
+
+pdf: "scanned test\n(PDF)" {class: data}
+
+read: "read pages (max 3)" {
+  render: "render page N\npymupdf, 200 dpi PNG\nfull page, color" {class: local}
+  gemini: "Gemini 3.5 flash-lite\ntemp 0, JSON schema\nmax 8192 tokens" {
+    class: paid
+    tooltip: "Returns {text, subject (enum + OTHER), grade, grade_box}"
+  }
+  cap: "finish_reason\n== STOP?" {class: decision}
+  has_grade: "grade found?" {class: decision}
+  next: "next page\n(N+1 ≤ 3)" {class: local}
+
+  render -> gemini: "PNG (image first)"
+  gemini -> cap
+  cap -> next: "no: loop guard\n(runaway transcription)" {style.stroke-dash: 3}
+  cap -> has_grade: "yes"
+  has_grade -> next: "no" {style.stroke-dash: 3}
+  next -> render
+}
+
+type: "Test type" {
+  rule: "module rule\nregex M117 / Module 293" {class: local}
+  rule_hit: "code found?" {class: decision}
+  jev: "Jev jev-1.13.0\n(TypeSafe Choice)\nsubjects.json" {
+    class: paid
+    tooltip: "Picks from the tuned subject descriptions; returns choice + confidence"
+  }
+  vote: "Jev == Gemini\nsubject?" {class: agree}
+  conf: "Jev conf ≥ T?\n(T = 1.0)" {class: decision}
+  other: "Gemini said\nOTHER?" {class: decision}
+
+  rule -> rule_hit
+  rule_hit -> jev: "no: text"
+  jev -> vote: "choice + conf"
+  vote -> conf: "disagree" {style.stroke-dash: 3}
+  conf -> other: "no" {style.stroke-dash: 3}
+}
+
+grade: "Grade" {
+  valid: "valid Swiss grade?\n1.0 … 6.0 step 0.5\nor null" {class: decision}
+}
+
+out: "result JSON\ntest_type, grade, sources,\nflagged, flag_reasons,\nreadings, calls, cost_usd" {class: local}
+confirm: "uploader confirms\n(every result, ADR 0001)" {class: human}
+
+pdf -> read.render
+read.has_grade -> type.rule: "text (first readable page)"
+read.has_grade -> type.vote: "Gemini subject"
+read.has_grade -> grade.valid: "grade: yes"
+
+type.rule_hit -> out: "yes: Module code\nsource = rule"
+type.vote -> out: "agree\nsource = agree"
+type.conf -> out: "yes: source = jev"
+type.other -> out: "yes: Jev pick\nflag not_recognized" {style.stroke-dash: 3}
+type.other -> out: "no: Jev pick\nflag subject_disagree" {style.stroke-dash: 3}
+
+grade.valid -> out: "yes: source = call1"
+grade.valid -> out: "no: null\nflag grade_invalid" {style.stroke-dash: 3}
+
+out -> confirm: "pre-fill\n(+ warning if flagged)"
+
+legend: {
+  near: bottom-center
+  paid: "paid external API" {class: paid}
+  local: "local / free step" {class: local}
+  data: "data" {class: data}
+  decision: "check" {class: decision}
+  agree: "vote / agreement" {class: agree}
+  human: "human" {class: human}
+  a: "from" {shape: text}
+  b: "to" {shape: text}
+  a -> b: "dashed = fallback / flag" {style.stroke-dash: 3}
+}

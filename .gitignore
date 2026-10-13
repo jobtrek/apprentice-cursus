@@ -30,3 +30,4 @@ yarn-error.log
 /.vscode
 /.zed
 .vite-hooks/_
+docs/ocr_specs/pdf_data

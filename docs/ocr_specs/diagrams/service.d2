@@ -1,0 +1,112 @@
+# service-spec.md — notar v2 as a service + next fixes
+vars: {
+  d2-config: {
+    layout-engine: elk
+  }
+}
+
+direction: down
+
+classes: {
+  decision: {
+    shape: diamond
+  }
+  ok: {
+    style: {
+      fill: "#dcfce7"
+      stroke: "#16a34a"
+    }
+  }
+  flag: {
+    style: {
+      fill: "#fee2e2"
+      stroke: "#dc2626"
+    }
+  }
+  future: {
+    style: {
+      stroke-dash: 4
+      fill: "#f3f4f6"
+      font-color: "#6b7280"
+    }
+  }
+}
+
+# ── Laravel side ──────────────────────────────
+laravel: "Laravel app" {
+  upload: "Student uploads PDF"
+  job: "Queue job"
+  confirm: "Confirm screen\npre-filled · warning + Readings if Flagged" {class: ok}
+  retry: "Retry later\n\"try again later\""
+  error: "Show clear error\n(no retry)" {class: flag}
+
+  upload -> job
+}
+
+# ── Service ───────────────────────────────────
+service: "Python service (FastAPI + uvicorn, one Docker container)" {
+  health: "GET /health\nno model calls"
+  endpoint: "POST /process\nmultipart PDF"
+  auth: "Shared secret?\n(constant-time compare)" {class: decision}
+  e401: "401" {class: flag}
+  validate: "Readable PDF\n& under size limit?" {class: decision}
+  e4xx: "415 / 422 · 413" {class: flag}
+  cache: "Cache hit?\nSHA-256(PDF) + hash(Config, prompts, subjects.json)" {class: decision}
+  hit: "Stored result JSON\n0 provider calls" {class: ok}
+
+  process: "process(pdf_bytes, providers)\nsame code as `notar bench`" {
+    page: "Render page N\n(N = 1, then 2–3 fallback)"
+    read: "Gemini read"
+    truncated: "Truncated?\n(loop guard)" {class: decision}
+    top_half: "Retry once: top half of same page\nfallback.loop_retry = true\n+1 Gemini call, cost counted"
+    truncated2: "Truncated again?" {class: decision}
+    next: "Skip page → next page"
+    rules: "Module rule\nonly the 40 codes in subjects.json"
+    decide: "Test type + Grade decision\n(pipeline-spec rules, T = 1.0)"
+
+    page -> read -> truncated
+    truncated -> rules: no
+    truncated -> top_half: yes
+    top_half -> truncated2
+    truncated2 -> rules: "no → counts as page reading"
+    truncated2 -> next: yes
+    next -> page
+    rules -> decide
+  }
+
+  upstream: "Gemini / Jev failed?" {class: decision}
+  e5xx: "502 / 503\nno partial result, nothing cached" {class: flag}
+  store: "Write cache\n(result JSON only, no PDF/image kept)" {shape: cylinder}
+  result: "Result JSON\n(output contract)" {class: ok}
+
+  endpoint -> auth
+  auth -> e401: no
+  auth -> validate: yes
+  validate -> e4xx: no
+  validate -> cache: yes
+  cache -> hit: yes
+  cache -> process.page: miss
+  process.decide -> upstream
+  upstream -> e5xx: yes
+  upstream -> store: no
+  store -> result
+}
+
+laravel.job -> service.endpoint
+service.hit -> laravel.confirm
+service.result -> laravel.confirm
+service.e5xx -> laravel.retry: "retry 5xx"
+service.e4xx -> laravel.error: "never retry 4xx"
+service.e401 -> laravel.error
+
+# ── Benchmark (rank 0) ────────────────────────
+bench: "Benchmark changes (rank 0)" {
+  runs: "notar bench --label run_1..3\nseparate results files"
+  compare: "notar report / compare\nfiles whose Test type or Grade flip"
+  noise: "Grade noise → benchmark-results.md\n(after ranks 1–2)"
+  runs -> compare -> noise
+}
+
+bench.runs -> service.process: "same process()" {style.stroke-dash: 4}
+
+phase2: "Out of scope: crop re-read + tie-break\n(phase 2 trigger)" {class: future}
