@@ -26,8 +26,15 @@ export interface GradeTree {
 /** Note minimale de réussite. */
 export const PASS = 4;
 export const GRADE_MAX = 6;
-/** Semestres de la formation (grades.semester 1–8). */
+/** Semestres de la formation la plus longue (grades.semester 1–8). */
 export const SEMESTERS = 8;
+
+/** L'apprentissage IT dure 4 ans, l'apprentissage EC 3 ans. */
+const SEMESTERS_BY_TRACK: Record<string, number> = { IT: 8, EC: 6 };
+
+/** Nombre de semestres de la filière ; 8 si elle est inconnue. */
+export const semestersFor = (track: string | null | undefined): number =>
+    (track && SEMESTERS_BY_TRACK[track]) || SEMESTERS;
 
 export const fmt = (n: number): string => n.toFixed(1);
 

@@ -83,14 +83,7 @@ const selectView = (value: unknown): void => {
         >
             <PortfolioStats :projects="projects" />
 
-            <div class="flex flex-wrap items-center justify-between gap-2 pt-2">
-                <p class="text-muted-foreground text-sm">
-                    {{
-                        view === 'list'
-                            ? 'Cliquez sur un projet pour le modifier.'
-                            : 'Du plus récent au plus ancien.'
-                    }}
-                </p>
+            <div class="flex justify-end pt-2">
                 <ToggleGroup
                     :model-value="view"
                     type="single"
