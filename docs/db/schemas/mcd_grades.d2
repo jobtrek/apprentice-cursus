@@ -14,8 +14,7 @@ grades: {
 average_nodes: {
   shape: sql_table
   id: bigint {constraint: primary_key}
-  parent_id: bigint {constraint: [PK; FK]}
-  child_id: bigint {constraint: [PK; FK]}
+  parent_id: bigint {constraint:  FK}
   name: varchar
   rounding_step: "decimal(2,1)"
   weight: "decimal(3, 2)"
