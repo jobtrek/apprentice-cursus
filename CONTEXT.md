@@ -29,3 +29,33 @@ _Avoid_: Assigned apprentice, student
 **Apprentice list**:
 The supervisor's entry page. Coaches see every active apprentice in both sections, assigned or not. Trainers see only their own section.
 _Avoid_: Apprentice dashboard (when meaning the supervisor's list)
+
+## Grade entry
+
+**Manual entry**:
+An apprentice adds a grade by typing every field themselves.
+_Avoid_: Normal upload
+
+**Automatic reading**:
+An apprentice uploads a scanned test and lets the system read its Test type and Grade. Optional; Manual entry is always available.
+_Avoid_: OCR, auto-detection, AI upload
+
+**Reading**:
+One source's answer for a field of a scanned test (Gemini, Jev, the Module rule). The Test type is the Module rule's code, else Jev's pick; Gemini's own subject is not used.
+_Avoid_: Prediction, guess
+
+**Pre-fill**:
+The values an Automatic reading puts in the form before the apprentice confirms. Never stored as a grade on its own.
+_Avoid_: Result, auto-grade
+
+**Flagged**:
+An Automatic reading the system is unsure about: the grade is missing, Jev's confidence in the Test type is below 0.5, or no page could be read. It is still offered for Confirmation, pre-filled, with a warning and every Reading shown. A reading whose job failed falls back to Manual entry with the scan kept.
+_Avoid_: Low confidence, error
+
+**Confirmation**:
+The apprentice accepting or correcting a Pre-fill. Nothing from an Automatic reading becomes a grade without it.
+_Avoid_: Validation, approval
+
+**Processing consent**:
+The checkbox an apprentice ticks to accept that their scan is sent to Google and TypeSafe. Required before every Automatic reading.
+_Avoid_: Opt-in, data collection consent

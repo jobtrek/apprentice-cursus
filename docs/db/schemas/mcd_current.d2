@@ -1,64 +1,113 @@
+vars: {
+  d2-config: {
+    layout-engine: elk
+  }
+}
+
 direction: right
 
-domains: {
+Grades: {
+  average_nodes: {
+    shape: sql_table
+    id: bigint {constraint: primary_key}
+    parent_id: bigint {constraint: foreign_key}
+    name: varchar
+    rounding_step: "decimal(2,1)"
+    weight: "decimal(3, 2)"
+    child_id
+  }
+
+  grades: {
+    shape: sql_table
+    id: bigint {constraint: primary_key}
+    user_id: bigint {constraint: foreign_key}
+    domain_id: bigint {constraint: foreign_key}
+    value: "decimal(2,1)"
+    test_date: date
+    file_path: varchar
+    notified_at: timestamp
+    created_at: timestamp
+    updated_at: timestamp
+  }
+
+  average_nodes -> average_nodes: parent_node {
+    source-arrowhead: {shape: cf-one-required}
+    target-arrowhead: {shape: cf-one-required}
+  }
+
+  average_nodes -> average_nodes: child_node {
+    source-arrowhead: {shape: cf-one-required}
+    target-arrowhead: {shape: cf-one-required}
+  }
+
+  average_nodes -> grades: belong to {
+    source-arrowhead: {shape: cf-one-required}
+    target-arrowhead: {shape: cf-one-required}
+  }
+}
+
+Projects: {
+  projects: {
+    shape: sql_table
+    id: bigint {constraint: primary_key}
+    user_id: bigint {constraint: foreign_key}
+    title: varchar
+    organization: varchar
+    description: text
+    responsibilities: varchar
+    technologies: varchar
+    repository_url: varchar
+    demo_url: varchar
+    date_start: date
+    date_end: date
+  }
+
+  project_screenshots: {
+    shape: sql_table
+    id: bigint {constraint: primary_key}
+    project_id: bigint {constraint: foreign_key}
+    path: varchar
+  }
+
+  skills: {
+    shape: sql_table
+    id: bigint {constraint: primary_key}
+    name: varchar {constraint: unique}
+  }
+
+  project_skill: {
+    shape: sql_table
+    project_id: bigint {constraint: [primary_key; foreign_key]}
+    skill_id: bigint {constraint: [primary_key; foreign_key]}
+  }
+
+  projects -> project_screenshots: screenshots {
+    source-arrowhead: {shape: cf-one-required}
+    target-arrowhead: {shape: cf-many}
+  }
+
+  projects -> project_skill: projects {
+    source-arrowhead: {shape: cf-one-required}
+    target-arrowhead: {shape: cf-many}
+  }
+
+  skills -> project_skill: skills {
+    source-arrowhead: {shape: cf-one-required}
+    target-arrowhead: {shape: cf-many}
+  }
+}
+
+formation_plans: {
   shape: sql_table
   id: bigint {constraint: primary_key}
+  root_domain_id: bigint {constraint: [foreign_key; unique]}
   name: varchar
-  rounding_step: "decimal(2,1)"
-  created_at: timestamp
 }
 
-domain_nodes: {
+users_formation_plans: {
   shape: sql_table
-  parent_id: bigint {constraint: [primary_key; foreign_key]}
-  child_id: bigint {constraint: [primary_key; foreign_key]}
-}
-
-domain_edges: {
-  shape: sql_table
-  apprenticeship_context_id: bigint {constraint: [primary_key; foreign_key]}
-  domain_node_id: bigint {constraint: [primary_key; foreign_key]}
-  weight: "decimal(5,2)"
-}
-
-subjects: {
-  shape: sql_table
-  id: bigint {constraint: primary_key}
-  domain_id: bigint {constraint: foreign_key}
-  subject_category_id: bigint {constraint: foreign_key}
-  created_at: timestamp
-}
-
-subject_category: {
-  shape: sql_table
-  id: bigint {constraint: primary_key}
-  name: varchar
-}
-
-apprenticeships: {
-  shape: sql_table
-  id: bigint {constraint: primary_key}
-  name: varchar
-  created_at: timestamp
-  updated_at: timestamp
-}
-
-apprenticeship_context: {
-  shape: sql_table
-  id: bigint {constraint: primary_key}
-  is_mp: boolean
-  apprenticeship_id: bigint {constraint: foreign_key}
-  root_domain_id: bigint {constraint: foreign_key}
-}
-
-apprenticeship_periods: {
-  shape: sql_table
-  id: bigint {constraint: primary_key}
-  apprentice_id: bigint {constraint: foreign_key} # Reference user
-  semester: smallint # check
-  year: smallint # generated
-  start_date: date
-  end_date: date
+  user_id: bigint {constraint: foreign_key}
+  formation_plan_id: bigint {constraint: foreign_key}
 }
 
 users: {
@@ -66,82 +115,28 @@ users: {
   id: bigint {constraint: primary_key}
   azure_id: varchar {constraint: unique}
   tenant_id: varchar
+  formation_plan_id: bigint {constraint: "FK, nullable"}
   name: varchar
   email: varchar {constraint: unique}
   email_verified_at: timestamp
   password: varchar
   is_active: boolean
-  apprenticeship_context_id: bigint {constraint: foreign_key}
-  apprenticeship_periods: bigint {constraint: foreign_key}
+  synced_at: timestamp
   coach_id: bigint {constraint: foreign_key}
-  trainer_id: bigint {constraint: foreign_key}
-}
-
-grades: {
-  shape: sql_table
-  id: bigint {constraint: primary_key}
-  apprentice_id: bigint {constraint: foreign_key} # Reference users
-  domain_id: bigint {constraint: foreign_key}
-  subject_id: bigint {constraint: foreign_key}
-  apprenticeship_periods_id: bigint { constraint: foreign_key }
-  value: "decimal(2,1)"
-  test_date: date
-  file_path: varchar
-  original_filename: varchar
-  notified_at: timestamp
-  created_at: timestamp
-  updated_at: timestamp
 }
 
 comments: {
   shape: sql_table
   id: bigint {constraint: primary_key}
   author_id: bigint {constraint: foreign_key}
-  commentable_type: varchar
-  commentable_id: bigint
+  project_id: bigint {constraint: "FK, nullable"}
+  grade_id: bigint {constraint: "FK, nullable"}
   body: text
   created_at: timestamp
   updated_at: timestamp
 }
 
-projects: {
-  shape: sql_table
-  id: bigint {constraint: primary_key}
-  user_id: bigint {constraint: foreign_key}
-  title: varchar
-  organization: varchar
-  description: text
-  responsibilities: varchar
-  technologies: varchar
-  repository_url: varchar
-  demo_path: varchar
-  date_start: date
-  date_end: date
-  created_at: timestamp
-  updated_at: timestamp
-}
-
-project_screenshots: {
-  shape: sql_table
-  id: bigint {constraint: primary_key}
-  project_id: bigint {constraint: foreign_key}
-  path: varchar
-  created_at: timestamp
-  updated_at: timestamp
-}
-
-skills: {
-  shape: sql_table
-  id: bigint {constraint: primary_key}
-  name: varchar {constraint: unique}
-  created_at: timestamp
-}
-
-project_skill: {
-  shape: sql_table
-  project_id: bigint {constraint: [primary_key; foreign_key]}
-  skill_id: bigint {constraint: [primary_key; foreign_key]}
-}
+# Spatie laravel-permission tables: not drawn in the SoT SVG, kept here because they exist in the DB.
 permissions: {
   label: "permissions (Spatie)"
   shape: sql_table
@@ -190,33 +185,18 @@ role_has_permissions: {
   # cascadeOnDelete sur les deux FK
 }
 
+# ── Relations ─────────────────────────────────
+formation_plans -> Grades.average_nodes: root {
+  source-arrowhead: {shape: cf-one-required}
+  target-arrowhead: {shape: cf-one}
+}
 
-apprenticeships -> apprenticeship_context: contexts {
+formation_plans -> users_formation_plans: a plan that is trained {
   source-arrowhead: {shape: cf-one-required}
   target-arrowhead: {shape: cf-many}
 }
 
-apprenticeship_context -> domain_edges: context {
-  source-arrowhead: {shape: cf-one-required}
-  target-arrowhead: {shape: cf-many}
-}
-
-domain_nodes -> domain_edges: domain {
-  source-arrowhead: {shape: cf-one-required}
-  target-arrowhead: {shape: cf-many}
-}
-
-domains -> domain_nodes: parent {
-  source-arrowhead: {shape: cf-one-required}
-  target-arrowhead: {shape: cf-many}
-}
-
-domains -> domain_nodes: child {
-  source-arrowhead: {shape: cf-one-required}
-  target-arrowhead: {shape: cf-many}
-}
-
-subject_category -> subjects: category {
+users -> users_formation_plans: a trainer that train a plan {
   source-arrowhead: {shape: cf-one-required}
   target-arrowhead: {shape: cf-many}
 }
@@ -226,17 +206,7 @@ users -> users: coach {
   target-arrowhead: {shape: cf-many}
 }
 
-users -> users: trainer {
-  source-arrowhead: {shape: cf-one}
-  target-arrowhead: {shape: cf-many}
-}
-
-subjects -> grades: subject {
-  source-arrowhead: {shape: cf-one-required}
-  target-arrowhead: {shape: cf-many}
-}
-
-subjects -> domains: subject {
+users -> Grades.grades: user-grade {
   source-arrowhead: {shape: cf-one-required}
   target-arrowhead: {shape: cf-many}
 }
@@ -246,62 +216,17 @@ users -> comments: author {
   target-arrowhead: {shape: cf-many}
 }
 
-grades -> comments: commentable {
+users -> Projects.projects: apprentice {
   source-arrowhead: {shape: cf-one-required}
   target-arrowhead: {shape: cf-many}
 }
 
-projects -> comments: commentable {
+Grades.grades -> comments: commentable {
   source-arrowhead: {shape: cf-one-required}
   target-arrowhead: {shape: cf-many}
 }
 
-users -> projects: apprentice {
-  source-arrowhead: {shape: cf-one-required}
-  target-arrowhead: {shape: cf-many}
-}
-
-projects -> project_screenshots: screenshots {
-  source-arrowhead: {shape: cf-one-required}
-  target-arrowhead: {shape: cf-many}
-}
-
-projects -> project_skill: projects {
-  source-arrowhead: {shape: cf-one-required}
-  target-arrowhead: {shape: cf-many}
-}
-
-skills -> project_skill: skills {
-  source-arrowhead: {shape: cf-one-required}
-  target-arrowhead: {shape: cf-many}
-}
-
-apprenticeship_context -> users: context {
-  source-arrowhead: {shape: cf-one-required}
-  target-arrowhead: {shape: cf-many}
-}
-
-users -> apprenticeship_periods: period {
-  source-arrowhead: {shape: cf-one-required}
-  target-arrowhead: {shape: cf-many}
-}
-
-grades -> apprenticeship_periods: period {
-  source-arrowhead: {shape: cf-many}
-  target-arrowhead: {shape: cf-one-required}
-}
-
-users -> grades: user-grade {
-  source-arrowhead: {shape: cf-one-required}
-  target-arrowhead: {shape: cf-many}
-}
-
-domains -> grades: domains-grade {
-  source-arrowhead: {shape: cf-one-required}
-  target-arrowhead: {shape: cf-many}
-}
-
-domains -> apprenticeship_context: root {
+Projects.projects -> comments: commentable {
   source-arrowhead: {shape: cf-one-required}
   target-arrowhead: {shape: cf-many}
 }

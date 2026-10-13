@@ -1,0 +1,113 @@
+# benchmark-spec.md — OCR accuracy benchmark (ocr_bench)
+vars: {
+  d2-config: {
+    layout-engine: elk
+  }
+}
+
+direction: down
+
+classes: {
+  file: {
+    shape: page
+  }
+  store: {
+    shape: cylinder
+  }
+  decision: {
+    shape: diamond
+  }
+  ok: {
+    style: {
+      fill: "#dcfce7"
+      stroke: "#16a34a"
+    }
+  }
+  flag: {
+    style: {
+      fill: "#fee2e2"
+      stroke: "#dc2626"
+    }
+  }
+  future: {
+    style: {
+      stroke-dash: 4
+      fill: "#f3f4f6"
+      font-color: "#6b7280"
+    }
+  }
+}
+
+# ── Inputs ────────────────────────────────────
+inputs: "Inputs" {
+  truth: "jev/real_table.json\n68 × {pdf_path, type, grade}" {class: file}
+  subjects: "jev/subjects.json" {class: file}
+  configs: "configs/*.yaml\nbaseline · ablation · grid\naliases · pricing · pinned models" {class: file}
+  prompts: "prompts/*.md\n{placeholders} + content hash" {class: file}
+  pdfs: "pdfs/ (gitignored)" {class: file}
+}
+
+# ── Case generation ───────────────────────────
+experiments: "experiments.py" {
+  mode: "Mode?" {class: decision}
+  baseline: "baseline\n200 dpi · top_half · png · color"
+  ablation: "ablation (default)\nvary ONE variable at a time"
+  grid: "grid (opt-in)\ncartesian product\nprints call count, needs --yes"
+
+  mode -> baseline
+  mode -> ablation
+  mode -> grid
+}
+
+inputs.configs -> experiments.mode
+cases: "Cases\ndocument × image settings × model config × repeat\n(--limit · --configs · --repeats · --prompt)"
+experiments.baseline -> cases
+experiments.ablation -> cases
+experiments.grid -> cases
+
+# ── Run ───────────────────────────────────────
+run: "run.py (per case)" {
+  cache: "Cached?\nhash(doc, image settings, provider,\nmodel version, prompt hash, jev flag)" {class: decision}
+  skip: "Skip" {class: ok}
+
+  imaging: "imaging/" {
+    render: "render.py\npage 1 at dpi (pymupdf)"
+    transform: "transform.py\ncrop · color_mode · format/jpeg_quality · max_side_px"
+    quality: "quality.py\nblur · contrast · skew · w/h · bytes"
+    render -> transform -> quality
+  }
+
+  provider: "Provider\nextract(image, prompt, schema)\ntemp 0 · json_schema · regex fallback" {
+    gemini: "gemini.py\ngemini-3.5-flash-lite"
+    local: "local_mlx.py\nchandra-ocr-2-8bit-mlx\n(mlx_vlm.server :8080)"
+  }
+
+  jev_flag: "jev flag?" {class: decision}
+  direct: "{subject, grade}"
+  jev: "jev.py\nGemini/local → {text, grade}\nJev Choice over subjects + OTHER\n→ alias table → label"
+
+  cache -> skip: hit
+  cache -> imaging.render: miss
+  imaging.quality -> provider
+  provider -> jev_flag
+  jev_flag -> direct: "no (configs 1, 3)"
+  jev_flag -> jev: "yes (configs 2, 4)"
+}
+
+cases -> run.cache
+inputs.pdfs -> run.imaging.render
+inputs.prompts -> run.provider
+inputs.subjects -> run.jev
+
+raw: "results/raw/*.jsonl\nsettings · quality · raw + parsed output\njev choice/conf · tokens · cost · latency · error" {class: store}
+run.direct -> raw
+run.jev -> raw
+
+# ── Score + report ────────────────────────────
+score: "score.py (no model calls)\ngrade_found/correct/abs_error\nsubject_correct (aliases) · subject_cer\nlatency · cost · error_rate · consistency"
+scores: "results/scores.csv" {class: store}
+report: "report.py → results/reports/*.html (plotly)\naccuracy per config · accuracy vs each variable\nexpected vs extracted scatter · CER box\naccuracy vs scan quality · latency/cost · failure table"
+
+raw -> score
+inputs.truth -> score
+score -> scores -> report

@@ -1,0 +1,85 @@
+# stack.md — Automatic reading in Laravel (updated 2026-10-13 from RECOMMENDATION.md)
+vars: {
+  d2-config: {
+    layout-engine: elk
+  }
+}
+
+direction: down
+
+classes: {
+  decision: {
+    shape: diamond
+  }
+  ok: {
+    style: {
+      fill: "#dcfce7"
+      stroke: "#16a34a"
+    }
+  }
+  flag: {
+    style: {
+      fill: "#fee2e2"
+      stroke: "#dc2626"
+    }
+  }
+}
+
+choice: "Manual entry or\nAutomatic reading?" {class: decision}
+manual: "Manual entry\n(scan kept in full)" {class: flag}
+consent: "Processing consent ticked?\n\"sent to Google and TypeSafe\"" {class: decision}
+
+choice -> manual: manual
+choice -> consent: automatic
+consent -> manual: no
+
+upload: "Upload PDF (StoreTestUploadRequest)\ntest_readings row = pending\n(unconfirmed deleted after 7 days)"
+consent -> upload: yes
+
+poll: "Page polls every 2 s\n(usePoll)"
+upload -> poll
+
+job: "ReadTest queue job" {
+  cache: "test_readings hit on\nsha256 + config hash?" {class: decision}
+  hit: "Stored result\nno model calls" {class: ok}
+
+  read: "TestReader" {
+    render: "Imagick + Ghostscript\npage N · 200 dpi · PNG"
+    gemini: "Call 1 · Http facade\nGemini flash-lite\n{text, subject, grade, grade_box}"
+    trunc: "finishReason != STOP\nor no grade?" {class: decision}
+    next: "Next page (2–3)"
+    rule: "Module rule\n(printed code)"
+    jev: "Jev · laravel/ai Classification\n(typesafe, Choice)\nchoice + confidence"
+    decide: "Grade ∈ 1.0–6.0 step 0.5 else null\nFlagged = grade null\nOR Jev conf < 0.5\nOR no readable page"
+
+    render -> gemini -> trunc
+    trunc -> rule: no
+    trunc -> next: yes
+    next -> render
+    rule -> jev: no hit
+    rule -> decide: hit
+    jev -> decide
+  }
+
+  store: "Write result JSON\nto test_readings"
+
+  cache -> hit: hit
+  cache -> read.render: miss
+  read.decide -> store
+}
+
+upload -> job.cache
+
+failed: "Job failed\nafter retries?" {class: decision}
+job.hit -> failed
+job.store -> failed
+poll -> failed: "status done/failed" {style.stroke-dash: 4}
+failed -> manual: yes
+
+flagged: "Flagged?" {class: decision}
+failed -> flagged: no
+
+confirm: "Confirm form, pre-filled\nConfirmation required" {class: ok}
+warn: "Confirm form, pre-filled\n+ warning, every Reading shown\nConfirmation required" {class: flag}
+flagged -> confirm: no
+flagged -> warn: yes

@@ -192,3 +192,23 @@ What each role can do and how the sync behaves: `docs/project-docs/role_permissi
 - **A coaches group is mapped** (`AzureGroup::Coach`, no section). `apprenticeship()` becomes nullable.
 - **Apprentice list vs. supervision.** Coaches list every active apprentice in both sections but open only their coachees (`User::supervises()` is unchanged). Trainers list and open only their own section.
 - The no-group / several-groups rule, matching on `azure_id` only, and keeping the section on a section change all still apply, in the job as at login.
+
+## 2026-10-13 — Automatic reading runs inside Laravel, not as a Python service
+
+**Decision:** notar v2 is ported 1:1 to PHP and runs in a Laravel queue job, following `~/dev/ocr_evaluation/RECOMMENDATION.md`. Gemini is one REST call through the `Http` facade. Jev goes through `laravel/ai` v1.0's Classification API (`typesafe` provider, one `Choice` question). PDF pages are rendered with Imagick + Ghostscript at 200 dpi. The Test type is the Module rule's code, else Jev's pick. A reading is Flagged when the grade is missing, Jev's confidence is below 0.5, or no page could be read. Flagged readings still open the pre-filled confirm form, with a warning. The FastAPI service from `docs/specs/service-spec.md`, the Python benchmark, phase 2 (tie-break) and the embeddings vote are dropped.
+
+**Why:** One codebase and one deployment. A second container, a shared secret and a Python toolchain are too much to run and maintain for this app. The evaluation of all 27 saved runs (`RECOMMENDATION.md`) shows:
+- notar v2 is the best setup measured: both fields right on 89.6% of the 67 PDFs (95% CI 80.0–94.8%), $0.0014 per PDF. Local models (GLM-OCR, Chandra) lose significantly.
+- Jev alone decides the Test type (97.0%). Gemini's own subject is wrong in all 8 disagreements, so it is not used.
+- notar v2's flag rule (Gemini≠Jev, `OTHER`, invalid grade) has precision 0.10 and recall 0.14. "Grade missing OR Jev confidence < 0.5" has 0.62 and 0.71, at no extra cost.
+- Jev through `laravel/ai`: v1.0 (2026-09-23) added Jev classification. One `Classification::of($text)` call replaces a hand-written TypeSafe HTTP client, and `Classification::fake()` replaces faking its JSON.
+- Gemini through `Http`, not `laravel/ai`: the loop guard needs `finishReason`, the cost needs `usageMetadata` (thinking tokens included), and the call needs the exact JSON schema. The `laravel/ai` docs show no finish reason.
+
+**Consequences:**
+- The port keeps every parameter the 89.6% was measured with: `gemini-3.5-flash-lite`, temperature 0, `maxOutputTokens` 8192, notar's `CALL1_PROMPT` unchanged, PNG at 200 dpi, full page, image before prompt, `jev-1.13.0`, the same `subjects.json`. Sending the PDF straight to Gemini, or rewording the prompt, voids the number.
+- The port is checked with `php artisan ocr:bench` on notar's 67 PDFs. Pass = both fields right on ≥ 56/67 (89.6% minus the ~4-file run-to-run noise). About $0.10 per run.
+- The 0.5 threshold was picked on those same 67 PDFs, so it is optimistic. Re-check it once ~30 Confirmations exist.
+- Classification is marked experimental in the SDK docs (its API may change in minor releases), so `laravel/ai` is pinned to an exact version.
+- The SDK's `Choice` `confidence` is measured "across the full set of probabilities" and may be null. Before relying on the 0.5 threshold, check that it matches the confidence notar's Python SDK returned. If it doesn't, flag on `probabilityOf($choice)` instead. A null confidence counts as Flagged.
+- A flag catches most errors, not all (one wrong Jev pick had confidence 0.99). Confirmation stays mandatory on every reading.
+- Reverse this only by re-introducing a Python service: the PHP pipeline has no shared code with notar.
