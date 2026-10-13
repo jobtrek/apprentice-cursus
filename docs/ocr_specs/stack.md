@@ -2,7 +2,7 @@
 
 Written 2026-10-13, updated the same day from [`RECOMMENDATION.md`](RECOMMENDATION.md) (all 27 saved OCR runs scored on the same 67 PDFs). Decision record: `docs/adr/ADR.md` → "Automatic reading runs inside Laravel, not as a Python service". Terms follow the root [`CONTEXT.md`](../../CONTEXT.md) (Manual entry, Automatic reading, Reading, Pre-fill, Flagged, Confirmation, Processing consent).
 
-Flow diagram: [`diagrams/laravel.d2`](diagrams/laravel.d2).
+Flow diagram: [`diagrams/laravel.d2`](diagrams/laravel.d2). Docs for every library and API below: [`documentation.md`](documentation.md).
 
 ## Reference files
 
@@ -67,7 +67,7 @@ The 0.5 threshold was picked on the same PDFs it was scored on. Re-check it once
 | State until Confirmation | `test_readings` table | `pdf_sha256`, `config_hash`, `result` JSON, `confirmed_type`, `confirmed_grade`, `edited`. The edit rate is the production accuracy signal |
 | Same-PDF cache | Lookup on `test_readings` (`pdf_sha256`, `config_hash`) | Config hash covers models, prompt, threshold, `subjects.json`. A hit makes no model calls |
 | Gemini | `Http` facade → `…/models/gemini-3.5-flash-lite:generateContent` | Not `laravel/ai`: the loop guard needs `finishReason`, cost needs `usageMetadata` (thinking tokens included), and the call needs the exact JSON schema |
-| Jev | `laravel/ai` v1.0 Classification, `typesafe` provider | `Classification::of($text)->questions(['subject' => new Choice($instructions, $criteria)])->classify(provider: 'typesafe')`. Criteria = Test types from `subjects.json`, keyed by name. Answer gives `choice`, `probabilities`, `confidence` (nullable), plus `$result->usage`. Experimental API: pin the package version |
+| Jev | `laravel/ai` v1.0 Classification, `typesafe` provider | `Classification::of($text)->questions(['subject' => new Choice($instructions, $criteria)])->classify(provider: 'typesafe', model: 'jev-1.13.0')`. Criteria = Test types from `subjects.json`, keyed by name. Answer gives `choice`, `probabilities`, `confidence` (nullable), plus `$result->usage`. Experimental API: pin the package version |
 | PDF → PNG | Imagick + Ghostscript | `setResolution(200, 200)`, `readImage("$path[$n]")`, flatten, PNG |
 | Config | `config/ocr.php` + `resources/ocr/subjects.json` + `config/ai.php` + `.env` | `config/ocr.php`: pinned Gemini model, dpi, pages, token cap, prices, threshold 0.5. `config/ai.php`: the TypeSafe provider. `GEMINI_API_KEY`, `TYPESAFE_API_KEY` |
 | Tests | Pest; `Http::fake()` for Gemini, `Classification::fake()` with `ChoiceAnswer` for Jev | Offline only |
@@ -118,8 +118,8 @@ Pest, faked Readings: module rule, page fallback, truncated page, invalid grade,
 ## Open questions
 
 Before coding the pipeline:
-1. Whether `laravel/ai`'s `Choice` `confidence` is the same number notar's Python SDK returned (the 0.5 threshold was set on it). Classify 2–3 of notar's PDFs' text and compare. If not, flag on `probabilityOf($choice)`.
-2. How to pin `jev-1.13.0`. The SDK docs show no `model:` argument on `classify()`, only `provider:`. Check `config/ai.php` after publishing for a TypeSafe default model.
+1. ~~Same `confidence` as notar's Python SDK?~~ **Yes (checked 2026-10-13, `laravel/ai` 1.2.1).** `TypeSafeGateway` posts to the same `/systemone` endpoint and passes the API's `confidence` through unchanged. On 3 notar PDFs, same text, 2 calls each per SDK: same choice in all 12 calls; confidence Python 0.41–0.61, PHP 0.39–0.68. Jev is not deterministic: identical calls differ by up to 0.14, so a reading near 0.5 can flip between Flagged and not. Flag on `confidence`, not `probabilityOf($choice)` (that one is 0.03–0.06 higher).
+2. ~~How to pin `jev-1.13.0`?~~ **`classify(provider: 'typesafe', model: 'jev-1.13.0')`**, or set `providers.typesafe.models.classification.default` in `config/ai.php` (the SDK's default is `jev-latest`). The answer's `meta->model` came back `jev-1.13.0`.
 3. Whether Imagick's PNG matches pymupdf's at 200 dpi. Compare 1 page by eye.
 4. School rules on sending student work to cloud services (pipeline-spec open question 4): the checkbox may need to become recorded consent.
 
