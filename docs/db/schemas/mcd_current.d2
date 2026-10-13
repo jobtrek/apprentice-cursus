@@ -43,6 +43,22 @@ formation_plans -> users_formation_plans: a plan that is trained {
   target-arrowhead: {shape: cf-many}
 }
 
+formation_plans_nodes: {
+  shape: sql_table
+  formation_plan_id: bigint {constraint: [primary_key; foreign_key]} # Reference the formation plan that uses the node.
+  average_node_id: bigint {constraint: [primary_key; foreign_key]} # Reference an average node that is part of that plan. Composite primary key: the same pair can only exist once.
+}
+
+formation_plans -> formation_plans_nodes: a plan that uses nodes {
+  source-arrowhead: {shape: cf-one-required}
+  target-arrowhead: {shape: cf-many}
+}
+
+grades.average_nodes -> formation_plans_nodes: a node used by plans {
+  source-arrowhead: {shape: cf-one-required}
+  target-arrowhead: {shape: cf-many}
+}
+
  comments: {
   shape: sql_table
   id: bigint {constraint: primary_key}
