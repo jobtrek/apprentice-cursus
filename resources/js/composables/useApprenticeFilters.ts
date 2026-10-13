@@ -37,13 +37,6 @@ export const VARIANT_OPTIONS: FilterOption<VariantFilter>[] = [
 
 export type SituationFilter = 'all' | 'insufficient' | 'no-grades' | 'stale';
 
-export const SITUATION_OPTIONS: FilterOption<SituationFilter>[] = [
-    { value: 'all', label: 'Toutes les situations' },
-    { value: 'insufficient', label: 'Moyenne insuffisante' },
-    { value: 'no-grades', label: 'Aucune note' },
-    { value: 'stale', label: 'Sans note récente' },
-];
-
 /** Admin local : apprentis à qui il manque un superviseur. */
 export type SupervisionFilter = 'all' | 'no-coach' | 'no-trainer';
 
@@ -102,8 +95,12 @@ export const matchesSituation = (
             return stats.average !== null && stats.average < PASSING_GRADE;
         case 'no-grades':
             return stats.grades_count === 0;
+        // Des notes, mais aucune récente : « Aucune note » a sa propre catégorie.
         case 'stale':
-            return hasNoRecentGrade(stats.last_grade_date);
+            return (
+                stats.grades_count > 0 &&
+                hasNoRecentGrade(stats.last_grade_date)
+            );
         default:
             return true;
     }

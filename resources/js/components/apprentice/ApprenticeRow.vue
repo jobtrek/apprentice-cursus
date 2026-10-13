@@ -1,9 +1,7 @@
 <script setup lang="ts">
-import { Link, router } from '@inertiajs/vue3';
-import { BookOpenIcon, EyeIcon, FolderOpenIcon } from '@lucide/vue';
+import { router } from '@inertiajs/vue3';
 import { computed } from 'vue';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { TableCell, TableRow } from '@/components/ui/table';
 import {
     hasNoRecentGrade,
@@ -35,17 +33,7 @@ const props = defineProps<{
     ownRole?: AssignSelfAs | null;
 }>();
 
-defineEmits<{
-    /** Aperçu rapide dans le panneau latéral, sans quitter la liste. */
-    preview: [apprentice: ApprenticeListItem];
-}>();
-
-const profile = (tab?: 'grades' | 'portfolio') =>
-    apprentices.show(props.apprentice.id, {
-        query: tab ? { tab } : undefined,
-    });
-
-const openProfile = () => router.visit(profile());
+const openProfile = () => router.visit(apprentices.show(props.apprentice.id));
 
 /** Des notes, mais aucune récente : « Aucune note » est signalé ailleurs. */
 const stale = computed(
@@ -73,7 +61,7 @@ const trainerOptions = computed(
 </script>
 
 <template>
-    <!-- Toute la ligne ouvre le profil ; les boutons mènent droit à une section. -->
+    <!-- Toute la ligne ouvre le profil. -->
     <TableRow
         class="group focus-visible:bg-muted/50 cursor-pointer focus-visible:outline-none"
         tabindex="0"
@@ -179,39 +167,5 @@ const trainerOptions = computed(
                 <AssignmentBadge :value="apprentice.trainer ?? undefined" />
             </TableCell>
         </template>
-
-        <TableCell @click.stop>
-            <div
-                class="flex justify-end gap-0.5 opacity-70 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100"
-            >
-                <Button
-                    variant="ghost"
-                    size="icon-sm"
-                    :aria-label="`Aperçu de ${apprentice.name}`"
-                    :title="`Aperçu de ${apprentice.name}`"
-                    @click="$emit('preview', apprentice)"
-                >
-                    <EyeIcon aria-hidden="true" />
-                </Button>
-                <Button as-child variant="ghost" size="icon-sm">
-                    <Link
-                        :href="profile('grades')"
-                        :aria-label="`Carnet de notes de ${apprentice.name}`"
-                        :title="`Carnet de notes de ${apprentice.name}`"
-                    >
-                        <BookOpenIcon aria-hidden="true" />
-                    </Link>
-                </Button>
-                <Button as-child variant="ghost" size="icon-sm">
-                    <Link
-                        :href="profile('portfolio')"
-                        :aria-label="`Portfolio de ${apprentice.name}`"
-                        :title="`Portfolio de ${apprentice.name}`"
-                    >
-                        <FolderOpenIcon aria-hidden="true" />
-                    </Link>
-                </Button>
-            </div>
-        </TableCell>
     </TableRow>
 </template>

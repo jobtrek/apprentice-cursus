@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Head, Link, usePage, useRemember } from '@inertiajs/vue3';
-import { BookOpenIcon, ChartLineIcon, FolderOpenIcon } from '@lucide/vue';
+import { BookOpenIcon, FolderOpenIcon } from '@lucide/vue';
 import { computed, reactive } from 'vue';
 import ApprenticeAvatar from '@/components/apprentice/ApprenticeAvatar.vue';
 import ApprenticeOverview from '@/components/apprentice/ApprenticeOverview.vue';
@@ -8,7 +8,6 @@ import ApprenticePortfolio from '@/components/apprentice/ApprenticePortfolio.vue
 import AssignmentBadge from '@/components/apprentice/AssignmentBadge.vue';
 import StatusBadge from '@/components/apprentice/StatusBadge.vue';
 import TrackBadges from '@/components/apprentice/TrackBadges.vue';
-import GradebookSummary from '@/components/gradebook/GradebookSummary.vue';
 import GradeList from '@/components/gradebook/GradeList.vue';
 import { PageContainer } from '@/components/page';
 import {
@@ -22,12 +21,8 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import {
-    averageStatus,
-    relativeDate,
-    situationOf,
-    yearLabel,
-} from '@/lib/apprentice';
+import { useNavigation } from '@/composables/useNavigation';
+import { relativeDate, situationOf, yearLabel } from '@/lib/apprentice';
 import { apprentisdashboard } from '@/routes';
 import apprentices from '@/routes/apprentices';
 import type { Apprentice, ApprenticeStats } from '@/types/apprentice';
@@ -60,28 +55,21 @@ const gradeHref = (grade: Grade) =>
 
 const situation = computed(() => situationOf({ stats: props.stats }));
 
-const averageClass = computed(() =>
-    props.stats.average === null
-        ? 'text-muted-foreground'
-        : averageStatus(props.stats.average).class,
-);
+/** Le coach ne lit pas son propre nom en « Coach », ni le formateur en « Formateur ». */
+const { role } = useNavigation();
 
 /** Onglets soulignés plutôt qu'en pastilles. */
 const TAB_TRIGGER_CLASS =
     'text-muted-foreground hover:text-foreground data-[state=active]:text-foreground data-[state=active]:border-primary dark:data-[state=active]:border-primary h-auto flex-none rounded-none border-0 border-b-2 border-transparent px-3 pt-2 pb-3 data-[state=active]:bg-transparent data-[state=active]:shadow-none dark:data-[state=active]:bg-transparent';
 
-type ProfileTab = 'overview' | 'grades' | 'portfolio';
+type ProfileTab = 'grades' | 'portfolio';
 
-/** `?tab=grades` ou `?tab=portfolio` ouvre directement l'onglet (liens de la liste). */
+/** `?tab=portfolio` ouvre directement le portfolio ; sinon les notes. */
 const page = usePage();
 const queryTab = new URLSearchParams(page.url.split('?')[1] ?? '').get('tab');
 
 function toTab(value: unknown): ProfileTab {
-    if (value === 'grades') {
-        return 'grades';
-    }
-
-    return value === 'portfolio' && props.portfolio ? 'portfolio' : 'overview';
+    return value === 'portfolio' && props.portfolio ? 'portfolio' : 'grades';
 }
 
 // Avec un objet reactive, useRemember renvoie ce même objet (pas un Ref).
@@ -113,128 +101,83 @@ function selectTab(tab: string | number): void {
             </BreadcrumbList>
         </Breadcrumb>
 
-        <Card class="gap-0 overflow-hidden py-0 shadow-xs">
-            <!-- Bandeau décoratif : dégradé de la marque et trame de points. -->
-            <div
-                class="from-primary/25 via-primary/10 to-chart-2/25 relative h-28 bg-linear-to-r sm:h-32"
-                aria-hidden="true"
-            >
-                <div
-                    class="absolute inset-0 bg-[radial-gradient(var(--color-foreground)_1px,transparent_1px)] [background-size:16px_16px] opacity-[0.07]"
+        <!-- En-tête compact : identité à gauche, suivi à droite. -->
+        <Card
+            class="flex-col gap-4 p-5 shadow-xs lg:flex-row lg:items-center lg:justify-between"
+        >
+            <div class="flex min-w-0 items-center gap-4">
+                <ApprenticeAvatar
+                    :name="apprentice.name"
+                    :tone="situation.tone"
+                    class="size-14"
+                    fallback-class="text-lg"
                 />
-            </div>
-
-            <div class="flex flex-col gap-5 px-6 pb-6">
-                <div
-                    class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between"
-                >
-                    <div
-                        class="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-end"
-                    >
-                        <ApprenticeAvatar
-                            :name="apprentice.name"
-                            class="ring-card -mt-14 size-24 shadow-sm ring-4"
-                            fallback-class="text-2xl"
+                <div class="flex min-w-0 flex-col gap-1.5">
+                    <h1 class="truncate text-2xl font-semibold tracking-tight">
+                        {{ apprentice.name }}
+                    </h1>
+                    <div class="flex flex-wrap items-center gap-1.5">
+                        <StatusBadge
+                            :tone="situation.tone"
+                            :label="situation.label"
                         />
-                        <div class="flex min-w-0 flex-col gap-1.5 pt-2 sm:pb-1">
-                            <h1
-                                class="truncate text-2xl font-semibold tracking-tight"
-                            >
-                                {{ apprentice.name }}
-                            </h1>
-                            <div class="flex flex-wrap items-center gap-1.5">
-                                <StatusBadge
-                                    :tone="situation.tone"
-                                    :label="situation.label"
-                                />
-                                <TrackBadges
-                                    :track="apprentice.track"
-                                    :is-mp="apprentice.isMp"
-                                />
-                                <span
-                                    v-if="apprentice.year"
-                                    class="text-muted-foreground text-sm"
-                                    title="Déduite du dernier semestre noté"
-                                >
-                                    · {{ yearLabel(apprentice.year) }}
-                                </span>
-                                <Badge
-                                    v-if="!apprentice.isActive"
-                                    variant="outline"
-                                >
-                                    Inactif
-                                </Badge>
-                            </div>
-                        </div>
+                        <TrackBadges
+                            :track="apprentice.track"
+                            :is-mp="apprentice.isMp"
+                        />
+                        <span
+                            v-if="apprentice.year"
+                            class="text-muted-foreground text-sm"
+                            title="Déduite du dernier semestre noté"
+                        >
+                            · {{ yearLabel(apprentice.year) }}
+                        </span>
+                        <Badge v-if="!apprentice.isActive" variant="outline">
+                            Inactif
+                        </Badge>
                     </div>
                 </div>
-
-                <!-- Chiffres clés et suivi, séparés par des filets. -->
-                <dl
-                    class="bg-border grid grid-cols-2 gap-px overflow-hidden rounded-xl border lg:grid-cols-5"
-                >
-                    <div class="bg-card flex flex-col gap-1 p-4">
-                        <dt class="text-muted-foreground text-xs font-medium">
-                            Moyenne
-                        </dt>
-                        <dd
-                            class="text-xl font-semibold tabular-nums"
-                            :class="averageClass"
-                        >
-                            {{
-                                stats.average !== null
-                                    ? stats.average.toFixed(1)
-                                    : '—'
-                            }}
-                        </dd>
-                    </div>
-                    <div class="bg-card flex flex-col gap-1 p-4">
-                        <dt class="text-muted-foreground text-xs font-medium">
-                            Notes saisies
-                        </dt>
-                        <dd class="text-xl font-semibold tabular-nums">
-                            {{ stats.grades_count }}
-                        </dd>
-                    </div>
-                    <div class="bg-card flex flex-col gap-1 p-4">
-                        <dt class="text-muted-foreground text-xs font-medium">
-                            Dernière note
-                        </dt>
-                        <dd
-                            class="text-xl font-semibold first-letter:uppercase"
-                            :title="stats.last_grade_date ?? undefined"
-                        >
-                            {{
-                                stats.last_grade_date
-                                    ? relativeDate(stats.last_grade_date)
-                                    : '—'
-                            }}
-                        </dd>
-                    </div>
-                    <div class="bg-card flex flex-col gap-1.5 p-4">
-                        <dt class="text-muted-foreground text-xs font-medium">
-                            Coach
-                        </dt>
-                        <dd class="text-sm">
-                            <AssignmentBadge
-                                :value="apprentice.coach ?? undefined"
-                            />
-                        </dd>
-                    </div>
-                    <div
-                        class="bg-card col-span-2 flex flex-col gap-1.5 p-4 lg:col-span-1"
-                    >
-                        <dt class="text-muted-foreground text-xs font-medium">
-                            Formateur
-                        </dt>
-                        <dd class="text-sm">
-                            <AssignmentBadge
-                                :value="apprentice.trainer ?? undefined"
-                            />
-                        </dd>
-                    </div>
-                </dl>
             </div>
+
+            <dl
+                class="flex flex-wrap gap-x-8 gap-y-3 border-t pt-4 lg:border-t-0 lg:border-l lg:pt-0 lg:pl-8"
+            >
+                <div class="flex flex-col gap-1">
+                    <dt class="text-muted-foreground text-xs font-medium">
+                        Dernière note
+                    </dt>
+                    <dd
+                        class="text-sm font-medium first-letter:uppercase"
+                        :title="stats.last_grade_date ?? undefined"
+                    >
+                        {{
+                            stats.last_grade_date
+                                ? relativeDate(stats.last_grade_date)
+                                : '—'
+                        }}
+                    </dd>
+                </div>
+                <div v-if="role !== 'coach'" class="flex flex-col gap-1">
+                    <dt class="text-muted-foreground text-xs font-medium">
+                        Coach
+                    </dt>
+                    <dd class="text-sm">
+                        <AssignmentBadge
+                            :value="apprentice.coach ?? undefined"
+                        />
+                    </dd>
+                </div>
+                <div v-if="role !== 'trainer'" class="flex flex-col gap-1">
+                    <dt class="text-muted-foreground text-xs font-medium">
+                        Formateur
+                    </dt>
+                    <dd class="text-sm">
+                        <AssignmentBadge
+                            :value="apprentice.trainer ?? undefined"
+                        />
+                    </dd>
+                </div>
+            </dl>
         </Card>
 
         <Tabs
@@ -246,20 +189,12 @@ function selectTab(tab: string | number): void {
                 class="h-auto w-full justify-start gap-2 overflow-x-auto rounded-none border-b bg-transparent p-0"
             >
                 <TabsTrigger
-                    value="overview"
-                    :class="TAB_TRIGGER_CLASS"
-                    data-test="profile-tab-overview"
-                >
-                    <ChartLineIcon aria-hidden="true" />
-                    Vue d'ensemble
-                </TabsTrigger>
-                <TabsTrigger
                     value="grades"
                     :class="TAB_TRIGGER_CLASS"
                     data-test="profile-tab-grades"
                 >
                     <BookOpenIcon aria-hidden="true" />
-                    Carnet de notes
+                    Notes
                     <Badge
                         variant="secondary"
                         class="h-5 min-w-5 rounded-full px-1.5 tabular-nums"
@@ -284,23 +219,14 @@ function selectTab(tab: string | number): void {
                 </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="overview" class="flex flex-col gap-6">
-                <ApprenticeOverview
-                    v-if="gradebook"
-                    :apprentice="apprentice"
-                    :gradebook="gradebook"
-                    :grades="grades"
-                    :grade-href="gradeHref"
-                />
-                <p v-else class="text-muted-foreground text-sm">
-                    Aucune filière n'est encore attribuée à cet·te apprenti·e :
-                    ses indicateurs apparaîtront dès qu'elle le sera.
-                </p>
-            </TabsContent>
-
+            <!-- Parcours et domaines, puis la liste filtrable des notes. -->
             <TabsContent value="grades" class="flex flex-col gap-6">
                 <template v-if="gradebook">
-                    <GradebookSummary :gradebook="gradebook" />
+                    <ApprenticeOverview
+                        :apprentice="apprentice"
+                        :gradebook="gradebook"
+                        :grades="grades"
+                    />
                     <GradeList
                         :gradebook="gradebook"
                         :grades="grades"

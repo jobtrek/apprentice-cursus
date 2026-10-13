@@ -1,6 +1,11 @@
 <script setup lang="ts">
 import { Head, Link, usePage } from '@inertiajs/vue3';
-import { BookOpenIcon, CirclePlusIcon, FolderKanbanIcon } from '@lucide/vue';
+import {
+    BookOpenIcon,
+    CirclePlusIcon,
+    FolderKanbanIcon,
+    UserPlusIcon,
+} from '@lucide/vue';
 import { computed } from 'vue';
 import SupervisorDashboard from '@/components/dashboard/SupervisorDashboard.vue';
 import AddGradeDialog from '@/components/grade/AddGradeDialog.vue';
@@ -16,6 +21,7 @@ import ShortcutGrid, {
 import StatTiles from '@/components/gradebook/StatTiles.vue';
 import TrainingPath from '@/components/gradebook/TrainingPath.vue';
 import { PageContainer, PageHeader } from '@/components/page';
+import { Button } from '@/components/ui/button';
 import { useAddGradeDialog } from '@/composables/useAddGradeDialog';
 import { useNavigation } from '@/composables/useNavigation';
 import {
@@ -23,9 +29,14 @@ import {
     type GradeTree,
     lastGradedSemester,
 } from '@/lib/gradebook';
+import { apprentisdashboard } from '@/routes';
 import gradeRoutes from '@/routes/grades';
 import portfolio from '@/routes/portfolio';
-import type { ApprenticeListItem } from '@/types/apprentice';
+import type {
+    ApprenticeListItem,
+    MonthlyActivity,
+    SupervisedGrade,
+} from '@/types/apprentice';
 import type { Grade } from '@/types/grade';
 
 const props = defineProps<{
@@ -36,6 +47,10 @@ const props = defineProps<{
     apprentices: ApprenticeListItem[];
     /** Apprentis qu'un coach ou formateur peut encore ajouter. */
     assignableCount: number;
+    /** Coach, formateur, admin : dernières notes des apprentis suivis. */
+    latestGrades: SupervisedGrade[];
+    /** Coach, formateur, admin : notes par mois sur 12 mois. */
+    activity: MonthlyActivity[];
 }>();
 
 const page = usePage();
@@ -48,6 +63,11 @@ const firstName = computed(
 
 /** Coachs et formateurs suivent des apprentis ; les autres rôles voient leur propre parcours. */
 const isApprentice = computed(() => role.value === 'apprentice');
+
+/** Seuls coachs et formateurs s'ajoutent des apprentis, pas l'admin. */
+const canAssign = computed(
+    () => role.value === 'coach' || role.value === 'trainer',
+);
 
 const gradebook = computed(() =>
     props.tree ? createGradebook(props.tree, props.grades) : null,
@@ -136,10 +156,27 @@ const shortcuts: Shortcut[] = [
             <PageHeader
                 :title="firstName ? `Bonjour ${firstName}` : 'Accueil'"
                 description="Voici où en sont les apprentis que vous suivez."
-            />
+            >
+                <!-- L'ajout se fait depuis la liste, qui a la fenêtre de choix. -->
+                <template v-if="canAssign && apprentices.length > 0" #actions>
+                    <Button as-child variant="outline">
+                        <Link :href="apprentisdashboard()">
+                            <UserPlusIcon aria-hidden="true" />
+                            Ajouter un apprenti
+                            <span
+                                v-if="assignableCount > 0"
+                                class="text-muted-foreground tabular-nums"
+                            >
+                                ({{ assignableCount }})
+                            </span>
+                        </Link>
+                    </Button>
+                </template>
+            </PageHeader>
             <SupervisorDashboard
                 :apprentices="apprentices"
-                :assignable-count="assignableCount"
+                :latest-grades="latestGrades"
+                :activity="activity"
             />
         </template>
     </PageContainer>

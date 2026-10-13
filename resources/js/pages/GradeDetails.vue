@@ -124,7 +124,7 @@ const submitEdit = (comment: Comment) => {
 <template>
     <Head :title="grade.title" />
 
-    <PageContainer>
+    <PageContainer size="lg">
         <PageHeader
             :title="grade.title"
             :description="gradePath"
@@ -155,234 +155,247 @@ const submitEdit = (comment: Comment) => {
             </CardContent>
         </Card>
 
-        <Card class="gap-0 overflow-hidden py-0">
-            <div
-                class="flex items-center justify-between gap-4 border-b px-6 py-3"
-            >
-                <h2 class="font-semibold">Justificatif</h2>
-                <!-- Les navigateurs mobiles affichent mal un PDF intégré. -->
-                <Button v-if="pdfUrl" as-child variant="outline" size="sm">
-                    <a :href="pdfUrl" target="_blank" rel="noopener noreferrer">
-                        <ExternalLinkIcon aria-hidden="true" />
-                        Ouvrir le PDF
-                    </a>
-                </Button>
-            </div>
-            <div
-                v-if="!pdfUrl"
-                class="text-muted-foreground flex flex-col items-center gap-2 px-6 py-12 text-sm"
-            >
-                <FileXIcon class="size-6" aria-hidden="true" />
-                Aucun justificatif déposé pour cette note.
-            </div>
-            <div v-else class="bg-muted h-[70vh]">
-                <embed :src="pdfUrl" type="application/pdf" class="size-full" />
-            </div>
-        </Card>
+        <!-- Grand écran : le justificatif à gauche, les commentaires à droite. -->
+        <div class="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_24rem]">
+            <Card class="gap-0 overflow-hidden py-0">
+                <div
+                    class="flex items-center justify-between gap-4 border-b px-6 py-3"
+                >
+                    <h2 class="font-semibold">Justificatif</h2>
+                    <!-- Les navigateurs mobiles affichent mal un PDF intégré. -->
+                    <Button v-if="pdfUrl" as-child variant="outline" size="sm">
+                        <a
+                            :href="pdfUrl"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                        >
+                            <ExternalLinkIcon aria-hidden="true" />
+                            Ouvrir le PDF
+                        </a>
+                    </Button>
+                </div>
+                <div
+                    v-if="!pdfUrl"
+                    class="text-muted-foreground flex flex-col items-center gap-2 px-6 py-12 text-sm"
+                >
+                    <FileXIcon class="size-6" aria-hidden="true" />
+                    Aucun justificatif déposé pour cette note.
+                </div>
+                <div v-else class="bg-muted h-[70vh]">
+                    <embed
+                        :src="pdfUrl"
+                        type="application/pdf"
+                        class="size-full"
+                    />
+                </div>
+            </Card>
 
-        <section class="flex flex-col gap-4">
-            <SectionHeader
-                title="Commentaires"
-                :description="
-                    comments.length
-                        ? `${comments.length} commentaire${comments.length > 1 ? 's' : ''}`
-                        : can.comment
-                          ? 'Aucun commentaire pour le moment.'
-                          : undefined
-                "
-            />
+            <section class="flex flex-col gap-4">
+                <SectionHeader
+                    title="Commentaires"
+                    :description="
+                        comments.length
+                            ? `${comments.length} commentaire${comments.length > 1 ? 's' : ''}`
+                            : can.comment
+                              ? 'Aucun commentaire pour le moment.'
+                              : undefined
+                    "
+                />
 
-            <!--
+                <!--
                 Fil de discussion, d'après le Message de reui.io
                 (https://reui.io/components/message) : avatar, en-tête,
                 bulle, pied. Vos propres commentaires passent à droite.
             -->
-            <ol v-if="comments.length" class="flex flex-col gap-5">
-                <li
-                    v-for="comment in comments"
-                    :key="comment.id"
-                    :class="
-                        cn(
-                            'flex items-start gap-3',
-                            comment.mine && 'flex-row-reverse',
-                        )
-                    "
-                >
-                    <Avatar class="mt-0.5 size-9">
-                        <AvatarFallback
-                            :class="roleStyle(comment.role)"
-                            class="text-xs font-semibold"
-                        >
-                            {{ getInitials(comment.author) }}
-                        </AvatarFallback>
-                    </Avatar>
-
-                    <div
+                <ol v-if="comments.length" class="flex flex-col gap-5">
+                    <li
+                        v-for="comment in comments"
+                        :key="comment.id"
                         :class="
                             cn(
-                                'flex max-w-[85%] min-w-0 flex-col gap-1.5 sm:max-w-[75%]',
-                                comment.mine && 'items-end',
-                                editingId === comment.id && 'w-full',
+                                'flex items-start gap-3',
+                                comment.mine && 'flex-row-reverse',
                             )
                         "
                     >
-                        <p
+                        <Avatar class="mt-0.5 size-9">
+                            <AvatarFallback
+                                :class="roleStyle(comment.role)"
+                                class="text-xs font-semibold"
+                            >
+                                {{ getInitials(comment.author) }}
+                            </AvatarFallback>
+                        </Avatar>
+
+                        <div
                             :class="
                                 cn(
-                                    'flex flex-wrap items-center gap-x-2 gap-y-1 text-xs',
-                                    comment.mine && 'flex-row-reverse',
+                                    'flex max-w-[85%] min-w-0 flex-col gap-1.5',
+                                    comment.mine && 'items-end',
+                                    editingId === comment.id && 'w-full',
                                 )
                             "
                         >
-                            <span class="text-foreground text-sm font-medium">
-                                {{ comment.mine ? 'Vous' : comment.author }}
-                            </span>
-                            <span
-                                :class="roleStyle(comment.role)"
-                                class="rounded-md px-1.5 py-0.5 font-medium"
-                            >
-                                {{ comment.role }}
-                            </span>
-                            <time class="text-muted-foreground tabular-nums">
-                                {{ comment.date }}
-                            </time>
-                        </p>
-
-                        <div
-                            v-if="editingId === comment.id"
-                            class="flex w-full flex-col gap-2"
-                        >
-                            <Textarea
-                                v-model="editForm.body"
-                                maxlength="2000"
-                                class="min-h-20 resize-none"
-                                @keydown.meta.enter="submitEdit(comment)"
-                                @keydown.ctrl.enter="submitEdit(comment)"
-                                @keydown.enter.exact.prevent="
-                                    submitEdit(comment)
-                                "
-                                @keydown.esc="cancelEdit"
-                            />
-                            <FieldError :errors="[editForm.errors.body]" />
-                            <div class="flex justify-end gap-2">
-                                <Button
-                                    size="sm"
-                                    variant="outline"
-                                    @click="cancelEdit"
-                                >
-                                    Annuler
-                                </Button>
-                                <Button
-                                    size="sm"
-                                    :disabled="
-                                        !editForm.body.trim() ||
-                                        editForm.processing
-                                    "
-                                    @click="submitEdit(comment)"
-                                >
-                                    Enregistrer
-                                </Button>
-                            </div>
-                        </div>
-
-                        <template v-else>
                             <p
                                 :class="
                                     cn(
-                                        'max-w-full rounded-2xl px-4 py-2.5 text-sm/relaxed break-words whitespace-pre-line',
-                                        comment.mine
-                                            ? 'bg-primary text-primary-foreground rounded-tr-sm'
-                                            : 'bg-muted rounded-tl-sm',
+                                        'flex flex-wrap items-center gap-x-2 gap-y-1 text-xs',
+                                        comment.mine && 'flex-row-reverse',
                                     )
                                 "
                             >
-                                {{ comment.text }}
+                                <span
+                                    class="text-foreground text-sm font-medium"
+                                >
+                                    {{ comment.mine ? 'Vous' : comment.author }}
+                                </span>
+                                <span
+                                    :class="roleStyle(comment.role)"
+                                    class="rounded-md px-1.5 py-0.5 font-medium"
+                                >
+                                    {{ comment.role }}
+                                </span>
+                                <time
+                                    class="text-muted-foreground tabular-nums"
+                                >
+                                    {{ comment.date }}
+                                </time>
                             </p>
 
                             <div
-                                v-if="comment.edited || comment.can.update"
-                                class="text-muted-foreground flex items-center gap-3 px-1 text-xs"
+                                v-if="editingId === comment.id"
+                                class="flex w-full flex-col gap-2"
                             >
-                                <span v-if="comment.edited">Modifié</span>
-                                <button
-                                    v-if="comment.can.update"
-                                    type="button"
-                                    class="hover:text-foreground focus-visible:ring-ring/50 flex items-center gap-1 rounded-sm font-medium transition-colors focus-visible:ring-[3px] focus-visible:outline-none"
-                                    @click="startEdit(comment)"
-                                >
-                                    <PencilIcon
-                                        class="size-3"
-                                        aria-hidden="true"
-                                    />
-                                    Modifier
-                                </button>
+                                <Textarea
+                                    v-model="editForm.body"
+                                    maxlength="2000"
+                                    class="min-h-20 resize-none"
+                                    @keydown.meta.enter="submitEdit(comment)"
+                                    @keydown.ctrl.enter="submitEdit(comment)"
+                                    @keydown.esc="cancelEdit"
+                                />
+                                <FieldError :errors="[editForm.errors.body]" />
+                                <div class="flex justify-end gap-2">
+                                    <Button
+                                        size="sm"
+                                        variant="outline"
+                                        @click="cancelEdit"
+                                    >
+                                        Annuler
+                                    </Button>
+                                    <Button
+                                        size="sm"
+                                        :disabled="
+                                            !editForm.body.trim() ||
+                                            editForm.processing
+                                        "
+                                        @click="submitEdit(comment)"
+                                    >
+                                        Enregistrer
+                                    </Button>
+                                </div>
                             </div>
-                        </template>
-                    </div>
-                </li>
-            </ol>
-            <!-- Apprenti·e : rien à écrire ici, on explique qui peut commenter. -->
-            <div
-                v-else-if="!can.comment"
-                class="text-muted-foreground flex flex-col items-center gap-2 rounded-xl border border-dashed px-6 py-8 text-center text-sm"
-            >
-                <MessageSquareIcon class="size-5" aria-hidden="true" />
-                <p>Aucun commentaire pour le moment.</p>
-                <p class="text-xs">
-                    Vos coachs et formateurs peuvent commenter cette note.
-                </p>
-            </div>
 
-            <!-- Zone de saisie : un seul cadre, la barre d'actions en pied. -->
-            <div
-                v-if="can.comment"
-                class="bg-card focus-within:border-ring focus-within:ring-ring/50 flex flex-col rounded-xl border shadow-xs transition-shadow focus-within:ring-[3px]"
-            >
-                <div class="flex items-start gap-3 p-3">
-                    <Avatar class="size-8">
-                        <AvatarFallback class="text-xs font-semibold">
-                            {{ getInitials(viewerName) }}
-                        </AvatarFallback>
-                    </Avatar>
-                    <Textarea
-                        v-model="form.body"
-                        :placeholder="`Laisser un retour à ${apprentice?.name ?? 'l’apprenti·e'}…`"
-                        aria-label="Nouveau commentaire"
-                        maxlength="2000"
-                        class="min-h-16 flex-1 resize-none border-0 p-1 shadow-none focus-visible:ring-0 dark:bg-transparent"
-                        @keydown.meta.enter="submitComment"
-                        @keydown.ctrl.enter="submitComment"
-                        @keydown.enter.exact.prevent="submitComment"
-                    />
-                </div>
-                <FieldError :errors="[form.errors.body]" class="px-4" />
+                            <template v-else>
+                                <p
+                                    :class="
+                                        cn(
+                                            'max-w-full rounded-2xl px-4 py-2.5 text-sm/relaxed break-words whitespace-pre-line',
+                                            comment.mine
+                                                ? 'bg-primary text-primary-foreground rounded-tr-sm'
+                                                : 'bg-muted rounded-tl-sm',
+                                        )
+                                    "
+                                >
+                                    {{ comment.text }}
+                                </p>
+
+                                <div
+                                    v-if="comment.edited || comment.can.update"
+                                    class="text-muted-foreground flex items-center gap-3 px-1 text-xs"
+                                >
+                                    <span v-if="comment.edited">Modifié</span>
+                                    <button
+                                        v-if="comment.can.update"
+                                        type="button"
+                                        class="hover:text-foreground focus-visible:ring-ring/50 flex items-center gap-1 rounded-sm font-medium transition-colors focus-visible:ring-[3px] focus-visible:outline-none"
+                                        @click="startEdit(comment)"
+                                    >
+                                        <PencilIcon
+                                            class="size-3"
+                                            aria-hidden="true"
+                                        />
+                                        Modifier
+                                    </button>
+                                </div>
+                            </template>
+                        </div>
+                    </li>
+                </ol>
+                <!-- Apprenti·e : rien à écrire ici, on explique qui peut commenter. -->
                 <div
-                    class="bg-muted/40 flex items-center justify-between gap-3 rounded-b-xl border-t px-4 py-2"
+                    v-else-if="!can.comment"
+                    class="text-muted-foreground flex flex-col items-center gap-2 rounded-xl border border-dashed px-6 py-8 text-center text-sm"
                 >
-                    <p class="text-muted-foreground hidden text-xs sm:block">
-                        <kbd class="font-sans font-medium">Entrée</kbd> pour
-                        publier ·
-                        <kbd class="font-sans font-medium">Maj + Entrée</kbd>
-                        pour aller à la ligne
+                    <MessageSquareIcon class="size-5" aria-hidden="true" />
+                    <p>Aucun commentaire pour le moment.</p>
+                    <p class="text-xs">
+                        Vos coachs et formateurs peuvent commenter cette note.
                     </p>
-                    <Button
-                        size="sm"
-                        class="ml-auto"
-                        :disabled="!form.body.trim() || form.processing"
-                        @click="submitComment"
-                    >
-                        Publier
-                        <SendHorizontalIcon aria-hidden="true" />
-                    </Button>
                 </div>
-            </div>
-            <p
-                v-else-if="comments.length"
-                class="text-muted-foreground text-xs"
-            >
-                Seuls les coachs et formateurs peuvent commenter cette
-                évaluation.
-            </p>
-        </section>
+
+                <!-- Zone de saisie : un seul cadre, la barre d'actions en pied. -->
+                <div
+                    v-if="can.comment"
+                    class="bg-card focus-within:border-ring focus-within:ring-ring/50 flex flex-col rounded-xl border shadow-xs transition-shadow focus-within:ring-[3px]"
+                >
+                    <div class="flex items-start gap-3 p-3">
+                        <Avatar class="size-8">
+                            <AvatarFallback class="text-xs font-semibold">
+                                {{ getInitials(viewerName) }}
+                            </AvatarFallback>
+                        </Avatar>
+                        <Textarea
+                            v-model="form.body"
+                            :placeholder="`Laisser un retour à ${apprentice?.name ?? 'l’apprenti·e'}…`"
+                            aria-label="Nouveau commentaire"
+                            maxlength="2000"
+                            class="min-h-16 flex-1 resize-none border-0 p-1 shadow-none focus-visible:ring-0 dark:bg-transparent"
+                            @keydown.meta.enter="submitComment"
+                            @keydown.ctrl.enter="submitComment"
+                        />
+                    </div>
+                    <FieldError :errors="[form.errors.body]" class="px-4" />
+                    <div
+                        class="bg-muted/40 flex items-center justify-between gap-3 rounded-b-xl border-t px-4 py-2"
+                    >
+                        <p
+                            class="text-muted-foreground hidden text-xs sm:block"
+                        >
+                            <kbd class="font-sans font-medium"
+                                >Ctrl + Entrée</kbd
+                            >
+                            pour publier
+                        </p>
+                        <Button
+                            size="sm"
+                            class="ml-auto"
+                            :disabled="!form.body.trim() || form.processing"
+                            @click="submitComment"
+                        >
+                            Publier
+                            <SendHorizontalIcon aria-hidden="true" />
+                        </Button>
+                    </div>
+                </div>
+                <p
+                    v-else-if="comments.length"
+                    class="text-muted-foreground text-xs"
+                >
+                    Seuls les coachs et formateurs peuvent commenter cette
+                    évaluation.
+                </p>
+            </section>
+        </div>
     </PageContainer>
 </template>
