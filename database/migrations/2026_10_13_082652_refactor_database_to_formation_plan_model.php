@@ -22,14 +22,16 @@ return new class extends Migration
         DB::statement('ALTER TABLE average_nodes ADD CONSTRAINT average_nodes_no_self_parent_check CHECK (parent_id <> id)');
         DB::statement('ALTER TABLE average_nodes ADD CONSTRAINT average_nodes_weight_check CHECK (weight > 0 AND weight <= 1)');
 
-        Schema::table('formation_plans', function (Blueprint $table) {
-            $table->foreignId('root_domain_id')->constrained('average_nodes')->restrictOnDelete();
+        Schema::create('formation_plans_nodes', function (Blueprint $table) {
+            $table->foreignId('formation_plan_id')->constrained('formation_plans')->cascadeOnDelete();
+            $table->foreignId('average_node_id')->constrained('average_nodes')->cascadeOnDelete();
+            $table->primary(['formation_plan_id', 'average_node_id']);
 
-            $table->unique('root_domain_id');
         });
 
         Schema::table('users', function (Blueprint $table) {
             $table->dropConstrainedForeignId('trainer_id');
+            $table->foreignId('formation_plan_id')->constrained('formation_plans');
         });
 
         Schema::table('comments', function (Blueprint $table) {
@@ -74,13 +76,12 @@ return new class extends Migration
         });
 
         Schema::table('users', function (Blueprint $table) {
+            $table->dropConstrainedForeignId('formation_plan_id');
             $table->foreignId('trainer_id')->nullable()->constrained('users')->nullOnDelete();
             $table->index('trainer_id');
         });
 
-        Schema::table('formation_plans', function (Blueprint $table) {
-            $table->dropConstrainedForeignId('root_domain_id');
-        });
+        Schema::dropIfExists('formation_plans_nodes');
 
         Schema::table('average_nodes', function (Blueprint $table) {
             $table->dropConstrainedForeignId('parent_id');

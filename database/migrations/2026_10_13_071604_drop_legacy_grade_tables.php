@@ -25,14 +25,6 @@ return new class extends Migration
         Schema::dropIfExists('domain_subject');
         Schema::dropIfExists('subjects');
         Schema::dropIfExists('apprenticeship_periods');
-
-        Schema::create('users_formation_plans', function (Blueprint $table) {
-            $table->foreignId('user_id')->constrained('users')->cascadeOnDelete();
-            $table->foreignId('formation_plan_id')->constrained('formation_plans')->cascadeOnDelete();
-
-            $table->primary(['user_id', 'formation_plan_id']);
-            $table->index('formation_plan_id');
-        });
     }
 
     /**
