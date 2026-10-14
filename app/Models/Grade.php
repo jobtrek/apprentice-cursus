@@ -63,6 +63,28 @@ class Grade extends Model
             ));
     }
 
+    public function fileName(): string
+    {
+        $semester = $this->semester;
+
+        $number = self::query()
+            ->withSemester()
+            ->where('user_id', $this->user_id)
+            ->where('average_node_id', $this->average_node_id)
+            ->orderBy('test_date')
+            ->orderBy('id')
+            ->get()
+            ->filter(fn (self $grade): bool => $grade->semester === $semester)
+            ->values()
+            ->search(fn (self $grade): bool => $grade->id === $this->id);
+
+        $value = rtrim(rtrim($this->value, '0'), '.');
+
+        $parts = [$semester, (int) $number + 1, $this->averageNode->name, $value, $this->user->name];
+
+        return str_replace(['/', '\\', ':', '*', '?', '"', '<', '>', '|'], '-', implode('_', $parts)).'.pdf';
+    }
+
     /**
      * @return BelongsTo<User, $this>
      */

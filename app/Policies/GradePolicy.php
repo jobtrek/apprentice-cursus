@@ -23,6 +23,17 @@ class GradePolicy
             && $user->supervises($grade->user);
     }
 
+    /** An apprentice edits their own grades only; supervisors read them. */
+    public function update(User $user, Grade $grade): bool
+    {
+        return $user->hasPermissionTo(Permission::GradesCreate->value) && $grade->user_id === $user->id;
+    }
+
+    public function delete(User $user, Grade $grade): bool
+    {
+        return $this->update($user, $grade);
+    }
+
     public function comment(User $user, Grade $grade): bool
     {
         return $user->hasPermissionTo(Permission::GradesComment->value)

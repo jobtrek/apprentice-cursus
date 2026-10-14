@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import GradeActions from '@/components/grade/GradeActions.vue';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import StatusChip from '@/components/gradebook/StatusChip.vue';
@@ -13,6 +14,7 @@ import {
 } from '@/components/page';
 import { getInitials } from '@/composables/useInitials';
 import { PASSING_GRADE } from '@/data/dashboard';
+import type { GradeTree } from '@/lib/gradebook';
 import { cn } from '@/lib/utils';
 import { apprentisdashboard } from '@/routes';
 import apprentices from '@/routes/apprentices';
@@ -50,8 +52,10 @@ const props = defineProps<{
     apprenticeId?: number;
     /** L'apprenti·e de la note, avec `apprenticeId`. */
     apprentice?: Apprentice;
+    /** Arbre de la filière, pour le formulaire de modification (propriétaire seulement). */
+    tree?: GradeTree | null;
     /** Décisions d'autorisation calculées côté serveur. */
-    can: { comment: boolean };
+    can: { comment: boolean; update?: boolean; delete?: boolean };
 }>();
 
 const form = useForm({ body: '' });
@@ -129,7 +133,19 @@ const submitEdit = (comment: Comment) => {
             :title="grade.title"
             :description="gradePath"
             :breadcrumbs="breadcrumbs"
-        />
+        >
+            <template v-if="can.update || can.delete" #actions>
+                <GradeActions
+                    :grade="grade"
+                    :has-file="Boolean(pdfUrl)"
+                    :tree="tree ?? null"
+                    :can="{
+                        update: can.update ?? false,
+                        delete: can.delete ?? false,
+                    }"
+                />
+            </template>
+        </PageHeader>
 
         <Card>
             <CardContent class="grid grid-cols-2 gap-6 sm:grid-cols-3">

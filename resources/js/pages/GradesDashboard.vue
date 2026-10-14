@@ -49,6 +49,6 @@ const { open: openAddGrade } = useAddGradeDialog();
             apparaîtra dès qu'elle le sera.
         </p>
 
-        <AddGradeDialog />
+        <AddGradeDialog :tree="tree" />
     </PageContainer>
 </template>

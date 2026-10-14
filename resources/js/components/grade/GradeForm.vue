@@ -41,148 +41,98 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
-import { MONTHS, useGradeForm } from '@/composables/useGradeForm';
+import {
+    type EditedGrade,
+    MONTHS,
+    useGradeForm,
+} from '@/composables/useGradeForm';
 import { GRADE_MAX, GRADE_MIN, GRADE_STEP } from '@/constants/constants';
+import type { GradeTree } from '@/lib/gradebook';
 
-defineProps<{
+const props = defineProps<{
     /**
      * Identifiant du <form>, pour qu'un bouton placé ailleurs (pied de carte,
      * pied de fenêtre) puisse le soumettre via l'attribut `form`.
      */
     id: string;
+    /** Arbre de la filière : ses feuilles sont les branches proposées. */
+    tree: GradeTree | null;
+    /** Note à modifier ; absente pour un ajout. */
+    edited?: EditedGrade;
 }>();
 
 const emit = defineEmits<{
-    /** Saisie valide : le parent décide de la suite (fermer, rediriger…). */
+    /** Note enregistrée : le parent décide de la suite (fermer, rediriger…). */
     saved: [];
 }>();
 
 const {
-    subjects,
-    isModuleTest,
-    modules,
-    isOral,
-    grade,
+    form,
+    groups,
+    selectedBranch,
+    keepsFile,
     dateDay,
     dateMonth,
     dateYear,
-    selectedSubject,
-    selectedModule,
-    selectedFile,
     fileInput,
     decrementGrade,
     incrementGrade,
     handleDrop,
     switchToOral,
     onFileChange,
-    gradeMode,
-    errors,
-    validate,
-} = useGradeForm();
+    submit,
+} = useGradeForm(() => props.tree, props.edited);
 
-// Tant que l'enregistrement côté serveur n'existe pas, une saisie valide
-// est simplement signalée au parent.
+// Le parent désactive son bouton d'envoi pendant l'enregistrement.
+defineExpose({ form });
+
 function onSubmit(): void {
-    if (validate()) {
-        emit('saved');
-    }
+    submit(() => emit('saved'));
 }
 </script>
 
 <template>
     <form :id="id" novalidate @submit.prevent="onSubmit">
         <FieldGroup>
-            <Field orientation="horizontal">
-                <FieldLabel id="grade-mode-label">
-                    Type d'évaluation
-                </FieldLabel>
-                <ToggleGroup
-                    v-model="gradeMode"
-                    type="single"
-                    variant="outline"
-                    aria-labelledby="grade-mode-label"
-                    class="ml-auto"
-                >
-                    <ToggleGroupItem value="notes">
-                        Branche scolaire
-                    </ToggleGroupItem>
-                    <ToggleGroupItem value="modules">Module</ToggleGroupItem>
-                </ToggleGroup>
-            </Field>
-
-            <Field v-if="!isModuleTest" :data-invalid="Boolean(errors.subject)">
-                <!-- Matières du CFC ou de maturité, selon le profil. -->
-                <FieldLabel for="matiere">Matière</FieldLabel>
-                <Combobox v-model="selectedSubject" by="name">
+            <Field :data-invalid="Boolean(form.errors.average_node_id)">
+                <!-- Les feuilles de l'arbre de la filière, groupées par domaine. -->
+                <FieldLabel for="branche">Branche</FieldLabel>
+                <Combobox v-model="selectedBranch" by="id">
                     <ComboboxAnchor as-child>
                         <ComboboxTrigger as-child>
                             <Button
-                                id="matiere"
+                                id="branche"
                                 type="button"
                                 variant="outline"
                                 class="w-full justify-between font-normal"
+                                :aria-invalid="
+                                    Boolean(form.errors.average_node_id)
+                                "
                             >
-                                {{
-                                    selectedSubject?.name ??
-                                    'Sélectionner une matière'
-                                }}
-                                <ChevronsUpDownIcon class="opacity-50" />
-                            </Button>
-                        </ComboboxTrigger>
-                    </ComboboxAnchor>
-                    <ComboboxList>
-                        <ComboboxInput placeholder="Rechercher une matière…" />
-                        <ComboboxEmpty>Aucune matière trouvée.</ComboboxEmpty>
-                        <ComboboxGroup>
-                            <ComboboxItem
-                                v-for="subject in subjects"
-                                :key="subject.name"
-                                :value="subject"
-                            >
-                                {{ subject.name }}
-                                <ComboboxItemIndicator>
-                                    <CheckIcon />
-                                </ComboboxItemIndicator>
-                            </ComboboxItem>
-                        </ComboboxGroup>
-                    </ComboboxList>
-                </Combobox>
-                <FieldError :errors="[errors.subject]" />
-            </Field>
-
-            <Field v-else :data-invalid="Boolean(errors.module)">
-                <FieldLabel for="module">Module</FieldLabel>
-                <Combobox v-model="selectedModule" by="id">
-                    <ComboboxAnchor as-child>
-                        <ComboboxTrigger as-child>
-                            <Button
-                                id="module"
-                                type="button"
-                                variant="outline"
-                                class="w-full justify-between font-normal"
-                            >
-                                {{
-                                    selectedModule
-                                        ? `${selectedModule.code} — ${selectedModule.name} (${selectedModule.school})`
-                                        : 'Sélectionner un module'
-                                }}
+                                <span class="truncate">
+                                    {{
+                                        selectedBranch?.name ??
+                                        'Sélectionner une branche'
+                                    }}
+                                </span>
                                 <ChevronsUpDownIcon class="opacity-50" />
                             </Button>
                         </ComboboxTrigger>
                     </ComboboxAnchor>
                     <ComboboxList side="bottom" :avoid-collisions="false">
-                        <ComboboxInput placeholder="Rechercher un module…" />
-                        <ComboboxEmpty>Aucun module trouvé.</ComboboxEmpty>
-                        <ComboboxGroup>
+                        <ComboboxInput placeholder="Rechercher une branche…" />
+                        <ComboboxEmpty>Aucune branche trouvée.</ComboboxEmpty>
+                        <ComboboxGroup
+                            v-for="group in groups"
+                            :key="group.name"
+                            :heading="group.name"
+                        >
                             <ComboboxItem
-                                v-for="module in modules"
-                                :key="module.id"
-                                :value="module"
+                                v-for="branch in group.branches"
+                                :key="branch.id"
+                                :value="branch"
                             >
-                                {{ module.code }} — {{ module.name }} ({{
-                                    module.school
-                                }})
+                                {{ branch.name }}
                                 <ComboboxItemIndicator>
                                     <CheckIcon />
                                 </ComboboxItemIndicator>
@@ -190,11 +140,11 @@ function onSubmit(): void {
                         </ComboboxGroup>
                     </ComboboxList>
                 </Combobox>
-                <FieldError :errors="[errors.module]" />
+                <FieldError :errors="[form.errors.average_node_id]" />
             </Field>
 
             <div class="grid gap-6 sm:grid-cols-2">
-                <Field :data-invalid="Boolean(errors.grade)">
+                <Field :data-invalid="Boolean(form.errors.value)">
                     <FieldLabel for="note">Note obtenue</FieldLabel>
                     <InputGroup>
                         <InputGroupAddon>
@@ -208,13 +158,13 @@ function onSubmit(): void {
                         </InputGroupAddon>
                         <InputGroupInput
                             id="note"
-                            v-model="grade"
+                            v-model="form.value"
                             type="number"
                             :min="GRADE_MIN"
                             :max="GRADE_MAX"
                             :step="GRADE_STEP"
                             class="text-center font-semibold"
-                            :aria-invalid="Boolean(errors.grade)"
+                            :aria-invalid="Boolean(form.errors.value)"
                         />
                         <InputGroupAddon align="inline-end">
                             <InputGroupButton
@@ -231,10 +181,10 @@ function onSubmit(): void {
                         {{ GRADE_MAX.toFixed(1) }}, par pas de
                         {{ GRADE_STEP.toFixed(1) }}</FieldDescription
                     >
-                    <FieldError :errors="[errors.grade]" />
+                    <FieldError :errors="[form.errors.value]" />
                 </Field>
 
-                <Field :data-invalid="Boolean(errors.date)">
+                <Field :data-invalid="Boolean(form.errors.test_date)">
                     <FieldLabel for="date-day">Date du test</FieldLabel>
                     <div class="flex gap-2">
                         <Input
@@ -272,16 +222,16 @@ function onSubmit(): void {
                             class="w-24"
                         />
                     </div>
-                    <FieldError :errors="[errors.date]" />
+                    <FieldError :errors="[form.errors.test_date]" />
                 </Field>
             </div>
 
-            <Field v-if="!isModuleTest" :data-invalid="Boolean(errors.file)">
+            <Field :data-invalid="Boolean(form.errors.file)">
                 <FieldLabel>Justificatif</FieldLabel>
                 <div class="mb-2 flex items-center gap-2">
                     <Switch
                         id="is-oral"
-                        :model-value="isOral"
+                        :model-value="form.is_oral"
                         @update:model-value="switchToOral"
                     />
                     <FieldLabel for="is-oral" class="font-normal"
@@ -289,14 +239,17 @@ function onSubmit(): void {
                     >
                 </div>
 
-                <FieldDescription v-if="isOral">
+                <FieldDescription v-if="form.is_oral">
                     Aucun document n'est requis pour une épreuve orale.
+                    <template v-if="edited?.hasFile">
+                        Le scan déjà déposé sera supprimé.
+                    </template>
                 </FieldDescription>
 
                 <div
                     v-else
                     class="hover:bg-muted/50 flex flex-col items-center justify-center gap-1 rounded-md border border-dashed p-8 text-center transition-colors"
-                    :class="errors.file && 'border-destructive'"
+                    :class="form.errors.file && 'border-destructive'"
                     @dragover.prevent
                     @drop="handleDrop"
                 >
@@ -314,8 +267,12 @@ function onSubmit(): void {
                     <p class="text-muted-foreground text-xs">
                         PDF uniquement, 10 Mo maximum
                     </p>
-                    <p v-if="selectedFile" class="text-foreground text-xs">
-                        {{ selectedFile.name }}
+                    <p v-if="form.file" class="text-foreground text-xs">
+                        {{ form.file.name }}
+                    </p>
+                    <p v-else-if="keepsFile" class="text-foreground text-xs">
+                        Le scan actuel est conservé, sauf si vous en déposez un
+                        autre.
                     </p>
                     <input
                         ref="fileInput"
@@ -325,7 +282,7 @@ function onSubmit(): void {
                         @change="onFileChange"
                     />
                 </div>
-                <FieldError :errors="[errors.file]" />
+                <FieldError :errors="[form.errors.file]" />
             </Field>
         </FieldGroup>
     </form>

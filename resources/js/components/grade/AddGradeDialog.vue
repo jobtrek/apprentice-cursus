@@ -11,10 +11,19 @@ import {
     DialogTitle,
 } from '@/components/ui/dialog';
 import { useAddGradeDialog } from '@/composables/useAddGradeDialog';
+import type { GradeTree } from '@/lib/gradebook';
+import { ref } from 'vue';
+
+defineProps<{
+    /** Arbre de la filière de l'apprenti·e, envoyé par la page. */
+    tree: GradeTree | null;
+}>();
 
 const FORM_ID = 'add-grade-dialog-form';
 
 const { isOpen, close } = useAddGradeDialog();
+
+const gradeForm = ref<InstanceType<typeof GradeForm> | null>(null);
 </script>
 
 <template>
@@ -35,14 +44,23 @@ const { isOpen, close } = useAddGradeDialog();
             </DialogHeader>
 
             <div class="overflow-y-auto p-6">
-                <GradeForm :id="FORM_ID" @saved="close" />
+                <GradeForm
+                    :id="FORM_ID"
+                    ref="gradeForm"
+                    :tree="tree"
+                    @saved="close"
+                />
             </div>
 
             <DialogFooter class="border-t p-6">
                 <DialogClose as-child>
                     <Button type="button" variant="outline">Annuler</Button>
                 </DialogClose>
-                <Button type="submit" :form="FORM_ID">
+                <Button
+                    type="submit"
+                    :form="FORM_ID"
+                    :disabled="gradeForm?.form.processing"
+                >
                     Enregistrer la note
                 </Button>
             </DialogFooter>
