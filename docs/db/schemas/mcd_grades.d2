@@ -1,0 +1,36 @@
+grades: {
+  shape: sql_table
+  id: bigint {constraint: primary_key}
+  user_id: bigint {constraint: foreign_key} # Reference users
+  domain_id: bigint {constraint: foreign_key}
+  value: "decimal(2,1)" # CHECK (value BETWEEN 1.0 AND 6.0)
+  test_date: date
+  file_path: varchar
+  notified_at: timestamp
+  created_at: timestamp
+  updated_at: timestamp
+}
+
+average_nodes: {
+  shape: sql_table
+  id: bigint {constraint: primary_key}
+  parent_id: bigint {constraint:  FK}
+  name: varchar
+  rounding_step: "decimal(2,1)"
+  weight: "decimal(3, 2)"
+}
+
+grades -> average_nodes: belong to {
+  source-arrowhead: {shape: cf-many}
+  target-arrowhead: {shape: cf-one-required}
+}
+
+average_nodes.parent_id -> average_nodes.id: parent_node {
+  source-arrowhead: {shape: cf-many}
+  target-arrowhead: {shape: cf-one-required}
+}
+
+average_nodes.child_id -> average_nodes.id: child_node {
+  source-arrowhead: {shape: cf-many}
+  target-arrowhead: {shape: cf-one-required}
+}
