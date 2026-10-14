@@ -34,6 +34,25 @@ function gradePayload(array $overrides = []): array
     ];
 }
 
+/**
+ * What Inertia's useForm sends with `forceFormData`: every value as a string,
+ * `true`/`false` as `1`/`0`, null as an empty string. An edit is a multipart POST
+ * to `?_method=PUT` (grades.update.form), as PHP does not parse a multipart PUT.
+ *
+ * @return array<string, mixed>
+ */
+function browserPayload(array $overrides = []): array
+{
+    return [
+        'average_node_id' => (string) test()->maths->id,
+        'value' => '5.5',
+        'test_date' => '2026-09-15',
+        'is_oral' => '0',
+        'file' => UploadedFile::fake()->create('scan.pdf', 200, 'application/pdf'),
+        ...$overrides,
+    ];
+}
+
 describe('store', function () {
     test('an apprentice adds a grade with its scan', function () {
         $this->actingAs($this->apprentice)
@@ -248,6 +267,47 @@ describe('destroy', function () {
                 ->where('can.delete', false)
                 ->where('tree', null));
     });
+});
+
+describe('browser requests', function () {
+    test('the add dialog saves a written test and an oral exam', function () {
+        $this->actingAs($this->apprentice)
+            ->post(route('grades.store'), browserPayload())
+            ->assertSessionHasNoErrors();
+
+        $this->actingAs($this->apprentice)
+            ->post(route('grades.store'), browserPayload(['is_oral' => '1', 'file' => '']))
+            ->assertSessionHasNoErrors();
+
+        expect(Grade::query()->orderBy('id')->pluck('file_path')->map(fn (?string $path): bool => $path !== null)->all())
+            ->toBe([true, false]);
+    });
+
+    test('the edit dialog keeps, replaces or drops the scan', function (array $overrides, string $expected) {
+        $this->actingAs($this->apprentice)->post(route('grades.store'), browserPayload());
+        $grade = Grade::query()->sole();
+        $oldPath = $grade->file_path;
+
+        $this->actingAs($this->apprentice)
+            // grades.update.form puts `_method=PUT` in the query string, not in the body.
+            ->post(route('grades.update', ['grade' => $grade, '_method' => 'PUT']), browserPayload($overrides))
+            ->assertSessionHasNoErrors()
+            ->assertRedirect();
+
+        $path = $grade->fresh()->file_path;
+
+        match ($expected) {
+            'kept' => expect($path)->toBe($oldPath),
+            'replaced' => expect($path)->not->toBeNull()->not->toBe($oldPath),
+            'dropped' => expect($path)->toBeNull(),
+        };
+
+        expect(Storage::allFiles())->toBe($path === null ? [] : [$path]);
+    })->with([
+        'no new file' => [['value' => '4.5', 'file' => ''], 'kept'],
+        'a replacement PDF' => [[], 'replaced'],
+        'an oral exam without a PDF' => [['is_oral' => '1', 'file' => ''], 'dropped'],
+    ]);
 });
 
 describe('scan', function () {

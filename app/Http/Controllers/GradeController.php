@@ -99,11 +99,18 @@ class GradeController extends Controller
     {
         $data = $request->validated();
         $file = $data['file'] ?? null;
-        $oldPath = $grade->file_path;
+        $oldPath = null;
         $newPath = null;
 
         try {
-            DB::transaction(function () use ($grade, $data, $file, &$newPath): void {
+            DB::transaction(function () use ($grade, $data, $file, &$oldPath, &$newPath): void {
+                // Locked and re-read: a concurrent edit may have replaced the scan since the
+                // request loaded the grade, and that newer scan is the one to clean up.
+                if ($grade->exists) {
+                    $oldPath = Grade::query()->lockForUpdate()->whereKey($grade->id)->value('file_path');
+                    $grade->file_path = $oldPath;
+                }
+
                 $grade->fill([
                     'average_node_id' => $data['average_node_id'],
                     'value' => $data['value'],
@@ -140,6 +147,7 @@ class GradeController extends Controller
             Storage::delete($oldPath);
         }
     }
+
     public static function fileUrl(Grade $grade): ?string
     {
         return $grade->file_path === null ? null : route('grades.file', $grade);
