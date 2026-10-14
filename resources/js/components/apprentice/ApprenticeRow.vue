@@ -19,8 +19,7 @@ import type {
 } from '@/types/apprentice';
 import ApprenticeAvatar from './ApprenticeAvatar.vue';
 import AssignmentBadge from './AssignmentBadge.vue';
-import AverageMeter from './AverageMeter.vue';
-import StatusBadge from './StatusBadge.vue';
+import AverageValue from './AverageValue.vue';
 import TrackBadges from './TrackBadges.vue';
 import SupervisorSelect from './SupervisorSelect.vue';
 
@@ -108,11 +107,7 @@ const trainerOptions = computed(
         </TableCell>
 
         <TableCell>
-            <StatusBadge :tone="situation.tone" :label="situation.label" />
-        </TableCell>
-
-        <TableCell>
-            <AverageMeter :average="apprentice.stats.average" />
+            <AverageValue :average="apprentice.stats.average" />
         </TableCell>
 
         <TableCell>
