@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Enums\Permission;
+use App\Http\Resources\NotificationResource;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -16,6 +17,8 @@ class HandleInertiaRequests extends Middleware
      * @var string
      */
     protected $rootView = 'app';
+
+    private const NOTIFICATIONS_LIMIT = 50;
 
     /**
      * Determines the current asset version.
@@ -59,6 +62,12 @@ class HandleInertiaRequests extends Middleware
                     'viewApprentices' => $user?->can(Permission::ApprenticesViewList->value) ?? false,
                 ],
             ],
+            // Lazy: evaluated on partial reloads only when asked for. The list is capped, the
+            // count is not, so the bell badge stays right beyond the latest ones.
+            'notifications' => fn () => $user === null ? [] : NotificationResource::collection(
+                $user->notifications()->latest()->limit(self::NOTIFICATIONS_LIMIT)->get(),
+            )->resolve(),
+            'unreadNotificationsCount' => fn () => $user?->unreadNotifications()->count() ?? 0,
         ];
     }
 }

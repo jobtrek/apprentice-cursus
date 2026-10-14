@@ -13,7 +13,12 @@ use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/', HomeController::class)->name('home');
-    Route::get('/notifications', NotificationController::class)->name('notifications.index');
+    Route::prefix('notifications')->name('notifications.')->controller(NotificationController::class)->group(function () {
+        Route::get('/', 'index')->name('index');
+        Route::put('/read', 'markAllAsRead')->name('read-all');
+        Route::put('/{notification}/read', 'markAsRead')->whereUuid('notification')->name('read');
+        Route::delete('/{notification}/read', 'markAsUnread')->whereUuid('notification')->name('unread');
+    });
 
     Route::prefix('grades')->name('grades.')->group(function () {
         Route::get('/dashboard', [GradeController::class, 'dashboard'])
