@@ -370,7 +370,18 @@
     .chart-card__link:hover {
         text-decoration: underline;
     }
-    .recent__grade.is-fail {
+    /* Mêmes teintes que .status--good / --warn / --bad. */
+    .recent__grade.is-good,
+    .gb-grade.is-good {
+        background: color-mix(in oklab, var(--success) 15%, transparent);
+        color: color-mix(in oklab, var(--success) 70%, var(--foreground));
+    }
+    .recent__grade.is-warn,
+    .gb-grade.is-warn {
+        background: color-mix(in oklab, var(--warning) 18%, transparent);
+        color: color-mix(in oklab, var(--warning) 60%, var(--foreground));
+    }
+    .recent__grade.is-bad {
         background: color-mix(in oklab, var(--destructive) 14%, transparent);
         color: var(--destructive);
     }
@@ -767,7 +778,7 @@
         font-weight: 600;
         font-variant-numeric: tabular-nums;
     }
-    .gb-grade.is-fail {
+    .gb-grade.is-bad {
         background: color-mix(in oklab, var(--destructive) 14%, transparent);
         color: var(--destructive);
         box-shadow: inset 0 0 0 1px

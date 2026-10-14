@@ -17,6 +17,8 @@ class HomeController extends Controller
         $user = $request->user()->load('apprenticeship');
         $ownGrades = $user->can(Permission::GradesViewOwn->value);
 
+        $supervises = $user->can(Permission::ApprenticesViewList->value);
+
         return Inertia::render('Home', [
             // Every grade: the apprentice dashboard derives its statistics and charts from them.
             'grades' => $ownGrades
@@ -35,9 +37,9 @@ class HomeController extends Controller
                 'variant' => $user->is_mp ? 'mp' : 'standard',
             ] : null,
             // Supervisor dashboard: the same rows as the apprentices page.
-            'apprentices' => $user->can(Permission::ApprenticesViewList->value)
-                ? ApprenticeList::for($user)
-                : [],
+            'apprentices' => $supervises ? ApprenticeList::for($user) : [],
+            'latestGrades' => $supervises ? ApprenticeList::latestGrades($user) : [],
+            'activity' => $supervises ? ApprenticeList::monthlyActivity($user) : [],
             // Apprentices the coach or trainer could still take on.
             'assignableCount' => $user->assignableApprentices()->count(),
         ]);

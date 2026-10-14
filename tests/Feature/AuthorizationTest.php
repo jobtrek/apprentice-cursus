@@ -231,7 +231,7 @@ test('auth.user only exposes explicit fields', function () {
         ->get(route('home'))
         ->assertInertia(fn (Assert $page) => $page
             ->has('auth.user', fn (Assert $user) => $user
-                ->hasAll(['id', 'name', 'email', 'role', 'apprenticeship_id'])));
+                ->hasAll(['id', 'name', 'email', 'role', 'apprenticeship_id', 'is_mp'])));
 });
 
 describe('supervision scoping', function () {

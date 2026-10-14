@@ -58,3 +58,24 @@ export interface SupervisorOption {
 export interface TrainerOption extends SupervisorOption {
     track: string | null;
 }
+
+/** Note récente d'un·e apprenti·e suivi·e (`ApprenticeList::latestGrades`). */
+export interface SupervisedGrade {
+    id: number;
+    apprentice_id: number;
+    apprentice: string;
+    title: string;
+    value: number;
+    /** Format `d.m.Y`. */
+    date: string;
+    comments_count: number;
+}
+
+/** Notes d'un mois (`ApprenticeList::monthlyActivity`), du plus ancien au plus récent. */
+export interface MonthlyActivity {
+    /** `2026-03`. */
+    month: string;
+    grades: number;
+    /** Apprentis suivis ayant au moins une note ce mois-là. */
+    apprentices: number;
+}

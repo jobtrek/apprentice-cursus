@@ -2,6 +2,7 @@ import modulesData from '@/data/modules.json';
 import MONTHS from '@/data/months.json';
 import mpSubjects from '@/data/mp.json';
 import normalSubjects from '@/data/normal.json';
+import { usePage } from '@inertiajs/vue3';
 import { Temporal } from 'temporal-polyfill';
 import { computed, ref } from 'vue';
 import {
@@ -54,14 +55,16 @@ const useFileInput = () => {
 };
 
 export const useGradeForm = () => {
-    const subjects = computed(() =>
-        normalSubjects.filter((subject) => subject.active),
-    );
-    const MatureSubjects = computed(() =>
-        mpSubjects.filter((subject) => subject.active),
-    );
+    const page = usePage();
 
-    const isMp = ref(false);
+    /** Variante du profil : un·e apprenti·e MP ne voit que les matières de maturité. */
+    const isMp = computed(() => page.props.auth?.user?.is_mp ?? false);
+
+    const subjects = computed(() =>
+        (isMp.value ? mpSubjects : normalSubjects).filter(
+            (subject) => subject.active,
+        ),
+    );
     const isModuleTest = ref(false);
 
     const modules = computed(() => modulesData);
@@ -152,8 +155,6 @@ export const useGradeForm = () => {
 
     return {
         subjects,
-        MatureSubjects,
-        isMp,
         isModuleTest,
         modules,
         isOral,

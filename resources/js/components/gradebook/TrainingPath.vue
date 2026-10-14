@@ -7,7 +7,7 @@ import { Card } from '@/components/ui/card';
 import {
     fmt,
     type Gradebook,
-    SEMESTERS,
+    semestersFor,
     type Status,
     status,
 } from '@/lib/gradebook';
@@ -41,8 +41,11 @@ type Step = {
     average: number | null;
 };
 
+/** 8 semestres en IT, 6 en EC. */
+const semesters = computed(() => semestersFor(props.profile?.track));
+
 const steps = computed<Step[]>(() =>
-    Array.from({ length: SEMESTERS }, (_, i) => {
+    Array.from({ length: semesters.value }, (_, i) => {
         const semester = i + 1;
 
         return {
@@ -63,11 +66,6 @@ const steps = computed<Step[]>(() =>
 
 /** Année d'apprentissage en cours, à partir de 1. */
 const year = computed(() => Math.ceil(props.currentSemester / 2));
-
-/** Avancement du cursus : semestres terminés, plus la moitié du courant. */
-const progress = computed(() =>
-    Math.round(((props.currentSemester - 0.5) / SEMESTERS) * 100),
-);
 </script>
 
 <template>
@@ -96,7 +94,7 @@ const progress = computed(() =>
                                 : `semestre ${currentSemester}`
                         }}
                         sur
-                        {{ SEMESTERS }}
+                        {{ semesters }}
                     </p>
                 </div>
             </div>
@@ -111,9 +109,6 @@ const progress = computed(() =>
                             ? 'Maturité professionnelle'
                             : 'Variante standard'
                     }}
-                </Badge>
-                <Badge variant="secondary" class="tabular-nums">
-                    {{ progress }} % du cursus
                 </Badge>
             </div>
         </div>
@@ -203,11 +198,14 @@ const progress = computed(() =>
 
             <!-- Années : une étiquette sous chaque paire de semestres. -->
             <div
-                class="text-muted-foreground mt-3 grid min-w-160 grid-cols-4 gap-2 text-center text-xs"
+                class="text-muted-foreground mt-3 grid min-w-160 gap-2 text-center text-xs"
+                :style="{
+                    gridTemplateColumns: `repeat(${semesters / 2}, minmax(0, 1fr))`,
+                }"
                 aria-hidden="true"
             >
                 <span
-                    v-for="n in SEMESTERS / 2"
+                    v-for="n in semesters / 2"
                     :key="n"
                     class="border-t pt-2"
                     :class="{
