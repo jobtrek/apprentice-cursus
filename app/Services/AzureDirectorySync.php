@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Enums\AzureGroup;
+use App\Enums\UserRole;
 use App\Exceptions\AzureSyncFailedException;
 use App\Exceptions\FormationPlanNotSeededException;
 use App\Models\User;
@@ -121,7 +122,7 @@ class AzureDirectorySync
                 $this->sync->apply($user, $group);
                 $created++;
             } else {
-                $before = [$user->name, $user->is_active, $user->formation_plan_id, $user->role];
+                $before = $this->snapshot($user);
 
                 if ($member['name'] !== '') {
                     $user->name = $member['name'];
@@ -129,7 +130,7 @@ class AzureDirectorySync
 
                 $this->sync->apply($user, $group);
 
-                if (isset($renamed[$azureId]) || $before !== [$user->name, $user->is_active, $user->formation_plan_id, $user->role]) {
+                if (isset($renamed[$azureId]) || $before !== $this->snapshot($user)) {
                     $updated++;
                 }
             }
@@ -147,6 +148,25 @@ class AzureDirectorySync
         }
 
         return new AzureSyncResult($created, $updated, $deactivated, $skipped);
+    }
+
+    /**
+     * What a sync can change on an account, including the plans a trainer
+     * follows, which live in a pivot rather than on the user row.
+     *
+     * @return array{string, bool, int|null, UserRole|null, array<mixed>}
+     */
+    private function snapshot(User $user): array
+    {
+        return [
+            $user->name,
+            $user->is_active,
+            $user->formation_plan_id,
+            $user->role,
+            $user->exists
+                ? $user->trainedFormationPlans()->orderBy('formation_plans.id')->pluck('formation_plans.id')->all()
+                : [],
+        ];
     }
 
     /**

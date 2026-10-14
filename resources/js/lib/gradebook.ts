@@ -40,9 +40,12 @@ export const fmt = (n: number): string => n.toFixed(1);
 export const plural = (n: number, word: string): string =>
     `${n} ${word}${n > 1 ? 's' : ''}`;
 
-/** `33.33` → « 33.33 », `40` → « 40 ». */
-export const fmtWeight = (weight: number): string =>
-    Number.isInteger(weight) ? String(weight) : weight.toFixed(2);
+/** Poids fractionnaire → pourcentage : `0.4` → « 40 », `0.3333` → « 33.33 ». */
+export const fmtWeight = (weight: number): string => {
+    const percent = Math.round(weight * 10000) / 100;
+
+    return Number.isInteger(percent) ? String(percent) : percent.toFixed(2);
+};
 
 /** « Travail pratique individuel (TPI) » → « TPI » ; sinon le nom entier. */
 export const shortName = (name: string): string =>

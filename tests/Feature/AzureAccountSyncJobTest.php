@@ -144,9 +144,10 @@ test('a trainer moved to the other trainer group follows the new plans', functio
     $user->forceFill(['azure_id' => 'a-3'])->save();
     fakeDirectory(['g-trainer-ec' => [member('a-3')]]);
 
-    $this->artisan('azure:sync')->assertExitCode(0);
+    $result = app(AzureDirectorySync::class)->run();
 
-    expect(trainedPlanIds($user))->toBe([$this->ec->id, $this->ecMp->id]);
+    expect($result->updated)->toBe(1)
+        ->and(trainedPlanIds($user))->toBe([$this->ec->id, $this->ecMp->id]);
     Log::shouldNotHaveReceived('warning', ['Microsoft SSO: section change pending confirmation, formation plan kept.', Mockery::type('array')]);
 });
 
