@@ -8,13 +8,14 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 /**
+ * Targets exactly one project or one grade (comments_single_target_check).
+ *
  * @property int $id
  * @property int $author_id
- * @property string $commentable_type
- * @property int $commentable_id
+ * @property int|null $project_id
+ * @property int|null $grade_id
  * @property string $body
  * @property CarbonImmutable $created_at
  */
@@ -43,10 +44,18 @@ class Comment extends Model
     }
 
     /**
-     * @return MorphTo<Model, $this>
+     * @return BelongsTo<Project, $this>
      */
-    public function commentable(): MorphTo
+    public function project(): BelongsTo
     {
-        return $this->morphTo();
+        return $this->belongsTo(Project::class);
+    }
+
+    /**
+     * @return BelongsTo<Grade, $this>
+     */
+    public function grade(): BelongsTo
+    {
+        return $this->belongsTo(Grade::class);
     }
 }

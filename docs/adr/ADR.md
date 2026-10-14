@@ -200,6 +200,7 @@ What each role can do and how the sync behaves: `docs/project-docs/role_permissi
 **Verdict:** Feasible. The proposed pipeline reads both the Test type and the Grade correctly on 89.6% of the 67 test PDFs, at $0.0014 per PDF. The apprentice confirms every result, so the cases it gets wrong are fixed before anything is saved. The feature is an extra (tagged `[OCR] [EXTRA]` in `docs/user_stories/user_story_final.md`) and is built only after the base features.
 
 **Why:** One codebase and one deployment. A second container, a shared secret and a Python toolchain are too much to run and maintain for this app. The evaluation of all 27 saved runs (`RECOMMENDATION.md`) shows:
+
 - notar v2 is the best setup measured: both fields right on 89.6% of the 67 PDFs (95% CI 80.0–94.8%), $0.0014 per PDF. Local models (GLM-OCR, Chandra) lose significantly.
 - Jev alone decides the Test type (97.0%). Gemini's own subject is wrong in all 8 disagreements, so it is not used.
 - notar v2's flag rule (Gemini≠Jev, `OTHER`, invalid grade) has precision 0.10 and recall 0.14. "Grade missing OR Jev confidence < 0.5" has 0.62 and 0.71, at no extra cost.
@@ -207,6 +208,7 @@ What each role can do and how the sync behaves: `docs/project-docs/role_permissi
 - Gemini through `laravel/ai` (revised 2026-10-13): 1.2.1 exposes each step's `finishReason` (`Length` = truncated), counts thinking tokens in `usage->outputTokens`, and supports a JSON schema, temperature and max tokens. Two differences from the benchmark: it calls Gemini's `interactions` endpoint (not `generateContent`) and sends the prompt before the image. `ocr:bench` must still pass (≥ 56/67); if it doesn't, fall back to `Http::post` on `generateContent`.
 
 **Consequences:**
+
 - The port keeps every parameter the 89.6% was measured with: `gemini-3.5-flash-lite`, temperature 0, `maxOutputTokens` 8192, notar's `CALL1_PROMPT` unchanged, PNG at 200 dpi, full page, image before prompt, `jev-1.13.0`, the same `subjects.json`. Sending the PDF straight to Gemini, or rewording the prompt, voids the number.
 - The port is checked with `php artisan ocr:bench` on notar's 67 PDFs. Pass = both fields right on ≥ 56/67 (89.6% minus the ~4-file run-to-run noise). About $0.10 per run.
 - The 0.5 threshold was picked on those same 67 PDFs, so it is optimistic. Re-check it once ~30 Confirmations exist.
@@ -214,3 +216,20 @@ What each role can do and how the sync behaves: `docs/project-docs/role_permissi
 - The SDK's `Choice` `confidence` is measured "across the full set of probabilities" and may be null. Before relying on the 0.5 threshold, check that it matches the confidence notar's Python SDK returned. If it doesn't, flag on `probabilityOf($choice)` instead. A null confidence counts as Flagged.
 - A flag catches most errors, not all (one wrong Jev pick had confidence 0.99). Confirmation stays mandatory on every reading.
 - Reverse this only by re-introducing a Python service: the PHP pipeline has no shared code with notar.
+
+## 2026-10-14 — Grade tree, formation plans and trainers follow the new MCD
+
+**Decision:** The migrations were rewritten from the team's new MCD (`mcd_*.d2`). `evaluation_nodes` + `evaluation_node_connections` become one `average_nodes` tree (`parent_id`, `weight` as a fraction); `apprenticeships` become `formation_plans`, which list their nodes in `average_node_formation_plan` instead of pointing at a root. `subjects`, `subject_category` and `evaluation_results` are gone.
+
+- **MP is a plan, not a flag.** `users.is_mp` and `evaluation_nodes.variant` are replaced by three plans: IT, EC and EC MP. EC and EC MP share every node except their own "Note d'expérience" branch. A node has a single weight in a tree, so the CIE and workplace-training leaves exist once per variant. Azure's `apprentices_EC` group gives the EC plan; switching to EC MP is done by hand and survives the sync. This supersedes the "flagged per node" part of the 2026-09-03 entry.
+- **Trainers train plans.** `users.trainer_id` is replaced by `users_formation_plans`, synced from the Azure group (`trainer_IT` → IT, `trainer_EC` → EC + EC MP). A trainer follows every apprentice of its plans. The per-apprentice trainer select, `training.assign-self` and `SupervisionController::updateTrainer` are removed.
+- **The semester is derived, not stored.** `grades.semester` is gone: `App\Support\Gradebook\Semester` derives it from `test_date` (S1 August–January, S2 February–July), counted from the school year of the apprentice's first grade, since no apprenticeship start date is stored. `Grade::withSemester()` computes it in SQL for lists. `period_scope` is gone too: half-point rounding on a leaf (`rounding_step = 0.5`) is what marks a semester leaf.
+- **Comments use real foreign keys.** `commentable_type/id` become `project_id` / `grade_id` with cascades and a CHECK that exactly one is set; the morph map only keeps `user` (Spatie).
+
+**Why:** The DAG with connection rows and the per-node variant flag were more engineering than the domain needed; the plan-to-node pivot expresses the MP variant directly and lets each plan read its tree in one query.
+
+**Consequences:**
+
+- Every database has to be rebuilt with `migrate:fresh --seed`: the old migrations were rewritten, not followed by new ones.
+- `weight decimal(3,2)` cannot split some shares exactly (16 equal CIE modules are 0.06 each, sum 0.96). The gradebook divides by the sum of the weights, so the averages stay right; a stricter check would need more decimals.
+- Until an apprenticeship start date exists, an apprentice whose first grade is late gets semesters counted from that grade.

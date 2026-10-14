@@ -18,8 +18,11 @@ class Skill extends Model
     /** @use HasFactory<SkillFactory> */
     use HasFactory;
 
-    const UPDATED_AT = null;
+    public $timestamps = false;
 
+    /**
+     * @return BelongsToMany<Project, $this>
+     */
     public function projects(): BelongsToMany
     {
         return $this->belongsToMany(Project::class, 'project_skill');

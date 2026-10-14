@@ -2,13 +2,8 @@
 
 namespace Database\Seeders;
 
-use App\Enums\AggregationType;
-use App\Enums\EvaluationVariant;
-use App\Enums\PeriodScope;
-use App\Models\Apprenticeship;
-use App\Models\EvaluationNode;
-use App\Models\Subject;
-use App\Models\SubjectCategory;
+use App\Models\AverageNode;
+use App\Models\FormationPlan;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
@@ -16,18 +11,20 @@ use LogicException;
 
 /**
  * Seeds the IT and EC grade trees (docs/project-docs/grade_tree_*.md and
- * *-schema.mmd) into `evaluation_nodes` / `evaluation_node_connections`.
+ * *-schema.mmd) into `average_nodes`, and links every node to the formation
+ * plans that use it (`average_node_formation_plan`).
  *
- * Every leaf is a subject that grades are entered against; every composite
- * node is a weighted average of its children. Weights are percentages of
- * their parent and are meant to be normalized by their sum.
+ * Every leaf is a subject that grades are entered against; every other node is a
+ * weighted average of its children. Weights below are percentages of their parent,
+ * stored as fractions; the gradebook normalizes them by their sum.
  *
- * Each root is linked to its apprenticeship (ApprenticeshipSeeder must run
- * first). That link is the tree's stable identifier: an apprenticeship that
- * already has a tree is left untouched, otherwise a complete tree is created
- * and linked. Node names are never used to find an existing tree.
+ * A node goes to every plan of its section, unless it (or an ancestor) is limited
+ * with `plan`: that is how EC and EC MP share the whole tree except their own
+ * "Note d'expérience" branch. A section whose first plan already has nodes is left
+ * untouched (FormationPlanSeeder must run first). Node names are never used to find
+ * an existing tree.
  */
-class EvaluationTreeSeeder extends Seeder
+class AverageNodeSeeder extends Seeder
 {
     /** Rounding of composite (domain and final) grades. */
     private const COMPOSITE_ROUNDING = 0.1;
@@ -39,87 +36,66 @@ class EvaluationTreeSeeder extends Seeder
 
     public const EC_ROOT = 'Note finale CFC — Employé·e de commerce';
 
-    /**
-     * Nodes declared with a `key`, reusable through `ref` (shared DAG children).
-     *
-     * @var array<string, EvaluationNode>
-     */
-    private array $nodesByKey = [];
-
     public function run(): void
     {
         DB::transaction(function (): void {
-            $this->seedTree(ApprenticeshipSeeder::IT, fn (): array => $this->itTree());
-            $this->seedTree(ApprenticeshipSeeder::EC, fn (): array => $this->ecTree());
+            $this->seedTree([FormationPlan::IT], $this->itTree());
+            $this->seedTree([FormationPlan::EC, FormationPlan::EC_MP], $this->ecTree());
         });
     }
 
     /**
-     * @param  callable(): array<string, mixed>  $tree
+     * @param  list<string>  $planNames
+     * @param  array<string, mixed>  $tree
      */
-    private function seedTree(string $apprenticeshipName, callable $tree): void
+    private function seedTree(array $planNames, array $tree): void
     {
-        $apprenticeship = Apprenticeship::query()
-            ->where('name', $apprenticeshipName)
-            ->firstOr(fn () => throw new LogicException(
-                "Apprenticeship [{$apprenticeshipName}] not found: run ApprenticeshipSeeder first.",
-            ));
+        $plans = [];
 
-        if ($apprenticeship->evaluation_node_id !== null) {
+        foreach ($planNames as $name) {
+            $plans[$name] = FormationPlan::query()
+                ->where('name', $name)
+                ->firstOr(fn () => throw new LogicException(
+                    "Formation plan [{$name}] not found: run FormationPlanSeeder first.",
+                ));
+        }
+
+        if ($plans[$planNames[0]]->averageNodes()->exists()) {
             return;
         }
 
-        $this->nodesByKey = [];
-        $root = $this->createNode($tree());
-
-        $apprenticeship->update(['evaluation_node_id' => $root->id]);
+        $this->createNode($tree, null, $plans);
     }
 
     /**
-     * Creates a node and, recursively, its children.
+     * Creates a node under $parent, links it to $plans and, recursively, creates its children.
      *
      * @param  array<string, mixed>  $spec
+     * @param  array<string, FormationPlan>  $plans
      */
-    private function createNode(array $spec): EvaluationNode
+    private function createNode(array $spec, ?AverageNode $parent, array $plans): AverageNode
     {
         /** @var list<array<string, mixed>> $children */
         $children = $spec['children'] ?? [];
-        $isComposite = $children !== [];
-        $scope = $spec['scope'] ?? PeriodScope::Cursus;
 
-        $node = EvaluationNode::query()->create([
-            'name' => $spec['name'],
-            'subject_id' => $isComposite ? null : $this->createSubject($spec['name'])->id,
-            'aggregation' => $isComposite ? AggregationType::WeightedAverage : null,
-            'rounding_step' => $spec['rounding']
-                ?? ($isComposite ? self::COMPOSITE_ROUNDING : ($scope === PeriodScope::Semester ? self::SEMESTER_ROUNDING : null)),
-            'period_scope' => $scope,
-            'variant' => $spec['variant'] ?? null,
-        ]);
-
-        if (isset($spec['key'])) {
-            $this->nodesByKey[$spec['key']] = $node;
+        if (isset($spec['plan'])) {
+            $plans = array_intersect_key($plans, [$spec['plan'] => true]);
         }
 
-        foreach ($children as $childSpec) {
-            $child = isset($childSpec['ref'])
-                ? $this->nodesByKey[$childSpec['ref']] ?? throw new LogicException("Unknown node ref [{$childSpec['ref']}].")
-                : $this->createNode($childSpec);
+        $node = AverageNode::query()->create([
+            'parent_id' => $parent?->id,
+            'name' => $spec['name'],
+            'rounding_step' => $spec['rounding'] ?? ($children !== [] ? self::COMPOSITE_ROUNDING : null),
+            'weight' => $parent === null ? null : round((float) $spec['weight'] / 100, 2),
+        ]);
 
-            $node->addChild($child, (float) $childSpec['weight']);
+        $node->formationPlans()->attach(array_map(fn (FormationPlan $plan): int => $plan->id, array_values($plans)));
+
+        foreach ($children as $childSpec) {
+            $this->createNode($childSpec, $node, $plans);
         }
 
         return $node;
-    }
-
-    /**
-     * A leaf's displayed name lives on its subject category (see ADR).
-     */
-    private function createSubject(string $name): Subject
-    {
-        $category = SubjectCategory::query()->firstOrCreate(['name' => $name]);
-
-        return Subject::query()->create(['subject_category_id' => $category->id]);
     }
 
     /**
@@ -149,7 +125,7 @@ class EvaluationTreeSeeder extends Seeder
                     'children' => [
                         ['name' => 'Culture générale — Travail personnel d\'approfondissement (TPA)', 'weight' => 33.33],
                         ['name' => 'Culture générale — Examen final', 'weight' => 33.33],
-                        ['name' => 'Culture générale — Note d\'expérience', 'weight' => 33.34, 'scope' => PeriodScope::Semester],
+                        ['name' => 'Culture générale — Note d\'expérience', 'weight' => 33.34, 'rounding' => self::SEMESTER_ROUNDING],
                     ],
                 ],
                 [
@@ -172,8 +148,8 @@ class EvaluationTreeSeeder extends Seeder
                     'name' => 'Compétences de base élargies',
                     'weight' => 10,
                     'children' => [
-                        ['name' => 'Mathématiques', 'weight' => 50, 'scope' => PeriodScope::Semester],
-                        ['name' => 'Anglais', 'weight' => 50, 'scope' => PeriodScope::Semester],
+                        ['name' => 'Mathématiques', 'weight' => 50, 'rounding' => self::SEMESTER_ROUNDING],
+                        ['name' => 'Anglais', 'weight' => 50, 'rounding' => self::SEMESTER_ROUNDING],
                     ],
                 ],
             ],
@@ -182,8 +158,8 @@ class EvaluationTreeSeeder extends Seeder
 
     /**
      * Employée/Employé de commerce CFC — docs/project-docs/EC-schema.mmd.
-     * The MP variant is a sibling of the standard one (see ADR), sharing the
-     * CIE and workplace-training leaves with different weights.
+     * Each "Note d'expérience" variant belongs to one plan only. A node has a single
+     * weight in the tree, so the CIE and workplace-training leaves exist once per variant.
      *
      * @return array<string, mixed>
      */
@@ -199,29 +175,32 @@ class EvaluationTreeSeeder extends Seeder
                         [
                             'name' => 'Note d\'expérience — Standard',
                             'weight' => 100,
-                            'variant' => EvaluationVariant::Standard,
+                            'plan' => FormationPlan::EC,
                             'children' => [
                                 [
                                     'name' => 'Enseignement des connaissances professionnelles et de la culture générale',
                                     'weight' => 50,
-                                    'scope' => PeriodScope::Semester,
+                                    'rounding' => self::SEMESTER_ROUNDING,
                                 ],
-                                ['key' => 'ec-cie', 'name' => 'Cours interentreprises', 'weight' => 25],
+                                ['name' => 'Cours interentreprises', 'weight' => 25],
                                 [
-                                    'key' => 'ec-workplace',
                                     'name' => 'Formation à la pratique professionnelle',
                                     'weight' => 25,
-                                    'scope' => PeriodScope::Semester,
+                                    'rounding' => self::SEMESTER_ROUNDING,
                                 ],
                             ],
                         ],
                         [
                             'name' => 'Note d\'expérience — Maturité professionnelle',
                             'weight' => 100,
-                            'variant' => EvaluationVariant::Mp,
+                            'plan' => FormationPlan::EC_MP,
                             'children' => [
-                                ['ref' => 'ec-workplace', 'weight' => 50],
-                                ['ref' => 'ec-cie', 'weight' => 50],
+                                [
+                                    'name' => 'Formation à la pratique professionnelle',
+                                    'weight' => 50,
+                                    'rounding' => self::SEMESTER_ROUNDING,
+                                ],
+                                ['name' => 'Cours interentreprises', 'weight' => 50],
                             ],
                         ],
                     ],
@@ -263,10 +242,7 @@ class EvaluationTreeSeeder extends Seeder
         $cie = [];
 
         foreach ($modules as $module) {
-            $leaf = [
-                'name' => "{$module['code']} — {$module['name']}",
-                'weight' => 1,
-            ];
+            $leaf = ['name' => "{$module['code']} — {$module['name']}"];
 
             match ($module['school']) {
                 'EPSIC' => $epsic[] = $leaf,
@@ -275,6 +251,21 @@ class EvaluationTreeSeeder extends Seeder
             };
         }
 
-        return ['EPSIC' => $epsic, 'CIE' => $cie];
+        return ['EPSIC' => $this->equalWeights($epsic), 'CIE' => $this->equalWeights($cie)];
+    }
+
+    /**
+     * Equal weights inside a school. Two decimals cannot always split 100 % exactly
+     * (1/16 is stored as 0.06), which the normalization by the sum absorbs.
+     *
+     * @param  list<array{name: string}>  $leaves
+     * @return list<array<string, mixed>>
+     */
+    private function equalWeights(array $leaves): array
+    {
+        return array_map(
+            fn (array $leaf): array => [...$leaf, 'weight' => 100 / count($leaves)],
+            $leaves,
+        );
     }
 }

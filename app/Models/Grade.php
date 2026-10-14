@@ -2,46 +2,31 @@
 
 namespace App\Models;
 
+use App\Support\Gradebook\Semester;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\Scope;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\MorphMany;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
+ * Comments go away with their grade through the comments.grade_id cascade.
+ *
  * @property int $id
  * @property int $user_id
- * @property int $evaluation_node_id
+ * @property int $average_node_id
  * @property string $value decimal cast: string at runtime, not float
  * @property CarbonImmutable $test_date
- * @property int $semester
  * @property string|null $file_path
- * @property string|null $original_filename
  * @property CarbonImmutable|null $notified_at
+ * @property-read int $semester Derived from test_date, see Semester
  */
-#[Fillable(['user_id', 'evaluation_node_id', 'value', 'test_date', 'semester', 'file_path', 'original_filename'])]
+#[Fillable(['user_id', 'average_node_id', 'value', 'test_date', 'file_path'])]
 class Grade extends Model
 {
-    protected static function booted(): void
-    {
-        static::deleting(fn (self $grade) => $grade->comments()->delete());
-    }
-
-    /**
-     * A comment's target is polymorphic, so no foreign key can cascade it away with its
-     * grade — the booted() hook above does it instead. Wrapping the whole delete in a
-     * transaction is what makes the pair atomic: without it, a failure on the grade's own
-     * DELETE would leave the comments already gone with nothing to roll them back.
-     *
-     * Only fires on Eloquent deletes. Bulk deletes (DB::table(...)->delete(),
-     * Grade::where(...)->delete()) bypass both and must clean up comments themselves.
-     */
-    public function delete(): ?bool
-    {
-        return DB::transaction(fn (): ?bool => parent::delete());
-    }
-
     protected function casts(): array
     {
         return [
@@ -49,6 +34,33 @@ class Grade extends Model
             'test_date' => 'date',
             'notified_at' => 'datetime',
         ];
+    }
+
+    /**
+     * Selects the derived semester in the same query, so a list of grades does not
+     * run one query per grade through the accessor below.
+     *
+     * @param  Builder<self>  $query
+     */
+    #[Scope]
+    protected function withSemester(Builder $query): void
+    {
+        $query->select('grades.*')->selectRaw(Semester::SQL.' AS semester');
+    }
+
+    /**
+     * From withSemester() when the query used it; computed on the spot otherwise.
+     *
+     * @return Attribute<int, never>
+     */
+    protected function semester(): Attribute
+    {
+        return Attribute::get(fn (mixed $value): int => $value !== null
+            ? (int) $value
+            : Semester::of(
+                $this->test_date,
+                CarbonImmutable::parse(self::query()->where('user_id', $this->user_id)->min('test_date')),
+            ));
     }
 
     /**
@@ -60,15 +72,18 @@ class Grade extends Model
     }
 
     /**
-     * @return BelongsTo<EvaluationNode, $this>
+     * @return BelongsTo<AverageNode, $this>
      */
-    public function evaluationNode(): BelongsTo
+    public function averageNode(): BelongsTo
     {
-        return $this->belongsTo(EvaluationNode::class);
+        return $this->belongsTo(AverageNode::class);
     }
 
-    public function comments(): MorphMany
+    /**
+     * @return HasMany<Comment, $this>
+     */
+    public function comments(): HasMany
     {
-        return $this->morphMany(Comment::class, 'commentable');
+        return $this->hasMany(Comment::class);
     }
 }

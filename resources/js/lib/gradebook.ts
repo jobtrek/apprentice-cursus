@@ -3,7 +3,7 @@ import type { Grade } from '@/types/grade';
 /**
  * Calcul des moyennes du carnet, comme pour le CFC : les notes sont sur les
  * feuilles de l'arbre d'évaluation, chaque nœud parent fait la moyenne pondérée
- * de ses enfants notés (poids de `evaluation_node_connections`), puis le
+ * de ses enfants notés (poids `average_nodes.weight`), puis le
  * `rounding_step` du nœud est appliqué. Reprend la maquette apprentice-cursus-design.
  */
 
@@ -13,7 +13,6 @@ export interface TreeNode {
     /** Nœud composite (moyenne pondérée) ; une feuille porte des notes. */
     aggregated: boolean;
     rounding_step: number | null;
-    period_scope: 'semester' | 'cursus';
     children: { id: number; weight: number }[];
 }
 
@@ -26,7 +25,7 @@ export interface GradeTree {
 /** Note minimale de réussite. */
 export const PASS = 4;
 export const GRADE_MAX = 6;
-/** Semestres de la formation la plus longue (grades.semester 1–8). */
+/** Semestres de la formation la plus longue (semestre 1–8 déduit de la date, voir `App\Support\Gradebook\Semester`). */
 export const SEMESTERS = 8;
 
 /** L'apprentissage IT dure 4 ans, l'apprentissage EC 3 ans. */
@@ -170,12 +169,6 @@ export function createGradebook(tree: GradeTree, allGrades: Grade[]) {
     const inSemester = (semester: number): Grade[] =>
         allGrades.filter((grade) => grade.semester === semester);
 
-    /** Un domaine a une moyenne par semestre s'il contient une feuille semestrielle. */
-    const hasSemesterLeaves = (id: number): boolean =>
-        [...leavesOf(id)].some(
-            (leaf) => node(leaf)?.period_scope === 'semester',
-        );
-
     /**
      * Toutes les évaluations comptées sous ce nœud ont une note : chaque
      * feuille notée, et chaque enfant de poids non nul complet. `nodeValue`
@@ -212,7 +205,6 @@ export function createGradebook(tree: GradeTree, allGrades: Grade[]) {
         gradesUnder,
         weightOf,
         inSemester,
-        hasSemesterLeaves,
     };
 }
 

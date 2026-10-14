@@ -1,18 +1,18 @@
 <?php
 
-use App\Models\Apprenticeship;
-use App\Models\EvaluationNode;
+use App\Models\AverageNode;
+use App\Models\FormationPlan;
 use App\Models\Grade;
 use App\Models\User;
-use Database\Seeders\ApprenticeshipSeeder;
-use Database\Seeders\EvaluationTreeSeeder;
+use Database\Seeders\AverageNodeSeeder;
+use Database\Seeders\FormationPlanSeeder;
 use Illuminate\Support\Facades\DB;
 use Inertia\Testing\AssertableInertia as Assert;
 
 const MODULES_PRO = 'Modules école professionnelle';
 const IT_SKILLS = 'Compétences en informatique';
 
-function itNode(string ...$names): EvaluationNode
+function itNode(string ...$names): AverageNode
 {
     $node = test()->itRoot;
 
@@ -23,21 +23,19 @@ function itNode(string ...$names): EvaluationNode
     return $node;
 }
 
-function gradeOn(User $apprentice, EvaluationNode $node, string $date = '2026-01-15'): Grade
+function gradeOn(User $apprentice, AverageNode $node, string $date = '2026-01-15'): Grade
 {
     return Grade::query()->create([
         'user_id' => $apprentice->id,
-        'evaluation_node_id' => $node->id,
+        'average_node_id' => $node->id,
         'value' => 5.0,
         'test_date' => $date,
-        'semester' => 1,
     ]);
 }
 
 beforeEach(function () {
-    $this->seed([ApprenticeshipSeeder::class, EvaluationTreeSeeder::class]);
-    $this->itRoot = Apprenticeship::query()
-        ->where('name', ApprenticeshipSeeder::IT)->sole()->evaluationTree()->sole();
+    $this->seed([FormationPlanSeeder::class, AverageNodeSeeder::class]);
+    $this->itRoot = FormationPlan::query()->where('name', FormationPlan::IT)->sole()->rootNode();
     $this->apprentice = User::factory()->create();
 });
 
@@ -101,7 +99,7 @@ test('the dashboard query count does not depend on the number of grades', functi
 test('the coach profile gets the same evaluation tree as the apprentice gradebook', function () {
     $coach = User::factory()->coach()->create();
     $this->apprentice->forceFill([
-        'apprenticeship_id' => Apprenticeship::query()->where('name', ApprenticeshipSeeder::IT)->sole()->id,
+        'formation_plan_id' => FormationPlan::query()->where('name', FormationPlan::IT)->sole()->id,
         'coach_id' => $coach->id,
     ])->save();
 
@@ -115,4 +113,24 @@ test('the coach profile gets the same evaluation tree as the apprentice gradeboo
         ->assertInertia(fn (Assert $page) => $page
             ->where('tree.root', $this->itRoot->id)
             ->where('tree', $own));
+});
+
+test('the semester is derived from the test date, from the first grade on', function () {
+    $node = itNode('Culture générale', 'Culture générale — Examen final');
+    // First grade in S2 (February–July) of the school year 2025-26.
+    $first = gradeOn($this->apprentice, $node, '2026-03-01');
+    $nextS1 = gradeOn($this->apprentice, $node, '2026-08-20');
+    $nextS2 = gradeOn($this->apprentice, $node, '2027-02-01');
+
+    $this->actingAs($this->apprentice)->get(route('grades.dashboard'))
+        ->assertInertia(function (Assert $page) use ($first, $nextS1, $nextS2) {
+            $semesters = collect($page->toArray()['props']['grades'])->pluck('semester', 'id');
+
+            expect($semesters[$first->id])->toBe(2)
+                ->and($semesters[$nextS1->id])->toBe(3)
+                ->and($semesters[$nextS2->id])->toBe(4);
+        });
+
+    // A grade loaded on its own computes the same value.
+    expect($nextS2->fresh()->semester)->toBe(4);
 });

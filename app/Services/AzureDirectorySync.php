@@ -3,8 +3,8 @@
 namespace App\Services;
 
 use App\Enums\AzureGroup;
-use App\Exceptions\ApprenticeshipNotSeededException;
 use App\Exceptions\AzureSyncFailedException;
+use App\Exceptions\FormationPlanNotSeededException;
 use App\Models\User;
 use App\Services\Microsoft\MicrosoftGraphService;
 use Illuminate\Database\Eloquent\Collection;
@@ -25,7 +25,7 @@ class AzureDirectorySync
 
     /**
      * @throws AzureSyncFailedException when a group is unconfigured or Graph fails; nothing is written
-     * @throws ApprenticeshipNotSeededException when a section is missing; the run is rolled back
+     * @throws FormationPlanNotSeededException when a section is missing; the run is rolled back
      */
     public function run(): AzureSyncResult
     {
@@ -121,7 +121,7 @@ class AzureDirectorySync
                 $this->sync->apply($user, $group);
                 $created++;
             } else {
-                $before = [$user->name, $user->is_active, $user->apprenticeship_id, $user->role];
+                $before = [$user->name, $user->is_active, $user->formation_plan_id, $user->role];
 
                 if ($member['name'] !== '') {
                     $user->name = $member['name'];
@@ -129,7 +129,7 @@ class AzureDirectorySync
 
                 $this->sync->apply($user, $group);
 
-                if (isset($renamed[$azureId]) || $before !== [$user->name, $user->is_active, $user->apprenticeship_id, $user->role]) {
+                if (isset($renamed[$azureId]) || $before !== [$user->name, $user->is_active, $user->formation_plan_id, $user->role]) {
                     $updated++;
                 }
             }

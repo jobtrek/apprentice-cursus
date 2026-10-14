@@ -21,6 +21,8 @@ class ProjectScreenshot extends Model
 {
     public const MAX_PER_PROJECT = 10;
 
+    public $timestamps = false;
+
     protected static function booted(): void
     {
         // Only remove the file once the row deletion is committed, so a rolled

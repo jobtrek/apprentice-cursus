@@ -3,7 +3,6 @@
 namespace App\Http\Resources;
 
 use App\Models\User;
-use Database\Seeders\ApprenticeshipSeeder;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -16,32 +15,26 @@ use Illuminate\Http\Resources\Json\JsonResource;
  */
 class ApprenticeResource extends JsonResource
 {
-    public const RELATIONS = ['apprenticeship', 'coach', 'trainer', 'roles'];
+    public const RELATIONS = ['formationPlan.trainers', 'coach', 'roles'];
 
     /**
      * @return array<string, mixed>
      */
     public function toArray(Request $request): array
     {
-        $track = match ($this->apprenticeship?->name) {
-            ApprenticeshipSeeder::IT => 'IT',
-            ApprenticeshipSeeder::EC => 'EC',
-            default => null,
-        };
-
         return [
             'id' => $this->id,
             'name' => $this->name,
-            'track' => $track,
-            // Filled in by ApprenticeList from the latest semester graded; null elsewhere.
+            'track' => $this->formationPlan?->shortName(),
+            // Filled in by ApprenticeList from the grade dates; null elsewhere.
             'year' => null,
             'isActive' => $this->is_active,
-            'isMp' => (bool) $this->is_mp,
+            'isMp' => $this->formationPlan?->isMp() ?? false,
             'coach' => $this->coach?->name,
-            'trainer' => $this->trainer?->name,
-            // Let the local admin's selects show the current coach and trainer.
+            // Trainers follow the whole plan: every trainer of the apprentice's plan.
+            'trainer' => $this->formationPlan?->trainers->pluck('name')->sort()->implode(', ') ?: null,
+            // Lets the local admin's select show the current coach.
             'coachId' => $this->coach_id,
-            'trainerId' => $this->trainer_id,
             'canView' => $request->user()?->can('view', $this->resource) ?? false,
         ];
     }

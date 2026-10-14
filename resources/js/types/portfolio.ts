@@ -7,7 +7,7 @@ export type PortfolioProject = {
     responsibilities: string | null;
     technologies: string[];
     repository_url: string | null;
-    demo_path: string | null;
+    demo_url: string | null;
     date_start: string;
     date_end: string | null;
     screenshots: ProjectScreenshot[];

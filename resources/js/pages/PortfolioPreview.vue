@@ -99,12 +99,12 @@ function exportToPdf(): void {
                 </ul>
 
                 <div
-                    v-if="project.demo_path || project.repository_url"
+                    v-if="project.demo_url || project.repository_url"
                     class="mt-3 flex flex-wrap gap-4 text-sm"
                 >
                     <a
-                        v-if="project.demo_path"
-                        :href="project.demo_path"
+                        v-if="project.demo_url"
+                        :href="project.demo_url"
                         target="_blank"
                         rel="noopener noreferrer"
                         class="flex items-center gap-1.5 underline-offset-4 hover:underline"

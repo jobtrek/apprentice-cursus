@@ -2,7 +2,7 @@
 
 namespace App\Services;
 
-use App\Exceptions\ApprenticeshipNotSeededException;
+use App\Exceptions\FormationPlanNotSeededException;
 use App\Exceptions\SsoLoginException;
 use App\Models\User;
 use Laravel\Socialite\Two\User as AzureUser;
@@ -46,8 +46,8 @@ class MicrosoftLoginService
 
         try {
             $this->sync->apply($user, $group);
-        } catch (ApprenticeshipNotSeededException $e) {
-            throw SsoLoginException::apprenticeshipMissing($e->apprenticeship);
+        } catch (FormationPlanNotSeededException $e) {
+            throw SsoLoginException::formationPlanMissing($e->formationPlan);
         }
 
         return $user;

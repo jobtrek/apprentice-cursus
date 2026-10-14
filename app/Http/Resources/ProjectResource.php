@@ -27,7 +27,7 @@ class ProjectResource extends JsonResource
             'responsibilities' => $this->responsibilities,
             'technologies' => $this->technologyList(),
             'repository_url' => $this->repository_url,
-            'demo_path' => $this->demo_path,
+            'demo_url' => $this->demo_url,
             'date_start' => $this->date_start->toDateString(),
             'date_end' => $this->date_end?->toDateString(),
             'screenshots' => $this->whenLoaded('screenshots', fn () => $this->screenshots->map(fn (ProjectScreenshot $screenshot) => [

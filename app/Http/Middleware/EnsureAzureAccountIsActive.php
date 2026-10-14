@@ -2,8 +2,8 @@
 
 namespace App\Http\Middleware;
 
-use App\Exceptions\ApprenticeshipNotSeededException;
 use App\Exceptions\AzureAccessRevokedException;
+use App\Exceptions\FormationPlanNotSeededException;
 use App\Services\AzureAccountSync;
 use Closure;
 use Illuminate\Http\Request;
@@ -54,10 +54,10 @@ class EnsureAzureAccountIsActive
 
         try {
             $this->sync->apply($user, $group);
-        } catch (ApprenticeshipNotSeededException $e) {
-            Log::error('Microsoft group re-check: apprenticeship is not seeded.', [
+        } catch (FormationPlanNotSeededException $e) {
+            Log::error('Microsoft group re-check: formation plan is not seeded.', [
                 'user_id' => $user->id,
-                'apprenticeship' => $e->apprenticeship,
+                'formation_plan' => $e->formationPlan,
             ]);
 
             return $this->endSession($request, 'Could not verify your apprenticeship. Please contact an administrator.');

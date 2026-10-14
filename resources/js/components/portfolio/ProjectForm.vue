@@ -212,20 +212,20 @@ function onSubmit(): void {
                 </Field>
 
                 <div class="grid gap-6 sm:grid-cols-2">
-                    <Field :data-invalid="Boolean(errors.demo_path)">
-                        <FieldLabel for="demo_path">
+                    <Field :data-invalid="Boolean(errors.demo_url)">
+                        <FieldLabel for="demo_url">
                             Lien de démonstration
                         </FieldLabel>
                         <Input
-                            id="demo_path"
-                            v-model="form.demo_path"
+                            id="demo_url"
+                            v-model="form.demo_url"
                             type="url"
-                            name="demo_path"
-                            @change="form.validate('demo_path')"
-                            :aria-invalid="Boolean(errors.demo_path)"
+                            name="demo_url"
+                            @change="form.validate('demo_url')"
+                            :aria-invalid="Boolean(errors.demo_url)"
                             placeholder="https://"
                         />
-                        <FieldError :errors="[errors.demo_path]" />
+                        <FieldError :errors="[errors.demo_url]" />
                     </Field>
                     <Field :data-invalid="Boolean(errors.repository_url)">
                         <FieldLabel for="repository_url">

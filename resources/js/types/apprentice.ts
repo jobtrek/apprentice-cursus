@@ -5,8 +5,8 @@ export interface Apprentice {
     /** « IT », « EC », ou null sans filière. */
     track: 'IT' | 'EC' | null;
     /**
-     * Année d'apprentissage (1 à 4) déduite du dernier semestre noté, faute de
-     * date de début en base. Null sans note.
+     * Année d'apprentissage (1 à 4) déduite des dates des notes, faute de date
+     * de début en base. Null sans note.
      */
     year: number | null;
     isActive: boolean;
@@ -15,9 +15,8 @@ export interface Apprentice {
     /** Nom du coach, null sans coach. */
     coach: string | null;
     coachId: number | null;
-    /** Nom du formateur, null sans formateur. */
+    /** Formateurs du plan de l'apprenti·e (« A, B »), null sans formateur. */
     trainer: string | null;
-    trainerId: number | null;
     canView: boolean;
 }
 
@@ -35,28 +34,23 @@ export interface ApprenticeListItem extends Apprentice {
     stats: ApprenticeStats;
 }
 
-/** Rôle sous lequel l'utilisateur s'ajoute un·e apprenti·e. */
-export type AssignSelfAs = 'coach' | 'trainer';
-
 /**
- * Apprenti·e proposé·e par « Ajouter un apprenti » : sans coach (coach), ou
- * sans formateur et de la filière du formateur (formateur).
+ * Rôle sous lequel l'utilisateur s'ajoute un·e apprenti·e. Seul un coach le
+ * fait : un formateur suit tous les apprentis des plans qu'il forme.
  */
+export type AssignSelfAs = 'coach';
+
+/** Apprenti·e proposé·e par « Ajouter un apprenti » : sans coach. */
 export interface AssignableApprentice {
     id: number;
     name: string;
     track: string | null;
 }
 
-/** Coach ou formateur proposé dans les listes de l'admin. */
+/** Coach proposé dans les listes de l'admin. */
 export interface SupervisorOption {
     id: number;
     name: string;
-}
-
-/** Un formateur n'est proposé qu'aux apprentis de sa filière. */
-export interface TrainerOption extends SupervisorOption {
-    track: string | null;
 }
 
 /** Note récente d'un·e apprenti·e suivi·e (`ApprenticeList::latestGrades`). */

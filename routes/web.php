@@ -72,10 +72,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->whereNumber('apprentice')
         ->middleware('can:'.Permission::SupervisionManage->value)
         ->name('apprentices.coach.update');
-    Route::put('/apprentices/{apprentice}/trainer', [SupervisionController::class, 'updateTrainer'])
-        ->whereNumber('apprentice')
-        ->middleware('can:'.Permission::SupervisionManage->value)
-        ->name('apprentices.trainer.update');
 });
 
 require __DIR__.'/auth.php';

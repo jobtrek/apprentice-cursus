@@ -3,7 +3,7 @@
 namespace Database\Seeders;
 
 use App\Enums\UserRole;
-use App\Models\Apprenticeship;
+use App\Models\FormationPlan;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
@@ -27,9 +27,9 @@ class DemoApprenticeSeeder extends Seeder
         /** @var list<array{id: string, name: string, track: string}> $demo */
         $demo = json_decode((string) file_get_contents(database_path('seeders/data/demo_apprentices.json')), true);
 
-        $apprenticeships = [
-            'IT' => Apprenticeship::where('name', ApprenticeshipSeeder::IT)->value('id'),
-            'EC' => Apprenticeship::where('name', ApprenticeshipSeeder::EC)->value('id'),
+        $plans = [
+            'IT' => FormationPlan::where('name', FormationPlan::IT)->value('id'),
+            'EC' => FormationPlan::where('name', FormationPlan::EC)->value('id'),
         ];
 
         foreach ($demo as $row) {
@@ -45,7 +45,7 @@ class DemoApprenticeSeeder extends Seeder
                 // Random, unknown password: demo accounts have no usable local credentials.
                 'password' => Str::password(32),
                 'is_active' => true,
-                'apprenticeship_id' => $apprenticeships[$row['track']] ?? null,
+                'formation_plan_id' => $plans[$row['track']] ?? null,
             ]);
 
             $user->assignRole(UserRole::Apprentice->value);

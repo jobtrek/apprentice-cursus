@@ -3,7 +3,7 @@
 namespace Database\Seeders;
 
 use App\Enums\UserRole;
-use App\Models\Apprenticeship;
+use App\Models\FormationPlan;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 
@@ -16,8 +16,8 @@ class UserSeeder extends Seeder
      * local environment. All accounts use the password "password":
      * - admin@example.com (local admin: bypasses every check in the local environment)
      * - coach@example.com (coach of the local apprentices)
-     * - trainer@example.com (IT trainer, Bastien Nicoud, trainer of apprentice-it)
-     * - trainer-ec@example.com (EC trainer, trainer of apprentice-ec)
+     * - trainer@example.com (IT trainer, Bastien Nicoud, trains the IT plan)
+     * - trainer-ec@example.com (EC trainer, trains the EC and EC MP plans)
      * - apprentice-it@example.com (IT apprentice)
      * - apprentice-ec@example.com (EC apprentice)
      */
@@ -27,52 +27,50 @@ class UserSeeder extends Seeder
             return;
         }
 
-        $this->seed('admin@example.com', 'Local Admin', UserRole::Admin, null);
-        $coach = $this->seed('coach@example.com', 'Local Coach', UserRole::Coach, null);
-        $trainer = $this->seed(
-            'trainer@example.com',
-            'Bastien Nicoud',
-            UserRole::Trainer,
-            Apprenticeship::where('name', ApprenticeshipSeeder::IT)->value('id'),
-        );
-        $trainerEc = $this->seed(
-            'trainer-ec@example.com',
-            'Local Trainer EC',
-            UserRole::Trainer,
-            Apprenticeship::where('name', ApprenticeshipSeeder::EC)->value('id'),
-        );
+        $plans = FormationPlan::query()->pluck('id', 'name');
+
+        $this->seed('admin@example.com', 'Local Admin', UserRole::Admin);
+        $coach = $this->seed('coach@example.com', 'Local Coach', UserRole::Coach);
+        $this->seed('trainer@example.com', 'Bastien Nicoud', UserRole::Trainer, trainedPlanIds: [
+            (int) $plans[FormationPlan::IT],
+        ]);
+        $this->seed('trainer-ec@example.com', 'Local Trainer EC', UserRole::Trainer, trainedPlanIds: [
+            (int) $plans[FormationPlan::EC],
+            (int) $plans[FormationPlan::EC_MP],
+        ]);
         $this->seed(
             'apprentice-it@example.com',
             'Local Apprentice IT',
             UserRole::Apprentice,
-            Apprenticeship::where('name', ApprenticeshipSeeder::IT)->value('id'),
+            (int) $plans[FormationPlan::IT],
             $coach->id,
-            $trainer->id,
         );
         $this->seed(
             'apprentice-ec@example.com',
             'Local Apprentice EC',
             UserRole::Apprentice,
-            Apprenticeship::where('name', ApprenticeshipSeeder::EC)->value('id'),
+            (int) $plans[FormationPlan::EC],
             $coach->id,
-            $trainerEc->id,
         );
     }
 
-    private function seed(string $email, string $name, UserRole $role, ?int $apprenticeshipId, ?int $coachId = null, ?int $trainerId = null): User
+    /**
+     * @param  list<int>  $trainedPlanIds
+     */
+    private function seed(string $email, string $name, UserRole $role, ?int $formationPlanId = null, ?int $coachId = null, array $trainedPlanIds = []): User
     {
-        // is_active, apprenticeship_id, coach_id and trainer_id are not mass assignable.
+        // is_active, formation_plan_id and coach_id are not mass assignable.
         $user = User::query()->firstOrNew(['email' => $email]);
         $user->forceFill([
             'name' => $name,
             'password' => 'password',
             'is_active' => true,
-            'apprenticeship_id' => $apprenticeshipId,
+            'formation_plan_id' => $formationPlanId,
             'coach_id' => $coachId,
-            'trainer_id' => $trainerId,
         ])->save();
 
         $user->syncRoles($role->value);
+        $user->trainedFormationPlans()->sync($trainedPlanIds);
 
         return $user;
     }

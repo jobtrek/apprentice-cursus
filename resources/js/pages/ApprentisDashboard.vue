@@ -46,23 +46,21 @@ import type {
     AssignableApprentice,
     AssignSelfAs,
     SupervisorOption,
-    TrainerOption,
 } from '@/types/apprentice';
 
 const props = defineProps<{
     /**
      * Apprentis actifs suivis (`User::listedApprentices()`) : coach → ses
-     * coachés, formateur → ses apprentis de sa filière, admin → tous.
+     * coachés, formateur → les apprentis des plans qu'il forme, admin → tous.
      */
     apprentices: ApprenticeListItem[];
     /** Proposés par « Ajouter un apprenti ». */
     assignable: AssignableApprentice[];
     coaches: SupervisorOption[];
-    trainers: TrainerOption[];
     can: {
-        /** Coach ou formateur : rôle pris en ajoutant un apprenti. */
+        /** Coach : rôle pris en ajoutant un apprenti. */
         assignSelfAs: AssignSelfAs | null;
-        /** Admin local : choix du coach et du formateur de chaque apprenti·e. */
+        /** Admin local : choix du coach de chaque apprenti·e. */
         manageSupervision: boolean;
     };
 }>();
@@ -78,7 +76,7 @@ const description = computed(() => {
     const available = props.assignable.length;
 
     return props.can.assignSelfAs && available > 0
-        ? `${plural(available, 'apprenti')} sans ${props.can.assignSelfAs === 'coach' ? 'coach' : 'formateur'} à ajouter`
+        ? `${plural(available, 'apprenti')} sans coach à ajouter`
         : undefined;
 });
 
@@ -95,8 +93,8 @@ const moreFilterCount = computed(
 const assignOpen = ref(false);
 
 /**
- * Un coach ne voit que ses coachés, un formateur que ses apprentis : la colonne
- * de son propre rôle répéterait son nom sur chaque ligne.
+ * Un coach ne voit que ses coachés : la colonne Coach répéterait son nom sur
+ * chaque ligne.
  */
 const columns = computed(() =>
     [
@@ -322,9 +320,6 @@ const columns = computed(() =>
                                 :own-role="can.assignSelfAs"
                                 :coaches="
                                     can.manageSupervision ? coaches : null
-                                "
-                                :trainers="
-                                    can.manageSupervision ? trainers : null
                                 "
                             />
                         </template>

@@ -10,7 +10,6 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -22,32 +21,32 @@ use Illuminate\Support\Facades\DB;
  * @property string|null $responsibilities
  * @property string|null $technologies
  * @property string|null $repository_url
- * @property string|null $demo_path
+ * @property string|null $demo_url
  * @property CarbonImmutable $date_start
  * @property CarbonImmutable|null $date_end
  */
 #[Fillable([
     'user_id', 'title', 'organization', 'description', 'responsibilities',
-    'technologies', 'repository_url', 'demo_path', 'date_start', 'date_end',
+    'technologies', 'repository_url', 'demo_url', 'date_start', 'date_end',
 ])]
 class Project extends Model
 {
     /** @use HasFactory<ProjectFactory> */
     use HasFactory;
 
+    public $timestamps = false;
+
     protected static function booted(): void
     {
-        static::deleting(function (self $project): void {
-            $project->comments()->delete();
-            // One by one rather than relying on the FK cascade, so each
-            // screenshot's file is removed too (see ProjectScreenshot::booted()).
-            $project->screenshots->each->delete();
-        });
+        // One by one rather than relying on the FK cascade, so each screenshot's
+        // file is removed too (see ProjectScreenshot::booted()). Comments go
+        // through the comments.project_id cascade.
+        static::deleting(fn (self $project) => $project->screenshots->each->delete());
     }
 
     /**
-     * Same reasoning as Grade::delete(): the polymorphic comments are removed by the
-     * booted() hook, and the transaction is what keeps the two deletes atomic.
+     * The transaction keeps the screenshots' deletes and the project's own atomic:
+     * without it, a failure on the project's DELETE would leave its screenshots gone.
      */
     public function delete(): ?bool
     {
@@ -70,9 +69,12 @@ class Project extends Model
         return $this->belongsTo(User::class);
     }
 
-    public function comments(): MorphMany
+    /**
+     * @return HasMany<Comment, $this>
+     */
+    public function comments(): HasMany
     {
-        return $this->morphMany(Comment::class, 'commentable');
+        return $this->hasMany(Comment::class);
     }
 
     /**
@@ -83,6 +85,9 @@ class Project extends Model
         return $this->hasMany(ProjectScreenshot::class);
     }
 
+    /**
+     * @return BelongsToMany<Skill, $this>
+     */
     public function skills(): BelongsToMany
     {
         return $this->belongsToMany(Skill::class, 'project_skill');

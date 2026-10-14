@@ -18,11 +18,12 @@ class GradeController extends Controller
      */
     public function dashboard(Request $request): Response
     {
-        $user = $request->user()->load('apprenticeship');
+        $user = $request->user()->load('formationPlan');
 
         return Inertia::render('GradesDashboard', [
             'grades' => GradeResource::collection(
                 $user->grades()
+                    ->withSemester()
                     ->with(GradeResource::RELATIONS)
                     ->withCount('comments')
                     ->orderBy('test_date')

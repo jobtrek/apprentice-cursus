@@ -26,7 +26,7 @@ class ProjectFactory extends Factory
             'responsibilities' => fake()->jobTitle(),
             'technologies' => 'Laravel, Vue.js',
             'repository_url' => fake()->url(),
-            'demo_path' => fake()->url(),
+            'demo_url' => fake()->url(),
             'date_start' => fake()->date(),
             'date_end' => null,
         ];

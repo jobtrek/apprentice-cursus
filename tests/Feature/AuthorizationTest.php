@@ -113,21 +113,19 @@ describe('coach', function () {
 });
 
 describe('trainer', function () {
-    test('sees grades of its own apprentices only', function () {
+    test('sees grades of the apprentices of its plans only', function () {
         $it = section('IT');
         $ec = section('EC');
-        $trainer = User::factory()->trainer()->create();
-        $trainer->forceFill(['apprenticeship_id' => $it->id])->save();
+        $trainer = makeTrainer($it);
 
-        $ownGrade = makeGrade(makeApprentice($it, trainer: $trainer));
-        $unassignedGrade = makeGrade(makeApprentice($it));
-        $ecGrade = makeGrade(makeApprentice($ec, trainer: $trainer));
+        $itGrade = makeGrade(makeApprentice($it));
+        $ecGrade = makeGrade(makeApprentice($ec));
+        $noPlanGrade = makeGrade(makeApprentice());
 
         $this->actingAs($trainer)->get(route('apprentisdashboard'))->assertOk();
-        $this->actingAs($trainer)->get(route('grades.show', $ownGrade))->assertOk();
-        $this->actingAs($trainer)->get(route('grades.show', $unassignedGrade))->assertForbidden();
-        // Even assigned, an apprentice of another section stays out of reach.
+        $this->actingAs($trainer)->get(route('grades.show', $itGrade))->assertOk();
         $this->actingAs($trainer)->get(route('grades.show', $ecGrade))->assertForbidden();
+        $this->actingAs($trainer)->get(route('grades.show', $noPlanGrade))->assertForbidden();
     });
 
     test('cannot use apprentice-only pages', function () {
@@ -177,14 +175,13 @@ describe('apprentice pages', function () {
         $this->actingAs($coach)->get(route('apprentices.grades.show', [$mine, $grade]))->assertNotFound();
     });
 
-    test('a trainer cannot open an apprentice of another section', function () {
+    test('a trainer cannot open an apprentice of a plan it does not train', function () {
         $it = section('IT');
-        $trainer = User::factory()->trainer()->create();
-        $trainer->forceFill(['apprenticeship_id' => $it->id])->save();
+        $trainer = makeTrainer($it);
         $ec = makeApprentice(section('EC'));
 
         $this->actingAs($trainer)->get(route('apprentices.show', $ec))->assertForbidden();
-        $this->actingAs($trainer)->get(route('apprentices.show', makeApprentice($it, trainer: $trainer)))->assertOk();
+        $this->actingAs($trainer)->get(route('apprentices.show', makeApprentice($it)))->assertOk();
     });
 });
 
@@ -231,16 +228,16 @@ test('auth.user only exposes explicit fields', function () {
         ->get(route('home'))
         ->assertInertia(fn (Assert $page) => $page
             ->has('auth.user', fn (Assert $user) => $user
-                ->hasAll(['id', 'name', 'email', 'role', 'apprenticeship_id', 'is_mp'])));
+                ->hasAll(['id', 'name', 'email', 'role', 'formation_plan_id', 'is_mp'])));
 });
 
 describe('supervision scoping', function () {
     test('a trainer cannot open the page of another trainer or of itself', function () {
         $it = section('IT');
-        $trainer = User::factory()->trainer()->create();
-        $trainer->forceFill(['apprenticeship_id' => $it->id])->save();
-        $otherTrainer = User::factory()->trainer()->create();
-        $otherTrainer->forceFill(['apprenticeship_id' => $it->id])->save();
+        $trainer = makeTrainer($it);
+        // Even with a formation_plan_id the trainer trains, another trainer is no apprentice.
+        $otherTrainer = makeTrainer($it);
+        $otherTrainer->forceFill(['formation_plan_id' => $it->id])->save();
 
         $this->actingAs($trainer)->get(route('apprentices.show', $otherTrainer))->assertForbidden();
         $this->actingAs($trainer)->get(route('apprentices.show', $trainer))->assertForbidden();
@@ -280,22 +277,21 @@ describe('commenting', function () {
             ->and($coach->can('comment', $unassigned))->toBeFalse();
     });
 
-    test('a trainer can view and comment only its own apprentices of its section, never a trainer', function () {
+    test('a trainer can view and comment only the apprentices of its plans, never a trainer', function () {
         $it = section('IT');
         $ec = section('EC');
-        $trainer = User::factory()->trainer()->create();
-        $trainer->forceFill(['apprenticeship_id' => $it->id])->save();
+        $trainer = makeTrainer($it);
 
-        $itGrade = makeGrade(makeApprentice($it, trainer: $trainer));
-        $ecGrade = makeGrade(makeApprentice($ec, trainer: $trainer));
+        $itGrade = makeGrade(makeApprentice($it));
+        $ecGrade = makeGrade(makeApprentice($ec));
 
         expect($trainer->can('view', $itGrade))->toBeTrue()
             ->and($trainer->can('comment', $itGrade))->toBeTrue()
             ->and($trainer->can('view', $ecGrade))->toBeFalse()
             ->and($trainer->can('comment', $ecGrade))->toBeFalse();
 
-        $otherTrainer = User::factory()->trainer()->create();
-        $otherTrainer->forceFill(['apprenticeship_id' => $it->id])->save();
+        $otherTrainer = makeTrainer($it);
+        $otherTrainer->forceFill(['formation_plan_id' => $it->id])->save();
 
         expect($trainer->supervises($otherTrainer))->toBeFalse()
             ->and($trainer->supervises($trainer))->toBeFalse();

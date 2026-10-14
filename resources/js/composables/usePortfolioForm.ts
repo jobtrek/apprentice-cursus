@@ -11,7 +11,7 @@ type ProjectForm = {
     responsibilities: string;
     technologies: string[];
     repository_url: string;
-    demo_path: string;
+    demo_url: string;
     date_start: string;
     date_end: string;
     /** Nouveaux fichiers seulement ; les captures enregistrées sont gardées par id. */
@@ -41,7 +41,7 @@ function toForm(project?: PortfolioProject): ProjectForm {
         responsibilities: project?.responsibilities ?? '',
         technologies: [...(project?.technologies ?? [])],
         repository_url: project?.repository_url ?? '',
-        demo_path: project?.demo_path ?? '',
+        demo_url: project?.demo_url ?? '',
         date_start: project?.date_start ?? '',
         date_end: project?.date_end ?? '',
         screenshots: [],

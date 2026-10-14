@@ -2,7 +2,6 @@
 
 namespace App\Http\Resources;
 
-use App\Models\EvaluationNode;
 use App\Models\Grade;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -10,7 +9,8 @@ use Illuminate\Http\Resources\Json\JsonResource;
 /**
  * Matches the `Grade` type in resources/js/types/grade.ts.
  *
- * Expects `GradeResource::RELATIONS` to be eager loaded.
+ * Expects `GradeResource::RELATIONS` to be eager loaded, and the query to use
+ * Grade::withSemester() for lists (one query instead of one per grade).
  *
  * @mixin Grade
  */
@@ -20,25 +20,25 @@ class GradeResource extends JsonResource
      * Eager-load path for the graded node and its ancestors.
      *
      * In the seeded IT/EC trees a leaf is at most 3 levels below the root
-     * (leaf -> subdomain/variant -> domain -> root). The 4th `parents` level
-     * loads the root's (empty) parents, so the ancestor walk knows it reached
+     * (leaf -> subdomain/variant -> domain -> root). The 4th `parent` level
+     * loads the root's (null) parent, so the ancestor walk knows it reached
      * the top without lazy loading. A deeper tree still resolves correctly,
      * only through lazy loads.
      */
-    public const RELATIONS = 'evaluationNode.parents.parents.parents.parents';
+    public const RELATIONS = 'averageNode.parent.parent.parent.parent';
 
     /**
      * @return array<string, mixed>
      */
     public function toArray(Request $request): array
     {
-        $parent = $this->firstParent($this->evaluationNode);
+        $parent = $this->averageNode->parent;
 
         return [
             'id' => $this->id,
-            'node_id' => $this->evaluation_node_id,
-            'title' => $this->evaluationNode->name,
-            // First parent by connection id; empty when the node has none.
+            'node_id' => $this->average_node_id,
+            'title' => $this->averageNode->name,
+            // Direct parent; empty when the node has none.
             'subject' => $parent === null ? '' : $parent->name,
             // Ancestor names from the top-level domain (child of the root) down to the direct parent; the root itself is excluded; `[]` for a node without parents.
             'path' => $this->path(),
@@ -57,24 +57,18 @@ class GradeResource extends JsonResource
     private function path(): array
     {
         $names = [];
-        $visited = [$this->evaluationNode->id => true];
-        $node = $this->firstParent($this->evaluationNode);
+        $visited = [$this->averageNode->id => true];
+        $node = $this->averageNode->parent;
 
         while ($node !== null && ! isset($visited[$node->id])) {
             $visited[$node->id] = true;
             $names[] = $node->name;
-            $node = $this->firstParent($node);
+            $node = $node->parent;
         }
 
         // The last collected name is the root: drop it, then order domain -> direct parent.
         array_pop($names);
 
         return array_reverse($names);
-    }
-
-    private function firstParent(EvaluationNode $node): ?EvaluationNode
-    {
-        /** @var EvaluationNode|null */
-        return $node->parents->sortBy('pivot.id')->first();
     }
 }
