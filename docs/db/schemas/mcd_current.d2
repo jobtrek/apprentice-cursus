@@ -8,7 +8,6 @@ vars: {
 formation_plans: {
   shape: sql_table
   id: bigint {constraint: primary_key}
-  root_domain_id: bigint {constraint: [foreign_key; unique]} # reference a root domain, domain with no parent that serve as the final grade for that formation_plan.
   name: varchar
 }
 
@@ -24,37 +23,27 @@ users: {
   password: varchar
   is_active: boolean
   synced_at: timestamp
+  formation_plan_id: bigint {constraint: FK}
   coach_id: bigint {constraint: foreign_key}
 }
 
-users_formation_plans: {
-  shape: sql_table
-  user_id: bigint {constraint: FK} # Reference a selected id within users that is a trainers.
-  formation_plan_id: bigint {constraint: FK} # Reference the formation plan that trainer work for. Who he's training (DEV ? EC ?)
-}
-
-users -> users_formation_plans: a trainer that train a plan{
+formation_plans -> users: a plan that is trained {
   source-arrowhead: {shape: cf-one}
   target-arrowhead: {shape: cf-many}
 }
 
-formation_plans -> users_formation_plans: a plan that is trained {
-  source-arrowhead: {shape: cf-one}
-  target-arrowhead: {shape: cf-many}
-}
-
-formation_plans_nodes: {
+average_node_formation_plan: {
   shape: sql_table
   formation_plan_id: bigint {constraint: [primary_key; foreign_key]} # Reference the formation plan that uses the node.
   average_node_id: bigint {constraint: [primary_key; foreign_key]} # Reference an average node that is part of that plan. Composite primary key: the same pair can only exist once.
 }
 
-formation_plans -> formation_plans_nodes: a plan that uses nodes {
+formation_plans -> average_node_formation_plan: a plan that uses nodes {
   source-arrowhead: {shape: cf-one-required}
   target-arrowhead: {shape: cf-many}
 }
 
-grades.average_nodes -> formation_plans_nodes: a node used by plans {
+grades.average_nodes -> average_node_formation_plan: a node used by plans {
   source-arrowhead: {shape: cf-one-required}
   target-arrowhead: {shape: cf-many}
 }
@@ -80,13 +69,6 @@ users -> grades.grades: user-grade {
 users.coach_id -> users.id: coach {
   source-arrowhead: {shape: cf-one}
   target-arrowhead: {shape: cf-many}
-}
-
-
-
-formation_plans -> grades.average_nodes {
-  source-arrowhead: {shape: cf-one-required}
-  target-arrowhead: {shape: cf-one}
 }
 
 projects: {
