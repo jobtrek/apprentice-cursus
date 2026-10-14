@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Head } from '@inertiajs/vue3';
+import { Head, Link } from '@inertiajs/vue3';
 import {
     ArrowLeftIcon,
     BellIcon,
@@ -31,7 +31,7 @@ import { cn } from '@/lib/utils';
 
 const props = defineProps<{
     /** Notification à ouvrir à l'arrivée, depuis le menu de la navbar. */
-    selected: number | null;
+    selected: string | null;
 }>();
 
 const { notifications, unreadCount, markAsRead, markAsUnread, markAllAsRead } =
@@ -58,7 +58,7 @@ const visibleNotifications = computed(() =>
         : notifications.value,
 );
 
-const selectedId = ref<number | null>(null);
+const selectedId = ref<string | null>(null);
 
 const selectedNotification = computed(
     () =>
@@ -66,7 +66,7 @@ const selectedNotification = computed(
         null,
 );
 
-function open(id: number): void {
+function open(id: string): void {
     selectedId.value = id;
     markAsRead(id);
 }
@@ -106,7 +106,7 @@ function toggleRead(): void {
     <PageContainer size="lg">
         <PageHeader
             title="Notifications"
-            description="Les commentaires de vos coachs et formateurs sur vos notes et projets."
+            description="Les notes ajoutées ou supprimées par vos apprentis et les commentaires de vos coachs et formateurs."
         >
             <template #actions>
                 <Button
@@ -319,6 +319,16 @@ function toggleRead(): void {
                                 {{ selectedNotification.target }}
                             </p>
                         </div>
+
+                        <Button
+                            v-if="selectedNotification.url"
+                            as-child
+                            class="self-start"
+                        >
+                            <Link :href="selectedNotification.url">
+                                Voir la note
+                            </Link>
+                        </Button>
                     </article>
                 </template>
 

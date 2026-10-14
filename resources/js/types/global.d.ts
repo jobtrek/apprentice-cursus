@@ -1,4 +1,5 @@
 import type { Auth } from '@/types/auth';
+import type { AppNotification } from '@/types/notification';
 
 // Extend ImportMeta interface for Vite...
 declare module 'vite/client' {
@@ -18,6 +19,8 @@ declare module '@inertiajs/core' {
         sharedPageProps: {
             name: string;
             auth: Auth;
+            notifications: AppNotification[];
+            unreadNotificationsCount: number;
             [key: string]: unknown;
         };
     }

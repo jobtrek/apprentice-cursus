@@ -1,17 +1,7 @@
+import { router, usePage } from '@inertiajs/vue3';
 import { Temporal } from 'temporal-polyfill';
-import { computed, ref } from 'vue';
-import notificationsData from '@/data/notifications.json';
-import type { AppNotification } from '@/types/notification';
-
-/**
- * État partagé des notifications. Comme pour le portfolio, les données
- * viennent d'un JSON tant que le backend ne les expose pas via Inertia :
- * les « marquer comme lu » restent en mémoire et sont perdus au rechargement
- * complet de la page.
- */
-const notifications = ref<AppNotification[]>(
-    structuredClone(notificationsData.notifications) as AppNotification[],
-);
+import { computed } from 'vue';
+import notificationsRoutes from '@/routes/notifications';
 
 const pad = (value: number): string => String(value).padStart(2, '0');
 
@@ -72,31 +62,42 @@ export const formatNotificationFullDate = (date: string): string => {
     return `${pad(created.day)}.${pad(created.month)}.${created.year} à ${created.toPlainTime().toString({ smallestUnit: 'minute' })}`;
 };
 
+/**
+ * Seules les notifications changent : on évite de recharger les props de la
+ * page courante (la boîte de réception garde sa sélection et son filtre).
+ */
+const refreshNotifications = {
+    only: ['notifications', 'unreadNotificationsCount'],
+    preserveScroll: true,
+    preserveState: true,
+};
+
+/**
+ * Les notifications viennent de la prop Inertia partagée `notifications` ;
+ * « lu » / « non lu » sont enregistrés côté serveur puis la prop est rechargée.
+ */
 export const useNotifications = () => {
-    const unreadCount = computed(
-        () => notifications.value.filter((item) => !item.read).length,
-    );
+    const page = usePage();
 
-    const markAsRead = (id: number): void => {
-        const notification = notifications.value.find((item) => item.id === id);
+    const notifications = computed(() => page.props.notifications);
+    const unreadCount = computed(() => page.props.unreadNotificationsCount);
 
-        if (notification) {
-            notification.read = true;
+    const markAsRead = (id: string): void => {
+        if (
+            notifications.value.find((item) => item.id === id)?.read !== false
+        ) {
+            return;
         }
+
+        router.put(notificationsRoutes.read.url(id), {}, refreshNotifications);
     };
 
-    const markAsUnread = (id: number): void => {
-        const notification = notifications.value.find((item) => item.id === id);
-
-        if (notification) {
-            notification.read = false;
-        }
+    const markAsUnread = (id: string): void => {
+        router.delete(notificationsRoutes.unread.url(id), refreshNotifications);
     };
 
     const markAllAsRead = (): void => {
-        notifications.value.forEach((item) => {
-            item.read = true;
-        });
+        router.put(notificationsRoutes.readAll.url(), {}, refreshNotifications);
     };
 
     return {

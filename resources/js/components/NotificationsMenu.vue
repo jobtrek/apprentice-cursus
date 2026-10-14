@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Link, router } from '@inertiajs/vue3';
+import { Link, router, usePage, usePoll } from '@inertiajs/vue3';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import {
@@ -17,8 +17,20 @@ import notificationsRoutes from '@/routes/notifications';
 import { BellIcon } from '@lucide/vue';
 import { computed, ref } from 'vue';
 
-const { notifications, unreadCount, markAsRead, markAllAsRead } =
-    useNotifications();
+const { notifications, unreadCount, markAllAsRead } = useNotifications();
+
+const NOTIFICATIONS_POLL_INTERVAL_MS = 30_000;
+
+/**
+ * Pas de temps réel : la navbar recharge seulement les notifications toutes
+ * les 30 secondes. Inertia ralentit le sondage tant que l'onglet est en
+ * arrière-plan, et on ne sonde pas hors connexion.
+ */
+usePoll(
+    NOTIFICATIONS_POLL_INTERVAL_MS,
+    { only: ['notifications', 'unreadNotificationsCount'] },
+    { autoStart: usePage().props.auth.user !== null },
+);
 
 /**
  * Contrôlé : la navbar vit dans le layout persistant, le popover resterait
@@ -26,8 +38,8 @@ const { notifications, unreadCount, markAsRead, markAllAsRead } =
  */
 const open = ref(false);
 
-function openInInbox(id: number): void {
-    markAsRead(id);
+/** La boîte de réception marque la notification comme lue en l'ouvrant. */
+function openInInbox(id: string): void {
     open.value = false;
     router.visit(notificationsRoutes.index({ query: { notification: id } }));
 }
