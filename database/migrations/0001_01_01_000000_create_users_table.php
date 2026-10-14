@@ -13,12 +13,19 @@ return new class extends Migration
     {
         Schema::create('users', function (Blueprint $table) {
             $table->id();
+            $table->string('azure_id')->nullable()->unique();
+            $table->string('tenant_id')->nullable();
             $table->string('name');
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
+            // Nullable: SSO accounts have no local password.
             $table->string('password')->nullable();
-            $table->rememberToken();
-            $table->timestamps();
+            $table->boolean('is_active')->default(true);
+            $table->timestamp('synced_at')->nullable();
+            $table->foreignId('coach_id')->nullable()->constrained('users')->nullOnDelete();
+
+            // Postgres does not index foreign keys automatically.
+            $table->index('coach_id');
         });
 
         Schema::create('password_reset_tokens', function (Blueprint $table) {

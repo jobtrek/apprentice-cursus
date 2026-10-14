@@ -11,12 +11,9 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('users', function (Blueprint $table) {
-            $table->dropColumn([
-                'remember_token',
-                'created_at',
-                'updated_at',
-            ]);
+        Schema::create('formation_plans', function (Blueprint $table) {
+            $table->id();
+            $table->string('name');
         });
     }
 
@@ -25,9 +22,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('users', function (Blueprint $table) {
-            $table->rememberToken();
-            $table->timestamps();
-        });
+        Schema::dropIfExists('formation_plans');
     }
 };
