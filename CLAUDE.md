@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-Grade-tracking app for an apprenticeship program (Laravel + Inertia + Vue). Coaches/trainers monitor apprentice grades and training portfolios; apprentices submit grades and maintain a "formation file" (training portfolio). Two main feature areas: grade management and formation-file management. See `README.md` for full feature descriptions and `docs/workflows/` for the source business-process PDFs (in French) these features must follow.
+Grade-tracking app for an apprenticeship program (Laravel + Inertia + Vue). Coaches/trainers monitor apprentice grades and training portfolios; apprentices submit grades and maintain a "formation file" (training portfolio). Two main feature areas: grade management and formation-file management. See `README.md` for full feature descriptions and `docs/workflows/` for the source business-process docs (in French, Markdown transcriptions of the original PDFs) these features must follow.
 
 Domain source-of-truth docs (read before touching grading/tree logic):
 
@@ -16,7 +16,7 @@ Domain source-of-truth docs (read before touching grading/tree logic):
 
 ## Stack
 
-Laravel 13 (PHP 8.3+) · Inertia.js · Vue 3 · Vite 8 · Tailwind 4 · shadcn-vue · PostgreSQL. Dev environment runs via Laravel Sail (Docker). Auth is handled by Laravel Fortify.
+Laravel 13 (PHP 8.3+) · Inertia.js · Vue 3 · Vite 8 · Tailwind 4 · shadcn-vue · PostgreSQL. Dev environment runs via Laravel Sail (Docker). Auth is Microsoft Entra SSO via Socialite (`socialiteproviders/microsoft-azure`); password login exists only in `local`. Roles come from Entra groups and are stored as Spatie roles.
 
 ## Commands
 

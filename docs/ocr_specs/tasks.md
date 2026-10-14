@@ -4,7 +4,7 @@ Backend work for Automatic reading, in order. Details: [`stack.md`](stack.md), d
 
 ## Setup
 
-- [ ] **1. Config.** Publish `laravel/ai`'s config (`sail artisan vendor:publish --provider="Laravel\Ai\AiServiceProvider"`) and add `GEMINI_API_KEY` and `TYPESAFE_API_KEY` to `.env` and `.env.example`. Create `config/ocr.php` for the pinned models, 200 dpi, the 8192 token cap, token prices and the 0.5 flag threshold.
+- [ ] **1. Config.** Done: `laravel/ai` 1.2.1 installed, `config/ai.php` published, `GEMINI_API_KEY` and `TYPESAFE_API_KEY` in `.env.example` (add them to your own `.env`). Left: create `config/ocr.php` for the pinned models, 200 dpi, the 8192 token cap, token prices and the 0.5 flag threshold.
 - [ ] **2. Imagick + Ghostscript.** Run `sail:publish`, add `php-imagick` and `ghostscript` to the Sail Dockerfile, then `sail build --no-cache`. Check with `sail php -m | grep imagick` and `gs --version` inside the container.
 - [ ] **3. Queue worker.** Add a `queue:work` process (the `database` driver) to `compose.yaml`, since nothing runs queued jobs today.
 

@@ -18,4 +18,4 @@
 | PDF rendering   | `vue-pdf-embed` (pdf.js wrapper)                                        |
 | Database        | PostgreSQL                                                              |
 | Auth            | Microsoft Entra ID via Socialite (`socialiteproviders/microsoft-azure`) |
-| Component tests | Vitest + Vue Testing Library (planned, not wired up yet)                |
+| Component tests | `vp test` with `vite-plus/test` (planned, not wired up yet)              |

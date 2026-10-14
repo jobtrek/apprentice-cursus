@@ -1,5 +1,7 @@
 # PR #182 review fixes — final report
 
+> **Historical (2026-09-30), do not follow.** Superseded by `docs/adr/ADR.md` and `docs/project-docs/role_permissions.md`: `coaching.assign-self` now has a route (D1), accounts come from the daily sync (D3), and the `docs/plans/`, `azure_id_groupd.md`, `azure_groups.md` and `docs/project-docs/notes.md` files it names were never committed.
+
 Branch: `azure/roles` (not pushed). Review source: `issue_table.md` (found in `~/.local/share/Trash/files/issue_table.md`, not at the repo root; left there, never committed).
 Plan: `pr-182-fix-plan.md` (session scratchpad), owner decisions D1–D8.
 

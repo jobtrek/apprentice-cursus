@@ -170,7 +170,7 @@ When `flagged` is true, `test_type` / `grade` hold the best guess (or null) and 
 
 ## Implementation Decisions
 
-- **Deployment:** Python FastAPI service in one Docker container; Laravel calls it from a queue job (synchronous from the user's view, ~5–10 s). Laravel keeps uploads, queue, confirm UI and storage. The PHP port in `properties.md` is replaced, not extended.
+- **Deployment:** Python FastAPI service in one Docker container; Laravel calls it from a queue job (synchronous from the user's view, ~5–10 s). Laravel keeps uploads, queue, confirm UI and storage. The PHP port in `properties.md` (notar repo, not in this one) is replaced, not extended.
 - **Shared core:** one `process(pdf_bytes, providers) → PipelineResult` function used by both the service and the benchmark runner. Providers (Gemini flash-lite, stronger Gemini, Jev) are injected.
 - **Reuse:** rendering, cropping, grade normalization, JSON/regex parsing, subject aliases, Jev flattening, the page fallback and the loop guard all exist in the benchmark and are reused as-is.
 - **Call 1 schema** extends the current `{text, grade}` with `subject` (enum of Test types + `OTHER`, as in the `direct_subject` variant) and `grade_box`.

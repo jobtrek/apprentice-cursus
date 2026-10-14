@@ -128,6 +128,5 @@ In the same change:
 ## Further Notes
 
 - The 7 remaining misses (`final_bench_mark.md`): rank 1 targets `2_3_Eco&Droit_5`. Rank 2 targets Module tests in production (none are in the 67). The other 5 are grade misses and wait for phase 2.
-- Ship gate for production remains the holdout gate from the pipeline spec: unflagged Pre-fill accuracy ≥ 98%, Flagged share ≤ 15%, cost ≤ $0.003 per test. The service can be deployed before the holdout, but it should stay behind the confirm step (ADR 0001).
-- `pipeline-spec.md` points to a `CONTEXT.md` glossary that doesn't exist in the repo. This spec uses its terms anyway (Test type, Subject, Module, Pre-fill, Flagged, Reading, Confirmation).
+- _(Superseded: the gate is now `ocr:bench` ≥ 56/67, see `docs/adr/ADR.md`.)_ Ship gate for production remains the holdout gate from the pipeline spec: unflagged Pre-fill accuracy ≥ 98%, Flagged share ≤ 15%, cost ≤ $0.003 per test. The service can be deployed before the holdout, but it should stay behind the confirm step (ADR 0001).
 - Open question: where the Laravel app and the service run (same host or not). This decides whether the shared secret is enough or TLS is needed between them.

@@ -9,7 +9,7 @@ External docs for every part of [`stack.md`](stack.md), grouped by layer. All li
 | [`stack.md`](stack.md) | What to build: scope, flow, layers, code layout, open questions |
 | [`RECOMMENDATION.md`](RECOMMENDATION.md) | Why notar v2: scores of all 27 runs, the flag rule |
 | [`final_bench_mark.md`](final_bench_mark.md) | Where the 89.6% comes from |
-| [`pipeline-spec.md`](pipeline-spec.md) | Ship gate (≥ 98% unflagged, ≤ 15% flagged, ≤ $0.003/test) |
+| [`pipeline-spec.md`](pipeline-spec.md) | Original Python pipeline spec (superseded in part). Its holdout ship gate no longer applies: the gate is `ocr:bench` ≥ 56/67 (ADR) |
 | [`../adr/ADR.md`](../adr/ADR.md) | Decision: Automatic reading runs inside Laravel, not as a Python service |
 | [`../../CONTEXT.md`](../../CONTEXT.md) | Terms (Reading, Pre-fill, Flagged, Confirmation, Processing consent) |
 | [`config/prompt.md`](config/prompt.md), [`config/subjects.json`](config/subjects.json), [`config/jev.json`](config/jev.json) | The prompt, Test types and Jev request to port unchanged |
@@ -26,7 +26,7 @@ External docs for every part of [`stack.md`](stack.md), grouped by layer. All li
 | [Confidence](https://docs.typesafe.ai/confidence) | What `confidence` means (open question 1: the 0.5 threshold) |
 | [Models](https://docs.typesafe.ai/models) | Pinning `jev-1.13.0` (open question 2) |
 
-## Gemini (raw `Http` call)
+## Gemini (`laravel/ai` agent `GeminiService`; raw `generateContent` only as the fallback)
 
 | Link | Used for |
 |---|---|
@@ -40,8 +40,8 @@ External docs for every part of [`stack.md`](stack.md), grouped by layer. All li
 
 | Link | Used for |
 |---|---|
-| [HTTP client](https://laravel.com/docs/13.x/http-client) | `Gemini.php` (`Http::post`) |
-| [HTTP client: testing](https://laravel.com/docs/13.x/http-client#testing) | `Http::fake()` in `TestReaderTest.php` |
+| [HTTP client](https://laravel.com/docs/13.x/http-client) | Fallback only: `Http::post` on `generateContent` if `ocr:bench` fails with `GeminiService` |
+| [HTTP client: testing](https://laravel.com/docs/13.x/http-client#testing) | `Http::fake()`, only if the fallback is used (otherwise `GeminiService::fake()`) |
 | [Queues](https://laravel.com/docs/13.x/queues) | `ReadTest` job, `database` driver, `tries`, backoff |
 | [Queues: failed jobs](https://laravel.com/docs/13.x/queues#dealing-with-failed-jobs) | `failed()` → reading marked failed → Manual entry |
 | [Form request validation](https://laravel.com/docs/13.x/validation#form-request-validation) | `StoreTestUploadRequest` (PDF only, 10 MB) |

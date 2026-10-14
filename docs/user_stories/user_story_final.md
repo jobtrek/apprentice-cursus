@@ -246,8 +246,8 @@ so that feedback from my coach or trainer is not lost.
 ## Review by Coach/Trainer
 
 As a coach,
-I want to see a dashboard of all apprentices (EC and IT),
-so that I have an entry point to each apprentice's record.
+I want to see a dashboard of the apprentices I coach (EC and IT),
+so that I have an entry point to each of their records.
 
 As a coach,
 I want to open an apprentice's grades grouped by subject with their averages,
@@ -258,7 +258,7 @@ I want to open a specific grade and view the scanned PDF,
 so that I can review the actual test and not just the grade.
 
 As a trainer,
-I want the same access (dashboard, grades, scans) for all apprentices of my section,
+I want the same access (dashboard, grades, scans) for the apprentices of my section assigned to me,
 so that I can track their progress without using a separate tool.
 
 As a trainer,
@@ -276,7 +276,7 @@ so that I have a complete view of the feedback given to the apprentice.
 As a coach or trainer,
 I want a deactivated apprentice to disappear from my active list while their grades remain read-only under an "Archived" filter,
 so that my active view stays clean while preserving the history.
-(An account is deactivated when its app role is removed in Microsoft Entra, and reactivated unchanged if it is given back.)
+(An account is deactivated when it is removed from its Microsoft Entra group, and reactivated unchanged if it is added back.)
 
 As a coach or trainer,
 I want commenting on a deactivated apprentice's grades or projects to be refused,
@@ -331,7 +331,7 @@ I want to automatically receive an email when an apprentice I coach adds a grade
 so that I know there is something to review without having to check the application.
 
 As a trainer,
-I want to receive the same email for every apprentice of my section,
+I want to receive the same email for every apprentice of my section assigned to me,
 so that I am notified of new grades as soon as they are submitted.
 
 As a coach or trainer,
@@ -347,7 +347,7 @@ I want to be able to disable email notifications,
 so that I am not flooded with emails if I prefer to check the application manually.
 
 As a coach or trainer,
-I want to receive an email when a grade is deleted by an apprentice I coach or of my section,
+I want to receive an email when a grade is deleted by an apprentice I supervise,
 so that I know the test is no longer in the system.
 
 As a coach or trainer,
@@ -399,11 +399,11 @@ I want to be able to delete an existing project,
 so that I can remove an entry that is no longer part of my portfolio.
 
 As a coach,
-I want to see the portfolio of any apprentice,
+I want to see the portfolio of the apprentices I coach,
 so that I can review their documented projects and skills.
 
 As a trainer,
-I want to see the portfolio of the apprentices of my section,
+I want to see the portfolio of the apprentices of my section assigned to me,
 so that I can review their documented projects and skills.
 
 As a coach or trainer,
@@ -427,9 +427,9 @@ I want existing projects referencing a skill to keep that skill if it is removed
 so that historical data is not altered.
 
 As a deactivated apprentice,
-I want my portfolio to remain readable by coaches and my section's trainers,
+I want my portfolio to remain readable by my coach and my trainer,
 so that their follow-up is not interrupted.
-(Deactivation happens when the app role is removed in Microsoft Entra. Not the same as graduating.)
+(Deactivation happens when the apprentice is removed from their Microsoft Entra group. Not the same as graduating.)
 
 As an IT apprentice,
 I want to be able to reorder my projects,

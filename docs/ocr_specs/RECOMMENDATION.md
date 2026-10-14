@@ -47,6 +47,8 @@ All 27 runs, every confusion matrix (subject and grade), per-class precision/rec
 The existing `Notar/docs/specs/service-spec.md` picked a Python service because "Jev has no PHP SDK". **That's no longer a blocker:** `laravel/ai` v1.0 (2026-09-23) added Jev classification (`typesafe` provider, `Classification::of($text)`). Gemini is one REST call through Laravel's `Http` facade. The only new Composer package is `laravel/ai`, pinned to an exact version (Classification is experimental). See `docs/adr/ADR.md` and `stack.md`.
 
 > An earlier draft of this section proposed a hand-written Jev HTTP client (`POST /v1/systemone`) and no new package. Superseded by the `laravel/ai` decision in `docs/adr/ADR.md`.
+>
+> **Superseded (2026-10-13):** Gemini also goes through `laravel/ai` (an agent, `GeminiService`), not the `Http` facade. The `Http::post` call on `generateContent` below is only the fallback if `ocr:bench` fails. See `docs/adr/ADR.md` and `stack.md`.
 
 Keep the parameters identical, so the 89.6% still applies: model `gemini-3.5-flash-lite`, temperature 0, `maxOutputTokens` 8192, the same prompt (`CALL1_PROMPT` in `Notar/src/notar/providers.py`), PNG at 200 dpi, full page, image before prompt, `jev-1.13.0`, the same `subjects.json`.
 

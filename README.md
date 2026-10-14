@@ -95,7 +95,7 @@ Application distinguish in two main features: a grade managment tool and a forma
 
 ### Grade managment
 
-Source : [Nommage et envoi des notes](docs/workflows/nommage-et-envoi-des-notes-ecole.pdf)
+Source : [Nommage et envoi des notes](docs/workflows/nommage-note.md)
 
 #### Grade transmission automation
 
@@ -113,7 +113,7 @@ Trainers and coaches will be able to add commentaries to apprentice grades. They
 
 Apprentice need to complete a formation file during their cursus, so if something happen that could endanger their formation, they can justify with their formation file.
 
-Source : [Création et maintenance du dossier de formation](docs/workflows/creation-et-maintenance-dossier-de-formation.pdf)
+Source : [Création et maintenance du dossier de formation](docs/workflows/dossier-formation.md)
 
 #### Formation file update
 

@@ -9,17 +9,17 @@ DATABASE STRUCTURE CHOICES DOCS : db.md
 check this one when you need to understand the "WHY" and "HOW THINGS WORKS" in the schema (their purpose, etc.)
 
 DATABASE MODEL : mcd_current.d2
-check this one when you need to see how things are organized in real life, which table are linked,
-what are their attributes...
+the PLANNED redesign (proposal, not built). For the schema that exists today, read
+`docs/adr/ADR.md` (2026-09-09) and `database/migrations/`.
 
 Others files are optional and are more of an history of decision that we've taken as a team,
 you can check them if we ask you to check on older database version, else ignore.
 
 db/ [//]: # (Root)
-├── AGENT.md [//]: # (Your context and documentation)
+├── CONTEXT.md [//]: # (Your context and documentation, this file)
 ├── db.md [//]: # (Structural choices and how they work documentation)
 └── schemas/ [//]: # (database modelling folder)
-├── mcd_current.d2 [//]: # (LATEST VERSION)
+├── mcd_current.d2 [//]: # (PLANNED REDESIGN, not built)
 └── history/ [//]: # (OLDER VERSIONS)
 ├── V1/ [//]: # (FIRST VERSION THAT EMERGED OF THE DB)
 │ ├── mcd.drawio [//]: # (drawio, you can ignore it)
@@ -30,7 +30,7 @@ db/ [//]: # (Root)
 ├── mcd_v2-1.mmd [//]: # (mcd BEFORE Migrations and decision with Agent)
 └── mcd_v2-2.mermaid [//]: # (LATEST V2 database model)
 
-- AGENT.md: `docs/db/AGENT.md`
+- CONTEXT.md: `docs/db/CONTEXT.md`
 - db.md: `docs/db/db.md`
 - mcd_current.d2: `docs/db/schemas/mcd_current.d2`
 - mcd.drawio: `docs/db/schemas/history/V1/mcd.drawio`

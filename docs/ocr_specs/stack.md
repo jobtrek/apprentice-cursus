@@ -74,18 +74,17 @@ The 0.5 threshold was picked on the same PDFs it was scored on. Re-check it once
 
 ## Packages and infra
 
-Not in the app, the Sail image or `compose.yaml` today:
+Already done: `laravel/ai` is pinned to `1.2.1` in `composer.json` (exact version: Classification is experimental), `config/ai.php` is published, and `GEMINI_API_KEY` / `TYPESAFE_API_KEY` are in `.env.example`.
+
+Not in the Sail image or `compose.yaml` yet:
 
 ```bash
-./vendor/bin/sail composer require laravel/ai:1.x.y   # exact version: Classification is experimental
-./vendor/bin/sail artisan vendor:publish --provider="Laravel\Ai\AiServiceProvider"
 ./vendor/bin/sail artisan sail:publish   # then add php8.5-imagick + ghostscript to the runtime Dockerfile
 ./vendor/bin/sail build --no-cache
 ```
 
 - Add a queue worker (`php artisan queue:work`): `compose.yaml` runs no worker yet.
-- Add `GEMINI_API_KEY` and `TYPESAFE_API_KEY` to `.env.example` (`config/ai.php` reads both).
-- `vendor:publish` also publishes the SDK's conversation-table migrations. This feature doesn't use them.
+- `vendor:publish` also published the SDK's conversation-table migration (`2026_10_13_133910_create_agent_conversations_table.php`). This feature doesn't use it.
 - Check before coding: `php -m | grep imagick`, `gs --version`.
 - No change to the Postgres image (no vector column).
 

@@ -1,4 +1,6 @@
-# Database — current model
+# Database — planned redesign
+
+**Status: proposal, not built.** This is the target model in `schemas/mcd_current.d2`. The schema that exists today (`evaluation_nodes`, `evaluation_node_connections`, `users.apprenticeship_id`) is described in `docs/adr/ADR.md` (2026-09-09) and `database/migrations/`.
 
 Source: `schemas/mcd_current.d2`
 

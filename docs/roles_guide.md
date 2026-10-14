@@ -57,8 +57,8 @@ All passwords are `password` (password login is local only).
 
 ## Emails (gotchas)
 
-- `users.email` is the Microsoft login name, saved once at first login and never updated.
-- Users who never logged in don't exist in the app.
+- `users.email` is the Microsoft login name, saved once when the account sync creates the account and never updated.
+- Users who were never synced (not yet in a mapped group, or joined since the last run) don't exist in the app. Run `azure:sync` to add them now.
 - Keep `MAIL_MAILER=log` locally.
 - Sending via Microsoft needs extra permissions from the admin.
 
