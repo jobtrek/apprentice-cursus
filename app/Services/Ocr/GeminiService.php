@@ -2,9 +2,4 @@
 
 namespace App\Services\Ocr;
 
-
-
-class GeminiService
-{
-    
-}
+class GeminiService {}

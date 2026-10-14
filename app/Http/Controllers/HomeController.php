@@ -14,7 +14,7 @@ class HomeController extends Controller
 {
     public function __invoke(Request $request): Response
     {
-        $user = $request->user()->load('apprenticeship');
+        $user = $request->user()->load('formationPlan');
         $ownGrades = $user->can(Permission::GradesViewOwn->value);
 
         $supervises = $user->can(Permission::ApprenticesViewList->value);
@@ -24,6 +24,7 @@ class HomeController extends Controller
             'grades' => $ownGrades
                 ? GradeResource::collection(
                     $user->grades()
+                        ->withSemester()
                         ->with(GradeResource::RELATIONS)
                         ->withCount('comments')
                         ->orderBy('test_date')
@@ -33,14 +34,14 @@ class HomeController extends Controller
                 : [],
             'tree' => $ownGrades ? GradebookTree::for($user) : null,
             'profile' => $ownGrades ? [
-                'track' => $user->apprenticeship?->shortName(),
-                'variant' => $user->is_mp ? 'mp' : 'standard',
+                'track' => $user->formationPlan?->shortName(),
+                'variant' => $user->formationPlan?->isMp() ? 'mp' : 'standard',
             ] : null,
             // Supervisor dashboard: the same rows as the apprentices page.
             'apprentices' => $supervises ? ApprenticeList::for($user) : [],
             'latestGrades' => $supervises ? ApprenticeList::latestGrades($user) : [],
             'activity' => $supervises ? ApprenticeList::monthlyActivity($user) : [],
-            // Apprentices the coach or trainer could still take on.
+            // Apprentices the coach could still take on.
             'assignableCount' => $user->assignableApprentices()->count(),
         ]);
     }

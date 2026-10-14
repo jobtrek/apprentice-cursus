@@ -1,22 +1,13 @@
 <?php
 
+use App\Models\FormationPlan;
 use App\Models\User;
-use Database\Seeders\ApprenticeshipSeeder;
 use Inertia\Testing\AssertableInertia as Assert;
 
 beforeEach(function () {
-    $this->it = section(ApprenticeshipSeeder::IT);
-    $this->ec = section(ApprenticeshipSeeder::EC);
+    $this->it = section(FormationPlan::IT);
+    $this->ec = section(FormationPlan::EC);
 });
-
-/** @return User a trainer of the given section */
-function trainerOf(object $section): User
-{
-    $trainer = User::factory()->trainer()->create();
-    $trainer->forceFill(['apprenticeship_id' => $section->id])->save();
-
-    return $trainer;
-}
 
 describe('coach', function () {
     test('assigns itself to an apprentice with no coach', function () {
@@ -29,7 +20,6 @@ describe('coach', function () {
             ->assertRedirect(route('apprentisdashboard'));
 
         expect($apprentice->fresh()->coach_id)->toBe($coach->id)
-            ->and($apprentice->fresh()->trainer_id)->toBeNull()
             ->and($coach->can('view', $apprentice->fresh()))->toBeTrue();
     });
 
@@ -69,61 +59,25 @@ describe('coach', function () {
 });
 
 describe('trainer', function () {
-    test('assigns itself to an apprentice of its section with no trainer', function () {
-        $trainer = trainerOf($this->it);
+    test('cannot assign itself: it follows the whole plan instead', function () {
+        $trainer = makeTrainer($this->it);
         $apprentice = makeApprentice($this->it);
 
         $this->actingAs($trainer)
-            ->from(route('apprentisdashboard'))
-            ->post(route('apprentices.assign', $apprentice))
-            ->assertRedirect(route('apprentisdashboard'));
-
-        expect($apprentice->fresh()->trainer_id)->toBe($trainer->id)
-            ->and($apprentice->fresh()->coach_id)->toBeNull()
-            ->and($trainer->can('view', $apprentice->fresh()))->toBeTrue();
-    });
-
-    test('cannot assign itself to an apprentice of another section', function () {
-        $trainer = trainerOf($this->it);
-        $apprentice = makeApprentice($this->ec);
-
-        $this->actingAs($trainer)
             ->post(route('apprentices.assign', $apprentice))
             ->assertForbidden();
 
-        expect($apprentice->fresh()->trainer_id)->toBeNull();
+        expect($trainer->can('view', $apprentice))->toBeTrue();
     });
 
-    test('cannot take over an apprentice who already has a trainer', function () {
-        $other = trainerOf($this->it);
-        $apprentice = makeApprentice($this->it, trainer: $other);
-
-        $this->actingAs(trainerOf($this->it))
-            ->post(route('apprentices.assign', $apprentice))
-            ->assertForbidden();
-
-        expect($apprentice->fresh()->trainer_id)->toBe($other->id);
-    });
-
-    test('without a section cannot assign anyone', function () {
-        $this->actingAs(User::factory()->trainer()->create())
-            ->post(route('apprentices.assign', makeApprentice($this->it)))
-            ->assertForbidden();
-    });
-
-    test('is offered only the apprentices of its section without a trainer', function () {
-        $trainer = trainerOf($this->ec);
-        makeApprentice($this->ec, trainer: $trainer);
-        makeApprentice($this->ec, trainer: trainerOf($this->ec));
+    test('is offered no apprentice to add', function () {
         makeApprentice($this->it);
-        $free = makeApprentice($this->ec);
-        $free->forceFill(['name' => 'Free'])->save();
 
-        $this->actingAs($trainer)
+        $this->actingAs(makeTrainer($this->it))
             ->get(route('apprentisdashboard'))
             ->assertInertia(fn (Assert $page) => $page
-                ->where('can.assignSelfAs', 'trainer')
-                ->where('assignable', [['id' => $free->id, 'name' => 'Free', 'track' => 'EC']]));
+                ->where('can.assignSelfAs', null)
+                ->where('assignable', []));
     });
 });
 

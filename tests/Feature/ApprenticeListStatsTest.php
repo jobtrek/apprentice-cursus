@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\FormationPlan;
 use App\Models\User;
 use Inertia\Testing\AssertableInertia as Assert;
 
@@ -55,13 +56,14 @@ test('the supervisor home carries the same grade stats as the apprentice list', 
             ->where('assignableCount', 1));
 });
 
-test('the list derives the apprenticeship year from the latest semester graded and flags MP apprentices', function () {
+test('the list derives the apprenticeship year from the grade dates and flags MP apprentices', function () {
     $coach = User::factory()->coach()->create();
-    $third = makeApprentice(coach: $coach);
-    $third->forceFill(['name' => 'A', 'is_mp' => true])->save();
-    makeGrade($third)->forceFill(['semester' => 2])->save();
-    makeGrade($third)->forceFill(['semester' => 5])->save();
-    makeApprentice(coach: $coach)->forceFill(['name' => 'B'])->save();
+    $third = makeApprentice(section(FormationPlan::EC_MP), $coach);
+    $third->forceFill(['name' => 'A'])->save();
+    // School years 2023-24 and 2025-26: the latest grade is in the third year.
+    makeGrade($third)->forceFill(['test_date' => '2024-03-01'])->save();
+    makeGrade($third)->forceFill(['test_date' => '2025-09-15'])->save();
+    makeApprentice(section(FormationPlan::EC), $coach)->forceFill(['name' => 'B'])->save();
 
     $this->actingAs($coach)
         ->get(route('apprentisdashboard'))

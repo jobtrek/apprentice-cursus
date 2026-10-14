@@ -3,8 +3,6 @@
 namespace App\Policies;
 
 use App\Models\Comment;
-use App\Models\Grade;
-use App\Models\Project;
 use App\Models\User;
 
 class CommentPolicy
@@ -27,10 +25,9 @@ class CommentPolicy
      */
     private function isAuthorOfActiveApprenticeComment(User $user, Comment $comment): bool
     {
-        $commentable = $comment->commentable;
-        $owner = $commentable instanceof Grade || $commentable instanceof Project ? $commentable->user : null;
+        $owner = ($comment->grade ?? $comment->project)?->user;
 
-        if ($commentable instanceof Grade && ! $user->can('view', $commentable)) {
+        if ($comment->grade !== null && ! $user->can('view', $comment->grade)) {
             return false;
         }
 

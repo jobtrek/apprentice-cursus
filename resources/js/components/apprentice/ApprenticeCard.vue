@@ -100,7 +100,7 @@ const situation = computed(() => situationOf(props.apprentice));
             <StatItem v-if="ownRole !== 'coach'" label="Coach">
                 <AssignmentBadge :value="apprentice.coach ?? undefined" />
             </StatItem>
-            <StatItem v-if="ownRole !== 'trainer'" label="Formateur">
+            <StatItem label="Formateur">
                 <AssignmentBadge :value="apprentice.trainer ?? undefined" />
             </StatItem>
         </div>

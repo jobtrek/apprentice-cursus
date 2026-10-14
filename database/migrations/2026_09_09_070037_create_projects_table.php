@@ -20,10 +20,9 @@ return new class extends Migration
             $table->string('responsibilities')->nullable();
             $table->string('technologies')->nullable();
             $table->string('repository_url')->nullable();
-            $table->string('demo_path')->nullable();
+            $table->string('demo_url')->nullable();
             $table->date('date_start');
             $table->date('date_end')->nullable();
-            $table->timestamps();
 
             // Postgres does not index foreign keys automatically; the restrictOnDelete
             // check on user_id would otherwise seq scan the whole table.

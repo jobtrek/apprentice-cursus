@@ -18,7 +18,7 @@ import apprentices from '@/routes/apprentices';
 import type { AssignableApprentice, AssignSelfAs } from '@/types/apprentice';
 
 const props = defineProps<{
-    /** Coach : sans coach. Formateur : sans formateur, de sa filière. */
+    /** Apprentis sans coach. */
     assignable: AssignableApprentice[];
     /** Rôle que l'utilisateur prend auprès de l'apprenti·e ajouté·e. */
     as: AssignSelfAs;
@@ -29,11 +29,6 @@ const TEXTS = {
         description:
             "Apprentis qui n'ont pas encore de coach. En l'ajoutant, vous devenez son coach.",
         empty: 'Tous les apprentis ont déjà un coach.',
-    },
-    trainer: {
-        description:
-            "Apprentis de votre filière qui n'ont pas encore de formateur. En l'ajoutant, vous devenez son formateur.",
-        empty: 'Tous les apprentis de votre filière ont déjà un formateur.',
     },
 } as const;
 

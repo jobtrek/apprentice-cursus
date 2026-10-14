@@ -15,7 +15,6 @@ import type {
     ApprenticeListItem,
     AssignSelfAs,
     SupervisorOption,
-    TrainerOption,
 } from '@/types/apprentice';
 import ApprenticeAvatar from './ApprenticeAvatar.vue';
 import AssignmentBadge from './AssignmentBadge.vue';
@@ -25,9 +24,8 @@ import SupervisorSelect from './SupervisorSelect.vue';
 
 const props = defineProps<{
     apprentice: ApprenticeListItem;
-    /** Admin local : coachs et formateurs proposés dans les cellules. Null sinon. */
+    /** Admin local : coachs proposés dans les cellules. Null sinon. */
     coaches: SupervisorOption[] | null;
-    trainers: TrainerOption[] | null;
     /** Rôle de l'utilisateur : sa colonne est masquée (toujours lui-même). */
     ownRole?: AssignSelfAs | null;
 }>();
@@ -49,14 +47,6 @@ const current = (
     name: string | null,
 ): SupervisorOption | null =>
     id === null || name === null ? null : { id, name };
-
-/** Seuls les formateurs de la filière de l'apprenti·e peuvent le suivre. */
-const trainerOptions = computed(
-    () =>
-        props.trainers?.filter(
-            (trainer) => trainer.track === props.apprentice.track,
-        ) ?? null,
-);
 </script>
 
 <template>
@@ -147,20 +137,9 @@ const trainerOptions = computed(
             </TableCell>
         </template>
 
-        <template v-if="ownRole !== 'trainer'">
-            <TableCell v-if="trainerOptions" @click.stop @keydown.stop>
-                <SupervisorSelect
-                    :current="current(apprentice.trainerId, apprentice.trainer)"
-                    :options="trainerOptions"
-                    :url="apprentices.trainer.update.url(apprentice.id)"
-                    field="trainer_id"
-                    none-label="Aucun formateur"
-                    :label="`Formateur de ${apprentice.name}`"
-                />
-            </TableCell>
-            <TableCell v-else>
-                <AssignmentBadge :value="apprentice.trainer ?? undefined" />
-            </TableCell>
-        </template>
+        <!-- Les formateurs suivent le plan entier : pas de choix par apprenti·e. -->
+        <TableCell>
+            <AssignmentBadge :value="apprentice.trainer ?? undefined" />
+        </TableCell>
     </TableRow>
 </template>

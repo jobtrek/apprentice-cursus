@@ -18,7 +18,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
 class CommentResource extends JsonResource
 {
     /** Eager-load paths: the author and Spatie role behind the role label, the apprentice behind the policy. */
-    public const RELATIONS = ['author.roles', 'commentable.user'];
+    public const RELATIONS = ['author.roles', 'grade.user', 'project.user'];
 
     /**
      * The grade's comments, oldest first, as the page payload.

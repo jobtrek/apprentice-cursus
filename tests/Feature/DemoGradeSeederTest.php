@@ -1,6 +1,5 @@
 <?php
 
-use App\Models\EvaluationNode;
 use App\Models\Grade;
 use App\Models\User;
 use Database\Seeders\DatabaseSeeder;
@@ -20,17 +19,16 @@ describe('in the local environment', function () {
         $this->seed(DatabaseSeeder::class);
     });
 
-    it('gives every demo and local apprentice grades on leaves of their own tree', function () {
+    it('gives every demo and local apprentice grades on leaves of their own plan', function () {
         foreach (DemoGradeSeeder::emails() as $email) {
             $user = seededUser($email);
-            $root = EvaluationNode::query()->findOrFail($user->apprenticeship->evaluation_node_id);
-            $grades = $user->grades()->with('evaluationNode')->get();
+            $grades = $user->grades()->with('averageNode.formationPlans')->get();
 
             expect($grades)->toHaveCount(count(DemoGradeSeeder::GRADES));
 
             foreach ($grades as $grade) {
-                expect($grade->evaluationNode->isLeaf())->toBeTrue();
-                expect($root->hasDescendant($grade->evaluationNode))->toBeTrue();
+                expect($grade->averageNode->isLeaf())->toBeTrue();
+                expect($grade->averageNode->formationPlans->modelKeys())->toContain($user->formation_plan_id);
             }
         }
     });
@@ -57,7 +55,7 @@ describe('in the local environment', function () {
             ->assertInertia(fn (Assert $page) => $page
                 ->component('ApprenticeShow')
                 // The profile computes the real CFC averages from the apprentice's tree.
-                ->where('tree.root', $demo->apprenticeship->evaluation_node_id)
+                ->where('tree.root', $demo->formationPlan->rootNode()?->id)
                 ->has('tree.nodes')
                 // Same statistics as the apprentice's row in the list.
                 ->where('stats.grades_count', 3)

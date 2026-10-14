@@ -5,6 +5,7 @@ namespace App\Support;
 use App\Http\Resources\ApprenticeResource;
 use App\Models\Grade;
 use App\Models\User;
+use App\Support\Gradebook\Semester;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Arr;
 
@@ -61,13 +62,13 @@ class ApprenticeList
     public static function assignable(User $user): array
     {
         return $user->assignableApprentices()
-            ->with('apprenticeship')
+            ->with('formationPlan')
             ->orderBy('name')
             ->get()
             ->map(fn (User $apprentice): array => [
                 'id' => $apprentice->id,
                 'name' => $apprentice->name,
-                'track' => $apprentice->apprenticeship?->shortName(),
+                'track' => $apprentice->formationPlan?->shortName(),
             ])
             ->values()
             ->all();
@@ -83,7 +84,7 @@ class ApprenticeList
     {
         return Grade::query()
             ->whereIn('user_id', $user->listedApprentices()->select('users.id'))
-            ->with(['user:id,name', 'evaluationNode:id,name'])
+            ->with(['user:id,name', 'averageNode:id,name'])
             ->withCount('comments')
             ->orderByDesc('test_date')
             ->orderByDesc('id')
@@ -93,7 +94,7 @@ class ApprenticeList
                 'id' => $grade->id,
                 'apprentice_id' => $grade->user_id,
                 'apprentice' => $grade->user->name,
-                'title' => $grade->evaluationNode->name,
+                'title' => $grade->averageNode->name,
                 // The decimal cast yields a string; the front formats a number.
                 'value' => (float) $grade->value,
                 'date' => $grade->test_date->format('d.m.Y'),
@@ -150,7 +151,7 @@ class ApprenticeList
             ->toBase()
             ->whereIn('user_id', $apprenticeIds)
             ->groupBy('user_id')
-            ->selectRaw('user_id, count(*) as grades_count, avg(value) as average, max(test_date) as last_grade_date, max(semester) as last_semester')
+            ->selectRaw('user_id, count(*) as grades_count, avg(value) as average, min(test_date) as first_grade_date, max(test_date) as last_grade_date')
             ->get()
             ->keyBy('user_id');
 
@@ -165,9 +166,11 @@ class ApprenticeList
                 'last_grade_date' => isset($row->last_grade_date)
                     ? CarbonImmutable::parse($row->last_grade_date)->format('d.m.Y')
                     : null,
-                // No start date is stored yet: the year of the latest semester graded
-                // (S1-S2 → 1, …, S7-S8 → 4) stands in for the year of apprenticeship.
-                'year' => isset($row->last_semester) ? (int) ceil($row->last_semester / 2) : null,
+                // No start date is stored yet: the school year of the latest grade,
+                // counted from the first one, stands in for the year of apprenticeship.
+                'year' => isset($row->first_grade_date, $row->last_grade_date)
+                    ? Semester::year(CarbonImmutable::parse($row->last_grade_date), CarbonImmutable::parse($row->first_grade_date))
+                    : null,
             ];
         }
 

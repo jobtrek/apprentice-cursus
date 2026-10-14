@@ -15,7 +15,6 @@ return new class extends Migration
             $table->id();
             $table->foreignId('project_id')->constrained('projects')->cascadeOnDelete();
             $table->string('path');
-            $table->timestamps();
 
             // Postgres does not index foreign keys automatically; screenshots are
             // always loaded per project and cascade-deleted with it.
