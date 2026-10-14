@@ -2,23 +2,26 @@
 
 use App\Support\RolesAndPermissions;
 use Illuminate\Database\Migrations\Migration;
-use Spatie\Permission\Models\Role;
+use Illuminate\Support\Facades\DB;
 use Spatie\Permission\PermissionRegistrar;
 
 return new class extends Migration
 {
     /**
-     * Create the local-only admin role on already-migrated databases
-     * (idempotent: sync() only creates what is missing).
+     * Seed roles and permissions, so a migrated database works without seeders.
      */
     public function up(): void
     {
         RolesAndPermissions::sync();
     }
 
+    /**
+     * Reverse the migrations.
+     */
     public function down(): void
     {
-        Role::query()->where('name', 'admin')->where('guard_name', 'web')->delete();
+        DB::table(config('permission.table_names.roles'))->delete();
+        DB::table(config('permission.table_names.permissions'))->delete();
 
         app(PermissionRegistrar::class)->forgetCachedPermissions();
     }

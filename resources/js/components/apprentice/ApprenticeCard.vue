@@ -1,10 +1,8 @@
 <script setup lang="ts">
 import { Link } from '@inertiajs/vue3';
-import { BookOpenIcon, EyeIcon, FolderOpenIcon } from '@lucide/vue';
 import { computed } from 'vue';
 import { StatItem } from '@/components/page';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import {
     hasNoRecentGrade,
     relativeDate,
@@ -25,15 +23,6 @@ const props = defineProps<{
     ownRole?: AssignSelfAs | null;
 }>();
 
-defineEmits<{
-    preview: [apprentice: ApprenticeListItem];
-}>();
-
-const profile = (tab?: 'grades' | 'portfolio') =>
-    apprentices.show(props.apprentice.id, {
-        query: tab ? { tab } : undefined,
-    });
-
 const stale = computed(
     () =>
         props.apprentice.stats.grades_count > 0 &&
@@ -46,7 +35,7 @@ const situation = computed(() => situationOf(props.apprentice));
 <template>
     <!--
         Version carte d'une ligne du tableau. Le nom couvre toute la carte
-        (lien étiré) ; les boutons du pied restent cliquables au-dessus.
+        (lien étiré) : toute la carte ouvre le profil.
     -->
     <article
         class="bg-card focus-within:ring-ring/50 relative flex min-w-0 flex-col gap-4 rounded-xl border p-4 shadow-xs transition-all focus-within:ring-[3px] hover:-translate-y-0.5 hover:shadow-md"
@@ -62,7 +51,7 @@ const situation = computed(() => situationOf(props.apprentice));
 
             <div class="flex min-w-0 flex-1 flex-col gap-0.5">
                 <Link
-                    :href="profile()"
+                    :href="apprentices.show(apprentice.id)"
                     class="truncate font-semibold outline-none after:absolute after:inset-0 after:rounded-xl hover:underline"
                 >
                     {{ apprentice.name }}
@@ -111,32 +100,9 @@ const situation = computed(() => situationOf(props.apprentice));
             <StatItem v-if="ownRole !== 'coach'" label="Coach">
                 <AssignmentBadge :value="apprentice.coach ?? undefined" />
             </StatItem>
-            <StatItem v-if="ownRole !== 'trainer'" label="Formateur">
+            <StatItem label="Formateur">
                 <AssignmentBadge :value="apprentice.trainer ?? undefined" />
             </StatItem>
-        </div>
-
-        <div class="relative z-10 -mx-1 -mb-1 flex gap-1 border-t pt-3">
-            <Button
-                variant="ghost"
-                size="sm"
-                @click="$emit('preview', apprentice)"
-            >
-                <EyeIcon aria-hidden="true" />
-                Aperçu
-            </Button>
-            <Button as-child variant="ghost" size="sm">
-                <Link :href="profile('grades')">
-                    <BookOpenIcon aria-hidden="true" />
-                    Notes
-                </Link>
-            </Button>
-            <Button as-child variant="ghost" size="sm">
-                <Link :href="profile('portfolio')">
-                    <FolderOpenIcon aria-hidden="true" />
-                    Portfolio
-                </Link>
-            </Button>
         </div>
     </article>
 </template>

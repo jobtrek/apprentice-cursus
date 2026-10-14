@@ -3,7 +3,7 @@ import type { Grade } from '@/types/grade';
 /**
  * Calcul des moyennes du carnet, comme pour le CFC : les notes sont sur les
  * feuilles de l'arbre d'évaluation, chaque nœud parent fait la moyenne pondérée
- * de ses enfants notés (poids de `evaluation_node_connections`), puis le
+ * de ses enfants notés (poids `average_nodes.weight`), puis le
  * `rounding_step` du nœud est appliqué. Reprend la maquette apprentice-cursus-design.
  */
 
@@ -13,7 +13,6 @@ export interface TreeNode {
     /** Nœud composite (moyenne pondérée) ; une feuille porte des notes. */
     aggregated: boolean;
     rounding_step: number | null;
-    period_scope: 'semester' | 'cursus';
     children: { id: number; weight: number }[];
 }
 
@@ -26,17 +25,27 @@ export interface GradeTree {
 /** Note minimale de réussite. */
 export const PASS = 4;
 export const GRADE_MAX = 6;
-/** Semestres de la formation (grades.semester 1–8). */
+/** Semestres de la formation la plus longue (semestre 1–8 déduit de la date, voir `App\Support\Gradebook\Semester`). */
 export const SEMESTERS = 8;
+
+/** L'apprentissage IT dure 4 ans, l'apprentissage EC 3 ans. */
+const SEMESTERS_BY_TRACK: Record<string, number> = { IT: 8, EC: 6 };
+
+/** Nombre de semestres de la filière ; 8 si elle est inconnue. */
+export const semestersFor = (track: string | null | undefined): number =>
+    (track && SEMESTERS_BY_TRACK[track]) || SEMESTERS;
 
 export const fmt = (n: number): string => n.toFixed(1);
 
 export const plural = (n: number, word: string): string =>
     `${n} ${word}${n > 1 ? 's' : ''}`;
 
-/** `33.33` → « 33.33 », `40` → « 40 ». */
-export const fmtWeight = (weight: number): string =>
-    Number.isInteger(weight) ? String(weight) : weight.toFixed(2);
+/** Poids fractionnaire → pourcentage : `0.4` → « 40 », `0.3333` → « 33.33 ». */
+export const fmtWeight = (weight: number): string => {
+    const percent = Math.round(weight * 10000) / 100;
+
+    return Number.isInteger(percent) ? String(percent) : percent.toFixed(2);
+};
 
 /** « Travail pratique individuel (TPI) » → « TPI » ; sinon le nom entier. */
 export const shortName = (name: string): string =>
@@ -71,6 +80,13 @@ export function status(value: number): [Status, string] {
 
     return ['bad', 'À risque'];
 }
+
+/**
+ * Classe de couleur d'une note (`is-good`, `is-warn`, `is-bad`) : mêmes seuils
+ * que `status()` et que les teintes du profil, pour qu'une note ait la même
+ * couleur sur toutes les pages.
+ */
+export const gradeTone = (value: number): string => `is-${status(value)[0]}`;
 
 const roundTo = (value: number, step: number | null): number =>
     step ? Math.round(value / step) * step : value;
@@ -156,12 +172,6 @@ export function createGradebook(tree: GradeTree, allGrades: Grade[]) {
     const inSemester = (semester: number): Grade[] =>
         allGrades.filter((grade) => grade.semester === semester);
 
-    /** Un domaine a une moyenne par semestre s'il contient une feuille semestrielle. */
-    const hasSemesterLeaves = (id: number): boolean =>
-        [...leavesOf(id)].some(
-            (leaf) => node(leaf)?.period_scope === 'semester',
-        );
-
     /**
      * Toutes les évaluations comptées sous ce nœud ont une note : chaque
      * feuille notée, et chaque enfant de poids non nul complet. `nodeValue`
@@ -198,7 +208,6 @@ export function createGradebook(tree: GradeTree, allGrades: Grade[]) {
         gradesUnder,
         weightOf,
         inSemester,
-        hasSemesterLeaves,
     };
 }
 

@@ -4,9 +4,9 @@ namespace App\Services;
 
 use App\Enums\AzureGroup;
 use App\Enums\UserRole;
-use App\Exceptions\ApprenticeshipNotSeededException;
 use App\Exceptions\AzureAccessRevokedException;
-use App\Models\Apprenticeship;
+use App\Exceptions\FormationPlanNotSeededException;
+use App\Models\FormationPlan;
 use App\Models\User;
 use App\Services\Microsoft\MicrosoftGraphService;
 use Illuminate\Support\Facades\Log;
@@ -59,48 +59,57 @@ class AzureAccountSync
     }
 
     /**
-     * Apply the group's role (Spatie) and apprenticeship to the user and (re)activate it.
-     * A group without a section (coach) clears the apprenticeship.
-     * An apprentice keeps a different existing apprenticeship (moving grades needs
-     * a confirmation); a trainer follows its group's section.
+     * Apply the group's role (Spatie) and formation plans to the user and (re)activate it.
+     * An apprentice starts on the section's first plan and keeps another plan of the same
+     * section (the MP variant is chosen by hand). It also keeps a plan of another section:
+     * moving grades needs a confirmation. A trainer trains every plan of its section;
+     * any other role follows none.
      *
-     * @throws ApprenticeshipNotSeededException before anything is modified
+     * @throws FormationPlanNotSeededException before anything is modified
      */
     public function apply(User $user, AzureGroup $group): void
     {
-        $name = $group->apprenticeship();
-        $apprenticeshipId = null;
+        /** @var array<string, int> $planIds */
+        $planIds = FormationPlan::query()
+            ->whereIn('name', $group->formationPlans())
+            ->pluck('id', 'name')
+            ->map(fn (int|string $id): int => (int) $id)
+            ->all();
 
-        if ($name !== null) {
-            $id = Apprenticeship::where('name', $name)->value('id');
-
-            if ($id === null) {
-                throw new ApprenticeshipNotSeededException($name);
+        foreach ($group->formationPlans() as $name) {
+            if (! isset($planIds[$name])) {
+                throw new FormationPlanNotSeededException($name);
             }
-
-            $apprenticeshipId = (int) $id;
         }
 
+        $isApprentice = $group->role() === UserRole::Apprentice;
         $roleUnchanged = $user->role === $group->role();
+        $planId = $isApprentice ? ($planIds[$group->formationPlans()[0]] ?? null) : null;
 
-        if ($apprenticeshipId !== null && $roleUnchanged && $group->role() === UserRole::Apprentice && $user->apprenticeship_id !== null && $user->apprenticeship_id !== $apprenticeshipId) {
-            Log::warning('Microsoft SSO: section change pending confirmation, apprenticeship kept.', [
-                'user_id' => $user->id,
-                'from' => $user->apprenticeship_id,
-                'to' => $apprenticeshipId,
-            ]);
+        if ($isApprentice && $roleUnchanged && $user->formation_plan_id !== null && $user->formation_plan_id !== $planId) {
+            if (! in_array($user->formation_plan_id, $planIds, true)) {
+                Log::warning('Microsoft SSO: section change pending confirmation, formation plan kept.', [
+                    'user_id' => $user->id,
+                    'from' => $user->formation_plan_id,
+                    'to' => $planId,
+                ]);
+            }
 
-            $apprenticeshipId = $user->apprenticeship_id;
+            $planId = $user->formation_plan_id;
         }
 
         $user->forceFill([
-            'apprenticeship_id' => $apprenticeshipId,
+            'formation_plan_id' => $planId,
             'is_active' => true,
         ]);
 
         if (! $user->exists || $user->isDirty()) {
             $user->save();
         }
+
+        $user->trainedFormationPlans()->sync(
+            $group->role() === UserRole::Trainer ? array_values($planIds) : [],
+        );
 
         if (! $roleUnchanged) {
             $user->syncRoles($group->role()->value);

@@ -2,7 +2,7 @@
 
 namespace App\Enums;
 
-use Database\Seeders\ApprenticeshipSeeder;
+use App\Models\FormationPlan;
 
 /**
  * The Entra ID groups that grant access to the application. The backing value
@@ -25,13 +25,19 @@ enum AzureGroup: string
         };
     }
 
-    /** Coaches belong to no section. */
-    public function apprenticeship(): ?string
+    /**
+     * Formation plans of the group's section: a trainer trains all of them, a new
+     * apprentice starts on the first one (the MP variant is chosen by hand).
+     * Coaches belong to no section.
+     *
+     * @return list<string>
+     */
+    public function formationPlans(): array
     {
         return match ($this) {
-            self::ApprenticesIt, self::TrainerIt => ApprenticeshipSeeder::IT,
-            self::ApprenticesEc, self::TrainerEc => ApprenticeshipSeeder::EC,
-            self::Coach => null,
+            self::ApprenticesIt, self::TrainerIt => [FormationPlan::IT],
+            self::ApprenticesEc, self::TrainerEc => [FormationPlan::EC, FormationPlan::EC_MP],
+            self::Coach => [],
         };
     }
 

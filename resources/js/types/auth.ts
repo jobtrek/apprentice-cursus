@@ -7,7 +7,9 @@ export type User = {
     name: string;
     email: string;
     role: UserRole | null;
-    apprenticeship_id: number | null;
+    formation_plan_id: number | null;
+    /** Variante maturité professionnelle ; false hors apprenti·e. */
+    is_mp: boolean;
 };
 
 /** Booléens de permission partagés par `HandleInertiaRequests` (`auth.can`). */

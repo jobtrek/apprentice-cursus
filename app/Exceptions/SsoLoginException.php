@@ -76,12 +76,12 @@ class SsoLoginException extends RuntimeException
         );
     }
 
-    public static function apprenticeshipMissing(string $name): self
+    public static function formationPlanMissing(string $name): self
     {
         return new self(
             'Could not verify your apprenticeship. Please contact an administrator.',
-            'Microsoft SSO login refused: apprenticeship is not seeded.',
-            ['apprenticeship' => $name],
+            'Microsoft SSO login refused: formation plan is not seeded.',
+            ['formation_plan' => $name],
             'error',
         );
     }

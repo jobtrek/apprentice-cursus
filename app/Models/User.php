@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -24,22 +25,16 @@ use Spatie\Permission\Traits\HasRoles;
  * @property string|null $tenant_id
  * @property string $name
  * @property string $email
- * @property bool|null $is_mp Maturité professionnelle track. NULL = not applicable (non-apprentice roles).
  * @property bool $is_active Deactivation flag. Users are never deleted, only deactivated.
  * @property-read UserRole|null $role Derived from the Spatie role; use syncRoles() to change it.
- * @property string|null $apprenticeship_name
- * @property int|null $apprenticeship_id
+ * @property int|null $formation_plan_id The apprentice's plan; MP or standard is part of the plan.
  * @property int|null $coach_id
- * @property int|null $trainer_id
  * @property Carbon|null $email_verified_at
  * @property string $password
  * @property string|null $two_factor_secret
  * @property string|null $two_factor_recovery_codes
  * @property Carbon|null $two_factor_confirmed_at
- * @property string|null $remember_token
  * @property CarbonImmutable|null $synced_at Last time the Entra account sync confirmed this user. NULL = never synced (local accounts).
- * @property Carbon|null $created_at
- * @property Carbon|null $updated_at
  */
 #[Fillable(['name', 'email', 'password', 'azure_id', 'tenant_id'])]
 #[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
@@ -48,11 +43,7 @@ class User extends Authenticatable
     /** @use HasFactory<UserFactory> */
     use HasFactory, HasRoles, Notifiable;
 
-    /**
-     * Timestamps were dropped from the users table (see
-     * 2026_09_17_083508_drop_default_columns_from_users_table); Azure SSO is
-     * the sole write path and doesn't need them.
-     */
+    /** The users table has no timestamps: Azure SSO is the sole write path and doesn't need them. */
     public $timestamps = false;
 
     /**
@@ -65,7 +56,6 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
-            'is_mp' => 'boolean',
             'is_active' => 'boolean',
             'synced_at' => 'datetime',
         ];
@@ -86,11 +76,23 @@ class User extends Authenticatable
     }
 
     /**
-     * @return BelongsTo<Apprenticeship, $this>
+     * The plan an apprentice follows.
+     *
+     * @return BelongsTo<FormationPlan, $this>
      */
-    public function apprenticeship(): BelongsTo
+    public function formationPlan(): BelongsTo
     {
-        return $this->belongsTo(Apprenticeship::class);
+        return $this->belongsTo(FormationPlan::class);
+    }
+
+    /**
+     * The plans a trainer trains (IT, EC…).
+     *
+     * @return BelongsToMany<FormationPlan, $this>
+     */
+    public function trainedFormationPlans(): BelongsToMany
+    {
+        return $this->belongsToMany(FormationPlan::class, 'users_formation_plans');
     }
 
     /**
@@ -102,33 +104,24 @@ class User extends Authenticatable
     }
 
     /**
-     * @return BelongsTo<self, $this>
+     * @return HasMany<self, $this>
      */
-    public function trainer(): BelongsTo
-    {
-        return $this->belongsTo(self::class, 'trainer_id');
-    }
-
     public function coachees(): HasMany
     {
         return $this->hasMany(self::class, 'coach_id');
     }
 
-    public function trainees(): HasMany
-    {
-        return $this->hasMany(self::class, 'trainer_id');
-    }
-
+    /**
+     * @return HasMany<Grade, $this>
+     */
     public function grades(): HasMany
     {
         return $this->hasMany(Grade::class);
     }
 
-    public function evaluationResults(): HasMany
-    {
-        return $this->hasMany(EvaluationResult::class);
-    }
-
+    /**
+     * @return HasMany<Comment, $this>
+     */
     public function comments(): HasMany
     {
         return $this->hasMany(Comment::class, 'author_id');
@@ -167,7 +160,7 @@ class User extends Authenticatable
 
     /**
      * Active apprentices this user follows: a coach its coachees, a trainer the
-     * apprentices assigned to it in its own section, the local admin everyone.
+     * apprentices of the plans it trains, the local admin everyone.
      *
      * @return Builder<self>
      */
@@ -181,29 +174,30 @@ class User extends Authenticatable
 
         return match ($this->role) {
             UserRole::Coach => $query->where('coach_id', $this->id),
-            UserRole::Trainer => $query->where('trainer_id', $this->id)
-                ->where('apprenticeship_id', $this->apprenticeship_id),
+            UserRole::Trainer => $query->whereIn(
+                'formation_plan_id',
+                $this->trainedFormationPlans()->select('formation_plans.id'),
+            ),
             default => $query->whereRaw('false'),
         };
     }
 
     /**
      * Column this user fills when taking an apprentice on: `coach_id` for a
-     * coach, `trainer_id` for a trainer, null for anyone else (the local admin
-     * assigns from the list's selects instead).
+     * coach, null for anyone else. A trainer follows whole plans, not single
+     * apprentices; the local admin assigns from the list's selects instead.
      */
     public function selfAssignmentColumn(): ?string
     {
         return match (true) {
             $this->hasPermissionTo(Permission::CoachingAssignSelf->value) => 'coach_id',
-            $this->hasPermissionTo(Permission::TrainingAssignSelf->value) => 'trainer_id',
             default => null,
         };
     }
 
     /**
      * Active apprentices this user can take on (see UserPolicy::assignSelf()):
-     * no coach yet for a coach, no trainer yet and in its own section for a trainer.
+     * the ones with no coach yet, for a coach.
      *
      * @return Builder<self>
      */
@@ -213,9 +207,6 @@ class User extends Authenticatable
 
         return match ($this->selfAssignmentColumn()) {
             'coach_id' => $query->whereNull('coach_id'),
-            'trainer_id' => $query->whereNull('trainer_id')
-                ->whereNotNull('apprenticeship_id')
-                ->where('apprenticeship_id', $this->apprenticeship_id),
             default => $query->whereRaw('false'),
         };
     }
@@ -232,10 +223,8 @@ class User extends Authenticatable
 
         return match ($this->role) {
             UserRole::Coach => $apprentice->coach_id === $this->id,
-            // Assigned to this trainer, and still in the trainer's section.
-            UserRole::Trainer => $apprentice->trainer_id === $this->id
-                && $this->apprenticeship_id !== null
-                && $apprentice->apprenticeship_id === $this->apprenticeship_id,
+            UserRole::Trainer => $apprentice->formation_plan_id !== null
+                && $this->trainedFormationPlans()->whereKey($apprentice->formation_plan_id)->exists(),
             default => false,
         };
     }

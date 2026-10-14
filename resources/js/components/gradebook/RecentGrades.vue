@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Link } from '@inertiajs/vue3';
 import { computed } from 'vue';
-import { byDateDesc, fmt, PASS } from '@/lib/gradebook';
+import { byDateDesc, fmt, gradeTone } from '@/lib/gradebook';
 import gradeRoutes from '@/routes/grades';
 import type { Grade } from '@/types/grade';
 import CommentCount from './CommentCount.vue';
@@ -14,13 +14,7 @@ const recent = computed(() => [...props.grades].sort(byDateDesc).slice(0, 5));
 <template>
     <ul v-if="recent.length" class="recent">
         <li v-for="grade in recent" :key="grade.id">
-            <span
-                :class="
-                    grade.value < PASS
-                        ? 'recent__grade is-fail'
-                        : 'recent__grade'
-                "
-            >
+            <span :class="['recent__grade', gradeTone(grade.value)]">
                 {{ fmt(grade.value) }}
             </span>
             <Link

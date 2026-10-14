@@ -47,7 +47,9 @@ class HandleInertiaRequests extends Middleware
                     'name' => $user->name,
                     'email' => $user->email,
                     'role' => $user->role?->value,
-                    'apprenticeship_id' => $user->apprenticeship_id,
+                    'formation_plan_id' => $user->formation_plan_id,
+                    // The grade form lists the maturité subjects instead of the CFC ones.
+                    'is_mp' => $user->formationPlan?->isMp() ?? false,
                 ],
                 'can' => [
                     'createGrade' => $user?->can(Permission::GradesCreate->value) ?? false,

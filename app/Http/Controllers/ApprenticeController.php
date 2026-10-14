@@ -12,7 +12,6 @@ use App\Models\Grade;
 use App\Models\Skill;
 use App\Models\User;
 use App\Support\ApprenticeList;
-use App\Support\Demo\DemoGrade;
 use App\Support\Gradebook\GradebookTree;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -28,31 +27,14 @@ class ApprenticeController extends Controller
         $user = $request->user();
 
         $canManage = $user->can(Permission::SupervisionManage->value);
-        $assignSelfAs = match ($user->selfAssignmentColumn()) {
-            'coach_id' => 'coach',
-            'trainer_id' => 'trainer',
-            default => null,
-        };
+        $assignSelfAs = $user->selfAssignmentColumn() === 'coach_id' ? 'coach' : null;
 
         return Inertia::render('ApprentisDashboard', [
             'apprentices' => ApprenticeList::for($user),
             // Offered by the "Ajouter un apprenti" dialog.
             'assignable' => ApprenticeList::assignable($user),
-            // Local admin: coaches and trainers offered in each row's selects.
             'coaches' => $canManage
                 ? User::role(UserRole::Coach->value)->orderBy('name')->get(['id', 'name'])
-                : [],
-            'trainers' => $canManage
-                ? User::role(UserRole::Trainer->value)
-                    ->with('apprenticeship')
-                    ->orderBy('name')
-                    ->get()
-                    ->map(fn (User $trainer): array => [
-                        'id' => $trainer->id,
-                        'name' => $trainer->name,
-                        'track' => $trainer->apprenticeship?->shortName(),
-                    ])
-                    ->all()
                 : [],
             'can' => [
                 'assignSelfAs' => $assignSelfAs,
@@ -85,6 +67,7 @@ class ApprenticeController extends Controller
             'stats' => ApprenticeList::statsFor($apprentice),
             'grades' => GradeResource::collection(
                 $apprentice->grades()
+                    ->withSemester()
                     ->with(GradeResource::RELATIONS)
                     // Lets the gradebook filter the commented grades.
                     ->withCount('comments')
@@ -99,9 +82,8 @@ class ApprenticeController extends Controller
     }
 
     /**
-     * The coach takes the apprentice as coach, the trainer as trainer. The
-     * whereNull guard makes two supervisors assigning themselves at once safe:
-     * the slower one updates no row and is refused.
+     * The coach takes the apprentice on. The whereNull guard makes two coaches
+     * assigning themselves at once safe: the slower one updates no row and is refused.
      */
     public function assign(Request $request, User $apprentice): RedirectResponse
     {
@@ -129,7 +111,7 @@ class ApprenticeController extends Controller
         Gate::authorize('view', $grade);
 
         return Inertia::render('GradeDetails', [
-            ...DemoGrade::props(),
+            'pdfUrl' => GradeController::fileUrl($grade),
             'comments' => CommentResource::forGrade($grade),
             'apprenticeId' => $apprentice->id,
             'apprentice' => (new ApprenticeResource($apprentice->load(ApprenticeResource::RELATIONS)))->resolve(),

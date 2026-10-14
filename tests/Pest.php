@@ -1,7 +1,7 @@
 <?php
 
-use App\Models\Apprenticeship;
-use App\Models\EvaluationNode;
+use App\Models\AverageNode;
+use App\Models\FormationPlan;
 use App\Models\Grade;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -50,30 +50,37 @@ expect()->extend('toBeOne', function () {
 
 function makeGrade(User $apprentice): Grade
 {
-    $node = EvaluationNode::query()->firstOrCreate(['name' => 'Test node', 'period_scope' => 'semester']);
+    $node = AverageNode::query()->firstOrCreate(['name' => 'Test node']);
 
     return Grade::query()->create([
         'user_id' => $apprentice->id,
-        'evaluation_node_id' => $node->id,
+        'average_node_id' => $node->id,
         'value' => 5.0,
         'test_date' => '2026-01-15',
-        'semester' => 1,
     ]);
 }
 
-function makeApprentice(?Apprenticeship $section = null, ?User $coach = null, ?User $trainer = null): User
+function makeApprentice(?FormationPlan $section = null, ?User $coach = null): User
 {
     $apprentice = User::factory()->create();
     $apprentice->forceFill([
-        'apprenticeship_id' => $section?->id,
+        'formation_plan_id' => $section?->id,
         'coach_id' => $coach?->id,
-        'trainer_id' => $trainer?->id,
     ])->save();
 
     return $apprentice;
 }
 
-function section(string $name): Apprenticeship
+/** A trainer of the given plans: it follows every apprentice of them. */
+function makeTrainer(FormationPlan ...$plans): User
 {
-    return Apprenticeship::query()->create(['name' => $name]);
+    $trainer = User::factory()->trainer()->create();
+    $trainer->trainedFormationPlans()->attach(array_map(fn (FormationPlan $plan): int => $plan->id, $plans));
+
+    return $trainer;
+}
+
+function section(string $name): FormationPlan
+{
+    return FormationPlan::query()->create(['name' => $name]);
 }

@@ -2,8 +2,6 @@
 
 namespace App\Providers;
 
-use App\Models\Grade;
-use App\Models\Project;
 use App\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Relations\Relation;
@@ -53,13 +51,11 @@ class AppServiceProvider extends ServiceProvider
      */
     protected function configureDefaults(): void
     {
-        // Short aliases keep commentable_type stable if a model is ever renamed or moved.
+        // Short aliases keep model_type (Spatie roles) stable if a model is ever renamed or moved.
         // enforceMorphMap() also throws on any model used polymorphically that is missing
         // here — so anything adding a morph relation later (database notifications via
         // Notifiable, an activity log, a media library) must be added to this map.
         Relation::enforceMorphMap([
-            'grade' => Grade::class,
-            'project' => Project::class,
             'user' => User::class,
         ]);
 

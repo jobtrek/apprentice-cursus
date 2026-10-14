@@ -1,9 +1,8 @@
 <?php
 
 use App\Enums\UserRole;
-use App\Models\Apprenticeship;
+use App\Models\FormationPlan;
 use App\Models\User;
-use Database\Seeders\ApprenticeshipSeeder;
 use Database\Seeders\DatabaseSeeder;
 use Database\Seeders\DemoApprenticeSeeder;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
@@ -24,25 +23,28 @@ beforeEach(function () {
 });
 
 dataset('local accounts', [
-    'admin' => ['admin@example.com', UserRole::Admin, null, 'apprentisdashboard'],
-    'coach' => ['coach@example.com', UserRole::Coach, null, 'apprentisdashboard'],
-    'trainer IT' => ['trainer@example.com', UserRole::Trainer, ApprenticeshipSeeder::IT, 'apprentisdashboard'],
-    'trainer EC' => ['trainer-ec@example.com', UserRole::Trainer, ApprenticeshipSeeder::EC, 'apprentisdashboard'],
-    'apprentice IT' => ['apprentice-it@example.com', UserRole::Apprentice, ApprenticeshipSeeder::IT, 'grades.dashboard'],
-    'apprentice EC' => ['apprentice-ec@example.com', UserRole::Apprentice, ApprenticeshipSeeder::EC, 'grades.dashboard'],
+    'admin' => ['admin@example.com', UserRole::Admin, [], 'apprentisdashboard'],
+    'coach' => ['coach@example.com', UserRole::Coach, [], 'apprentisdashboard'],
+    'trainer IT' => ['trainer@example.com', UserRole::Trainer, [FormationPlan::IT], 'apprentisdashboard'],
+    'trainer EC' => ['trainer-ec@example.com', UserRole::Trainer, [FormationPlan::EC, FormationPlan::EC_MP], 'apprentisdashboard'],
+    'apprentice IT' => ['apprentice-it@example.com', UserRole::Apprentice, [FormationPlan::IT], 'grades.dashboard'],
+    'apprentice EC' => ['apprentice-ec@example.com', UserRole::Apprentice, [FormationPlan::EC], 'grades.dashboard'],
 ]);
 
-it('seeds one active account per role with the right section', function (string $email, UserRole $role, ?string $section) {
+it('seeds one active account per role with the right plans', function (string $email, UserRole $role, array $plans) {
     $user = User::query()->where('email', $email)->first();
 
     expect($user)->not->toBeNull();
     expect($user->roles()->count())->toBe(1);
     expect($user->role)->toBe($role);
-    expect($user->apprenticeship_id)->toBe($section === null ? null : Apprenticeship::where('name', $section)->value('id'));
+    // An apprentice follows one plan, a trainer trains some.
+    expect($user->formationPlan?->name)->toBe($role === UserRole::Apprentice ? $plans[0] : null);
+    expect($user->trainedFormationPlans()->pluck('name')->sort()->values()->all())
+        ->toBe($role === UserRole::Trainer ? collect($plans)->sort()->values()->all() : []);
     expect($user->is_active)->toBeTrue();
 })->with('local accounts');
 
-it('logs in with the local password and lands on the role page', function (string $email, UserRole $role, ?string $section, string $route) {
+it('logs in with the local password and lands on the role page', function (string $email, UserRole $role, array $plans, string $route) {
     $user = User::query()->where('email', $email)->firstOrFail();
 
     $this->post('/login', ['email' => $email, 'password' => 'password'])
@@ -51,7 +53,7 @@ it('logs in with the local password and lands on the role page', function (strin
     $this->assertAuthenticatedAs($user);
 })->with('local accounts');
 
-it('makes the local coach and admin supervise both local apprentices and each trainer only its own section', function () {
+it('makes the local coach and admin supervise both local apprentices and each trainer only its own plans', function () {
     $admin = User::query()->where('email', 'admin@example.com')->firstOrFail();
     $coach = User::query()->where('email', 'coach@example.com')->firstOrFail();
     $trainer = User::query()->where('email', 'trainer@example.com')->firstOrFail();

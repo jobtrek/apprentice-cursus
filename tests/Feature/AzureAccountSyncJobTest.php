@@ -3,10 +3,9 @@
 use App\Enums\UserRole;
 use App\Exceptions\AzureSyncFailedException;
 use App\Jobs\SyncAzureAccounts;
-use App\Models\Apprenticeship;
+use App\Models\FormationPlan;
 use App\Models\User;
 use App\Services\AzureDirectorySync;
-use Database\Seeders\ApprenticeshipSeeder;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Http\Client\Factory as HttpFactory;
@@ -25,9 +24,16 @@ const SYNC_GROUPS = [
 beforeEach(function () {
     Cache::flush();
     config()->set('services.azure.groups', SYNC_GROUPS);
-    $this->it = Apprenticeship::query()->create(['name' => ApprenticeshipSeeder::IT]);
-    $this->ec = Apprenticeship::query()->create(['name' => ApprenticeshipSeeder::EC]);
+    $this->it = FormationPlan::query()->create(['name' => FormationPlan::IT]);
+    $this->ec = FormationPlan::query()->create(['name' => FormationPlan::EC]);
+    $this->ecMp = FormationPlan::query()->create(['name' => FormationPlan::EC_MP]);
 });
+
+/** @return list<int> ids of the plans the user trains */
+function trainedPlanIds(User $user): array
+{
+    return $user->trainedFormationPlans()->orderBy('formation_plans.id')->pluck('formation_plans.id')->all();
+}
 
 /**
  * @param  array<string, list<array<string, mixed>>|int>  $members  group id => members, or an HTTP status for a failing group
@@ -59,7 +65,7 @@ function member(string $id, ?string $name = null, bool $enabled = true): array
     ];
 }
 
-test('it creates a user for each mapped group with the right role and section', function () {
+test('it creates a user for each mapped group with the right role and plans', function () {
     fakeDirectory([
         'g-it' => [member('a-it')],
         'g-ec' => [member('a-ec')],
@@ -72,59 +78,77 @@ test('it creates a user for each mapped group with the right role and section', 
 
     $it = User::where('azure_id', 'a-it')->firstOrFail();
     expect($it->role)->toBe(UserRole::Apprentice)
-        ->and($it->apprenticeship_id)->toBe($this->it->id)
+        ->and($it->formation_plan_id)->toBe($this->it->id)
         ->and($it->email)->toBe('a-it@example.test')
         ->and($it->name)->toBe('Name a-it')
         ->and($it->is_active)->toBeTrue()
         ->and($it->synced_at)->not->toBeNull();
-    expect(User::where('azure_id', 'a-ec')->firstOrFail()->apprenticeship_id)->toBe($this->ec->id);
+    // A new EC apprentice starts on the standard plan; the MP one is chosen by hand.
+    expect(User::where('azure_id', 'a-ec')->firstOrFail()->formation_plan_id)->toBe($this->ec->id);
 
     $trainer = User::where('azure_id', 'a-trainer')->firstOrFail();
     expect($trainer->role)->toBe(UserRole::Trainer)
-        ->and($trainer->apprenticeship_id)->toBe($this->it->id);
+        ->and($trainer->formation_plan_id)->toBeNull()
+        ->and(trainedPlanIds($trainer))->toBe([$this->it->id]);
 
     $trainerEc = User::where('azure_id', 'a-trainer-ec')->firstOrFail();
     expect($trainerEc->role)->toBe(UserRole::Trainer)
-        ->and($trainerEc->apprenticeship_id)->toBe($this->ec->id);
+        ->and(trainedPlanIds($trainerEc))->toBe([$this->ec->id, $this->ecMp->id]);
 
     $coach = User::where('azure_id', 'a-coach')->firstOrFail();
     expect($coach->role)->toBe(UserRole::Coach)
-        ->and($coach->apprenticeship_id)->toBeNull()
+        ->and($coach->formation_plan_id)->toBeNull()
+        ->and(trainedPlanIds($coach))->toBe([])
         ->and($coach->synced_at)->not->toBeNull();
 });
 
 test('it updates the role and name of an existing user and keeps the section on a section change', function () {
     Log::spy();
     $user = User::factory()->create(['azure_id' => 'a-1', 'name' => 'Old']);
-    $user->forceFill(['apprenticeship_id' => $this->ec->id])->save();
+    $user->forceFill(['formation_plan_id' => $this->ec->id])->save();
     fakeDirectory(['g-it' => [member('a-1', 'New Name')]]);
 
     $this->artisan('azure:sync')->assertExitCode(0);
 
     $user = $user->fresh();
     expect($user->name)->toBe('New Name')
-        ->and($user->apprenticeship_id)->toBe($this->ec->id)
+        ->and($user->formation_plan_id)->toBe($this->ec->id)
         ->and($user->synced_at)->not->toBeNull();
     Log::shouldHaveReceived('warning')
-        ->with('Microsoft SSO: section change pending confirmation, apprenticeship kept.', Mockery::type('array'))
+        ->with('Microsoft SSO: section change pending confirmation, formation plan kept.', Mockery::type('array'))
         ->once();
 
     fakeDirectory(['g-trainer-it' => [member('a-1', 'New Name')]]);
     $this->artisan('azure:sync')->assertExitCode(0);
 
-    expect($user->fresh()->role)->toBe(UserRole::Trainer);
+    expect($user->fresh()->role)->toBe(UserRole::Trainer)
+        ->and($user->fresh()->formation_plan_id)->toBeNull()
+        ->and(trainedPlanIds($user))->toBe([$this->it->id]);
 });
 
-test('a trainer moved to the other trainer group follows the new section', function () {
+test('an EC apprentice keeps the MP plan chosen by hand, without a warning', function () {
     Log::spy();
-    $user = User::factory()->trainer()->create(['azure_id' => 'a-3']);
-    $user->forceFill(['apprenticeship_id' => $this->it->id])->save();
-    fakeDirectory(['g-trainer-ec' => [member('a-3')]]);
+    $user = User::factory()->create(['azure_id' => 'a-mp']);
+    $user->forceFill(['formation_plan_id' => $this->ecMp->id])->save();
+    fakeDirectory(['g-ec' => [member('a-mp')]]);
 
     $this->artisan('azure:sync')->assertExitCode(0);
 
-    expect($user->fresh()->apprenticeship_id)->toBe($this->ec->id);
-    Log::shouldNotHaveReceived('warning', ['Microsoft SSO: section change pending confirmation, apprenticeship kept.', Mockery::type('array')]);
+    expect($user->fresh()->formation_plan_id)->toBe($this->ecMp->id);
+    Log::shouldNotHaveReceived('warning', ['Microsoft SSO: section change pending confirmation, formation plan kept.', Mockery::type('array')]);
+});
+
+test('a trainer moved to the other trainer group follows the new plans', function () {
+    Log::spy();
+    $user = makeTrainer($this->it);
+    $user->forceFill(['azure_id' => 'a-3'])->save();
+    fakeDirectory(['g-trainer-ec' => [member('a-3')]]);
+
+    $result = app(AzureDirectorySync::class)->run();
+
+    expect($result->updated)->toBe(1)
+        ->and(trainedPlanIds($user))->toBe([$this->ec->id, $this->ecMp->id]);
+    Log::shouldNotHaveReceived('warning', ['Microsoft SSO: section change pending confirmation, formation plan kept.', Mockery::type('array')]);
 });
 
 test('an account in several groups is not created', function () {

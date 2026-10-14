@@ -1,17 +1,15 @@
 <script setup lang="ts">
-import { Head, useRemember } from '@inertiajs/vue3';
+import { Head } from '@inertiajs/vue3';
 import {
     ArrowUpDownIcon,
-    LayoutGridIcon,
-    ListIcon,
     SearchXIcon,
+    SlidersHorizontalIcon,
     UserPlusIcon,
     UsersIcon,
     XIcon,
 } from '@lucide/vue';
 import { computed, ref, toRef } from 'vue';
 import ApprenticeCard from '@/components/apprentice/ApprenticeCard.vue';
-import ApprenticeDetailSheet from '@/components/apprentice/ApprenticeDetailSheet.vue';
 import ApprenticeRow from '@/components/apprentice/ApprenticeRow.vue';
 import AssignApprenticeDialog from '@/components/apprentice/AssignApprenticeDialog.vue';
 import SituationTiles from '@/components/apprentice/SituationTiles.vue';
@@ -29,9 +27,12 @@ import {
     EmptyMedia,
     EmptyTitle,
 } from '@/components/ui/empty';
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import {
-    SITUATION_OPTIONS,
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from '@/components/ui/popover';
+import {
     SORT_OPTIONS,
     SUPERVISION_OPTIONS,
     useApprenticeFilters,
@@ -45,81 +46,64 @@ import type {
     AssignableApprentice,
     AssignSelfAs,
     SupervisorOption,
-    TrainerOption,
 } from '@/types/apprentice';
 
 const props = defineProps<{
     /**
      * Apprentis actifs suivis (`User::listedApprentices()`) : coach → ses
-     * coachés, formateur → ses apprentis de sa filière, admin → tous.
+     * coachés, formateur → les apprentis des plans qu'il forme, admin → tous.
      */
     apprentices: ApprenticeListItem[];
     /** Proposés par « Ajouter un apprenti ». */
     assignable: AssignableApprentice[];
     coaches: SupervisorOption[];
-    trainers: TrainerOption[];
     can: {
-        /** Coach ou formateur : rôle pris en ajoutant un apprenti. */
+        /** Coach : rôle pris en ajoutant un apprenti. */
         assignSelfAs: AssignSelfAs | null;
-        /** Admin local : choix du coach et du formateur de chaque apprenti·e. */
+        /** Admin local : choix du coach de chaque apprenti·e. */
         manageSupervision: boolean;
     };
 }>();
 
-const { filters, results, hasTrackFilter, activeCount, isFiltered, reset } =
+const { filters, results, hasTrackFilter, isFiltered, reset } =
     useApprenticeFilters(toRef(props, 'apprentices'));
 
 const plural = (count: number, word: string): string =>
     `${count} ${word}${count > 1 ? 's' : ''}`;
 
-const summary = computed(() => {
-    const count = props.apprentices.length;
-    const followed = `${plural(count, 'apprenti')} ${props.can.assignSelfAs ? 'suivi' : 'actif'}${count > 1 ? 's' : ''}`;
+/** Le nombre d'apprentis est affiché au-dessus de la liste, pas ici. */
+const description = computed(() => {
     const available = props.assignable.length;
 
     return props.can.assignSelfAs && available > 0
-        ? `${followed} · ${plural(available, 'disponible')} à ajouter`
-        : followed;
+        ? `${plural(available, 'apprenti')} sans coach à ajouter`
+        : undefined;
 });
 
-/** Grands écrans : tableau ou cartes. Les petits écrans ont toujours les cartes. */
-type ListLayout = 'table' | 'grid';
-const layout = useRemember(
-    ref<ListLayout>('table'),
-    'ApprentisDashboard:layout',
+/** Filtres secondaires, rangés derrière le bouton « Filtres ». */
+const moreFilterCount = computed(
+    () =>
+        [
+            filters.year !== 'all',
+            filters.variant !== 'all',
+            filters.supervision !== 'all',
+        ].filter(Boolean).length,
 );
-
-const selectLayout = (value: unknown): void => {
-    // Un ToggleGroup « single » renvoie une valeur vide si on reclique l'actif.
-    if (value === 'table' || value === 'grid') {
-        layout.value = value;
-    }
-};
 
 const assignOpen = ref(false);
 
-const selected = ref<ApprenticeListItem | null>(null);
-const sheetOpen = ref(false);
-
-const openPreview = (apprentice: ApprenticeListItem) => {
-    selected.value = apprentice;
-    sheetOpen.value = true;
-};
-
 /**
- * Un coach ne voit que ses coachés, un formateur que ses apprentis : la colonne
- * de son propre rôle répéterait son nom sur chaque ligne.
+ * Un coach ne voit que ses coachés : la colonne Coach répéterait son nom sur
+ * chaque ligne.
  */
 const columns = computed(() =>
     [
         { key: 'apprentice', label: 'Apprenti·e' },
         { key: 'track', label: 'Filière' },
-        { key: 'situation', label: 'Situation' },
         { key: 'average', label: 'Moyenne' },
         { key: 'activity', label: 'Activité' },
         { key: 'coach', label: 'Coach' },
         { key: 'trainer', label: 'Formateur' },
-        { key: 'actions', label: 'Actions', class: 'w-px', srOnly: true },
     ].filter(({ key }) => key !== props.can.assignSelfAs),
 );
 </script>
@@ -130,7 +114,7 @@ const columns = computed(() =>
     <PageContainer size="lg">
         <PageHeader
             :title="can.assignSelfAs ? 'Mes apprentis' : 'Apprentis'"
-            :description="summary"
+            :description="description"
         >
             <template v-if="can.assignSelfAs" #actions>
                 <Button
@@ -184,129 +168,113 @@ const columns = computed(() =>
                 class="bg-card flex flex-col overflow-hidden rounded-xl border shadow-xs"
                 aria-label="Liste des apprentis"
             >
-                <div class="flex flex-col gap-3 border-b p-4">
-                    <div
-                        class="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center"
-                        role="group"
-                        aria-label="Recherche et filtres"
-                    >
-                        <SearchInput
-                            v-model="filters.search"
-                            placeholder="Rechercher un apprenti, un coach…"
-                            class="col-span-2 sm:w-72"
-                        />
-                        <TabFilter
-                            v-if="hasTrackFilter"
-                            v-model="filters.track"
-                            :options="TRACK_FILTER_OPTIONS"
-                            label="Filtrer par filière"
-                            class="col-span-2 sm:col-span-1"
-                        />
-                        <FilterSelect
-                            v-model="filters.year"
-                            :options="YEAR_OPTIONS"
-                            neutral="all"
-                            label="Filtrer par année d'apprentissage"
-                        />
-                        <FilterSelect
-                            v-model="filters.variant"
-                            :options="VARIANT_OPTIONS"
-                            neutral="all"
-                            label="Filtrer par variante"
-                        />
-                        <FilterSelect
-                            v-model="filters.situation"
-                            :options="SITUATION_OPTIONS"
-                            neutral="all"
-                            label="Filtrer par situation"
-                        />
-                        <FilterSelect
-                            v-if="can.manageSupervision"
-                            v-model="filters.supervision"
-                            :options="SUPERVISION_OPTIONS"
-                            neutral="all"
-                            label="Filtrer par suivi"
-                        />
-                    </div>
-
-                    <div
-                        class="flex flex-wrap items-center justify-between gap-x-4 gap-y-2"
-                    >
-                        <p
-                            class="text-muted-foreground flex flex-wrap items-center gap-x-2 text-sm"
-                            aria-live="polite"
-                        >
-                            <template v-if="isFiltered">
-                                <span>
-                                    <span
-                                        class="text-foreground font-medium tabular-nums"
-                                    >
-                                        {{ results.length }}
-                                    </span>
-                                    sur
-                                    {{ plural(apprentices.length, 'apprenti') }}
-                                    <template v-if="activeCount > 0">
-                                        · {{ activeCount }} filtre{{
-                                            activeCount > 1
-                                                ? 's actifs'
-                                                : ' actif'
-                                        }}
-                                    </template>
-                                </span>
-                                <Button
-                                    variant="link"
-                                    size="sm"
-                                    class="h-auto px-0"
-                                    @click="reset"
-                                >
-                                    <XIcon aria-hidden="true" />
-                                    Effacer les filtres
-                                </Button>
-                            </template>
-                            <template v-else>
-                                {{ plural(apprentices.length, 'apprenti') }}
-                            </template>
-                        </p>
-
-                        <div class="flex items-center gap-2">
-                            <FilterSelect
-                                v-model="filters.sort"
-                                :options="SORT_OPTIONS"
-                                label="Trier la liste"
-                                class="w-auto"
-                            >
-                                <template #icon>
-                                    <ArrowUpDownIcon
-                                        class="text-muted-foreground"
-                                        aria-hidden="true"
-                                    />
-                                </template>
-                            </FilterSelect>
-                            <ToggleGroup
-                                :model-value="layout"
-                                type="single"
+                <!-- Recherche et tri ; la situation se filtre avec les tuiles. -->
+                <div
+                    class="flex flex-wrap items-center gap-2 border-b p-4"
+                    role="group"
+                    aria-label="Recherche et filtres"
+                >
+                    <SearchInput
+                        v-model="filters.search"
+                        placeholder="Rechercher un apprenti, un coach…"
+                        class="w-full sm:w-72"
+                    />
+                    <TabFilter
+                        v-if="hasTrackFilter"
+                        v-model="filters.track"
+                        :options="TRACK_FILTER_OPTIONS"
+                        label="Filtrer par filière"
+                    />
+                    <Popover>
+                        <PopoverTrigger as-child>
+                            <Button
                                 variant="outline"
-                                class="hidden lg:flex"
-                                aria-label="Affichage de la liste"
-                                @update:model-value="selectLayout"
+                                :class="
+                                    moreFilterCount > 0 &&
+                                    'border-primary text-primary'
+                                "
                             >
-                                <ToggleGroupItem
-                                    value="table"
-                                    aria-label="Afficher en tableau"
-                                    title="Tableau"
+                                <SlidersHorizontalIcon aria-hidden="true" />
+                                Filtres
+                                <span
+                                    v-if="moreFilterCount > 0"
+                                    class="tabular-nums"
                                 >
-                                    <ListIcon aria-hidden="true" />
-                                </ToggleGroupItem>
-                                <ToggleGroupItem
-                                    value="grid"
-                                    aria-label="Afficher en cartes"
-                                    title="Cartes"
+                                    ({{ moreFilterCount }})
+                                </span>
+                            </Button>
+                        </PopoverTrigger>
+                        <PopoverContent
+                            align="start"
+                            class="flex w-64 flex-col gap-2"
+                        >
+                            <FilterSelect
+                                v-model="filters.year"
+                                :options="YEAR_OPTIONS"
+                                neutral="all"
+                                label="Filtrer par année d'apprentissage"
+                                class="sm:w-full"
+                            />
+                            <FilterSelect
+                                v-model="filters.variant"
+                                :options="VARIANT_OPTIONS"
+                                neutral="all"
+                                label="Filtrer par variante"
+                                class="sm:w-full"
+                            />
+                            <FilterSelect
+                                v-if="can.manageSupervision"
+                                v-model="filters.supervision"
+                                :options="SUPERVISION_OPTIONS"
+                                neutral="all"
+                                label="Filtrer par suivi"
+                                class="sm:w-full"
+                            />
+                        </PopoverContent>
+                    </Popover>
+
+                    <FilterSelect
+                        v-model="filters.sort"
+                        :options="SORT_OPTIONS"
+                        label="Trier la liste"
+                        class="w-auto sm:ml-auto"
+                    >
+                        <template #icon>
+                            <ArrowUpDownIcon
+                                class="text-muted-foreground"
+                                aria-hidden="true"
+                            />
+                        </template>
+                    </FilterSelect>
+
+                    <p
+                        class="text-muted-foreground flex w-full flex-wrap items-center gap-x-2 text-sm"
+                        aria-live="polite"
+                    >
+                        <template v-if="isFiltered">
+                            <span>
+                                <span
+                                    class="text-foreground font-medium tabular-nums"
                                 >
-                                    <LayoutGridIcon aria-hidden="true" />
-                                </ToggleGroupItem>
-                            </ToggleGroup>
-                        </div>
-                    </div>
+                                    {{ results.length }}
+                                </span>
+                                sur
+                                {{ plural(apprentices.length, 'apprenti') }}
+                            </span>
+                            <Button
+                                variant="link"
+                                size="sm"
+                                class="h-auto px-0"
+                                @click="reset"
+                            >
+                                <XIcon aria-hidden="true" />
+                                Effacer les filtres
+                            </Button>
+                        </template>
+                        <template v-else>
+                            {{ plural(apprentices.length, 'apprenti') }}
+                        </template>
+                    </p>
                 </div>
 
                 <Empty v-if="results.length === 0" class="rounded-none">
@@ -328,24 +296,19 @@ const columns = computed(() =>
                 </Empty>
 
                 <template v-else>
-                    <!-- Petits écrans, ou affichage « cartes » choisi. -->
+                    <!-- Cartes sur petit écran, tableau sur grand écran. -->
                     <div
-                        class="bg-muted/30 grid gap-3 p-4 sm:grid-cols-2"
-                        :class="
-                            layout === 'grid' ? 'lg:grid-cols-3' : 'lg:hidden'
-                        "
+                        class="bg-muted/30 grid gap-3 p-4 sm:grid-cols-2 lg:hidden"
                     >
                         <ApprenticeCard
                             v-for="apprentice in results"
                             :key="apprentice.id"
                             :apprentice="apprentice"
                             :own-role="can.assignSelfAs"
-                            @preview="openPreview"
                         />
                     </div>
 
                     <DataTable
-                        v-if="layout === 'table'"
                         :columns="columns"
                         :data="results"
                         class="hidden rounded-none border-0 lg:block"
@@ -357,31 +320,17 @@ const columns = computed(() =>
                                 :coaches="
                                     can.manageSupervision ? coaches : null
                                 "
-                                :trainers="
-                                    can.manageSupervision ? trainers : null
-                                "
-                                @preview="openPreview"
                             />
                         </template>
                     </DataTable>
 
                     <p class="text-muted-foreground border-t px-4 py-3 text-xs">
-                        Affichage de
-                        <span class="text-foreground font-medium tabular-nums">
-                            {{ results.length }}
-                        </span>
-                        sur {{ plural(apprentices.length, 'apprenti') }} ·
-                        moyennes simples des notes saisies, seuil de réussite à
+                        Moyennes simples des notes saisies, seuil de réussite à
                         {{ PASSING_GRADE.toFixed(1) }}
                     </p>
                 </template>
             </section>
         </template>
-
-        <ApprenticeDetailSheet
-            v-model:open="sheetOpen"
-            :apprentice="selected"
-        />
 
         <AssignApprenticeDialog
             v-if="can.assignSelfAs"

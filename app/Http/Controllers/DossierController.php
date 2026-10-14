@@ -34,23 +34,14 @@ class DossierController extends Controller
 
     public function preview(Request $request): Response
     {
-        $user = $request->user()->load('apprenticeship');
+        $user = $request->user()->load('formationPlan');
 
         return Inertia::render('PortfolioPreview', [
             'owner' => [
                 'name' => $user->name,
-                'track' => $user->apprenticeship?->name,
+                'track' => $user->formationPlan?->name,
             ],
             'projects' => $this->portfolioProjects($user),
-            'skills' => $this->skills(),
-        ]);
-    }
-
-    public function create(): Response
-    {
-        Gate::authorize('create', Project::class);
-
-        return Inertia::render('PortfolioProjectForm', [
             'skills' => $this->skills(),
         ]);
     }
@@ -67,16 +58,6 @@ class DossierController extends Controller
         });
 
         return redirect()->route('portfolio.index');
-    }
-
-    public function edit(Project $project): Response
-    {
-        Gate::authorize('update', $project);
-
-        return Inertia::render('PortfolioProjectForm', [
-            'project' => (new ProjectResource($project->load(['skills:id', 'screenshots'])))->resolve(),
-            'skills' => $this->skills(),
-        ]);
     }
 
     public function update(PortfolioProjectRequest $request, Project $project): RedirectResponse
@@ -186,7 +167,7 @@ class DossierController extends Controller
             'responsibilities' => $data['responsibilities'] ?? null,
             'technologies' => $data['technologies'] ?? null,
             'repository_url' => $data['repository_url'] ?? null,
-            'demo_path' => $data['demo_path'] ?? null,
+            'demo_url' => $data['demo_url'] ?? null,
             'date_start' => $data['date_start'],
             'date_end' => $data['date_end'] ?? null,
         ];

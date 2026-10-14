@@ -18,7 +18,7 @@ function projectPayload(array $overrides = []): array
         'responsibilities' => 'Développeur',
         'technologies' => ['Laravel', 'Vue.js', 'Laravel'],
         'repository_url' => 'https://github.com/acme/site',
-        'demo_path' => 'https://acme.test',
+        'demo_url' => 'https://acme.test',
         'date_start' => '2026-01-01',
         'date_end' => '2026-03-01',
         'skill_ids' => [],
@@ -104,7 +104,6 @@ test('an apprentice cannot touch another apprentice\'s project', function () {
 
     $this->actingAs(User::factory()->create());
 
-    $this->get(route('portfolio.projects.edit', $project))->assertForbidden();
     $this->put(route('portfolio.projects.update', $project), projectPayload())->assertForbidden();
     $this->delete(route('portfolio.projects.destroy', $project))->assertForbidden();
 

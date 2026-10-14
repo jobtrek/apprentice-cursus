@@ -19,10 +19,23 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/dashboard', [GradeController::class, 'dashboard'])
             ->middleware('can:'.Permission::GradesViewOwn->value)
             ->name('dashboard');
+        // GradePolicy::create / update are checked by GradeRequest.
+        Route::post('/', [GradeController::class, 'store'])->name('store');
+        Route::put('/{grade}', [GradeController::class, 'update'])
+            ->whereNumber('grade')
+            ->name('update');
+        Route::delete('/{grade}', [GradeController::class, 'destroy'])
+            ->whereNumber('grade')
+            ->middleware('can:delete,grade')
+            ->name('destroy');
         Route::get('/{grade}', [GradeController::class, 'show'])
             ->whereNumber('grade')
             ->middleware('can:view,grade')
             ->name('show');
+        Route::get('/{grade}/file', [GradeController::class, 'file'])
+            ->whereNumber('grade')
+            ->middleware('can:view,grade')
+            ->name('file');
         Route::post('/{grade}/comments', [CommentController::class, 'store'])
             ->whereNumber('grade')
             ->name('comments.store');
@@ -40,8 +53,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->group(function () {
             Route::get('/', 'index')->name('index');
             Route::get('/preview', 'preview')->name('preview');
+            // Created and edited in the portfolio page's dialog: no create/edit pages.
             Route::resource('projects', DossierController::class)
-                ->except(['index', 'show'])
+                ->only(['store', 'update', 'destroy'])
                 ->middlewareFor(['store', 'update'], HandlePrecognitiveRequests::class)
                 ->whereNumber('project');
         });
@@ -71,10 +85,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->whereNumber('apprentice')
         ->middleware('can:'.Permission::SupervisionManage->value)
         ->name('apprentices.coach.update');
-    Route::put('/apprentices/{apprentice}/trainer', [SupervisionController::class, 'updateTrainer'])
-        ->whereNumber('apprentice')
-        ->middleware('can:'.Permission::SupervisionManage->value)
-        ->name('apprentices.trainer.update');
 });
 
 require __DIR__.'/auth.php';

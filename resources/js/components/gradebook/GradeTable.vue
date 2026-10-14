@@ -2,7 +2,7 @@
 import { router } from '@inertiajs/vue3';
 import { ChevronRightIcon } from '@lucide/vue';
 import { computed } from 'vue';
-import { byDateDesc, fmt, PASS } from '@/lib/gradebook';
+import { byDateDesc, fmt, gradeTone } from '@/lib/gradebook';
 import gradeRoutes from '@/routes/grades';
 import type { Grade } from '@/types/grade';
 import type { RouteDefinition } from '@/wayfinder';
@@ -64,13 +64,7 @@ const open = (grade: Grade) =>
                     <td class="gb-col-sem">S{{ grade.semester }}</td>
                     <td class="gb-col-date">{{ grade.date }}</td>
                     <td class="gb-col-grade">
-                        <span
-                            :class="
-                                grade.value < PASS
-                                    ? 'gb-grade is-fail'
-                                    : 'gb-grade'
-                            "
-                        >
+                        <span :class="['gb-grade', gradeTone(grade.value)]">
                             {{ fmt(grade.value) }}
                         </span>
                     </td>
