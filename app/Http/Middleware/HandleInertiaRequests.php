@@ -18,7 +18,7 @@ class HandleInertiaRequests extends Middleware
      */
     protected $rootView = 'app';
 
-    private const NOTIFICATIONS_LIMIT = 30;
+    private const NOTIFICATIONS_LIMIT = 50;
 
     /**
      * Determines the current asset version.
