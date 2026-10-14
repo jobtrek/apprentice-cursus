@@ -19,10 +19,23 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/dashboard', [GradeController::class, 'dashboard'])
             ->middleware('can:'.Permission::GradesViewOwn->value)
             ->name('dashboard');
+        // GradePolicy::create / update are checked by GradeRequest.
+        Route::post('/', [GradeController::class, 'store'])->name('store');
+        Route::put('/{grade}', [GradeController::class, 'update'])
+            ->whereNumber('grade')
+            ->name('update');
+        Route::delete('/{grade}', [GradeController::class, 'destroy'])
+            ->whereNumber('grade')
+            ->middleware('can:delete,grade')
+            ->name('destroy');
         Route::get('/{grade}', [GradeController::class, 'show'])
             ->whereNumber('grade')
             ->middleware('can:view,grade')
             ->name('show');
+        Route::get('/{grade}/file', [GradeController::class, 'file'])
+            ->whereNumber('grade')
+            ->middleware('can:view,grade')
+            ->name('file');
         Route::post('/{grade}/comments', [CommentController::class, 'store'])
             ->whereNumber('grade')
             ->name('comments.store');

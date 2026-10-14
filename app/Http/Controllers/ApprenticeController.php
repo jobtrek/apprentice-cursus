@@ -12,7 +12,6 @@ use App\Models\Grade;
 use App\Models\Skill;
 use App\Models\User;
 use App\Support\ApprenticeList;
-use App\Support\Demo\DemoGrade;
 use App\Support\Gradebook\GradebookTree;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -112,7 +111,7 @@ class ApprenticeController extends Controller
         Gate::authorize('view', $grade);
 
         return Inertia::render('GradeDetails', [
-            ...DemoGrade::props(),
+            'pdfUrl' => GradeController::fileUrl($grade),
             'comments' => CommentResource::forGrade($grade),
             'apprenticeId' => $apprentice->id,
             'apprentice' => (new ApprenticeResource($apprentice->load(ApprenticeResource::RELATIONS)))->resolve(),

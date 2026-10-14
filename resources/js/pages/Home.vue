@@ -115,7 +115,7 @@ const currentSemester = computed(() => lastGradedSemester(props.grades));
             </template>
 
             <HatchPattern />
-            <AddGradeDialog />
+            <AddGradeDialog :tree="tree" />
         </template>
 
         <template v-else>
