@@ -102,7 +102,6 @@ const columns = computed(() =>
     [
         { key: 'apprentice', label: 'Apprenti·e' },
         { key: 'track', label: 'Filière' },
-        { key: 'situation', label: 'Situation' },
         { key: 'average', label: 'Moyenne' },
         { key: 'activity', label: 'Activité' },
         { key: 'coach', label: 'Coach' },

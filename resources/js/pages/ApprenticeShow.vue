@@ -22,11 +22,16 @@ import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useNavigation } from '@/composables/useNavigation';
-import { relativeDate, situationOf, yearLabel } from '@/lib/apprentice';
+import {
+    averageStatus,
+    relativeDate,
+    situationOf,
+    yearLabel,
+} from '@/lib/apprentice';
 import { apprentisdashboard } from '@/routes';
 import apprentices from '@/routes/apprentices';
 import type { Apprentice, ApprenticeStats } from '@/types/apprentice';
-import { createGradebook, type GradeTree } from '@/lib/gradebook';
+import { createGradebook, fmt, type GradeTree } from '@/lib/gradebook';
 import type { Grade } from '@/types/grade';
 import type { SupervisedPortfolio } from '@/types/portfolio';
 
@@ -46,6 +51,18 @@ const props = defineProps<{
 const gradebook = computed(() =>
     props.tree ? createGradebook(props.tree, props.grades) : null,
 );
+
+/** Note finale CFC (racine de l'arbre). */
+const finalAverage = computed(() => {
+    const value = gradebook.value?.nodeValue(gradebook.value.root) ?? null;
+
+    return value === null
+        ? null
+        : {
+              value,
+              status: averageStatus(value),
+          };
+});
 
 const gradeHref = (grade: Grade) =>
     apprentices.grades.show({
@@ -132,6 +149,21 @@ function selectTab(tab: string | number): void {
                         >
                             · {{ yearLabel(apprentice.year) }}
                         </span>
+                        <Badge
+                            v-if="finalAverage"
+                            variant="outline"
+                            class="tabular-nums"
+                            title="Note finale CFC"
+                            data-test="final-average-badge"
+                        >
+                            Note finale
+                            <span
+                                class="font-semibold"
+                                :class="finalAverage.status.class"
+                            >
+                                {{ fmt(finalAverage.value) }}
+                            </span>
+                        </Badge>
                         <Badge v-if="!apprentice.isActive" variant="outline">
                             Inactif
                         </Badge>
