@@ -17,6 +17,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 use Spatie\Permission\Traits\HasRoles;
 
 /**
@@ -227,5 +228,26 @@ class User extends Authenticatable
                 && $this->trainedFormationPlans()->whereKey($apprentice->formation_plan_id)->exists(),
             default => false,
         };
+    }
+
+    /**
+     * Active coach and trainers who follow this apprentice: whom to notify about their
+     * grades. The trainers are the ones of the apprentice's plan, as in supervises().
+     *
+     * @return Collection<int, self>
+     */
+    public function supervisors(): Collection
+    {
+        $trainers = $this->formation_plan_id === null
+            ? collect()
+            : self::role(UserRole::Trainer->value)
+                ->where('is_active', true)
+                ->whereHas('trainedFormationPlans', fn (Builder $plans) => $plans->whereKey($this->formation_plan_id))
+                ->get();
+
+        return collect([$this->coach])
+            ->filter(fn (?self $coach): bool => $coach !== null && $coach->is_active)
+            ->concat($trainers)
+            ->values();
     }
 }

@@ -2,22 +2,54 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Notifications\DatabaseNotification;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class NotificationController extends Controller
 {
     /**
-     * Boîte de réception. Les notifications elles-mêmes viennent encore du
-     * JSON de démo côté client : seule la notification à ouvrir transite par
-     * l'URL (`?notification=3`) pour qu'un clic dans le menu de la navbar
-     * arrive directement dessus.
+     * Inbox. The notifications themselves are the `notifications` prop shared with every
+     * page (see HandleInertiaRequests), as the navbar bell needs them too. Only the one to
+     * open transits through the URL (`?notification=<id>`) so a click in the navbar menu
+     * lands directly on it.
      */
-    public function __invoke(Request $request): Response
+    public function index(Request $request): Response
     {
         return Inertia::render('Notifications', [
-            'selected' => $request->integer('notification') ?: null,
+            'selected' => $request->string('notification')->toString() ?: null,
         ]);
+    }
+
+    /**
+     * Looked up through the user's own notifications: someone else's id is a 404.
+     */
+    public function markAsRead(Request $request, string $notification): RedirectResponse
+    {
+        $this->own($request, $notification)->markAsRead();
+
+        return back();
+    }
+
+    public function markAsUnread(Request $request, string $notification): RedirectResponse
+    {
+        $this->own($request, $notification)->markAsUnread();
+
+        return back();
+    }
+
+    public function markAllAsRead(Request $request): RedirectResponse
+    {
+        $request->user()->unreadNotifications()->update(['read_at' => now()]);
+
+        return back();
+    }
+
+    private function own(Request $request, string $id): DatabaseNotification
+    {
+        /** @var DatabaseNotification */
+        return $request->user()->notifications()->findOrFail($id);
     }
 }
