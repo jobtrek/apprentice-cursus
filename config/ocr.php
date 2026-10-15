@@ -2,10 +2,10 @@
 
 return [
     /*
-     * Off until the OCR is validated: hides the dialog's switch and makes
-     * the read-scan route answer 404.
+     * On by default. Set OCR_ENABLED=false to hide the dialog's switch and
+     * make the read-scan route answer 404.
      */
-    'enabled' => (bool) env('OCR_ENABLED', false),
+    'enabled' => (bool) env('OCR_ENABLED', true),
 
     /*
      * USD per 1M tokens, the prices notar measured with
