@@ -83,6 +83,28 @@ In production the scheduler runs this sync daily (`routes/console.php`).
 
 OCR is on by default (`OCR_ENABLED=true`). It needs `GEMINI_API_KEY` and `TYPESAFE_API_KEY` in `.env`.
 
+### Optional: grades by email
+
+Apprentices can also send a grade by email; `emails:fetch` imports it. Sail starts two test services for this: **Mailpit** (catches the mails the app sends, http://localhost:8025) and **GreenMail** (a fake IMAP/SMTP server acting as the intake mailbox). The defaults in `.env.example` already point to them. To try it:
+
+1. Send a mail to GreenMail (subject `<branch> <grade> <dd.mm.yyyy>`, sent from the apprentice's address, PDF attached). Quick text-only version:
+
+```bash
+printf 'From: apprentice-it@example.com\nTo: grades@example.com\nSubject: Anglais 5.0 14.10.2026\n\nhello\n' \
+    | curl -s --url smtp://localhost:3025 --mail-from apprentice-it@example.com \
+        --mail-rcpt grades@example.com -T -
+```
+
+2. Import it:
+
+```bash
+./vendor/bin/sail artisan emails:fetch
+```
+
+3. Open Mailpit: the shared mailbox received one summary mail per apprentice. Grades added from the app send the same summary.
+
+See [docs/email-intake.md](docs/email-intake.md) for the format and the rules.
+
 ### Checks
 
 | What                 | Command                                  |
@@ -125,6 +147,8 @@ Source : [Nommage et envoi des notes](docs/workflows/nommage-note.md)
 #### Grade transmission automation
 
 Apprentices will be able to drag and drop their test PDF in the app. A notification will then be sent to both their trainers and assigned coaches.
+
+Grades can also be sent by email to the shared mailbox: `emails:fetch` imports them and sends one summary mail per apprentice ([details](docs/email-intake.md)).
 
 #### Grade dashboard
 

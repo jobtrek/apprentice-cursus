@@ -5,8 +5,10 @@ namespace App\Console\Commands;
 use App\Models\AverageNode;
 use App\Models\Grade;
 use App\Models\User;
+use App\Notifications\GradesReceivedNotification;
 use Carbon\CarbonImmutable;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Throwable;
@@ -40,6 +42,8 @@ class FetchEmails extends Command
         }
 
         $this->info(sprintf('Fetched %d unread email(s).', count($emails)));
+
+        $created = collect();
 
         foreach ($emails as $email) {
             do {
@@ -126,10 +130,21 @@ class FetchEmails extends Command
                     break;
                 }
 
-                Grade::query()->create($gradeData);
+                $created->push(Grade::query()->create($gradeData)->load('user', 'averageNode'));
             } while (false); // @phpstan-ignore doWhile.alwaysFalse
 
             $email->setFlag('Seen');
+        }
+
+        $mailbox = config('imap.accounts.default.username');
+
+        foreach ($created->groupBy('user_id') as $grades) {
+            try {
+                Notification::route('mail', $mailbox)
+                    ->notify(new GradesReceivedNotification($grades->first()->user, $grades));
+            } catch (Throwable $e) {
+                $this->warn("Failed to send summary mail: {$e->getMessage()}");
+            }
         }
 
         return self::SUCCESS;
