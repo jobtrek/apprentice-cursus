@@ -8,9 +8,7 @@ use App\Models\Grade;
  * Sent to the coach and trainers of an apprentice who deleted a grade. Build it before
  * the delete, since it snapshots the grade's name; it carries no link.
  *
- * Not dispatched yet, like GradeAddedNotification.
- *
- *     Notification::send($apprentice->supervisors(), new GradeDeletedNotification($grade));
+ * Dispatched by GradeController::destroy.
  */
 class GradeDeletedNotification extends GradeActivityNotification
 {

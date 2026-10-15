@@ -7,9 +7,7 @@ use App\Models\Grade;
 /**
  * Sent to the coach and trainers of an apprentice who added a grade.
  *
- * Not dispatched yet: call it once the endpoint where apprentices add grades exists.
- *
- *     Notification::send($apprentice->supervisors(), new GradeAddedNotification($grade));
+ * Dispatched by GradeController::store.
  */
 class GradeAddedNotification extends GradeActivityNotification
 {

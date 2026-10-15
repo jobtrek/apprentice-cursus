@@ -6,10 +6,13 @@ use App\Http\Requests\GradeRequest;
 use App\Http\Resources\CommentResource;
 use App\Http\Resources\GradeResource;
 use App\Models\Grade;
+use App\Notifications\GradeAddedNotification;
+use App\Notifications\GradeDeletedNotification;
 use App\Support\Gradebook\GradebookTree;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -42,7 +45,11 @@ class GradeController extends Controller
 
     public function store(GradeRequest $request): RedirectResponse
     {
-        $this->saveGrade($request, new Grade(['user_id' => $request->user()->id]));
+        $grade = new Grade(['user_id' => $request->user()->id]);
+
+        $this->saveGrade($request, $grade);
+
+        Notification::send($request->user()->supervisors(), new GradeAddedNotification($grade));
 
         return back();
     }
@@ -54,15 +61,22 @@ class GradeController extends Controller
         return back();
     }
 
-    public function destroy(Grade $grade): RedirectResponse
+    public function destroy(Request $request, Grade $grade): RedirectResponse
     {
         $path = $grade->file_path;
 
+        // Built before the delete: it snapshots the grade's name.
+        $notification = new GradeDeletedNotification($grade);
+
         $grade->delete();
 
+        // The scan goes first: the grade row, and with it the only record of the path, is
+        // already gone, so a failing notification must not leave the file orphaned.
         if ($path !== null) {
             Storage::delete($path);
         }
+
+        Notification::send($request->user()->supervisors(), $notification);
 
         return redirect()->route('grades.dashboard');
     }
