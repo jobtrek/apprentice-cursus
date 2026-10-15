@@ -65,15 +65,18 @@ class GradeController extends Controller
     {
         $path = $grade->file_path;
 
+        // Built before the delete: it snapshots the grade's name.
         $notification = new GradeDeletedNotification($grade);
 
         $grade->delete();
 
-        Notification::send($request->user()->supervisors(), $notification);
-
+        // The scan goes first: the grade row, and with it the only record of the path, is
+        // already gone, so a failing notification must not leave the file orphaned.
         if ($path !== null) {
             Storage::delete($path);
         }
+
+        Notification::send($request->user()->supervisors(), $notification);
 
         return redirect()->route('grades.dashboard');
     }

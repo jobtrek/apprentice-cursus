@@ -5,6 +5,7 @@ use App\Models\FormationPlan;
 use App\Models\Grade;
 use App\Models\User;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
 
 beforeEach(function () {
@@ -289,6 +290,19 @@ describe('destroy', function () {
         $this->actingAs(makeApprentice($this->plan))->delete(route('grades.destroy', $this->grade))->assertForbidden();
 
         expect($coach->notifications)->toBeEmpty();
+    });
+
+    test('the scan is removed even when the notification cannot be delivered', function () {
+        $path = $this->grade->file_path;
+
+        Notification::shouldReceive('send')->once()->andThrow(new RuntimeException('Notifications are down.'));
+        $this->withoutExceptionHandling();
+
+        expect(fn () => $this->actingAs($this->apprentice)->delete(route('grades.destroy', $this->grade)))
+            ->toThrow(RuntimeException::class, 'Notifications are down.');
+
+        expect(Grade::query()->count())->toBe(0);
+        Storage::assertMissing($path);
     });
 
     test('nobody else can delete the grade', function (string $who) {
