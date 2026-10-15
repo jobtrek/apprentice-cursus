@@ -8,6 +8,7 @@ use App\Http\Controllers\GradeController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\SupervisionController;
+use App\Models\Grade;
 use Illuminate\Foundation\Http\Middleware\HandlePrecognitiveRequests;
 use Illuminate\Support\Facades\Route;
 
@@ -21,6 +22,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
             ->name('dashboard');
         // GradePolicy::create / update are checked by GradeRequest.
         Route::post('/', [GradeController::class, 'store'])->name('store');
+        Route::post('/read-scan', [GradeController::class, 'readScan'])
+            ->middleware('can:create,'.Grade::class)
+            ->name('read-scan');
         Route::put('/{grade}', [GradeController::class, 'update'])
             ->whereNumber('grade')
             ->name('update');

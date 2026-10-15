@@ -16,10 +16,6 @@ use Laravel\Ai\Responses\Data\FinishReason;
 use Laravel\Ai\Responses\Data\TextUsage;
 use Laravel\Ai\Responses\StructuredAgentResponse;
 
-/**
- * Call 1 of Automatic reading: one page image in, {text, subject, grade, grade_box} out.
- * Settings are notar v2's, unchanged (docs/ocr_specs/stack.md, Scope step 2).
- */
 #[Provider('gemini')]
 #[Model('gemini-3.5-flash-lite')]
 #[Temperature(0)]
@@ -43,7 +39,9 @@ class GeminiService implements Agent, HasStructuredOutput
         ];
     }
 
-    
+    /**
+     * @return array{text: string|null, subject: string|null, grade: float|null, grade_box: list<int>|null, truncated: bool, usage: TextUsage}
+     */
     public function read(string $png): array
     {
         /** @var StructuredAgentResponse $response */

@@ -13,3 +13,4 @@ cut the tasks in equal size to avoid 1 person working on 1 feature, especially t
 
 when implementing a new feature discuss with the team with these little methods, like if x feature. I need a service we will do everything in service.
 
+also implement for the employé de commerce the subjects etc..

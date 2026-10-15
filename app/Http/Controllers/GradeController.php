@@ -3,14 +3,19 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\GradeRequest;
+use App\Http\Requests\ReadScanRequest;
 use App\Http\Resources\CommentResource;
 use App\Http\Resources\GradeResource;
 use App\Models\Grade;
+use App\Services\Ocr\GeminiService;
+use App\Services\Ocr\JevService;
 use App\Support\Gradebook\GradebookTree;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Imagick;
 use Inertia\Inertia;
 use Inertia\Response;
 use RuntimeException;
@@ -45,6 +50,52 @@ class GradeController extends Controller
         $this->saveGrade($request, new Grade(['user_id' => $request->user()->id]));
 
         return back();
+    }
+
+    public function readScan(ReadScanRequest $request, GeminiService $gemini, JevService $jev): JsonResponse
+    {
+        $start = hrtime(true);
+
+        // Pages 2–3 are read only when the page before has no grade or was cut off.
+        // ponytail: synchronous; the cache and queue are in docs/ocr_specs/tasks.md.
+        $path = $request->file('file')->getRealPath();
+        $pdf = new Imagick;
+        $pdf->pingImage($path);
+        $pages = $pdf->getNumberImages();
+        $firstText = null;
+        $grade = null;
+
+        for ($n = 0; $n < min(3, $pages); $n++) {
+            $page = new Imagick;
+            $page->setResolution(200, 200);
+            $page->readImage("{$path}[{$n}]");
+            $page->setImageBackgroundColor('white');
+            $page = $page->mergeImageLayers(Imagick::LAYERMETHOD_FLATTEN);
+            $page->setImageFormat('png');
+
+            $reading = $gemini->read($page->getImageBlob());
+            $firstText ??= $reading['text'];
+            $grade = $reading['grade'];
+
+            if ($grade !== null && ! $reading['truncated']) {
+                break;
+            }
+        }
+
+        $classification = $jev->classify(['first_page_text' => (string) $firstText]);
+
+        // Only 1.0–6.0 in steps of 0.5 is a valid grade.
+        if ($grade !== null && ($grade < 1 || $grade > 6 || fmod($grade * 2, 1) !== 0.0)) {
+            $grade = null;
+        }
+
+        return response()->json([
+            'subject' => $classification['subject']->value,
+            'confidence' => $classification['confidence'],
+            'grade' => $grade,
+            'flagged' => $grade === null || ($classification['confidence'] ?? 0) < 0.5,
+            'duration_ms' => (int) round((hrtime(true) - $start) / 1e6),
+        ]);
     }
 
     public function update(GradeRequest $request, Grade $grade): RedirectResponse

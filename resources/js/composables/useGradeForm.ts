@@ -248,6 +248,7 @@ export const useGradeForm = (
     return {
         form,
         groups,
+        branches,
         selectedBranch,
         keepsFile,
         dateDay,
