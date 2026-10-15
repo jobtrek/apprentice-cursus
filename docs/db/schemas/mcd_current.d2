@@ -23,7 +23,6 @@ users: {
   password: varchar
   is_active: boolean
   synced_at: timestamp
-  formation_plan_id: bigint {constraint: FK}
   coach_id: bigint {constraint: foreign_key}
 }
 
