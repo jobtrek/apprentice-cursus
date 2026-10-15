@@ -46,7 +46,7 @@ class GeminiService implements Agent, HasStructuredOutput
     {
         /** @var StructuredAgentResponse $response */
         $response = $this->prompt(
-            (string) file_get_contents(base_path('docs/ocr_specs/config/prompt.md')),
+            (string) file_get_contents(resource_path('prompts/ocr.md')),
             [Image::fromBase64(base64_encode($png), 'image/png')],
         );
 

@@ -60,11 +60,13 @@ In the same change:
 ## Implementation Decisions
 
 ### Deployment
+
 - **Python service, not a Laravel port.** The 89.6% was measured on this Python code (pymupdf rendering, `google-genai`, `typesafe-sdk`). Laravel's AI SDK (`laravel/ai`) could make the Gemini call (image attachment, JSON schema, finish reason, token usage). But Jev has no PHP SDK that I found, rendering PDFs in PHP needs Imagick/Ghostscript, and a port would split benchmark and production into two codebases. That would break Goal 3 of the pipeline spec ("Benchmark = production").
 - **FastAPI + uvicorn in one Docker container.** Laravel keeps uploads, the queue, the confirm UI, storage and retention, and calls the service from a queue job.
 - **API keys** (`GEMINI_API_KEY`, `TYPESAFE_API_KEY`) and the shared secret come from the environment. `.env` is for local runs only.
 
 ### Service module (new)
+
 - `POST /process`: the body is the PDF bytes (multipart upload). The response is the result JSON, unchanged from `process()`.
 - `GET /health`: liveness check, no model calls.
 - **Auth:** a shared-secret header, compared in constant time. A missing or wrong secret returns 401.
@@ -72,28 +74,31 @@ In the same change:
 - **Upstream errors:** a Gemini or Jev failure returns 502/503 with no partial result. The queue job retries those statuses and never retries 4xx.
 - **Providers are built once at startup** and injected, so tests can replace them with fakes.
 - **Cache:** looked up before `process()` runs.
-  - Key = SHA-256 of the PDF + a hash of the config, which covers the `Config` fields, the prompts and `subjects.json`.
-  - Value = the result JSON only.
-  - A hit returns the stored JSON and makes no provider calls.
-  - A plain local store is enough (one container, one writer). The cache lives in the service, not in `process()`, so the benchmark keeps its own per-PDF cache.
+    - Key = SHA-256 of the PDF + a hash of the config, which covers the `Config` fields, the prompts and `subjects.json`.
+    - Value = the result JSON only.
+    - A hit returns the stored JSON and makes no provider calls.
+    - A plain local store is enough (one container, one writer). The cache lives in the service, not in `process()`, so the benchmark keeps its own per-PDF cache.
 
 ### Pipeline changes (`process()`)
+
 - **Loop guard retry (rank 1):** when a page's Gemini reading is `truncated`, render the top half of that same page and read it once more.
-  - If that reading isn't truncated either, it counts as the page's reading: text and grade work the same as for a full page.
-  - If it is truncated too, skip the page as today.
-  - At most one retry per page.
-  - `fallback` gains a way to say the retry was used, for example `{"loop_retry": true}` alongside `grade_page`. The retry's call and cost are counted.
+    - If that reading isn't truncated either, it counts as the page's reading: text and grade work the same as for a full page.
+    - If it is truncated too, skip the page as today.
+    - At most one retry per page.
+    - `fallback` gains a way to say the retry was used, for example `{"loop_retry": true}` alongside `grade_page`. The retry's call and cost are counted.
 - **Module codes (rank 2):** copy the 40 Module codes (with descriptions) from the Jev subject tree into the `modules` section of `subjects.json`.
-  - Once the list is filled, the existing "any 3-digit code counts while the list is empty" fallback in the Module rule has no effect. Remove it, together with its `ponytail:` comment.
-  - The Gemini `subject` enum and Jev's choices pick up the codes automatically, because they are already built from `subjects.json`.
+    - Once the list is filled, the existing "any 3-digit code counts while the list is empty" fallback in the Module rule has no effect. Remove it, together with its `ponytail:` comment.
+    - The Gemini `subject` enum and Jev's choices pick up the codes automatically, because they are already built from `subjects.json`.
 - Nothing else in the decision rules changes. T stays 1.0, the embeddings vote stays off by default, and the models stay pinned.
 
 ### Benchmark changes (rank 0)
+
 - `notar bench` can write to a named results file (e.g. a run label), so 3 runs of v2 sit side by side without deleting `results/bench.jsonl`.
 - `notar report` (or a small compare command) lists the files whose Test type or Grade differs between runs, and counts them.
 - The noise measurement is done by running v2 three times (~$0.20 total) **after** ranks 1–2 land. The result goes into `benchmark-results.md`.
 
 ### Output contract
+
 - Unchanged from `final_bench_mark.md`, apart from the extra key `fallback` may now carry for the top-half retry. `grade_crop` and `grade_tiebreak` stay null.
 
 ## Testing Decisions
@@ -101,18 +106,18 @@ In the same change:
 - **A good test checks external behavior.** Give it scripted Readings or an HTTP request, then assert the returned JSON: values, sources, flags, `fallback`, `calls`. Don't assert prompt text, internal helpers, or the order of calls inside a stage.
 - **No live API calls**, as today. Real-API checks happen only through `notar bench`.
 - **Seam 1, `process(pdf_bytes, providers)`** (existing, extend `test_pipeline.py`):
-  - Page 1 full read truncated, top-half retry succeeds with a grade: grade pre-filled, `fallback` shows the retry, 2 Gemini calls.
-  - Page 1 full and top half both truncated: moves on to page 2 as today.
-  - Retry succeeds but finds no grade: its text is used for the Test type, and the page fallback looks for the grade on page 2.
-  - A printed code that is in `subjects.json`: `test_type_source = "rule"`.
-  - A printed 3-digit number that isn't a known code: no rule hit, Jev runs.
-  - Update the existing `test_page_fallback_and_loop_guard` for the new retry call.
+    - Page 1 full read truncated, top-half retry succeeds with a grade: grade pre-filled, `fallback` shows the retry, 2 Gemini calls.
+    - Page 1 full and top half both truncated: moves on to page 2 as today.
+    - Retry succeeds but finds no grade: its text is used for the Test type, and the page fallback looks for the grade on page 2.
+    - A printed code that is in `subjects.json`: `test_type_source = "rule"`.
+    - A printed 3-digit number that isn't a known code: no rule hit, Jev runs.
+    - Update the existing `test_page_fallback_and_loop_guard` for the new retry call.
 - **Seam 2, `POST /process`** (new, FastAPI test client with fake providers injected):
-  - A valid PDF with the secret returns the contract JSON.
-  - The same PDF twice: the second response is identical and the fakes record 0 extra calls.
-  - The same PDF after a config change is a cache miss.
-  - Non-PDF returns 4xx, oversized returns 413, missing secret returns 401. Fakes record 0 calls for all three.
-  - A fake provider that raises returns 502/503, and nothing is cached.
+    - A valid PDF with the secret returns the contract JSON.
+    - The same PDF twice: the second response is identical and the fakes record 0 extra calls.
+    - The same PDF after a config change is a cache miss.
+    - Non-PDF returns 4xx, oversized returns 413, missing secret returns 401. Fakes record 0 calls for all three.
+    - A fake provider that raises returns 502/503, and nothing is cached.
 - **Prior art:** `tests/test_pipeline.py` already drives `process()` with `FakeGemini`/`FakeJev` (including loop guard and page fallback), and has `test_bench_score` / `test_bench_diagnose` for the benchmark. Reuse those fakes for seam 2.
 - **Benchmark compare:** one test on two in-memory run files with a known number of differing files, in the style of `test_bench_score`.
 

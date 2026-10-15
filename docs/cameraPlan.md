@@ -7,6 +7,7 @@ For a fully functional document scanner, I would recommend this approach. It is 
 Once all pages have been scanned, they can be combined into a single PDF file using a JavaScript library.
 
 Possible Solutions
+
 1. jsPDF
 
 A good choice for a simple implementation. It allows you to generate PDF files from images and supports multi-page documents, making it a good option for the first version of the scanner.

@@ -200,6 +200,7 @@ What each role can do and how the sync behaves: `docs/project-docs/role_permissi
 **Verdict:** Feasible. The proposed pipeline reads both the Test type and the Grade correctly on 89.6% of the 67 test PDFs, at $0.0014 per PDF. The apprentice confirms every result, so the cases it gets wrong are fixed before anything is saved. The feature is an extra (tagged `[OCR] [EXTRA]` in `docs/user_stories/user_story_final.md`) and is built only after the base features.
 
 **Why:** One codebase and one deployment. A second container, a shared secret and a Python toolchain are too much to run and maintain for this app. The evaluation of all 27 saved runs (`RECOMMENDATION.md`) shows:
+
 - notar v2 is the best setup measured: both fields right on 89.6% of the 67 PDFs (95% CI 80.0–94.8%), $0.0014 per PDF. Local models (GLM-OCR, Chandra) lose significantly.
 - Jev alone decides the Test type (97.0%). Gemini's own subject is wrong in all 8 disagreements, so it is not used.
 - notar v2's flag rule (Gemini≠Jev, `OTHER`, invalid grade) has precision 0.10 and recall 0.14. "Grade missing OR Jev confidence < 0.5" has 0.62 and 0.71, at no extra cost.
@@ -207,6 +208,7 @@ What each role can do and how the sync behaves: `docs/project-docs/role_permissi
 - Gemini through `laravel/ai` (revised 2026-10-13): 1.2.1 exposes each step's `finishReason` (`Length` = truncated), counts thinking tokens in `usage->outputTokens`, and supports a JSON schema, temperature and max tokens. Two differences from the benchmark: it calls Gemini's `interactions` endpoint (not `generateContent`) and sends the prompt before the image. `ocr:bench` must still pass (≥ 56/67); if it doesn't, fall back to `Http::post` on `generateContent`.
 
 **Consequences:**
+
 - The port keeps every parameter the 89.6% was measured with: `gemini-3.5-flash-lite`, temperature 0, `maxOutputTokens` 8192, notar's `CALL1_PROMPT` unchanged, PNG at 200 dpi, full page, `jev-1.13.0`, the same `subjects.json`. The one known difference is the order: `laravel/ai` sends the prompt before the image, and `ocr:bench` decides whether that matters (see Why). Sending the PDF straight to Gemini, or rewording the prompt, voids the number.
 - The port is checked with `php artisan ocr:bench` on notar's 67 PDFs. Pass = both fields right on ≥ 56/67 (89.6% minus the ~4-file run-to-run noise). About $0.10 per run.
 - The 0.5 threshold was picked on those same 67 PDFs, so it is optimistic. Re-check it once ~30 Confirmations exist.

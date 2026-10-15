@@ -11,7 +11,7 @@ Backend work for Automatic reading, in order. Details: [`stack.md`](stack.md), d
 ## Services (`app/Services/Ocr/`)
 
 - [ ] **4. `PdfPage`.** Turn page N of a PDF into PNG bytes at 200 dpi with Imagick (`setResolution`, `readImage("$path[$n]")`, flatten). Compare one page by eye against notar's pymupdf output.
-- [ ] **5. `GeminiService`.** A `laravel/ai` agent (`HasStructuredOutput`) on `gemini-3.5-flash-lite`, temperature 0, that sends the prompt from `config/prompt.md` unchanged plus the page image and gets back `{text, subject, grade, grade_box}`. Mark the page truncated when the last step's `finishReason` is not `Stop`, and return the token `usage` for the cost.
+- [ ] **5. `GeminiService`.** A `laravel/ai` agent (`HasStructuredOutput`) on `gemini-3.5-flash-lite`, temperature 0, that sends the prompt from `resources/prompts/ocr.md` unchanged plus the page image and gets back `{text, subject, grade, grade_box}`. Mark the page truncated when the last step's `finishReason` is not `Stop`, and return the token `usage` for the cost.
 - [ ] **6. `JevService`.** Already classifies `text` into an `OcrSubject` with `jev-1.13.0`. Make it also return Jev's `confidence`, because the flag rule needs it.
 - [ ] **7. `TestReader`.** The pipeline: read page 1 (pages 2–3 only if page 1 has no grade or is truncated), take the Test type from the Module code regex or else Jev, keep the grade only if it is 1.0–6.0 in 0.5 steps, and set Flagged when the grade is missing, Jev's confidence is below 0.5, or no page could be read.
 

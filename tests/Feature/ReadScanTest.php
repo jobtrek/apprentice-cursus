@@ -12,6 +12,7 @@ use Laravel\Ai\Classification;
 use Laravel\Ai\Responses\Data\ChoiceAnswer;
 
 beforeEach(function () {
+    config(['ocr.enabled' => true]);
     Storage::fake();
     $this->apprentice = makeApprentice(section(FormationPlan::IT));
 });
@@ -45,6 +46,15 @@ test('a scan is read by Gemini and classified by Jev', function () {
         ->assertOk()
         ->assertJson(['subject' => 'subjects/Anglais', 'confidence' => 0.9, 'grade' => 5, 'flagged' => false])
         ->assertJsonStructure(['duration_ms']);
+});
+
+test('a scan is not read while the OCR is disabled', function () {
+    config(['ocr.enabled' => false]);
+    GeminiService::fake()->preventStrayPrompts();
+
+    $this->actingAs($this->apprentice)
+        ->postJson(route('grades.read-scan'), ['consent' => true, 'file' => blankPdf()])
+        ->assertNotFound();
 });
 
 test('a scan is not read without consent', function () {

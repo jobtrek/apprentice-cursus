@@ -1,9 +1,8 @@
-split the tasks verticallym for example. 
-
+split the tasks verticallym for example.
 
 1 person does the components and then another a
 
-for example the vertical slicing, 1 person does the storing of the grade and 1 grade does the calcul. 
+for example the vertical slicing, 1 person does the storing of the grade and 1 grade does the calcul.
 
 in a group project, you need to accept and agree upon the base architecture, design system etc.. for a good base.
 

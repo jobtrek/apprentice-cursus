@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { TriangleAlertIcon, UploadIcon } from '@lucide/vue';
-import { useHttp } from '@inertiajs/vue3';
+import { useHttp, usePage } from '@inertiajs/vue3';
 import GradeForm from '@/components/grade/GradeForm.vue';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -28,6 +28,7 @@ defineProps<{
 const FORM_ID = 'add-grade-dialog-form';
 
 const { isOpen, close } = useAddGradeDialog();
+const page = usePage();
 
 const gradeForm = ref<InstanceType<typeof GradeForm> | null>(null);
 
@@ -142,7 +143,10 @@ const subjectLabel = (subject: string): string =>
             </DialogHeader>
 
             <div class="flex flex-col gap-6 overflow-y-auto p-6">
-                <div class="flex items-center gap-2">
+                <div
+                    v-if="page.props.auth.can.useOcr"
+                    class="flex items-center gap-2"
+                >
                     <Switch id="use-ocr" v-model="useOcr" />
                     <FieldLabel for="use-ocr" class="font-normal">
                         Détecter la note automatiquement (OCR)

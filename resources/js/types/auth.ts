@@ -21,6 +21,8 @@ export type Can = {
     viewApprentices: boolean;
     /** Admin local : tableau de bord OCR. */
     viewOcrStats: boolean;
+    /** Lecture automatique des notes, désactivée tant que l'OCR n'est pas validé. */
+    useOcr: boolean;
 };
 
 export type Auth = {

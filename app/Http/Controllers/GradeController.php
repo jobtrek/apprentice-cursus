@@ -8,6 +8,8 @@ use App\Http\Resources\CommentResource;
 use App\Http\Resources\GradeResource;
 use App\Models\Grade;
 use App\Models\OcrScan;
+use App\Notifications\GradeAddedNotification;
+use App\Notifications\GradeDeletedNotification;
 use App\Services\Ocr\GeminiService;
 use App\Services\Ocr\JevService;
 use App\Support\Gradebook\GradebookTree;
@@ -15,6 +17,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
 use Imagick;
 use Inertia\Inertia;
@@ -48,13 +51,19 @@ class GradeController extends Controller
 
     public function store(GradeRequest $request): RedirectResponse
     {
-        $this->saveGrade($request, new Grade(['user_id' => $request->user()->id]));
+        $grade = new Grade(['user_id' => $request->user()->id]);
+
+        $this->saveGrade($request, $grade);
+
+        Notification::send($request->user()->supervisors(), new GradeAddedNotification($grade));
 
         return back();
     }
 
     public function readScan(ReadScanRequest $request, GeminiService $gemini, JevService $jev): JsonResponse
     {
+        abort_unless(config('ocr.enabled'), 404);
+
         $start = hrtime(true);
 
         // Pages 2–3 are read only when the page before has no grade or was cut off.
@@ -125,15 +134,22 @@ class GradeController extends Controller
         return back();
     }
 
-    public function destroy(Grade $grade): RedirectResponse
+    public function destroy(Request $request, Grade $grade): RedirectResponse
     {
         $path = $grade->file_path;
 
+        // Built before the delete: it snapshots the grade's name.
+        $notification = new GradeDeletedNotification($grade);
+
         $grade->delete();
 
+        // The scan goes first: the grade row, and with it the only record of the path, is
+        // already gone, so a failing notification must not leave the file orphaned.
         if ($path !== null) {
             Storage::delete($path);
         }
+
+        Notification::send($request->user()->supervisors(), $notification);
 
         return redirect()->route('grades.dashboard');
     }

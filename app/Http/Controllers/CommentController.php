@@ -6,6 +6,7 @@ use App\Http\Requests\CommentRequest;
 use App\Http\Requests\UpdateCommentRequest;
 use App\Models\Comment;
 use App\Models\Grade;
+use App\Notifications\GradeCommentedNotification;
 use Illuminate\Http\RedirectResponse;
 
 class CommentController extends Controller
@@ -18,6 +19,8 @@ class CommentController extends Controller
         $comment = new Comment($request->validated());
         $comment->author()->associate($request->user());
         $grade->comments()->save($comment);
+
+        $grade->user->notify(new GradeCommentedNotification($comment, $grade));
 
         return back();
     }

@@ -19,12 +19,14 @@ A Python pipeline service, running the same code the benchmark measures, pre-fil
 The Confirmed result is the student's personal record, visible only to them. It is not an authoritative school record, and teachers never upload.
 
 ### Goals
+
 1. Accuracy first: every stored result is confirmed by the uploader. Pipeline targets: ≥ 98% Pre-fill accuracy on unflagged results, ≤ 15% of tests Flagged.
 2. Cost second: ≤ $0.003 per test end to end (today ~$0.0012).
 3. Benchmark = production: every number in the evaluation comes from the code that ships.
 4. Room for one experiment at a time (embeddings vote, local grade classifier), shipped only if it beats v1 on the holdout.
 
 ### Non-goals (v1)
+
 - Local-only / offline mode.
 - Per-Test-type grade-box templates.
 - Gemini batch mode for user uploads.
@@ -65,19 +67,19 @@ PDF ─► cache (SHA-256) ─hit─► stored result JSON
 
 ### Stages, inputs and outputs
 
-| # | Stage | Input | Output |
-|---|---|---|---|
-| 0 | Cache lookup | PDF bytes | SHA-256; on hit, the stored result JSON (no model calls) |
-| 1 | Render | PDF | Page 1 image, 200 dpi, PNG, full page (benchmark best settings). Pages 2–3 rendered only on fallback |
-| 2 | Call 1 (Gemini flash-lite) | Page image | `text` (verbatim transcription), `subject` (enum of Test types + `OTHER`), `grade` (raw + normalized), `grade_box` (Gemini normalized `box_2d`, or null) |
-| 3 | Rules | `text` | Module or no match (module codes such as `M293`, `Modul 293`, `Module 293`) |
-| 4 | Jev | `text` | Test type choice + confidence |
-| 5 | Test type decision | Rule result, Jev choice/confidence, Gemini subject | `test_type`, `test_type_source`, maybe a flag reason |
-| 6 | Crop (phase 2) | Page image + `grade_box` | Grade crop image (small padding around the box) |
-| 7 | Call 2 (phase 2, Gemini flash-lite) | Crop only | `grade_crop` |
-| 8 | Call 3 (phase 2, stronger Gemini tier), only when needed | Page + crop | `grade_tiebreak` |
-| 9 | Grade decision | All Grade Readings | `grade`, `grade_source`, maybe a flag reason |
-| 10 | Output + retention | Everything above | Result JSON; image deleted or kept per retention rules |
+| #   | Stage                                                    | Input                                              | Output                                                                                                                                                   |
+| --- | -------------------------------------------------------- | -------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 0   | Cache lookup                                             | PDF bytes                                          | SHA-256; on hit, the stored result JSON (no model calls)                                                                                                 |
+| 1   | Render                                                   | PDF                                                | Page 1 image, 200 dpi, PNG, full page (benchmark best settings). Pages 2–3 rendered only on fallback                                                     |
+| 2   | Call 1 (Gemini flash-lite)                               | Page image                                         | `text` (verbatim transcription), `subject` (enum of Test types + `OTHER`), `grade` (raw + normalized), `grade_box` (Gemini normalized `box_2d`, or null) |
+| 3   | Rules                                                    | `text`                                             | Module or no match (module codes such as `M293`, `Modul 293`, `Module 293`)                                                                              |
+| 4   | Jev                                                      | `text`                                             | Test type choice + confidence                                                                                                                            |
+| 5   | Test type decision                                       | Rule result, Jev choice/confidence, Gemini subject | `test_type`, `test_type_source`, maybe a flag reason                                                                                                     |
+| 6   | Crop (phase 2)                                           | Page image + `grade_box`                           | Grade crop image (small padding around the box)                                                                                                          |
+| 7   | Call 2 (phase 2, Gemini flash-lite)                      | Crop only                                          | `grade_crop`                                                                                                                                             |
+| 8   | Call 3 (phase 2, stronger Gemini tier), only when needed | Page + crop                                        | `grade_tiebreak`                                                                                                                                         |
+| 9   | Grade decision                                           | All Grade Readings                                 | `grade`, `grade_source`, maybe a flag reason                                                                                                             |
+| 10  | Output + retention                                       | Everything above                                   | Result JSON; image deleted or kept per retention rules                                                                                                   |
 
 ### Pre-fill / flag rules
 
@@ -100,10 +102,12 @@ The uploader confirms by picking from the fixed Test type list or cancels the up
 T starts at **1.0** (every disagreement is flagged). It is lowered only once ≥ 30 disagreements are logged (from the holdout or production Confirmations), to the lowest value at which Jev is never wrong on them, then checked on the holdout. Every agreeing pair is logged with Jev's confidence so a "flag even when agreeing below T_low" rule can be added later if the evaluation shows agreeing-but-wrong cases.
 
 **Grade, phase 1** (call 1 only)
+
 1. `grade` valid → pre-fill, `grade_source = "call1"`.
 2. Invalid (e.g. 5.75, 18) → flag `grade_invalid`; pre-fill null.
 
 **Grade, phase 2** (only if the Phase 2 trigger fires)
+
 1. `grade` (call 1) and `grade_crop` (call 2) both valid and equal → pre-fill, `grade_source = "agree"`.
 2. Otherwise run call 3. If `grade_tiebreak` is valid and equals one of the earlier valid Readings → pre-fill, `grade_source = "tiebreak"`.
 3. Otherwise → flag `grade_disagree` or `grade_invalid`.
@@ -113,26 +117,30 @@ T starts at **1.0** (every disagreement is flagged). It is lowered only once ≥
 
 ```json
 {
-  "pdf_sha256": "…",
-  "test_type": "Anglais",
-  "test_type_source": "rule | agree | jev | embed | none",
-  "grade": 5.5,
-  "grade_source": "call1 | agree | tiebreak | none",
-  "flagged": false,
-  "flag_reasons": [],
-  "readings": {
-    "rule": null,
-    "jev": {"choice": "Anglais", "confidence": 0.93},
-    "gemini_subject": "Anglais",
-    "grade_full_page": 5.5,
-    "grade_crop": 5.5,
-    "grade_tiebreak": null,
-    "grade_box": [120, 610, 210, 820]
-  },
-  "fallback": null,
-  "calls": {"gemini": 2, "gemini_strong": 0, "jev": 1},
-  "cost_usd": 0.0014,
-  "models": {"gemini": "gemini-3.5-flash-lite", "gemini_strong": "…", "jev": "jev-1.13.0"}
+    "pdf_sha256": "…",
+    "test_type": "Anglais",
+    "test_type_source": "rule | agree | jev | embed | none",
+    "grade": 5.5,
+    "grade_source": "call1 | agree | tiebreak | none",
+    "flagged": false,
+    "flag_reasons": [],
+    "readings": {
+        "rule": null,
+        "jev": { "choice": "Anglais", "confidence": 0.93 },
+        "gemini_subject": "Anglais",
+        "grade_full_page": 5.5,
+        "grade_crop": 5.5,
+        "grade_tiebreak": null,
+        "grade_box": [120, 610, 210, 820]
+    },
+    "fallback": null,
+    "calls": { "gemini": 2, "gemini_strong": 0, "jev": 1 },
+    "cost_usd": 0.0014,
+    "models": {
+        "gemini": "gemini-3.5-flash-lite",
+        "gemini_strong": "…",
+        "jev": "jev-1.13.0"
+    }
 }
 ```
 
@@ -211,11 +219,11 @@ Known today: C1 + Cjev ≈ $0.0012 (flash-lite at $0.25 in / $1.50 out, Jev at $
 
 Looked up 2026-10-12 on the MTEB leaderboards (Multilingual v2, French v1) and the Gemini API docs. Our input is short French/German/English page text plus 9 Subjects, so the relevant MTEB column is **classification**, not retrieval.
 
-| candidate | where it runs | size | MTEB multilingual (mean / class.) | licence | cost per test | why |
-|---|---|---|---|---|---|---|
-| `gemini-embedding-2` | Google API | — | not listed yet (001: 68.4 / 71.8) | API | ~$0.0002 (≈1k text tokens at $0.20 / 1M) or $0.00012 per page image | Same processor as Gemini, so no new privacy notice. **Multimodal:** can embed the page image itself, which gives a vote that doesn't depend on the transcription |
-| `microsoft/harrier-oss-v1-0.6b` | local (Docker, CPU) | 0.6B | 69.0 / 73.9 | MIT | 0 | Best small model on the multilingual board (#10 overall, Pareto-optimal); class. score beats gemini-embedding-001 |
-| `Qwen/Qwen3-Embedding-0.6B` | local | 0.6B | 64.3 / 66.8 | Apache-2.0 | 0 | Widely used, well supported; fallback if harrier is awkward to run |
+| candidate                       | where it runs       | size | MTEB multilingual (mean / class.) | licence    | cost per test                                                       | why                                                                                                                                                              |
+| ------------------------------- | ------------------- | ---- | --------------------------------- | ---------- | ------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `gemini-embedding-2`            | Google API          | —    | not listed yet (001: 68.4 / 71.8) | API        | ~$0.0002 (≈1k text tokens at $0.20 / 1M) or $0.00012 per page image | Same processor as Gemini, so no new privacy notice. **Multimodal:** can embed the page image itself, which gives a vote that doesn't depend on the transcription |
+| `microsoft/harrier-oss-v1-0.6b` | local (Docker, CPU) | 0.6B | 69.0 / 73.9                       | MIT        | 0                                                                   | Best small model on the multilingual board (#10 overall, Pareto-optimal); class. score beats gemini-embedding-001                                                |
+| `Qwen/Qwen3-Embedding-0.6B`     | local               | 0.6B | 64.3 / 66.8                       | Apache-2.0 | 0                                                                   | Widely used, well supported; fallback if harrier is awkward to run                                                                                               |
 
 Not considered: >1B models (F2LLM-v2, Qwen3-Embedding-4B/8B, harrier-27b). They top the boards but are too big for a CPU container, and 9 Subjects don't need them.
 
@@ -226,6 +234,7 @@ Not considered: >1B models (F2LLM-v2, Qwen3-Embedding-4B/8B, harrier-27b). They 
 **Where it votes:** only when Jev and Gemini disagree on a Subject **and** Jev confidence < T (the cases that would otherwise be Flagged). If the embedding's top Subject matches one side with similarity margin ≥ M over the runner-up, pre-fill that side unflagged (`test_type_source = "embed"`). Otherwise flag as before. M is set from the data like T.
 
 **Order of evaluation:**
+
 1. `gemini-embedding-2` on text, then on the page image (cheapest to try; no new processor).
 2. `harrier-oss-v1-0.6b` on text (free, local).
 3. Keep the best one only if it lowers flagged share on the holdout without lowering unflagged pre-fill accuracy.
@@ -236,17 +245,17 @@ Not considered: >1B models (F2LLM-v2, Qwen3-Embedding-4B/8B, harrier-27b). They 
 
 - **Good tests check external behavior:** given scripted Readings, assert the final `test_type`, `grade`, sources, `flagged` and reasons. They don't assert call order, prompt text or internal helpers.
 - **Seam 1, `process(pdf_bytes, providers)`:** fake Gemini/Jev providers return scripted readings. Cases:
-  - rule hit with Gemini Module / `OTHER` → pre-fill
-  - rule hit with Gemini Subject → `subject_disagree`
-  - no rule hit, Module Reading → `module_rule_miss`
-  - not a test → `not_recognized`
-  - Subject agree
-  - disagree with Jev ≥ T and < T
-  - invalid Grade → `grade_invalid`
-  - ungraded test → Grade null, not flagged
-  - phase 2: Grades agree; disagree → tie-break pre-fills; tie-break still disagrees → flag; no `grade_box` → call 3 directly
-  - page fallback
-  - cache hit makes no calls
+    - rule hit with Gemini Module / `OTHER` → pre-fill
+    - rule hit with Gemini Subject → `subject_disagree`
+    - no rule hit, Module Reading → `module_rule_miss`
+    - not a test → `not_recognized`
+    - Subject agree
+    - disagree with Jev ≥ T and < T
+    - invalid Grade → `grade_invalid`
+    - ungraded test → Grade null, not flagged
+    - phase 2: Grades agree; disagree → tie-break pre-fills; tie-break still disagrees → flag; no `grade_box` → call 3 directly
+    - page fallback
+    - cache hit makes no calls
 - **Seam 2, FastAPI endpoint:** one thin test: post a PDF, get the contract JSON, and the image is gone afterwards (privacy rule at the boundary).
 - **Prior art:** the benchmark's run-case tests already drive the runner with fake providers (including loop retry → page fallback); parsing/scoring tests cover grade normalization and subject matching; imaging tests cover crops.
 - **No live API calls in unit tests**, as today.
@@ -257,18 +266,19 @@ Not considered: >1B models (F2LLM-v2, Qwen3-Embedding-4B/8B, harrier-27b). They 
 - **Baseline:** current best `gemini_jev` (`best_v2` once run) on the same docs.
 - **Metrics:**
 
-| metric | definition |
-|---|---|
-| Pre-fill accuracy (unflagged) | share of unflagged tests with Test type **and** Grade correct |
-| Flagged share | share with `flagged` |
-| edit rate (production) | share of Confirmations where the uploader changed a value, Grade edits counted separately |
-| tie-break rate (p3) | share reaching call 3 |
-| Jev accuracy on disagreements | how often Jev was right when it disagreed with Gemini |
-| end-to-end accuracy | unflagged correct + Flagged (assumed corrected at Confirmation) |
-| cost per test | from logged tokens and the formula above |
-| Module accuracy | Test type accuracy on Module tests only |
+| metric                        | definition                                                                                |
+| ----------------------------- | ----------------------------------------------------------------------------------------- |
+| Pre-fill accuracy (unflagged) | share of unflagged tests with Test type **and** Grade correct                             |
+| Flagged share                 | share with `flagged`                                                                      |
+| edit rate (production)        | share of Confirmations where the uploader changed a value, Grade edits counted separately |
+| tie-break rate (p3)           | share reaching call 3                                                                     |
+| Jev accuracy on disagreements | how often Jev was right when it disagreed with Gemini                                     |
+| end-to-end accuracy           | unflagged correct + Flagged (assumed corrected at Confirmation)                           |
+| cost per test                 | from logged tokens and the formula above                                                  |
+| Module accuracy               | Test type accuracy on Module tests only                                                   |
 
-  All with 95% confidence intervals (Wilson).
+All with 95% confidence intervals (Wilson).
+
 - **Success criteria (ship gate, on the holdout):** unflagged Pre-fill accuracy ≥ 98%, Flagged share ≤ 15%, cost ≤ $0.003/test, end-to-end accuracy ≥ baseline.
 - **Phase 2 trigger:** build calls 2 and 3 if ≥ 3% of Grade Confirmations are edits over the first 200 production uploads. (The earlier "> 2% on the 67 docs" trigger is dropped: 1 vs 2 docs decides it, and the 95% interval on 1/67 spans ~0.3–8%.) Confirmed results are private, so students have no reason to inflate Grades and the edit rate stays a clean signal.
 - **Experiments** (embeddings Subject vote once data gives ≥ 10 examples per Subject; local 11-class Grade classifier on crops) ship only if they beat v1 on the holdout.
@@ -285,6 +295,7 @@ Not considered: >1B models (F2LLM-v2, Qwen3-Embedding-4B/8B, harrier-27b). They 
 ## Further Notes
 
 ### Open questions (v1)
+
 1. The real value of T, once ≥ 30 disagreements are logged.
 2. Whether the holdout contains enough Module tests to judge Module accuracy at all. None of the 67 tuning docs is a Module test.
 3. When permission for the 4th-year tests arrives (it blocks shipping).
@@ -292,5 +303,6 @@ Not considered: >1B models (F2LLM-v2, Qwen3-Embedding-4B/8B, harrier-27b). They 
 5. Embeddings: does a page-image embedding (`gemini-embedding-2`) beat text embeddings for the Subject, given that layouts repeat per teacher?
 
 ### Open questions (phase 2)
+
 1. Which stronger Gemini tier is the call-3 tie-breaker, and its exact price (must fit the budget above).
 2. Whether Gemini's `box_2d` is accurate enough on handwritten Grades. Measure the crop hit rate on the 67 docs before relying on call 2.
