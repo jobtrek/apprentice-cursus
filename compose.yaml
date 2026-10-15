@@ -53,8 +53,8 @@ services:
     mailpit:
         image: 'axllent/mailpit:latest'
         ports:
-            - '${FORWARD_MAILPIT_PORT:-1025}:1025'
-            - '${FORWARD_MAILPIT_DASHBOARD_PORT:-8025}:8025'
+            - '127.0.0.1:${FORWARD_MAILPIT_PORT:-1025}:1025'
+            - '127.0.0.1:${FORWARD_MAILPIT_DASHBOARD_PORT:-8025}:8025'
         networks:
             - sail
     greenmail:
@@ -62,8 +62,8 @@ services:
         environment:
             GREENMAIL_OPTS: '-Dgreenmail.setup.test.all -Dgreenmail.hostname=0.0.0.0 -Dgreenmail.auth.disabled'
         ports:
-            - '${FORWARD_IMAP_PORT:-3143}:3143'
-            - '${FORWARD_IMAP_SMTP_PORT:-3025}:3025'
+            - '127.0.0.1:${FORWARD_IMAP_PORT:-3143}:3143'
+            - '127.0.0.1:${FORWARD_IMAP_SMTP_PORT:-3025}:3025'
         networks:
             - sail
 networks:

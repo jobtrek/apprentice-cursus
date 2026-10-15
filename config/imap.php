@@ -62,6 +62,10 @@ return [
     | array below.
     |
     */
+    // Authserv-id of the receiving server (e.g. mx.google.com) whose Authentication-Results
+    // header emails:fetch trusts to prove the sender. Empty: From is trusted in local only.
+    'trusted_authserv_id' => env('IMAP_TRUSTED_AUTHSERV_ID'),
+
     'accounts' => [
 
         'default' => [// account identifier
