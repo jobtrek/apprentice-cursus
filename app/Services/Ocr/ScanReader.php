@@ -46,8 +46,8 @@ class ScanReader
             $firstText ??= $reading['text'];
             $grade = $reading['grade'];
             $pagesRead = $n + 1;
-            $geminiCost += ($reading['usage']->inputTokens * $prices['gemini']['input']
-                + $reading['usage']->outputTokens * $prices['gemini']['output']) / 1e6;
+            $geminiCost += ((float) $reading['usage']->inputTokens * $prices['gemini']['input']
+                + (float) $reading['usage']->outputTokens * $prices['gemini']['output']) / 1e6;
 
             if ($grade !== null && ! $reading['truncated']) {
                 break;
@@ -69,8 +69,8 @@ class ScanReader
             'flagged' => $grade === null || ($classification['confidence'] ?? 0) < 0.5,
             'pages_read' => $pagesRead,
             'gemini_cost' => $geminiCost,
-            'jev_cost' => $classification['usage']->inputTokens * $prices['jev']['input'] / 1e6,
-            'duration_ms' => (int) round((hrtime(true) - $start) / 1e6),
+            'jev_cost' => (float) $classification['usage']->inputTokens * $prices['jev']['input'] / 1e6,
+            'duration_ms' => (int) round((float) (hrtime(true) - $start) / 1e6),
         ]);
     }
 
