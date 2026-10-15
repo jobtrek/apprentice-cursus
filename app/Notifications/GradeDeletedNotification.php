@@ -3,6 +3,7 @@
 namespace App\Notifications;
 
 use App\Models\Grade;
+use LogicException;
 
 /**
  * Sent to the coach and trainers of an apprentice who deleted a grade. Build it before
@@ -16,6 +17,6 @@ class GradeDeletedNotification extends GradeActivityNotification
     {
         $grade->loadMissing('user', 'averageNode');
 
-        parent::__construct($grade->user, $grade, 'a supprimé une note', null);
+        parent::__construct($grade->user ?? throw new LogicException('Grade has no apprentice.'), $grade, 'a supprimé une note', null);
     }
 }

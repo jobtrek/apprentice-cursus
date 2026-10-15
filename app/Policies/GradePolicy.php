@@ -20,6 +20,7 @@ class GradePolicy
         }
 
         return $user->hasPermissionTo(Permission::GradesViewSupervised->value)
+            && $grade->user !== null
             && $user->supervises($grade->user);
     }
 
@@ -37,6 +38,7 @@ class GradePolicy
     public function comment(User $user, Grade $grade): bool
     {
         return $user->hasPermissionTo(Permission::GradesComment->value)
+            && $grade->user !== null
             && $user->supervises($grade->user)
             && $grade->user->is_active;
     }

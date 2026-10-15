@@ -15,6 +15,7 @@ class ProjectPolicy
         }
 
         return $user->hasPermissionTo(Permission::PortfolioViewSupervised->value)
+            && $project->user !== null
             && $user->supervises($project->user);
     }
 
