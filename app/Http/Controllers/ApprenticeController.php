@@ -12,6 +12,7 @@ use App\Models\Grade;
 use App\Models\Skill;
 use App\Models\User;
 use App\Support\ApprenticeList;
+use App\Support\Gradebook\Gradebook;
 use App\Support\Gradebook\GradebookTree;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -61,22 +62,24 @@ class ApprenticeController extends Controller
             ]
             : null;
 
+        $grades = GradeResource::collection(
+            $apprentice->grades()
+                ->withSemester()
+                ->with(GradeResource::RELATIONS)
+                // Lets the gradebook filter the commented grades.
+                ->withCount('comments')
+                ->orderBy('test_date')
+                ->orderBy('id')
+                ->get(),
+        )->resolve();
+
         return Inertia::render('ApprenticeShow', [
             'apprenticeId' => $apprentice->id,
             'apprentice' => (new ApprenticeResource($apprentice->load(ApprenticeResource::RELATIONS)))->resolve(),
             'stats' => ApprenticeList::statsFor($apprentice),
-            'grades' => GradeResource::collection(
-                $apprentice->grades()
-                    ->withSemester()
-                    ->with(GradeResource::RELATIONS)
-                    // Lets the gradebook filter the commented grades.
-                    ->withCount('comments')
-                    ->orderBy('test_date')
-                    ->orderBy('id')
-                    ->get(),
-            )->resolve(),
-            // Same tree as the apprentice's own gradebook: the profile shows the real CFC averages.
-            'tree' => GradebookTree::for($apprentice),
+            'grades' => $grades,
+            // Same averages as the apprentice's own gradebook: the profile shows the real CFC averages.
+            'gradebook' => Gradebook::summary(GradebookTree::for($apprentice), $grades, $apprentice->formationPlan?->shortName()),
             'portfolio' => $portfolio,
         ]);
     }

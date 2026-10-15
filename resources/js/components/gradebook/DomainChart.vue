@@ -17,20 +17,16 @@ function rows(width: number) {
         iw,
         x,
         height: props.gradebook.domains.length * ROW + 8,
-        domains: props.gradebook.domains.map((id, i) => {
-            const node = props.gradebook.node(id);
-
-            return {
-                id,
-                i,
-                top: i * ROW,
-                name: props.gradebook.name(id),
-                value: props.gradebook.nodeValue(id),
-                weight: props.gradebook.weightOf(props.gradebook.root, id),
-                count: props.gradebook.gradesUnder(id).length,
-                rounding: node?.rounding_step ?? null,
-            };
-        }),
+        domains: props.gradebook.domains.map((domain, i) => ({
+            id: domain.id,
+            i,
+            top: i * ROW,
+            name: domain.name,
+            value: domain.average,
+            weight: domain.weight,
+            count: domain.grade_ids.length,
+            rounding: domain.rounding_step,
+        })),
     };
 }
 </script>

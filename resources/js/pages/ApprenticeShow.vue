@@ -31,7 +31,7 @@ import {
 import { apprentisdashboard } from '@/routes';
 import apprentices from '@/routes/apprentices';
 import type { Apprentice, ApprenticeStats } from '@/types/apprentice';
-import { createGradebook, fmt, type GradeTree } from '@/lib/gradebook';
+import { fmt, type Gradebook } from '@/lib/gradebook';
 import type { Grade } from '@/types/grade';
 import type { SupervisedPortfolio } from '@/types/portfolio';
 
@@ -43,18 +43,13 @@ const props = defineProps<{
     grades: Grade[];
     /** Null quand l'utilisateur n'a pas le droit de voir le portfolio. */
     portfolio: SupervisedPortfolio | null;
-    /** Arbre de notes de l'apprenti·e ; null sans filière attribuée. */
-    tree: GradeTree | null;
+    /** Moyennes pondérées du CFC, comme sur le carnet de l'apprenti·e ; null sans filière attribuée. */
+    gradebook: Gradebook | null;
 }>();
-
-/** Moyennes pondérées du CFC, comme sur le carnet de l'apprenti·e. */
-const gradebook = computed(() =>
-    props.tree ? createGradebook(props.tree, props.grades) : null,
-);
 
 /** Note finale CFC (racine de l'arbre). */
 const finalAverage = computed(() => {
-    const value = gradebook.value?.nodeValue(gradebook.value.root) ?? null;
+    const value = props.gradebook?.final ?? null;
 
     return value === null
         ? null
@@ -257,7 +252,6 @@ function selectTab(tab: string | number): void {
                     <ApprenticeOverview
                         :apprentice="apprentice"
                         :gradebook="gradebook"
-                        :grades="grades"
                     />
                     <GradeList
                         :gradebook="gradebook"

@@ -1,25 +1,21 @@
 <script setup lang="ts">
 import { Head } from '@inertiajs/vue3';
 import { PlusIcon } from '@lucide/vue';
-import { computed } from 'vue';
 import AddGradeDialog from '@/components/grade/AddGradeDialog.vue';
 import GradebookSummary from '@/components/gradebook/GradebookSummary.vue';
 import GradeList from '@/components/gradebook/GradeList.vue';
 import { PageContainer, PageHeader } from '@/components/page';
 import { Button } from '@/components/ui/button';
 import { useAddGradeDialog } from '@/composables/useAddGradeDialog';
-import { createGradebook, type GradeTree } from '@/lib/gradebook';
+import type { Gradebook, GradeTree } from '@/lib/gradebook';
 import type { Grade } from '@/types/grade';
 
-const props = defineProps<{
+defineProps<{
     grades: Grade[];
     /** Null si l'apprenti·e n'a pas encore de filière. */
     tree: GradeTree | null;
+    gradebook: Gradebook | null;
 }>();
-
-const gradebook = computed(() =>
-    props.tree ? createGradebook(props.tree, props.grades) : null,
-);
 
 const { open: openAddGrade } = useAddGradeDialog();
 </script>

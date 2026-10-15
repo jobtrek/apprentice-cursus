@@ -4,13 +4,7 @@ import { computed } from 'vue';
 import IconTile from '@/components/IconTile.vue';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
-import {
-    fmt,
-    type Gradebook,
-    semestersFor,
-    type Status,
-    status,
-} from '@/lib/gradebook';
+import { fmt, type Gradebook, type Status, status } from '@/lib/gradebook';
 import { cn } from '@/lib/utils';
 
 /**
@@ -20,7 +14,6 @@ import { cn } from '@/lib/utils';
  */
 const props = defineProps<{
     gradebook: Gradebook;
-    currentSemester: number;
     profile: { track: string | null; variant: 'standard' | 'mp' } | null;
     /**
      * Le semestre courant est déduit du dernier semestre noté (vue coach),
@@ -41,31 +34,28 @@ type Step = {
     average: number | null;
 };
 
+const currentSemester = computed(() => props.gradebook.current_semester);
+
 /** 8 semestres en IT, 6 en EC. */
-const semesters = computed(() => semestersFor(props.profile?.track));
+const semesters = computed(() => props.gradebook.semester_count);
 
 const steps = computed<Step[]>(() =>
-    Array.from({ length: semesters.value }, (_, i) => {
-        const semester = i + 1;
-
-        return {
+    props.gradebook.semesters
+        .slice(0, semesters.value)
+        .map(({ semester, average }) => ({
             semester,
             state:
-                semester < props.currentSemester
+                semester < currentSemester.value
                     ? 'done'
-                    : semester === props.currentSemester
+                    : semester === currentSemester.value
                       ? 'current'
                       : 'upcoming',
-            average: props.gradebook.nodeValue(
-                props.gradebook.root,
-                props.gradebook.inSemester(semester),
-            ),
-        };
-    }),
+            average,
+        })),
 );
 
 /** Année d'apprentissage en cours, à partir de 1. */
-const year = computed(() => Math.ceil(props.currentSemester / 2));
+const year = computed(() => Math.ceil(currentSemester.value / 2));
 </script>
 
 <template>

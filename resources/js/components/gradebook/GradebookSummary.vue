@@ -12,7 +12,7 @@ import StatusChip from './StatusChip.vue';
 
 const props = defineProps<{ gradebook: Gradebook }>();
 
-const final = computed(() => props.gradebook.nodeValue(props.gradebook.root));
+const final = computed(() => props.gradebook.final);
 
 /** Jauge à 270°, avec un trait au seuil de réussite. */
 const R = 52;
@@ -26,13 +26,13 @@ const fill = computed(() =>
 const tickAngle = ((135 + (270 * (PASS - 1)) / 5) * Math.PI) / 180;
 
 const domains = computed(() =>
-    props.gradebook.domains.map((id, i) => ({
-        id,
+    props.gradebook.domains.map((domain, i) => ({
+        id: domain.id,
         i,
-        name: props.gradebook.name(id),
-        weight: props.gradebook.weightOf(props.gradebook.root, id),
-        value: props.gradebook.nodeValue(id),
-        count: props.gradebook.gradesUnder(id).length,
+        name: domain.name,
+        weight: domain.weight,
+        value: domain.average,
+        count: domain.grade_ids.length,
     })),
 );
 
@@ -93,7 +93,7 @@ const missing = computed(() =>
                         .join(', ')
                 }}.
             </p>
-            <p v-else-if="!gradebook.isComplete()" class="gb-final__note">
+            <p v-else-if="!gradebook.complete" class="gb-final__note">
                 Provisoire : certaines évaluations ne sont pas encore notées.
             </p>
             <p v-else class="gb-final__note">

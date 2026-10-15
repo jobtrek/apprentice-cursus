@@ -12,6 +12,7 @@ use App\Notifications\GradeAddedNotification;
 use App\Notifications\GradeDeletedNotification;
 use App\Services\Ocr\GeminiService;
 use App\Services\Ocr\JevService;
+use App\Support\Gradebook\Gradebook;
 use App\Support\Gradebook\GradebookTree;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -34,18 +35,21 @@ class GradeController extends Controller
     public function dashboard(Request $request): Response
     {
         $user = $request->user()->load('formationPlan');
+        $grades = GradeResource::collection(
+            $user->grades()
+                ->withSemester()
+                ->with(GradeResource::RELATIONS)
+                ->withCount('comments')
+                ->orderBy('test_date')
+                ->orderBy('id')
+                ->get(),
+        )->resolve();
+        $tree = GradebookTree::for($user);
 
         return Inertia::render('GradesDashboard', [
-            'grades' => GradeResource::collection(
-                $user->grades()
-                    ->withSemester()
-                    ->with(GradeResource::RELATIONS)
-                    ->withCount('comments')
-                    ->orderBy('test_date')
-                    ->orderBy('id')
-                    ->get(),
-            )->resolve(),
-            'tree' => GradebookTree::for($user),
+            'grades' => $grades,
+            'tree' => $tree,
+            'gradebook' => Gradebook::summary($tree, $grades, $user->formationPlan?->shortName()),
         ]);
     }
 
