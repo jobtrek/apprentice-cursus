@@ -30,4 +30,4 @@ Targets Laravel 13.x and inertia-laravel 3.x.
 - `DossierController::preview` builds `owner` inline, and its `track` value doesn't match the one in `ApprenticeResource`.
 - `HandleInertiaRequests::share` builds `auth.user` as an inline array; it needs a `CurrentUserResource`.
 - `AppServiceProvider` doesn't call `preventLazyLoading`.
-- None of the 3 resources has a contract test.
+- Only `GradeResource` has a contract test (`tests/Feature/GradeResourceTest.php`); `ApprenticeResource`, `CommentResource` and `ProjectResource` have none.

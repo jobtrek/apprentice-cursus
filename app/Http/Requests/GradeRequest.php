@@ -57,6 +57,9 @@ class GradeRequest extends FormRequest
                 'mimetypes:application/pdf',
                 'max:'.self::MAX_FILE_KB,
             ],
+            // Set when the grade comes from the OCR dialog; only feeds the OCR dashboard.
+            'ocr_scan_id' => ['nullable', 'integer'],
+            'ocr_node_id' => ['nullable', 'integer', Rule::exists('average_nodes', 'id')],
         ];
     }
 

@@ -45,16 +45,16 @@ After login, apprentices land on their grades, trainers and coaches on the appre
 
 ## How a user gets their role
 
-1. The user logs in with Microsoft. The app asks Microsoft which of the mapped groups they are in.
-2. **Exactly one group:** the account is created (first login) or updated with that group's role and section.
-3. **No group, several groups, or disabled in Entra:** the login is refused. An existing account is set inactive; it is never deleted.
+1. The daily account sync (`azure:sync` runs it on demand) reads the members of every mapped group. **Exactly one group:** the account is created or updated with that group's role and section. **No group or several groups:** an existing account is set inactive; it is never deleted.
+2. The user logs in with Microsoft. The app matches an existing account and asks Microsoft which of the mapped groups they are in. An account not synced yet is refused until the next run.
+3. **No group, several groups, or disabled in Entra:** the login is refused and the account is set inactive.
 4. While logged in, this check runs again **every 15 minutes**. If access was removed, the session ends. If Microsoft is down, the user keeps working and the check retries a minute later.
 
 Other rules:
 
 - Accounts are matched on the Microsoft account id, never on email.
-- An account only exists after its first login.
-- Adding the person back to one group reactivates their account at the next login.
+- An account exists from the first sync after the person joins a mapped group, before their first login.
+- Adding the person back to one group reactivates their account at the next sync or login.
 - Moving a trainer to the other trainers group changes their section at the next sync or login.
 - Moving an apprentice from IT to EC (or back) does not change their section yet: that needs a confirmation page that is not built. A warning is logged.
 
@@ -66,6 +66,7 @@ Other rules:
 | EC apprentices | `MICROSOFT_GROUP_APPRENTICES_EC` | Apprentice | Employé·e de commerce CFC |
 | IT trainers    | `MICROSOFT_GROUP_TRAINER_IT`     | Trainer    | Informaticien·ne CFC      |
 | EC trainers    | `MICROSOFT_GROUP_TRAINER_EC`     | Trainer    | Employé·e de commerce CFC |
+| Coaches        | `MICROSOFT_GROUP_COACH`          | Coach      | — (no section)            |
 
 - [ ] Each group above exists (nested members count).
 - [ ] App registration has Graph permissions `User.Read.All` and `GroupMember.Read.All`, **with admin consent**.

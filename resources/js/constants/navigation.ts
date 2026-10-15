@@ -2,11 +2,13 @@ import {
     BookOpenIcon,
     FolderKanbanIcon,
     HomeIcon,
+    ScanTextIcon,
     UsersIcon,
 } from '@lucide/vue';
 import type { Component } from 'vue';
 import { apprentisdashboard, home } from '@/routes';
 import grades from '@/routes/grades';
+import ocrScans from '@/routes/ocr-scans';
 import portfolio from '@/routes/portfolio';
 import type { Can, UserRole } from '@/types';
 import type { RouteDefinition } from '@/wayfinder';
@@ -72,6 +74,13 @@ export const NAV_ITEMS: NavItem[] = [
         icon: UsersIcon,
         matches: ['/apprentices'],
         can: 'viewApprentices',
+    },
+    {
+        label: 'OCR',
+        description: 'Coût et précision de la lecture automatique des notes.',
+        href: ocrScans.index(),
+        icon: ScanTextIcon,
+        can: 'viewOcrStats',
     },
 ];
 

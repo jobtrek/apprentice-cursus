@@ -8,79 +8,104 @@ Source-workflow is detailed in the [workflows](docs/workflows) directory
 
 ## Project set up
 
-**W.I.P**
-
 ### Requirements
 
-- PHP 8.3+
-- Composer
-- Docker & Docker Compose (for Sail)
+- Git
+- Docker & Docker Compose (everything else, PHP, Composer, Node, pnpm and PostgreSQL, runs inside Laravel Sail)
 
-### Installation
+### Start from zero
 
-1. Move inside repository directory and install PHP dependencies
-
-Install PHP dependencies using composer. We ignore platform requirement because dependencies are managed through sail.
+1. Clone the repository
 
 ```bash
+git clone git@github.com:jobtrek/apprentice-cursus.git
 cd apprentice-cursus
-composer install --ignore-platform-reqs
 ```
 
-2. Copy the environment file and run containers
+2. Install PHP dependencies (no local PHP needed: this runs Composer in a throwaway container)
+
+```bash
+docker run --rm -u "$(id -u):$(id -g)" -v "$(pwd):/var/www/html" -w /var/www/html \
+    laravelsail/php84-composer:latest composer install --ignore-platform-reqs
+```
+
+This also points Git at `.githooks/`, so every commit runs Pint, Larastan and `vp check` on the staged files (Sail must be running).
+
+3. Create the environment file and start the containers
 
 ```bash
 cp .env.example .env
 ./vendor/bin/sail up -d
 ```
 
-3. Generate a key
+4. Generate the app key, then migrate and seed the database
 
 ```bash
 ./vendor/bin/sail artisan key:generate
+./vendor/bin/sail artisan migrate --seed
 ```
 
-4. Run database migrations
-
-```bash
-./vendor/bin/sail artisan migrate
-```
+With `APP_ENV=local` the seeders also create demo apprentices, grades and the local accounts below.
 
 5. Install JS dependencies and start Vite
 
 ```bash
 ./vendor/bin/sail pnpm install
-```
-
-You can safely ignore the build script for vue-demi, it's not needed in this version of the project.
-
-6. Run the app in your web browser
-   Launch the local server using
-
-```bash
 ./vendor/bin/sail pnpm dev
 ```
 
-The app should now be available at http://localhost
+The app is now available at http://localhost.
 
-### Linting
+### Local accounts
 
-Lint the frontend code with pnpm
+Password login only exists in `local`. Every account uses the password `password`:
+
+| Email                       | Role                           |
+| --------------------------- | ------------------------------ |
+| `admin@example.com`         | Admin (bypasses every check)   |
+| `coach@example.com`         | Coach of the local apprentices |
+| `trainer@example.com`       | IT trainer                     |
+| `trainer-ec@example.com`    | EC trainer                     |
+| `apprentice-it@example.com` | IT apprentice                  |
+| `apprentice-ec@example.com` | EC apprentice                  |
+
+### Optional: Microsoft Entra SSO and account sync
+
+Fill the `MICROSOFT_*` variables in `.env` (tenant, client id/secret and the five group ids). Then pull the accounts from the Entra groups:
 
 ```bash
-./vendor/bin/sail pnpm check
+./vendor/bin/sail artisan azure:sync
 ```
 
-Automatically fix lint issues
+In production the scheduler runs this sync daily (`routes/console.php`).
 
-```bash
-./vendor/bin/sail pnpm check:fix
-```
+### Optional: OCR grade reading
+
+OCR is on by default (`OCR_ENABLED=true`). It needs `GEMINI_API_KEY` and `TYPESAFE_API_KEY` in `.env`.
+
+### Checks
+
+| What                 | Command                                  |
+| -------------------- | ---------------------------------------- |
+| Tests (Pest)         | `./vendor/bin/sail artisan test`         |
+| PHP format (Pint)    | `./vendor/bin/sail composer lint`        |
+| PHP static analysis  | `./vendor/bin/sail composer types:check` |
+| JS/Vue format + lint | `./vendor/bin/sail pnpm check:fix`       |
+| Vue types            | `./vendor/bin/sail pnpm types:check`     |
+| Everything, like CI  | `./vendor/bin/sail composer ci:check`    |
+
+### CI
+
+`.github/workflows/ci.yml` runs on every pull request and on pushes to `main`:
+
+1. **Lint & format**: Pint, Larastan, `vp check` (Oxfmt, Oxlint, ESLint) and `vue-tsc`. Checks only, it never rewrites code: run the fix commands above locally.
+2. **Seed & tests**: builds the assets, runs `migrate:fresh --seed` on PostgreSQL 18 (local seeders included), then the Pest suite.
 
 ## Stack
 
 | Tool       | Version |
 | ---------- | ------- |
+| PHP        | 8.5     |
 | Vue        | 3.x     |
 | Laravel    | 13.x    |
 | Inertia    | latest  |
@@ -95,7 +120,7 @@ Application distinguish in two main features: a grade managment tool and a forma
 
 ### Grade managment
 
-Source : [Nommage et envoi des notes](docs/workflows/nommage-et-envoi-des-notes-ecole.pdf)
+Source : [Nommage et envoi des notes](docs/workflows/nommage-note.md)
 
 #### Grade transmission automation
 
@@ -113,7 +138,7 @@ Trainers and coaches will be able to add commentaries to apprentice grades. They
 
 Apprentice need to complete a formation file during their cursus, so if something happen that could endanger their formation, they can justify with their formation file.
 
-Source : [Création et maintenance du dossier de formation](docs/workflows/creation-et-maintenance-dossier-de-formation.pdf)
+Source : [Création et maintenance du dossier de formation](docs/workflows/dossier-formation.md)
 
 #### Formation file update
 

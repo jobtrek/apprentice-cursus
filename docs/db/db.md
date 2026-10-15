@@ -1,24 +1,23 @@
 # Database — current model
 
-Source: `schemas/mcd_current.d2`
+The schema built by `database/migrations/`. Why it looks this way: `docs/adr/ADR.md`, 2026-10-14 (grade tree and formation plans) and 2026-09-09 (conventions that still apply).
+
+Diagram: `schemas/mcd_current.d2`. When the diagram and the migrations disagree, the migrations win (the d2 still shows `grades.domain_id` and `formation_plans.root_domain_id`).
 
 ## 1. Training structure
 
-- `apprenticeships`: formation track (e.g. IT / EC).
-- `apprenticeship_context`: one variant per apprenticeship (`is_mp` true/false) + entry point `root_domain_id`.
-- `apprenticeship_periods`: stores the periods during which the apprenticeship takes place.
-- `domains`: training domain blocks, each holds `subjects`.
-- `domain_nodes`: parent → child links between domains (DAG).
-- `domain_edges`: weight of a domain node for a given context (`weight`).
-- `subject_category`: grouping for UI (CIE, modules, etc.).
-- `subjects`: exam subject, belongs to one `domain_id` + one `subject_category_id`.
+- `formation_plans`: one row per plan: IT, EC and EC MP. The MP variant is its own plan, not a flag.
+- `average_nodes`: the grade tree. `parent_id` (null on a root), `name`, `weight` (fraction of the parent, `0 < weight ≤ 1`), `rounding_step` (`0.5` marks a semester leaf). A node without children is a leaf: the only kind of node that holds grades.
+- `average_node_formation_plan`: which nodes belong to which plan. EC and EC MP share every node except their own "Note d'expérience" branch.
 
-Flow: `apprenticeships` → `apprenticeship_context` → `domain_edges` (weighted) → `domain_nodes` → `domains`. `subjects` hang under leaf `domains`.
+Seeded by `AverageNodeSeeder`, read by `App\Support\Gradebook\GradebookTree`.
 
 ## 2. Users and grades
 
-- `users`: apprentice account (Azure SSO via `azure_id`, email unique). Belongs to one `apprenticeship_context_id`. Optional `coach_id` / `trainer_id` (self-ref).
-- `grades`: one row = one apprentice (`user_id`) + one leaf domain (`domain_id`) + one subject (`subject_id`). Swiss value `1.0–6.0`, `test_date`, `semester (1–8)`, optional proof file (`file_path`).
+- `users`: Entra account (`azure_id` unique, `tenant_id`, `is_active`, `synced_at`). `password` is nullable and only used by the local login. `formation_plan_id` is the apprentice's plan. `coach_id` points at another user.
+- `users_formation_plans`: the plans a trainer trains, synced from the Azure group (`trainer_IT` → IT, `trainer_EC` → EC + EC MP).
+- `grades`: one apprentice (`user_id`) + one leaf (`average_node_id`). `value` `1.0–6.0` (CHECK), `test_date`, optional proof `file_path`, `notified_at`. The semester is not stored: `App\Support\Gradebook\Semester` derives it from `test_date`.
+- `ocr_scans`: one row per PDF read by the automatic grade reading: who uploaded it, the reading, Jev's confidence, the flag, and the Gemini and Jev cost. `grade_id` is set when a grade is saved from the scan. Never stores the text of the test.
 
 ## 3. Portfolio (project file)
 
@@ -29,7 +28,7 @@ Flow: `apprenticeships` → `apprenticeship_context` → `domain_edges` (weighte
 
 ## 4. Comments
 
-- `comments`: polymorphic (`commentable_type` + `commentable_id`). Targets: `grades` or `projects`. Author = `users.author_id`.
+- `comments`: `author_id` + exactly one of `project_id` / `grade_id` (CHECK `num_nonnulls(...) = 1`), both cascade on delete. `body` ≤ 2000 characters.
 
 ## 5. Roles / permissions (Spatie)
 
@@ -39,32 +38,11 @@ Standard Spatie tables, no custom logic:
 - `model_has_roles`, `model_has_permissions` (polymorphic via `model_type` + `model_id`, only `User` used)
 - `role_has_permissions`
 
-# Decision breakdown
+Created and wired by `App\Support\RolesAndPermissions::sync()` from `App\Enums\Permission` and `App\Enums\UserRole`.
 
-## Apprenticeship context
+# Not modeled yet
 
-Answers two questions: which track the apprentice follows, and whether it includes MP.
+- **Repeated years.** Nothing marks a grade as belonging to a repeated year, so a repeated Year 1 grade does not replace the first one in the averages.
+- **Apprenticeship start date.** Semesters are counted from the apprentice's first grade, so an apprentice whose first grade is late gets shifted semesters.
 
-MP changes how domains are wired, differently per track.
-To keep it simple, we store both pieces of information.
-Used later in `domain_edges`
-
-## Domain nodes
-
-Wire domains together on a parent-child basis.
-
-Used later in `domain_edges`
-
-## Domain edges
-
-This is the configuration / weight calculation table.
-
-It uses both `apprenticeship_context` and `domain_nodes` to determine a weight for a specific domain.
-
-## Apprenticeship periods
-
-It tracks repeating apprentices and the grades from the repeated year.
-
-A grade occurs in a specific period, and we need to know if it has been repeated for the final average calculation.
-
-Year 1 grades are superseded by repeated Year 1 grades, but kept to see where the apprentice improved and where they can still improve.
+The design this file used to describe (apprenticeship contexts, domain nodes and edges, subjects, periods) is in its git history. Older diagrams are in `schemas/history/`.

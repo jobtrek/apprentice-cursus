@@ -17,6 +17,7 @@ import {
     ComboboxItemIndicator,
     ComboboxList,
     ComboboxTrigger,
+    ComboboxViewport,
 } from '@/components/ui/combobox';
 import {
     Field,
@@ -69,6 +70,7 @@ const emit = defineEmits<{
 const {
     form,
     groups,
+    branches,
     selectedBranch,
     keepsFile,
     dateDay,
@@ -83,12 +85,13 @@ const {
     submit,
 } = useGradeForm(() => props.tree, props.edited);
 
-// Le parent désactive son bouton d'envoi pendant l'enregistrement.
-defineExpose({ form });
-
 function onSubmit(): void {
     submit(() => emit('saved'));
 }
+
+// Le parent désactive son bouton d'envoi pendant l'enregistrement, et la
+// lecture automatique pré-remplit puis envoie le formulaire.
+defineExpose({ form, branches, submit: onSubmit });
 </script>
 
 <template>
@@ -122,22 +125,25 @@ function onSubmit(): void {
                     <ComboboxList side="bottom" :avoid-collisions="false">
                         <ComboboxInput placeholder="Rechercher une branche…" />
                         <ComboboxEmpty>Aucune branche trouvée.</ComboboxEmpty>
-                        <ComboboxGroup
-                            v-for="group in groups"
-                            :key="group.name"
-                            :heading="group.name"
-                        >
-                            <ComboboxItem
-                                v-for="branch in group.branches"
-                                :key="branch.id"
-                                :value="branch"
+                        <!-- Un seul défilement : sinon chaque groupe défile seul et les groupes se chevauchent. -->
+                        <ComboboxViewport>
+                            <ComboboxGroup
+                                v-for="group in groups"
+                                :key="group.name"
+                                :heading="group.name"
                             >
-                                {{ branch.name }}
-                                <ComboboxItemIndicator>
-                                    <CheckIcon />
-                                </ComboboxItemIndicator>
-                            </ComboboxItem>
-                        </ComboboxGroup>
+                                <ComboboxItem
+                                    v-for="branch in group.branches"
+                                    :key="branch.id"
+                                    :value="branch"
+                                >
+                                    {{ branch.name }}
+                                    <ComboboxItemIndicator>
+                                        <CheckIcon />
+                                    </ComboboxItemIndicator>
+                                </ComboboxItem>
+                            </ComboboxGroup>
+                        </ComboboxViewport>
                     </ComboboxList>
                 </Combobox>
                 <FieldError :errors="[form.errors.average_node_id]" />

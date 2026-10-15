@@ -1,5 +1,7 @@
 # The uploader confirms every result
 
+> **Partly superseded by `docs/adr/ADR.md` (2026-10-13):** the decision below still holds. The chosen pipeline now scores 89.6%, not 82.1%, and the phase 2 tie-break call is dropped. The flag rule is "grade missing OR Jev confidence < 0.5 OR no readable page".
+
 The best benchmark setup (Gemini transcription + Jev) gets both Test type and Grade right on only 82.1% of tests, and no model can guarantee 100% on handwriting. A wrong Grade saved silently is worse than asking the student to confirm one. So the pipeline never saves anything: it produces a Pre-fill, flags the results it is unsure about, and every stored result is a Confirmation by the uploader (one click when right, an edit when wrong). The pipeline's job is to make that click cheap, not to replace it.
 
 ## Considered Options

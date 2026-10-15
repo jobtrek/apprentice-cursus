@@ -1,0 +1,122 @@
+name: CI
+
+on:
+    push:
+        branches: [main]
+    pull_request:
+    workflow_dispatch:
+
+concurrency:
+    group: ci-${{ github.ref }}
+    cancel-in-progress: true
+
+permissions:
+    contents: read
+
+env:
+    PHP_VERSION: '8.5'
+    NODE_VERSION: '22'
+
+jobs:
+    lint:
+        name: Lint & format
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+
+            - uses: shivammathur/setup-php@v2
+              with:
+                  php-version: ${{ env.PHP_VERSION }}
+                  tools: composer:v2
+                  coverage: none
+
+            - uses: pnpm/action-setup@v4
+
+            - uses: actions/setup-node@v4
+              with:
+                  node-version: ${{ env.NODE_VERSION }}
+                  cache: pnpm
+
+            - run: composer install --no-interaction --prefer-dist --no-progress
+            - run: pnpm install --frozen-lockfile
+
+            - run: cp .env.example .env && php artisan key:generate
+
+            # Routes/actions are gitignored; type-aware lint and vue-tsc need them.
+            - run: php artisan wayfinder:generate --with-form
+
+            - name: Pint (PHP format)
+              run: composer lint:check
+
+            - name: Larastan
+              run: composer types:check
+
+            - name: Oxfmt + Oxlint + ESLint
+              run: pnpm check
+
+            - name: vue-tsc
+              run: pnpm types:check
+
+    tests:
+        name: Seed & tests
+        runs-on: ubuntu-latest
+        services:
+            pgsql:
+                image: postgres:18-alpine
+                env:
+                    POSTGRES_DB: testing
+                    POSTGRES_USER: sail
+                    POSTGRES_PASSWORD: password
+                ports:
+                    - 5432:5432
+                options: >-
+                    --health-cmd "pg_isready -U sail -d testing"
+                    --health-interval 5s
+                    --health-timeout 5s
+                    --health-retries 10
+        env:
+            DB_CONNECTION: pgsql
+            DB_HOST: 127.0.0.1
+            DB_PORT: 5432
+            DB_DATABASE: testing
+            DB_USERNAME: sail
+            DB_PASSWORD: password
+        steps:
+            - uses: actions/checkout@v4
+
+            - uses: shivammathur/setup-php@v2
+              with:
+                  php-version: ${{ env.PHP_VERSION }}
+                  extensions: pdo_pgsql, imagick
+                  tools: composer:v2
+                  coverage: none
+
+            # Imagick reads PDFs through Ghostscript; Ubuntu's ImageMagick policy blocks PDF by default.
+            - run: |
+                  sudo apt-get update && sudo apt-get install -y ghostscript
+                  sudo sed -i 's/rights="none" pattern="PDF"/rights="read|write" pattern="PDF"/' /etc/ImageMagick-*/policy.xml
+
+            - uses: pnpm/action-setup@v4
+
+            - uses: actions/setup-node@v4
+              with:
+                  node-version: ${{ env.NODE_VERSION }}
+                  cache: pnpm
+
+            - run: composer install --no-interaction --prefer-dist --no-progress
+            - run: pnpm install --frozen-lockfile
+
+            - run: cp .env.example .env && php artisan key:generate
+
+            # Pages render @vite, so tests need the manifest.
+            - run: pnpm build
+
+            # APP_ENV=local so the demo/local-account seeders run too.
+            - name: Migrate & seed
+              run: php artisan migrate:fresh --seed --force
+              env:
+                  APP_ENV: local
+
+            - name: Pest
+              run: php artisan test
+

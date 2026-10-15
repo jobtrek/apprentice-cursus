@@ -29,6 +29,9 @@ type GradeFormData = {
     test_date: string;
     is_oral: boolean;
     file: File | null;
+    /** Scan OCR d'où vient la note, et la branche qu'il proposait. */
+    ocr_scan_id: number | null;
+    ocr_node_id: number | null;
 };
 
 /**
@@ -114,6 +117,8 @@ export const useGradeForm = (
         test_date: '',
         is_oral: edited ? !edited.hasFile : false,
         file: null,
+        ocr_scan_id: null,
+        ocr_node_id: null,
     });
 
     /** En modification, le scan déjà déposé est gardé si aucun autre ne le remplace. */
@@ -248,6 +253,7 @@ export const useGradeForm = (
     return {
         form,
         groups,
+        branches,
         selectedBranch,
         keepsFile,
         dateDay,

@@ -4,14 +4,14 @@ Backend work for Automatic reading, in order. Details: [`stack.md`](stack.md), d
 
 ## Setup
 
-- [ ] **1. Config.** Publish `laravel/ai`'s config (`sail artisan vendor:publish --provider="Laravel\Ai\AiServiceProvider"`) and add `GEMINI_API_KEY` and `TYPESAFE_API_KEY` to `.env` and `.env.example`. Create `config/ocr.php` for the pinned models, 200 dpi, the 8192 token cap, token prices and the 0.5 flag threshold.
+- [ ] **1. Config.** Done: `laravel/ai` 1.2.1 installed, `config/ai.php` published, `GEMINI_API_KEY` and `TYPESAFE_API_KEY` in `.env.example` (add them to your own `.env`). Left: create `config/ocr.php` for the pinned models, 200 dpi, the 8192 token cap, token prices and the 0.5 flag threshold.
 - [ ] **2. Imagick + Ghostscript.** Run `sail:publish`, add `php-imagick` and `ghostscript` to the Sail Dockerfile, then `sail build --no-cache`. Check with `sail php -m | grep imagick` and `gs --version` inside the container.
 - [ ] **3. Queue worker.** Add a `queue:work` process (the `database` driver) to `compose.yaml`, since nothing runs queued jobs today.
 
 ## Services (`app/Services/Ocr/`)
 
 - [ ] **4. `PdfPage`.** Turn page N of a PDF into PNG bytes at 200 dpi with Imagick (`setResolution`, `readImage("$path[$n]")`, flatten). Compare one page by eye against notar's pymupdf output.
-- [ ] **5. `GeminiService`.** A `laravel/ai` agent (`HasStructuredOutput`) on `gemini-3.5-flash-lite`, temperature 0, that sends the prompt from `config/prompt.md` unchanged plus the page image and gets back `{text, subject, grade, grade_box}`. Mark the page truncated when the last step's `finishReason` is not `Stop`, and return the token `usage` for the cost.
+- [ ] **5. `GeminiService`.** A `laravel/ai` agent (`HasStructuredOutput`) on `gemini-3.5-flash-lite`, temperature 0, that sends the prompt from `resources/prompts/ocr.md` unchanged plus the page image and gets back `{text, subject, grade, grade_box}`. Mark the page truncated when the last step's `finishReason` is not `Stop`, and return the token `usage` for the cost.
 - [ ] **6. `JevService`.** Already classifies `text` into an `OcrSubject` with `jev-1.13.0`. Make it also return Jev's `confidence`, because the flag rule needs it.
 - [ ] **7. `TestReader`.** The pipeline: read page 1 (pages 2–3 only if page 1 has no grade or is truncated), take the Test type from the Module code regex or else Jev, keep the grade only if it is 1.0–6.0 in 0.5 steps, and set Flagged when the grade is missing, Jev's confidence is below 0.5, or no page could be read.
 

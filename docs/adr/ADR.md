@@ -25,7 +25,7 @@ the table for the weight of each grade inside of EC's program. MP = Maturité
 
 **Decision:** The starter-kit `users` migration stays untouched; a second migration (`add_sso_columns_to_users_table`) adds the MCD's columns on top.
 
-**Why:** SSO is not wired up yet, so local Fortify auth still has to work — and its `password` / two-factor columns are absent from the MCD.
+**Why:** SSO is not wired up yet, so local Fortify auth still has to work — and its `password` / two-factor columns are absent from the MCD. _(Superseded: SSO is the login path and Fortify is removed, see 2026-09-30 — Roles and permissions and "Users have no timestamps".)_
 
 ### `apprenticeships` table added, `apprenticeship_name` dropped
 
@@ -71,7 +71,7 @@ the table for the weight of each grade inside of EC's program. MP = Maturité
 
 ### Enum columns are `string` + PHP backed enum + CHECK
 
-**Decision:** `role`, `aggregation`, `period_scope` and `variant` are `string` columns with a `CHECK (col IN (...))` constraint, a PHP enum in `app/Enums`, and an Eloquent cast.
+**Decision:** _(The `role` column is superseded: `users.role` was dropped, see 2026-09-30 — Roles and permissions.)_ `role`, `aggregation`, `period_scope` and `variant` are `string` columns with a `CHECK (col IN (...))` constraint, a PHP enum in `app/Enums`, and an Eloquent cast.
 
 **Why:** `$table->enum()` does not produce a native `ENUM` on PostgreSQL — it produces exactly this varchar + CHECK, but hidden behind an API that suggests otherwise and that `->change()` cannot edit cleanly. Writing it out makes the constraint visible and editable, and adding a role becomes a one-line `ALTER`. The PHP enum and cast give the type safety in code.
 
@@ -190,7 +190,7 @@ What each role can do and how the sync behaves: `docs/project-docs/role_permissi
 - **The 15-minute re-check stays.** `EnsureAzureAccountIsActive` still checks Graph per user, so removing access meets the 15-minute story. The daily job is not the only revocation path.
 - **All or nothing.** The job fetches all groups before writing anything. If any Graph call fails it throws and changes nothing, so a partial response can never deactivate a whole group. Retries use the job's `tries`/`backoff`.
 - **A coaches group is mapped** (`AzureGroup::Coach`, no section). `apprenticeship()` becomes nullable.
-- **Apprentice list vs. supervision.** Coaches list every active apprentice in both sections but open only their coachees (`User::supervises()` is unchanged). Trainers list and open only their own section.
+- **Apprentice list vs. supervision.** _(Superseded: the list shows exactly the supervised apprentices, `User::listedApprentices()`; coaches and trainers assign themselves from a separate list of unassigned apprentices. See `docs/project-docs/role_permissions.md`.)_ Coaches list every active apprentice in both sections but open only their coachees (`User::supervises()` is unchanged). Trainers list and open only their own section.
 - The no-group / several-groups rule, matching on `azure_id` only, and keeping the section on a section change all still apply, in the job as at login.
 
 ## 2026-10-13 — Automatic reading runs inside Laravel, not as a Python service
@@ -209,7 +209,7 @@ What each role can do and how the sync behaves: `docs/project-docs/role_permissi
 
 **Consequences:**
 
-- The port keeps every parameter the 89.6% was measured with: `gemini-3.5-flash-lite`, temperature 0, `maxOutputTokens` 8192, notar's `CALL1_PROMPT` unchanged, PNG at 200 dpi, full page, image before prompt, `jev-1.13.0`, the same `subjects.json`. Sending the PDF straight to Gemini, or rewording the prompt, voids the number.
+- The port keeps every parameter the 89.6% was measured with: `gemini-3.5-flash-lite`, temperature 0, `maxOutputTokens` 8192, notar's `CALL1_PROMPT` unchanged, PNG at 200 dpi, full page, `jev-1.13.0`, the same `subjects.json`. The one known difference is the order: `laravel/ai` sends the prompt before the image, and `ocr:bench` decides whether that matters (see Why). Sending the PDF straight to Gemini, or rewording the prompt, voids the number.
 - The port is checked with `php artisan ocr:bench` on notar's 67 PDFs. Pass = both fields right on ≥ 56/67 (89.6% minus the ~4-file run-to-run noise). About $0.10 per run.
 - The 0.5 threshold was picked on those same 67 PDFs, so it is optimistic. Re-check it once ~30 Confirmations exist.
 - Classification is marked experimental in the SDK docs (its API may change in minor releases), so `laravel/ai` is pinned to an exact version.

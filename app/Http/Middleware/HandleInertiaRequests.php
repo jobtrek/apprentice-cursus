@@ -60,6 +60,9 @@ class HandleInertiaRequests extends Middleware
                     'viewSupervisedGrades' => $user?->can(Permission::GradesViewSupervised->value) ?? false,
                     'managePortfolio' => $user?->can(Permission::PortfolioManageOwn->value) ?? false,
                     'viewApprentices' => $user?->can(Permission::ApprenticesViewList->value) ?? false,
+                    'viewOcrStats' => $user?->can(Permission::OcrViewStats->value) ?? false,
+                    // Off until the OCR is validated (config/ocr.php).
+                    'useOcr' => config('ocr.enabled') && ($user?->can(Permission::GradesCreate->value) ?? false),
                 ],
             ],
             // Lazy: evaluated on partial reloads only when asked for. The list is capped, the

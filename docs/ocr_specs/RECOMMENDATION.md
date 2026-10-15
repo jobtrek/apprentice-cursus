@@ -6,17 +6,17 @@ Every run is scored the same way: the 67 PDFs in `Notar/real_data/real_table.jso
 
 ## 1. Results (27 runs, 9 shown)
 
-| Run | Subject acc | Subject κ | Macro-F1 | Grade acc | Grade MAE* | **Both** | 95% CI (Wilson) | McNemar p vs notar_v2 | $/PDF |
-|---|---|---|---|---|---|---|---|---|---|
-| **notar_v2** (Gemini + Jev, page fallback) | **97.0%** | **0.964** | **94.3%** | **91.0%** | 0.049 | **89.6%** | 80.0–94.8% | — | 0.0014 |
-| OCR `best` gemini_jev, full page | 94.0% | 0.928 | 91.7% | 86.6% | 0.047 | 82.1% | 71.3–89.4% | **0.27 (not significant)** | 0.0012 |
-| notar_v2, Gemini's subject only | 85.1% | 0.822 | 80.3% | 91.0% | 0.049 | 77.6% | 66.3–85.9% | 0.008 | 0.0014 |
-| notar_v1 | 82.1% | 0.788 | 76.3% | 89.6% | 0.079 | 71.6% | 59.9–81.0% | 0.004 | 0.0012 |
-| OCR `direct_subject` (×3 mean) | 78.6% | ~0.75 | ~79% | 85.6% | ~0.06 | 70.1% | — | ≤0.012 | 0.0004 |
-| OCR baseline gemini_jev | 80.6% | 0.771 | 72.3% | 85.1% | 0.026 | 67.2% | 55.3–77.2% | 0.002 | 0.0008 |
-| OCR baseline Gemini alone | 74.6% | 0.703 | 69.4% | 86.6% | 0.059 | 61.2% | 49.2–72.0% | 0.0001 | 0.0004 |
-| **glm_ocr** test 3 (glm-ocr + qwen3:4b, local) | 68.7% | 0.626 | 51.7% | 65.7% | **0.595** | 50.7% | 39.1–62.3% | <0.0001 | 0 |
-| OCR local chandra-ocr-2 | 26.9% | 0.224 | 30.6% | 59.7% | **3.060** | 14.9% | 8.3–25.3% | <0.0001 | 0 |
+| Run                                            | Subject acc | Subject κ | Macro-F1  | Grade acc | Grade MAE* | **Both**  | 95% CI (Wilson) | McNemar p vs notar_v2      | $/PDF  |
+| ---------------------------------------------- | ----------- | --------- | --------- | --------- | ---------- | --------- | --------------- | -------------------------- | ------ |
+| **notar_v2** (Gemini + Jev, page fallback)     | **97.0%**   | **0.964** | **94.3%** | **91.0%** | 0.049      | **89.6%** | 80.0–94.8%      | —                          | 0.0014 |
+| OCR `best` gemini_jev, full page               | 94.0%       | 0.928     | 91.7%     | 86.6%     | 0.047      | 82.1%     | 71.3–89.4%      | **0.27 (not significant)** | 0.0012 |
+| notar_v2, Gemini's subject only                | 85.1%       | 0.822     | 80.3%     | 91.0%     | 0.049      | 77.6%     | 66.3–85.9%      | 0.008                      | 0.0014 |
+| notar_v1                                       | 82.1%       | 0.788     | 76.3%     | 89.6%     | 0.079      | 71.6%     | 59.9–81.0%      | 0.004                      | 0.0012 |
+| OCR `direct_subject` (×3 mean)                 | 78.6%       | ~0.75     | ~79%      | 85.6%     | ~0.06      | 70.1%     | —               | ≤0.012                     | 0.0004 |
+| OCR baseline gemini_jev                        | 80.6%       | 0.771     | 72.3%     | 85.1%     | 0.026      | 67.2%     | 55.3–77.2%      | 0.002                      | 0.0008 |
+| OCR baseline Gemini alone                      | 74.6%       | 0.703     | 69.4%     | 86.6%     | 0.059      | 61.2%     | 49.2–72.0%      | 0.0001                     | 0.0004 |
+| **glm_ocr** test 3 (glm-ocr + qwen3:4b, local) | 68.7%       | 0.626     | 51.7%     | 65.7%     | **0.595**  | 50.7%     | 39.1–62.3%      | <0.0001                    | 0      |
+| OCR local chandra-ocr-2                        | 26.9%       | 0.224     | 30.6%     | 59.7%     | **3.060**  | 14.9%     | 8.3–25.3%       | <0.0001                    | 0      |
 
 \* MAE on the PDFs where both the answer and the truth have a grade.
 
@@ -32,12 +32,13 @@ All 27 runs, every confusion matrix (subject and grade), per-class precision/rec
 4. **notar_v2's flags don't work.** Flag = "result is wrong" test: TP 1, FP 9, 6 silent errors. Precision 0.10, recall 0.14. The flags fire on Gemini≠Jev, and Gemini is the one that's wrong.
 5. **A free flag rule works much better** (section 9 of `report.txt`, same data, no extra API call):
 
-   | Flag rule | Flags | Errors caught | Silent errors | Precision | Recall |
-   |---|---|---|---|---|---|
-   | current (Gemini≠Jev, OTHER, invalid grade) | 10 | 1 / 7 | 6 | 0.10 | 0.14 |
-   | **grade missing OR Jev confidence < 0.5** | **8** | **5 / 7** | **2** | **0.62** | **0.71** |
+    | Flag rule                                  | Flags | Errors caught | Silent errors | Precision | Recall   |
+    | ------------------------------------------ | ----- | ------------- | ------------- | --------- | -------- |
+    | current (Gemini≠Jev, OTHER, invalid grade) | 10    | 1 / 7         | 6             | 0.10      | 0.14     |
+    | **grade missing OR Jev confidence < 0.5**  | **8** | **5 / 7**     | **2**         | **0.62**  | **0.71** |
 
-   Caveat: picked on the same 67 PDFs, so it's optimistic. Re-check the 0.5 threshold once ~30 Confirmations exist.
+    Caveat: picked on the same 67 PDFs, so it's optimistic. Re-check the 0.5 threshold once ~30 Confirmations exist.
+
 6. **Jev confidence ranks right vs wrong reasonably** (ROC AUC 0.76–0.80), but notar_v2 had one wrong pick at 0.99. A threshold catches most errors, not all.
 7. **Run-to-run noise is real.** For the ×3 variants, 1–6 subjects and 1–4 grades flip between identical runs (subject κ between runs 0.92–0.99). A gain of less than ~4 PDFs needs 3 runs.
 8. **Upper bound of running 2 pipelines** (notar_v2 + `best`, take whichever is right) = 95.5%. Using their disagreement as a flag catches 4 of 7 errors for 2× the cost, so it's worse than rule 5, which is free.
@@ -47,6 +48,8 @@ All 27 runs, every confusion matrix (subject and grade), per-class precision/rec
 The existing `Notar/docs/specs/service-spec.md` picked a Python service because "Jev has no PHP SDK". **That's no longer a blocker:** `laravel/ai` v1.0 (2026-09-23) added Jev classification (`typesafe` provider, `Classification::of($text)`). Gemini is one REST call through Laravel's `Http` facade. The only new Composer package is `laravel/ai`, pinned to an exact version (Classification is experimental). See `docs/adr/ADR.md` and `stack.md`.
 
 > An earlier draft of this section proposed a hand-written Jev HTTP client (`POST /v1/systemone`) and no new package. Superseded by the `laravel/ai` decision in `docs/adr/ADR.md`.
+>
+> **Superseded (2026-10-13):** Gemini also goes through `laravel/ai` (an agent, `GeminiService`), not the `Http` facade. The `Http::post` call on `generateContent` below is only the fallback if `ocr:bench` fails. See `docs/adr/ADR.md` and `stack.md`.
 
 Keep the parameters identical, so the 89.6% still applies: model `gemini-3.5-flash-lite`, temperature 0, `maxOutputTokens` 8192, the same prompt (`CALL1_PROMPT` in `Notar/src/notar/providers.py`), PNG at 200 dpi, full page, image before prompt, `jev-1.13.0`, the same `subjects.json`.
 
@@ -70,17 +73,17 @@ upload (FormRequest: mimes:pdf, max size)
 
 ### Files (Laravel 13, matches `RAG-Laravel`'s stack)
 
-| File | Job |
-|---|---|
-| `app/Http/Requests/StoreTestUploadRequest.php` | PDF only, size limit |
-| `app/Jobs/ReadTest.php` | runs the pipeline, `tries` + backoff; retries 5xx/429 only |
-| `app/Services/Ocr/TestReader.php` | the `process()` port: page loop, module rule, Jev `Classification` call (`laravel/ai`, `typesafe` provider), decisions, flags, cost |
-| `app/Services/Ocr/Gemini.php` | one `Http::post` to `…/models/gemini-3.5-flash-lite:generateContent`; returns text, subject, grade, grade_box, truncated, cost |
-| `app/Services/Ocr/PdfPage.php` | `Imagick::setResolution(200, 200)`, `readImage("$path[$n]")`, flatten, PNG |
-| `config/ocr.php` + `resources/ocr/subjects.json` | pinned models, dpi, pages, token cap, prices, threshold 0.5 |
-| migration `test_readings` | `pdf_sha256`, `config_hash`, `result` JSON, `confirmed_type`, `confirmed_grade`, `edited` |
-| `app/Console/Commands/OcrBench.php` | runs `TestReader` on `real_table.json` and prints subject/grade/both, so the Laravel number can be compared with 89.6% |
-| `tests/Feature/TestReaderTest.php` | `Http::fake()` for Gemini, `Classification::fake()` for Jev: module rule, page fallback, truncated page, invalid grade, flag rule |
+| File                                             | Job                                                                                                                                 |
+| ------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `app/Http/Requests/StoreTestUploadRequest.php`   | PDF only, size limit                                                                                                                |
+| `app/Jobs/ReadTest.php`                          | runs the pipeline, `tries` + backoff; retries 5xx/429 only                                                                          |
+| `app/Services/Ocr/TestReader.php`                | the `process()` port: page loop, module rule, Jev `Classification` call (`laravel/ai`, `typesafe` provider), decisions, flags, cost |
+| `app/Services/Ocr/Gemini.php`                    | one `Http::post` to `…/models/gemini-3.5-flash-lite:generateContent`; returns text, subject, grade, grade_box, truncated, cost      |
+| `app/Services/Ocr/PdfPage.php`                   | `Imagick::setResolution(200, 200)`, `readImage("$path[$n]")`, flatten, PNG                                                          |
+| `config/ocr.php` + `resources/ocr/subjects.json` | pinned models, dpi, pages, token cap, prices, threshold 0.5                                                                         |
+| migration `test_readings`                        | `pdf_sha256`, `config_hash`, `result` JSON, `confirmed_type`, `confirmed_grade`, `edited`                                           |
+| `app/Console/Commands/OcrBench.php`              | runs `TestReader` on `real_table.json` and prints subject/grade/both, so the Laravel number can be compared with 89.6%              |
+| `tests/Feature/TestReaderTest.php`               | `Http::fake()` for Gemini, `Classification::fake()` for Jev: module rule, page fallback, truncated page, invalid grade, flag rule   |
 
 Why the `Http` facade and not `laravel/ai` for Gemini: the pipeline needs `finishReason` (loop guard), `usageMetadata` including thinking tokens (cost), and an exact JSON schema. The `laravel/ai` docs show usage and structured output, but no finish reason. Raw HTTP keeps parity with the Python call for about the same number of lines.
 
