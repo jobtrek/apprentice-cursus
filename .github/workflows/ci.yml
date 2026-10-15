@@ -87,9 +87,14 @@ jobs:
             - uses: shivammathur/setup-php@v2
               with:
                   php-version: ${{ env.PHP_VERSION }}
-                  extensions: pdo_pgsql
+                  extensions: pdo_pgsql, imagick
                   tools: composer:v2
                   coverage: none
+
+            # Imagick reads PDFs through Ghostscript; Ubuntu's ImageMagick policy blocks PDF by default.
+            - run: |
+                  sudo apt-get update && sudo apt-get install -y ghostscript
+                  sudo sed -i 's/rights="none" pattern="PDF"/rights="read|write" pattern="PDF"/' /etc/ImageMagick-*/policy.xml
 
             - uses: pnpm/action-setup@v4
 
