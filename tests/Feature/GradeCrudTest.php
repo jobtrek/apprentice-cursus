@@ -71,6 +71,33 @@ describe('store', function () {
         Storage::assertExists($grade->file_path);
     });
 
+    test('adding a grade notifies the coach, not the apprentice', function () {
+        $coach = User::factory()->coach()->create();
+        $this->apprentice->forceFill(['coach_id' => $coach->id])->save();
+
+        $this->actingAs($this->apprentice)->post(route('grades.store'), gradePayload());
+
+        $grade = Grade::query()->sole();
+
+        expect($coach->notifications)->toHaveCount(1)
+            ->and($coach->notifications->first()->data)->toMatchArray([
+                'author' => ['name' => 'Bastien Nicoud', 'role' => 'Apprenti'],
+                'action' => 'a ajouté une note',
+                'target' => 'Mathématiques',
+                'url' => route('apprentices.grades.show', [$this->apprentice, $grade], absolute: false),
+            ])
+            ->and($this->apprentice->notifications)->toBeEmpty();
+    });
+
+    test('a rejected grade notifies nobody', function () {
+        $coach = User::factory()->coach()->create();
+        $this->apprentice->forceFill(['coach_id' => $coach->id])->save();
+
+        $this->actingAs($this->apprentice)->post(route('grades.store'), gradePayload(['value' => 9]));
+
+        expect($coach->notifications)->toBeEmpty();
+    });
+
     test('an oral exam is recorded without a scan, and a file sent with it is dropped', function () {
         $this->actingAs($this->apprentice)
             ->post(route('grades.store'), gradePayload(['is_oral' => true]))
@@ -236,6 +263,32 @@ describe('destroy', function () {
         expect(Grade::query()->count())->toBe(0)
             ->and($comment->fresh())->toBeNull();
         Storage::assertMissing($path);
+    });
+
+    test('deleting a grade notifies the coach without a link', function () {
+        $coach = User::factory()->coach()->create();
+        $this->apprentice->forceFill(['coach_id' => $coach->id])->save();
+        $this->apprentice->unsetRelation('coach');
+        $coach->notifications()->delete();
+
+        $this->actingAs($this->apprentice)->delete(route('grades.destroy', $this->grade));
+
+        expect($coach->notifications)->toHaveCount(1)
+            ->and($coach->notifications->first()->data)->toMatchArray([
+                'action' => 'a supprimé une note',
+                'target' => 'Mathématiques',
+                'url' => null,
+            ]);
+    });
+
+    test('a refused delete notifies nobody', function () {
+        $coach = User::factory()->coach()->create();
+        $this->apprentice->forceFill(['coach_id' => $coach->id])->save();
+        $coach->notifications()->delete();
+
+        $this->actingAs(makeApprentice($this->plan))->delete(route('grades.destroy', $this->grade))->assertForbidden();
+
+        expect($coach->notifications)->toBeEmpty();
     });
 
     test('nobody else can delete the grade', function (string $who) {
