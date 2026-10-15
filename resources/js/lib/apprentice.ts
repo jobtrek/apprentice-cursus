@@ -1,6 +1,6 @@
 import { Temporal } from 'temporal-polyfill';
-import { PASSING_GRADE } from '@/data/dashboard';
-import type { ApprenticeListItem } from '@/types/apprentice';
+import { type Status, status } from '@/lib/gradebook';
+import type { ApprenticeListItem, SituationKey } from '@/types/apprentice';
 
 /** Couleur sémantique partagée par les badges, jauges et tuiles. */
 export type Tone = 'primary' | 'success' | 'warning' | 'destructive' | 'muted';
@@ -54,51 +54,34 @@ export type AverageStatus = {
     color: string;
 };
 
-/** Seuil à partir duquel une moyenne est considérée comme bonne. */
-const GOOD_AVERAGE = 4.5;
-
-/** Appréciation d'une moyenne sur l'échelle suisse de 1 à 6. */
-export const averageStatus = (average: number): AverageStatus => {
-    if (average >= GOOD_AVERAGE) {
-        return {
-            label: 'Bonne',
-            tone: 'success',
-            class: 'text-success',
-            color: 'var(--success)',
-        };
-    }
-
-    if (average >= PASSING_GRADE) {
-        return {
-            label: 'Suffisante',
-            tone: 'warning',
-            class: 'text-warning',
-            color: 'var(--warning)',
-        };
-    }
-
-    return {
+const AVERAGE_STATUS: Record<Status, AverageStatus> = {
+    good: {
+        label: 'Bonne',
+        tone: 'success',
+        class: 'text-success',
+        color: 'var(--success)',
+    },
+    warn: {
+        label: 'Suffisante',
+        tone: 'warning',
+        class: 'text-warning',
+        color: 'var(--warning)',
+    },
+    bad: {
         label: 'Insuffisante',
         tone: 'destructive',
         class: 'text-destructive',
         color: 'var(--destructive)',
-    };
+    },
 };
+
+/** Appréciation d'une moyenne : mêmes seuils que `status()`, libellés de moyenne. */
+export const averageStatus = (average: number): AverageStatus =>
+    AVERAGE_STATUS[status(average)[0]];
 
 /** `02.03.2026` → `2026-03-02`, comparable comme une chaîne. */
 export const sortableDate = (date: string): string =>
     date.split('.').reverse().join('-');
-
-/** Au-delà, un·e apprenti·e sans nouvelle note est signalé·e. */
-export const STALE_AFTER_DAYS = 90;
-
-/** Aucune note, ou la dernière date de plus de STALE_AFTER_DAYS jours. */
-export const hasNoRecentGrade = (lastGradeDate: string | null): boolean =>
-    lastGradeDate === null ||
-    sortableDate(lastGradeDate) <
-        Temporal.Now.plainDateISO()
-            .subtract({ days: STALE_AFTER_DAYS })
-            .toString();
 
 /** `1` → `1re année`, `3` → `3e année`. */
 export const yearLabel = (year: number): string =>
@@ -106,32 +89,25 @@ export const yearLabel = (year: number): string =>
 
 /** État de suivi d'un·e apprenti·e, du plus au moins urgent. */
 export type Situation = {
-    key: 'insufficient' | 'no-grades' | 'stale' | 'on-track';
+    key: SituationKey;
     label: string;
     tone: Tone;
 };
 
+const SITUATIONS: Record<SituationKey, Omit<Situation, 'key'>> = {
+    insufficient: { label: 'Moyenne insuffisante', tone: 'destructive' },
+    'no-grades': { label: 'Aucune note', tone: 'muted' },
+    stale: { label: 'Sans note récente', tone: 'warning' },
+    'on-track': { label: 'À jour', tone: 'success' },
+};
+
+/** Libellé et couleur de la situation décidée par le serveur (`ApprenticeList`). */
 export const situationOf = ({
     stats,
-}: Pick<ApprenticeListItem, 'stats'>): Situation => {
-    if (stats.average !== null && stats.average < PASSING_GRADE) {
-        return {
-            key: 'insufficient',
-            label: 'Moyenne insuffisante',
-            tone: 'destructive',
-        };
-    }
-
-    if (stats.grades_count === 0) {
-        return { key: 'no-grades', label: 'Aucune note', tone: 'muted' };
-    }
-
-    if (hasNoRecentGrade(stats.last_grade_date)) {
-        return { key: 'stale', label: 'Sans note récente', tone: 'warning' };
-    }
-
-    return { key: 'on-track', label: 'À jour', tone: 'success' };
-};
+}: Pick<ApprenticeListItem, 'stats'>): Situation => ({
+    key: stats.situation,
+    ...SITUATIONS[stats.situation],
+});
 
 const relativeFormat = new Intl.RelativeTimeFormat('fr', { numeric: 'auto' });
 

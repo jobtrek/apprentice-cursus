@@ -40,13 +40,13 @@ import {
     YEAR_OPTIONS,
 } from '@/composables/useApprenticeFilters';
 import { TRACK_FILTER_OPTIONS } from '@/constants/constants';
-import { PASSING_GRADE } from '@/data/dashboard';
 import type {
     ApprenticeListItem,
     AssignableApprentice,
     AssignSelfAs,
     SupervisorOption,
 } from '@/types/apprentice';
+import { grading } from '@/lib/gradebook';
 
 const props = defineProps<{
     /**
@@ -106,6 +106,8 @@ const columns = computed(() =>
         { key: 'trainer', label: 'Formateur' },
     ].filter(({ key }) => key !== props.can.assignSelfAs),
 );
+
+const { pass } = grading();
 </script>
 
 <template>
@@ -326,7 +328,7 @@ const columns = computed(() =>
 
                     <p class="text-muted-foreground border-t px-4 py-3 text-xs">
                         Moyennes simples des notes saisies, seuil de réussite à
-                        {{ PASSING_GRADE.toFixed(1) }}
+                        {{ pass.toFixed(1) }}
                     </p>
                 </template>
             </section>

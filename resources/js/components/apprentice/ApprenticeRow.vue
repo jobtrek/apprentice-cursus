@@ -3,13 +3,8 @@ import { router } from '@inertiajs/vue3';
 import { computed } from 'vue';
 import { Badge } from '@/components/ui/badge';
 import { TableCell, TableRow } from '@/components/ui/table';
-import {
-    hasNoRecentGrade,
-    relativeDate,
-    situationOf,
-    STALE_AFTER_DAYS,
-    yearLabel,
-} from '@/lib/apprentice';
+import { relativeDate, situationOf, yearLabel } from '@/lib/apprentice';
+import { grading } from '@/lib/gradebook';
 import apprentices from '@/routes/apprentices';
 import type {
     ApprenticeListItem,
@@ -35,11 +30,12 @@ const openProfile = () => router.visit(apprentices.show(props.apprentice.id));
 /** Des notes, mais aucune récente : « Aucune note » est signalé ailleurs. */
 const stale = computed(
     () =>
-        props.apprentice.stats.grades_count > 0 &&
-        hasNoRecentGrade(props.apprentice.stats.last_grade_date),
+        props.apprentice.stats.grades_count > 0 && props.apprentice.stats.stale,
 );
 
 const situation = computed(() => situationOf(props.apprentice));
+
+const { stale_after_days: staleAfterDays } = grading();
 
 /** Superviseur actuel au format des options du select. */
 const current = (
@@ -112,7 +108,7 @@ const current = (
                     :class="stale ? 'text-warning' : 'text-muted-foreground'"
                     :title="
                         stale
-                            ? `Aucune note depuis plus de ${STALE_AFTER_DAYS} jours (${apprentice.stats.last_grade_date})`
+                            ? `Aucune note depuis plus de ${staleAfterDays} jours (${apprentice.stats.last_grade_date})`
                             : apprentice.stats.last_grade_date
                     "
                 >

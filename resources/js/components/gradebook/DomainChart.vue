@@ -1,6 +1,12 @@
 <script setup lang="ts">
 import { ref } from 'vue';
-import { fmt, fmtWeight, type Gradebook, PASS, plural } from '@/lib/gradebook';
+import {
+    fmt,
+    fmtWeight,
+    grading,
+    type Gradebook,
+    plural,
+} from '@/lib/gradebook';
 import ChartBody from './ChartBody.vue';
 import ChartCard from './ChartCard.vue';
 
@@ -27,12 +33,14 @@ function rows(width: number) {
                 name: props.gradebook.name(id),
                 value: props.gradebook.nodeValue(id),
                 weight: props.gradebook.weightOf(props.gradebook.root, id),
-                count: props.gradebook.gradesUnder(id).length,
+                count: props.gradebook.count(id),
                 rounding: node?.rounding_step ?? null,
             };
         }),
     };
 }
+
+const { pass } = grading();
 </script>
 
 <template>
@@ -79,7 +87,7 @@ function rows(width: number) {
                         height="10"
                         rx="4"
                         :class="
-                            d.value < PASS
+                            d.value < pass
                                 ? 'c-bar c-bar--fail c-grow-x'
                                 : 'c-bar c-grow-x'
                         "
@@ -126,8 +134,8 @@ function rows(width: number) {
                     />
                 </g>
                 <line
-                    :x1="g.x(PASS)"
-                    :x2="g.x(PASS)"
+                    :x1="g.x(pass)"
+                    :x2="g.x(pass)"
                     y1="18"
                     :y2="g.height - 18"
                     class="c-threshold"

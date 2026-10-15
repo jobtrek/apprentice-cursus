@@ -27,7 +27,13 @@ export interface ApprenticeStats {
     average: number | null;
     /** Format `d.m.Y`, null sans note. */
     last_grade_date: string | null;
+    /** Aucune note, ou aucune depuis `grading.stale_after_days` jours. */
+    stale: boolean;
+    situation: SituationKey;
 }
+
+/** Situation de suivi, du plus au moins urgent (`ApprenticeList::gradeStats`). */
+export type SituationKey = 'insufficient' | 'no-grades' | 'stale' | 'on-track';
 
 /** Ligne de `ApprenticeList::for()` : un·e apprenti·e suivi·e et ses notes. */
 export interface ApprenticeListItem extends Apprentice {

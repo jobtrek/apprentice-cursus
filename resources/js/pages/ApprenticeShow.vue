@@ -257,7 +257,6 @@ function selectTab(tab: string | number): void {
                     <ApprenticeOverview
                         :apprentice="apprentice"
                         :gradebook="gradebook"
-                        :grades="grades"
                     />
                     <GradeList
                         :gradebook="gradebook"

@@ -14,11 +14,7 @@ import { PageContainer, PageHeader } from '@/components/page';
 import { Button } from '@/components/ui/button';
 import { useAddGradeDialog } from '@/composables/useAddGradeDialog';
 import { useNavigation } from '@/composables/useNavigation';
-import {
-    createGradebook,
-    type GradeTree,
-    lastGradedSemester,
-} from '@/lib/gradebook';
+import { createGradebook, type GradeTree } from '@/lib/gradebook';
 import { apprentisdashboard } from '@/routes';
 import gradeRoutes from '@/routes/grades';
 import type {
@@ -61,8 +57,6 @@ const canAssign = computed(
 const gradebook = computed(() =>
     props.tree ? createGradebook(props.tree, props.grades) : null,
 );
-
-const currentSemester = computed(() => lastGradedSemester(props.grades));
 </script>
 
 <template>
@@ -85,7 +79,6 @@ const currentSemester = computed(() => lastGradedSemester(props.grades));
             <template v-if="gradebook">
                 <TrainingPath
                     :gradebook="gradebook"
-                    :current-semester="currentSemester"
                     :profile="profile"
                     derived
                 />

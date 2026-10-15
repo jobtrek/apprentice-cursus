@@ -1,4 +1,5 @@
 import type { Auth } from '@/types/auth';
+import type { Grading } from '@/types/grade';
 import type { AppNotification } from '@/types/notification';
 
 // Extend ImportMeta interface for Vite...
@@ -19,6 +20,7 @@ declare module '@inertiajs/core' {
         sharedPageProps: {
             name: string;
             auth: Auth;
+            grading: Grading;
             notifications: AppNotification[];
             unreadNotificationsCount: number;
             [key: string]: unknown;

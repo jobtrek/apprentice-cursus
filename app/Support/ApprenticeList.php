@@ -5,6 +5,7 @@ namespace App\Support;
 use App\Http\Resources\ApprenticeResource;
 use App\Models\Grade;
 use App\Models\User;
+use App\Support\Gradebook\Grading;
 use App\Support\Gradebook\Semester;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Arr;
@@ -41,17 +42,14 @@ class ApprenticeList
     /**
      * Grade statistics of one apprentice, the same as their row in the list.
      *
-     * @return array{grades_count: int, average: float|null, last_grade_date: string|null}
+     * @return array{grades_count: int, average: float|null, last_grade_date: string|null, stale: bool, situation: string}
      */
     public static function statsFor(User $apprentice): array
     {
         $stats = self::gradeStats([$apprentice->id])[$apprentice->id];
+        unset($stats['year']);
 
-        return [
-            'grades_count' => $stats['grades_count'],
-            'average' => $stats['average'],
-            'last_grade_date' => $stats['last_grade_date'],
-        ];
+        return $stats;
     }
 
     /**
@@ -143,7 +141,7 @@ class ApprenticeList
      * One grouped query for every apprentice, instead of one per row.
      *
      * @param  array<int, int>  $apprenticeIds
-     * @return array<int, array{grades_count: int, average: float|null, last_grade_date: string|null, year: int|null}>
+     * @return array<int, array{grades_count: int, average: float|null, last_grade_date: string|null, stale: bool, situation: string, year: int|null}>
      */
     private static function gradeStats(array $apprenticeIds): array
     {
@@ -155,17 +153,29 @@ class ApprenticeList
             ->get()
             ->keyBy('user_id');
 
+        $staleBefore = CarbonImmutable::today()->subDays(Grading::STALE_AFTER_DAYS);
         $stats = [];
 
         foreach ($apprenticeIds as $id) {
             $row = $aggregates->get($id);
+            $count = (int) ($row->grades_count ?? 0);
+            $average = isset($row->average) ? round((float) $row->average, 1) : null;
+            $last = isset($row->last_grade_date) ? CarbonImmutable::parse($row->last_grade_date) : null;
+            // No grade at all, or none for STALE_AFTER_DAYS.
+            $stale = $last === null || $last->lt($staleBefore);
 
             $stats[$id] = [
-                'grades_count' => (int) ($row->grades_count ?? 0),
-                'average' => isset($row->average) ? round((float) $row->average, 1) : null,
-                'last_grade_date' => isset($row->last_grade_date)
-                    ? CarbonImmutable::parse($row->last_grade_date)->format('d.m.Y')
-                    : null,
+                'grades_count' => $count,
+                'average' => $average,
+                'last_grade_date' => $last?->format('d.m.Y'),
+                'stale' => $stale,
+                // Most urgent first; the front only picks a label and a colour.
+                'situation' => match (true) {
+                    $average !== null && $average < Grading::PASS => 'insufficient',
+                    $count === 0 => 'no-grades',
+                    $stale => 'stale',
+                    default => 'on-track',
+                },
                 // No start date is stored yet: the school year of the latest grade,
                 // counted from the first one, stands in for the year of apprenticeship.
                 'year' => isset($row->first_grade_date, $row->last_grade_date)

@@ -11,8 +11,8 @@ import {
     matchesSituation,
     type SituationFilter,
 } from '@/composables/useApprenticeFilters';
-import { PASSING_GRADE } from '@/data/dashboard';
-import { STALE_AFTER_DAYS, TONES, type Tone } from '@/lib/apprentice';
+import { TONES, type Tone } from '@/lib/apprentice';
+import { grading } from '@/lib/gradebook';
 import { cn } from '@/lib/utils';
 import type { ApprenticeListItem } from '@/types/apprentice';
 
@@ -35,6 +35,8 @@ type Tile = {
     tone: Tone;
 };
 
+const { pass, stale_after_days: staleAfterDays } = grading();
+
 const TILES: Tile[] = [
     {
         value: 'all',
@@ -46,14 +48,14 @@ const TILES: Tile[] = [
     {
         value: 'insufficient',
         label: 'Moyenne insuffisante',
-        hint: `En dessous de ${PASSING_GRADE.toFixed(1)}`,
+        hint: `En dessous de ${pass.toFixed(1)}`,
         icon: TrendingDownIcon,
         tone: 'destructive',
     },
     {
         value: 'stale',
         label: 'Sans note récente',
-        hint: `Rien depuis ${STALE_AFTER_DAYS} jours`,
+        hint: `Rien depuis ${staleAfterDays} jours`,
         icon: ClockIcon,
         tone: 'warning',
     },

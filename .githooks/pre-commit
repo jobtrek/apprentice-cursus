@@ -52,7 +52,8 @@ EOF
     }
 
     echo "Running Larastan on staged PHP files..."
-    git diff --cached --name-only -z --diff-filter=ACMR -- '*.php' |
+    # Only the paths phpstan.neon analyses: tests/ rely on Pest helpers it does not load.
+    git diff --cached --name-only -z --diff-filter=ACMR -- 'app/*.php' 'bootstrap/app.php' 'config/*.php' 'database/*.php' 'routes/*.php' |
         xargs -0 -r "$SAIL" php vendor/bin/phpstan analyse --configuration=phpstan.neon || {
             echo "Larastan failed. Commit aborted."
             exit 1

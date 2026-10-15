@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use App\Enums\Permission;
 use App\Http\Resources\NotificationResource;
+use App\Support\Gradebook\Grading;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -44,6 +45,7 @@ class HandleInertiaRequests extends Middleware
         return [
             ...parent::share($request),
             'name' => config('app.name'),
+            'grading' => Grading::thresholds(),
             'auth' => [
                 'user' => $user === null ? null : [
                     'id' => $user->id,

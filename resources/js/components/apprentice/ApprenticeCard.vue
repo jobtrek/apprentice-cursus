@@ -3,12 +3,7 @@ import { Link } from '@inertiajs/vue3';
 import { computed } from 'vue';
 import { StatItem } from '@/components/page';
 import { Badge } from '@/components/ui/badge';
-import {
-    hasNoRecentGrade,
-    relativeDate,
-    situationOf,
-    yearLabel,
-} from '@/lib/apprentice';
+import { relativeDate, situationOf, yearLabel } from '@/lib/apprentice';
 import apprentices from '@/routes/apprentices';
 import type { ApprenticeListItem, AssignSelfAs } from '@/types/apprentice';
 import ApprenticeAvatar from './ApprenticeAvatar.vue';
@@ -25,8 +20,7 @@ const props = defineProps<{
 
 const stale = computed(
     () =>
-        props.apprentice.stats.grades_count > 0 &&
-        hasNoRecentGrade(props.apprentice.stats.last_grade_date),
+        props.apprentice.stats.grades_count > 0 && props.apprentice.stats.stale,
 );
 
 const situation = computed(() => situationOf(props.apprentice));

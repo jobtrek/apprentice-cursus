@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\OcrSubject;
 use App\Models\OcrScan;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -40,7 +41,7 @@ class OcrScanController extends Controller
                 'id' => $scan->id,
                 'created_at' => $scan->created_at->toIso8601String(),
                 'user' => $scan->user->name,
-                'subject' => $scan->subject,
+                'subject' => OcrSubject::tryFrom($scan->subject)?->label() ?? $scan->subject,
                 'grade' => $scan->grade,
                 'confidence' => $scan->confidence,
                 'flagged' => $scan->flagged,

@@ -39,6 +39,10 @@ const useOcr = ref(false);
 type ScanReading = {
     scan_id: number;
     subject: string;
+    /** « Anglais », « Autre » : prêt à afficher. */
+    subject_label: string;
+    /** Feuille de l'arbre de l'apprenti·e pour cette matière ; null si aucune. */
+    node_id: number | null;
     confidence: number | null;
     grade: number | null;
     flagged: boolean;
@@ -66,17 +70,12 @@ function analyse(): void {
     });
 }
 
-// ponytail: seules les branches qui portent le nom d'une matière sont
-// reconnues ; ajouter une entrée ici quand l'arbre en a d'autres.
-const SUBJECT_BRANCHES: Record<string, string> = {
-    'subjects/Anglais': 'Anglais',
-    'subjects/Maths': 'Mathématiques',
-};
-
-const readingBranch = computed(() => {
-    const name = reading.value && SUBJECT_BRANCHES[reading.value.subject];
-    return gradeForm.value?.branches.find((branch) => branch.name === name);
-});
+// Le serveur trouve la branche de la matière (`OcrSubject::branchName`).
+const readingBranch = computed(() =>
+    gradeForm.value?.branches.find(
+        (branch) => branch.id === reading.value?.node_id,
+    ),
+);
 
 // Approuver demande une note et une branche reconnue ; sinon il faut compléter.
 const canApprove = computed(
@@ -117,9 +116,6 @@ watch(
         if (hasErrors) useOcr.value = false;
     },
 );
-
-const subjectLabel = (subject: string): string =>
-    subject === 'OTHER' ? 'Autre' : subject.replace('subjects/', '');
 </script>
 
 <template>
@@ -213,7 +209,7 @@ const subjectLabel = (subject: string): string =>
                     >
                         <p>
                             Matière :
-                            <strong>{{ subjectLabel(reading.subject) }}</strong>
+                            <strong>{{ reading.subject_label }}</strong>
                             <span
                                 v-if="reading.confidence !== null"
                                 class="text-muted-foreground"

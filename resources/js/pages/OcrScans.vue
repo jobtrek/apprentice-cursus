@@ -21,6 +21,7 @@ type OcrScan = {
     id: number;
     created_at: string;
     user: string;
+    /** Libellé de la matière, déjà prêt à afficher (« Anglais », « Autre »). */
     subject: string;
     grade: string | null;
     confidence: number | null;
@@ -61,9 +62,6 @@ const percent = (rate: number | null): string =>
 
 const seconds = (ms: number | null): string =>
     ms === null ? '—' : `${(ms / 1000).toFixed(1)} s`;
-
-const subjectLabel = (subject: string): string =>
-    subject === 'OTHER' ? 'Autre' : subject.replace('subjects/', '');
 
 /** Fuseau fixé : le rendu serveur (SSR) et le navigateur affichent la même heure. */
 const dateLabel = (iso: string): string =>
@@ -175,7 +173,7 @@ const COLUMNS = [
                     <TableCell class="font-medium">{{ scan.user }}</TableCell>
                     <TableCell>
                         <span class="flex items-center gap-1.5">
-                            {{ subjectLabel(scan.subject) }}
+                            {{ scan.subject }}
                             <template v-if="scan.subject_kept !== null">
                                 <CheckIcon
                                     v-if="scan.subject_kept"

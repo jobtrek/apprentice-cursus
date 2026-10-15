@@ -13,8 +13,7 @@ import {
     StatItem,
 } from '@/components/page';
 import { getInitials } from '@/composables/useInitials';
-import { PASSING_GRADE } from '@/data/dashboard';
-import type { GradeTree } from '@/lib/gradebook';
+import { grading, type GradeTree } from '@/lib/gradebook';
 import { cn } from '@/lib/utils';
 import { apprentisdashboard } from '@/routes';
 import apprentices from '@/routes/apprentices';
@@ -123,6 +122,8 @@ const submitEdit = (comment: Comment) => {
         onSuccess: cancelEdit,
     });
 };
+
+const { pass } = grading();
 </script>
 
 <template>
@@ -154,7 +155,7 @@ const submitEdit = (comment: Comment) => {
                         <p
                             class="text-3xl font-semibold tabular-nums"
                             :class="{
-                                'text-destructive': grade.value < PASSING_GRADE,
+                                'text-destructive': grade.value < pass,
                             }"
                         >
                             {{ grade.value.toFixed(1) }}

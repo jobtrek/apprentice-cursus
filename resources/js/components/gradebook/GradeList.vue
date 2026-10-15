@@ -3,8 +3,13 @@ import { useRemember } from '@inertiajs/vue3';
 import { ChevronDownIcon, CircleDashedIcon } from '@lucide/vue';
 import { computed, reactive } from 'vue';
 import SearchInput from '@/components/SearchInput.vue';
-import { PASSING_GRADE } from '@/data/dashboard';
-import { fmt, fmtWeight, type Gradebook, plural } from '@/lib/gradebook';
+import {
+    fmt,
+    fmtWeight,
+    type Gradebook,
+    plural,
+    grading,
+} from '@/lib/gradebook';
 import type { Grade } from '@/types/grade';
 import type { RouteDefinition } from '@/wayfinder';
 import GradeTable from './GradeTable.vue';
@@ -56,7 +61,7 @@ const filtering = computed(() =>
 const matchesResult = (grade: Grade): boolean => {
     switch (view.result) {
         case 'insufficient':
-            return grade.value < PASSING_GRADE;
+            return grade.value < pass;
         case 'commented':
             return (grade.comments_count ?? 0) > 0;
         default:
@@ -84,7 +89,7 @@ const groups = computed(() =>
                         id: child.id,
                         weight: child.weight,
                         name: props.gradebook.name(child.id),
-                        average: props.gradebook.nodeValue(child.id, subAll),
+                        average: props.gradebook.nodeValue(child.id),
                         visible: subAll.filter(matches),
                     };
                 });
@@ -99,7 +104,7 @@ const groups = computed(() =>
                 name: props.gradebook.name(id),
                 all,
                 visible,
-                average: props.gradebook.nodeValue(id, all),
+                average: props.gradebook.nodeValue(id),
                 subs,
                 // Notes posées directement sur une feuille du domaine, hors sous-groupe.
                 rest: visible.filter((grade) => !inSubs.has(grade.id)),
@@ -123,6 +128,8 @@ function reset(): void {
 function onToggle(id: number, event: Event): void {
     view.closed[id] = !(event.target as HTMLDetailsElement).open;
 }
+
+const { pass } = grading();
 </script>
 
 <template>
@@ -218,7 +225,7 @@ function onToggle(id: number, event: Event): void {
                                     <strong
                                         :class="{
                                             'text-destructive':
-                                                group.average < PASSING_GRADE,
+                                                group.average < pass,
                                         }"
                                         >{{ fmt(group.average) }}</strong
                                     ></template

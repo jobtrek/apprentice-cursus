@@ -29,8 +29,7 @@ import {
     EmptyMedia,
     EmptyTitle,
 } from '@/components/ui/empty';
-import { PASSING_GRADE } from '@/data/dashboard';
-import { hasNoRecentGrade, STALE_AFTER_DAYS } from '@/lib/apprentice';
+import { grading } from '@/lib/gradebook';
 import { apprentisdashboard } from '@/routes';
 import apprenticesRoutes from '@/routes/apprentices';
 import type {
@@ -53,23 +52,19 @@ const props = defineProps<{
     activity: MonthlyActivity[];
 }>();
 
-const graded = computed(() =>
-    props.apprentices.filter(({ stats }) => stats.average !== null),
-);
+const { pass, stale_after_days: staleAfterDays } = grading();
 
 const averageOf = (apprentice: ApprenticeListItem): number =>
     apprentice.stats.average ?? 0;
 
 const atRisk = computed(() =>
-    graded.value
-        .filter((row) => averageOf(row) < PASSING_GRADE)
+    props.apprentices
+        .filter(({ stats }) => stats.situation === 'insufficient')
         .sort((a, b) => averageOf(a) - averageOf(b)),
 );
 
 const stale = computed(() =>
-    props.apprentices.filter(({ stats }) =>
-        hasNoRecentGrade(stats.last_grade_date),
-    ),
+    props.apprentices.filter(({ stats }) => stats.stale),
 );
 
 const describe = ({ track, stats }: ApprenticeListItem): string =>
@@ -125,8 +120,8 @@ const describe = ({ track, stats }: ApprenticeListItem): string =>
                             À suivre
                         </CardTitle>
                         <CardDescription>
-                            Moyenne sous {{ PASSING_GRADE.toFixed(1) }}, la plus
-                            basse en premier
+                            Moyenne sous {{ pass.toFixed(1) }}, la plus basse en
+                            premier
                         </CardDescription>
                         <CardAction>
                             <Button as-child variant="ghost" size="sm">
@@ -182,7 +177,7 @@ const describe = ({ track, stats }: ApprenticeListItem): string =>
                             Carnet à mettre à jour
                         </CardTitle>
                         <CardDescription>
-                            Aucune note depuis {{ STALE_AFTER_DAYS }} jours, ou
+                            Aucune note depuis {{ staleAfterDays }} jours, ou
                             aucune note saisie : pensez à leur rappeler.
                         </CardDescription>
                     </CardHeader>

@@ -1,7 +1,6 @@
 import { useRemember } from '@inertiajs/vue3';
 import { computed, reactive, type Ref } from 'vue';
-import { PASSING_GRADE } from '@/data/dashboard';
-import { hasNoRecentGrade, sortableDate } from '@/lib/apprentice';
+import { sortableDate } from '@/lib/apprentice';
 import type { ApprenticeListItem } from '@/types/apprentice';
 
 export type TrackFilter = 'All' | 'IT' | 'EC';
@@ -92,15 +91,11 @@ export const matchesSituation = (
 ): boolean => {
     switch (situation) {
         case 'insufficient':
-            return stats.average !== null && stats.average < PASSING_GRADE;
         case 'no-grades':
-            return stats.grades_count === 0;
+            return stats.situation === situation;
         // Des notes, mais aucune récente : « Aucune note » a sa propre catégorie.
         case 'stale':
-            return (
-                stats.grades_count > 0 &&
-                hasNoRecentGrade(stats.last_grade_date)
-            );
+            return stats.grades_count > 0 && stats.stale;
         default:
             return true;
     }

@@ -12,3 +12,10 @@ export interface Grade {
     /** Présent quand le serveur a compté les commentaires. */
     comments_count?: number;
 }
+
+/** Seuils de notation partagés par `HandleInertiaRequests` (`App\Support\Gradebook\Grading`). */
+export interface Grading {
+    pass: number;
+    good: number;
+    stale_after_days: number;
+}

@@ -1,10 +1,10 @@
-import type { Grade } from '@/types/grade';
+import { usePage } from '@inertiajs/vue3';
+import type { Grade, Grading } from '@/types/grade';
 
 /**
- * Calcul des moyennes du carnet, comme pour le CFC : les notes sont sur les
- * feuilles de l'arbre d'évaluation, chaque nœud parent fait la moyenne pondérée
- * de ses enfants notés (poids `average_nodes.weight`), puis le
- * `rounding_step` du nœud est appliqué. Reprend la maquette apprentice-cursus-design.
+ * Lecture du carnet : les moyennes CFC (pondérées, arrondies au `rounding_step`
+ * de chaque nœud) sont calculées par `App\Support\Gradebook\GradebookTree` ;
+ * ce fichier ne fait que les lire et les mettre en forme.
  */
 
 export interface TreeNode {
@@ -14,26 +14,43 @@ export interface TreeNode {
     aggregated: boolean;
     rounding_step: number | null;
     children: { id: number; weight: number }[];
+    /** Moyenne arrondie ; null si rien n'est noté dessous. */
+    value: number | null;
+    /** Nombre de notes sous le nœud. */
+    count: number;
+    /** Toutes les évaluations comptées sous le nœud ont une note. */
+    complete: boolean;
+    /** Feuilles sous le nœud (lui-même pour une feuille). */
+    leaves: number[];
 }
+
+/** Feuille de l'arbre : la seule sorte de nœud qui porte des notes. */
+export type Branch = { id: number; name: string };
+
+export type BranchGroup = { name: string; branches: Branch[] };
 
 /** Envoyé par `App\Support\Gradebook\GradebookTree`. */
 export interface GradeTree {
     root: number;
     nodes: Record<number, TreeNode>;
+    /** Branches du formulaire de note, groupées par parent direct. */
+    groups: BranchGroup[];
+    /** Moyenne de la racine pour chaque semestre (1–8) ; null sans note. */
+    semesters: Record<number, number | null>;
+    /** 8 semestres en IT, 6 en EC. */
+    semester_count: number;
+    /** Dernier semestre noté (1 sans note), faute de date de début en base. */
+    current_semester: number;
+    /** Semestre noté avant le courant ; null sans. */
+    previous_semester: number | null;
+    /** Domaines sans note : la note finale est provisoire sans eux. */
+    missing_domains: number[];
+    /** Notes sous le seuil de réussite. */
+    failed_count: number;
 }
 
-/** Note minimale de réussite. */
-export const PASS = 4;
-export const GRADE_MAX = 6;
-/** Semestres de la formation la plus longue (semestre 1–8 déduit de la date, voir `App\Support\Gradebook\Semester`). */
-export const SEMESTERS = 8;
-
-/** L'apprentissage IT dure 4 ans, l'apprentissage EC 3 ans. */
-const SEMESTERS_BY_TRACK: Record<string, number> = { IT: 8, EC: 6 };
-
-/** Nombre de semestres de la filière ; 8 si elle est inconnue. */
-export const semestersFor = (track: string | null | undefined): number =>
-    (track && SEMESTERS_BY_TRACK[track]) || SEMESTERS;
+/** Seuils de `App\Support\Gradebook\Grading`, partagés par Inertia (`grading`). */
+export const grading = (): Grading => usePage().props.grading;
 
 export const fmt = (n: number): string => n.toFixed(1);
 
@@ -54,27 +71,20 @@ export const shortName = (name: string): string =>
 /** `d.m.Y` → valeur triable `Ymd`. */
 const sortKey = (date: string): string => date.split('.').reverse().join('');
 
-/**
- * Semestre courant, faute de date de début d'apprentissage en base : le
- * dernier semestre noté (1 sans note).
- */
-export const lastGradedSemester = (grades: Grade[]): number =>
-    Math.min(SEMESTERS, Math.max(1, ...grades.map((grade) => grade.semester)));
-
 export const byDateDesc = (a: Grade, b: Grade): number =>
     sortKey(b.date).localeCompare(sortKey(a.date)) || b.id - a.id;
 
 export type Status = 'good' | 'warn' | 'bad';
 
-/** Validé (≥ 4.5), Suffisant (≥ 4), À risque. */
+/** Validé (≥ `good`), Suffisant (≥ `pass`), À risque. */
 export function status(value: number): [Status, string] {
-    const ratio = value / GRADE_MAX;
+    const { pass, good } = grading();
 
-    if (ratio >= 0.75) {
+    if (value >= good) {
         return ['good', 'Validé'];
     }
 
-    if (ratio >= PASS / GRADE_MAX) {
+    if (value >= pass) {
         return ['warn', 'Suffisant'];
     }
 
@@ -88,82 +98,14 @@ export function status(value: number): [Status, string] {
  */
 export const gradeTone = (value: number): string => `is-${status(value)[0]}`;
 
-const roundTo = (value: number, step: number | null): number =>
-    step ? Math.round(value / step) * step : value;
-
 export function createGradebook(tree: GradeTree, allGrades: Grade[]) {
     const node = (id: number): TreeNode | undefined => tree.nodes[id];
 
-    /** Moyenne pondérée d'un nœud sur `grades` ; null si rien n'est noté dessous. */
-    function nodeValue(
-        id: number,
-        grades: Grade[] = allGrades,
-        round = true,
-    ): number | null {
-        const current = node(id);
+    /** Notes à afficher sous ce nœud (listes du carnet). */
+    const gradesUnder = (id: number): Grade[] => {
+        const leaves = new Set(node(id)?.leaves ?? [id]);
 
-        if (!current) {
-            return null;
-        }
-
-        let value: number;
-
-        if (!current.aggregated) {
-            const own = grades.filter((grade) => grade.node_id === id);
-
-            if (own.length === 0) {
-                return null;
-            }
-
-            value =
-                own.reduce((sum, grade) => sum + grade.value, 0) / own.length;
-        } else {
-            let sum = 0;
-            let weights = 0;
-
-            for (const child of current.children) {
-                const childValue = nodeValue(child.id, grades, false);
-
-                if (childValue !== null) {
-                    sum += childValue * child.weight;
-                    weights += child.weight;
-                }
-            }
-
-            if (weights === 0) {
-                return null;
-            }
-
-            value = sum / weights;
-        }
-
-        return round ? roundTo(value, current.rounding_step) : value;
-    }
-
-    const leafCache = new Map<number, Set<number>>();
-
-    function leavesOf(id: number): Set<number> {
-        const cached = leafCache.get(id);
-
-        if (cached) {
-            return cached;
-        }
-
-        const current = node(id);
-        const leaves = new Set<number>(
-            !current || !current.aggregated
-                ? [id]
-                : current.children.flatMap((child) => [...leavesOf(child.id)]),
-        );
-        leafCache.set(id, leaves);
-
-        return leaves;
-    }
-
-    const gradesUnder = (id: number, grades: Grade[] = allGrades): Grade[] => {
-        const leaves = leavesOf(id);
-
-        return grades.filter((grade) => leaves.has(grade.node_id));
+        return allGrades.filter((grade) => leaves.has(grade.node_id));
     };
 
     const weightOf = (parent: number, child: number): number =>
@@ -172,39 +114,23 @@ export function createGradebook(tree: GradeTree, allGrades: Grade[]) {
     const inSemester = (semester: number): Grade[] =>
         allGrades.filter((grade) => grade.semester === semester);
 
-    /**
-     * Toutes les évaluations comptées sous ce nœud ont une note : chaque
-     * feuille notée, et chaque enfant de poids non nul complet. `nodeValue`
-     * ignore les enfants sans note et répartit leur poids sur les autres :
-     * tant que ce n'est pas le cas, la moyenne reste provisoire.
-     */
-    function isComplete(id: number = tree.root): boolean {
-        const current = node(id);
-
-        if (!current) {
-            return false;
-        }
-
-        if (!current.aggregated) {
-            return allGrades.some((grade) => grade.node_id === id);
-        }
-
-        return current.children
-            .filter((child) => child.weight > 0)
-            .every((child) => isComplete(child.id));
-    }
-
     /** Domaines = enfants de la racine (TPI, Culture générale…). */
     const domains = node(tree.root)?.children.map((child) => child.id) ?? [];
 
     return {
         root: tree.root,
         domains,
+        semesterCount: tree.semester_count,
+        currentSemester: tree.current_semester,
+        previousSemester: tree.previous_semester,
+        missingDomains: tree.missing_domains,
+        failedCount: tree.failed_count,
         name: (id: number) => node(id)?.name ?? '',
         node,
-        nodeValue,
-        isComplete,
-        leavesOf,
+        nodeValue: (id: number) => node(id)?.value ?? null,
+        count: (id: number) => node(id)?.count ?? 0,
+        isComplete: (id: number = tree.root) => node(id)?.complete ?? false,
+        semesterValue: (semester: number) => tree.semesters[semester] ?? null,
         gradesUnder,
         weightOf,
         inSemester,

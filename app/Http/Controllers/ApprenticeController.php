@@ -61,22 +61,22 @@ class ApprenticeController extends Controller
             ]
             : null;
 
+        $grades = $apprentice->grades()
+            ->withSemester()
+            ->with(GradeResource::RELATIONS)
+            // Lets the gradebook filter the commented grades.
+            ->withCount('comments')
+            ->orderBy('test_date')
+            ->orderBy('id')
+            ->get();
+
         return Inertia::render('ApprenticeShow', [
             'apprenticeId' => $apprentice->id,
             'apprentice' => (new ApprenticeResource($apprentice->load(ApprenticeResource::RELATIONS)))->resolve(),
             'stats' => ApprenticeList::statsFor($apprentice),
-            'grades' => GradeResource::collection(
-                $apprentice->grades()
-                    ->withSemester()
-                    ->with(GradeResource::RELATIONS)
-                    // Lets the gradebook filter the commented grades.
-                    ->withCount('comments')
-                    ->orderBy('test_date')
-                    ->orderBy('id')
-                    ->get(),
-            )->resolve(),
+            'grades' => GradeResource::collection($grades)->resolve(),
             // Same tree as the apprentice's own gradebook: the profile shows the real CFC averages.
-            'tree' => GradebookTree::for($apprentice),
+            'tree' => GradebookTree::for($apprentice, $grades),
             'portfolio' => $portfolio,
         ]);
     }

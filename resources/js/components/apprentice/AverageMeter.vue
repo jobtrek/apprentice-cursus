@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { GRADE_MAX } from '@/constants/constants';
-import { PASSING_GRADE } from '@/data/dashboard';
 import { averageStatus, TONES } from '@/lib/apprentice';
 import { cn } from '@/lib/utils';
+import { grading } from '@/lib/gradebook';
 
 const props = defineProps<{
     /** Null sans note : affiche un tiret et une jauge vide. */
@@ -16,6 +16,8 @@ const status = computed(() =>
 );
 
 const percent = (value: number) => `${(value / GRADE_MAX) * 100}%`;
+
+const { pass } = grading();
 </script>
 
 <template>
@@ -50,7 +52,7 @@ const percent = (value: number) => `${(value / GRADE_MAX) * 100}%`;
             />
             <span
                 class="bg-foreground/30 absolute -top-0.5 h-2.5 w-px"
-                :style="{ left: percent(PASSING_GRADE) }"
+                :style="{ left: percent(pass) }"
             />
         </div>
     </div>

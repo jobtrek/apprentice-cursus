@@ -31,6 +31,25 @@ enum OcrSubject: string
         };
     }
 
+    /** Name shown to the apprentice: « Anglais », « Autre ». */
+    public function label(): string
+    {
+        return $this === self::Other ? 'Autre' : str_replace('subjects/', '', $this->value);
+    }
+
+    /**
+     * Name of the grade tree leaf this subject is graded on, null when the tree has no such leaf.
+     * ponytail: only the subjects whose leaf carries their name; add a case when the tree has others.
+     */
+    public function branchName(): ?string
+    {
+        return match ($this) {
+            self::Anglais => 'Anglais',
+            self::Maths => 'Mathématiques',
+            default => null,
+        };
+    }
+
     /**
      * Options for a laravel/ai Choice question: value => description.
      *

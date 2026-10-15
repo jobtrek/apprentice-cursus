@@ -34,18 +34,17 @@ class GradeController extends Controller
     public function dashboard(Request $request): Response
     {
         $user = $request->user()->load('formationPlan');
+        $grades = $user->grades()
+            ->withSemester()
+            ->with(GradeResource::RELATIONS)
+            ->withCount('comments')
+            ->orderBy('test_date')
+            ->orderBy('id')
+            ->get();
 
         return Inertia::render('GradesDashboard', [
-            'grades' => GradeResource::collection(
-                $user->grades()
-                    ->withSemester()
-                    ->with(GradeResource::RELATIONS)
-                    ->withCount('comments')
-                    ->orderBy('test_date')
-                    ->orderBy('id')
-                    ->get(),
-            )->resolve(),
-            'tree' => GradebookTree::for($user),
+            'grades' => GradeResource::collection($grades)->resolve(),
+            'tree' => GradebookTree::for($user, $grades),
         ]);
     }
 
@@ -117,9 +116,18 @@ class GradeController extends Controller
             'duration_ms' => (int) round((hrtime(true) - $start) / 1e6),
         ]);
 
+        // The leaf of the apprentice's plan the subject is graded on, so the dialog can pre-select it.
+        $branchName = $classification['subject']->branchName();
+        $nodeId = $branchName === null ? null : $request->user()->formationPlan?->averageNodes()
+            ->where('average_nodes.name', $branchName)
+            ->whereDoesntHave('children')
+            ->value('average_nodes.id');
+
         return response()->json([
             'scan_id' => $scan->id,
             'subject' => $scan->subject,
+            'subject_label' => $classification['subject']->label(),
+            'node_id' => $nodeId,
             'confidence' => $scan->confidence,
             'grade' => $grade,
             'flagged' => $scan->flagged,

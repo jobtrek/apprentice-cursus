@@ -134,3 +134,32 @@ test('the semester is derived from the test date, from the first grade on', func
     // A grade loaded on its own computes the same value.
     expect($nextS2->fresh()->semester)->toBe(4);
 });
+
+test('the tree carries the leaves, missing domains, previous semester and failed count', function () {
+    $this->apprentice->forceFill([
+        'formation_plan_id' => FormationPlan::query()->where('name', FormationPlan::IT)->sole()->id,
+    ])->save();
+    $cg = itNode('Culture générale');
+    $exam = itNode('Culture générale', 'Culture générale — Examen final');
+    gradeOn($this->apprentice, $exam, '2026-03-01');
+    gradeOn($this->apprentice, $exam, '2026-09-01')->forceFill(['value' => 3.5])->save();
+
+    $this->actingAs($this->apprentice)->get(route('grades.dashboard'))
+        ->assertInertia(function (Assert $page) use ($cg, $exam) {
+            $tree = $page->toArray()['props']['tree'];
+
+            expect($tree['nodes'][$exam->id]['leaves'])->toBe([$exam->id])
+                ->and($tree['nodes'][$cg->id]['leaves'])->toContain($exam->id)
+                ->and($tree['missing_domains'])->not->toContain($cg->id)
+                ->and($tree['missing_domains'])->toContain(itNode('Travail pratique individuel (TPI)')->id)
+                ->and($tree['current_semester'])->toBe(3)
+                ->and($tree['previous_semester'])->toBe(2)
+                ->and($tree['failed_count'])->toBe(1);
+        });
+});
+
+test('the grading thresholds are shared with every page', function () {
+    $this->actingAs($this->apprentice)->get(route('grades.dashboard'))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('grading', ['pass' => 4, 'good' => 4.5, 'stale_after_days' => 90]));
+});

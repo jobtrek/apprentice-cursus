@@ -7,7 +7,7 @@ import {
 } from '@lucide/vue';
 import { computed } from 'vue';
 import IconTile from '@/components/IconTile.vue';
-import { fmt, type Gradebook, PASS, shortName } from '@/lib/gradebook';
+import { fmt, grading, type Gradebook, shortName } from '@/lib/gradebook';
 import type { Grade } from '@/types/grade';
 import StatusChip from './StatusChip.vue';
 
@@ -17,27 +17,19 @@ const final = computed(() => props.gradebook.nodeValue(props.gradebook.root));
 
 /** Domaines pas encore notés : la note finale est provisoire sans eux. */
 const missing = computed(() =>
-    props.gradebook.domains
-        .filter((id) => props.gradebook.nodeValue(id) === null)
-        .map((id) => shortName(props.gradebook.name(id))),
-);
-
-/** Dernier semestre noté, comparé au semestre noté précédent. */
-const semesters = computed(() =>
-    [...new Set(props.grades.map((grade) => grade.semester))].sort(
-        (a, b) => a - b,
+    props.gradebook.missingDomains.map((id) =>
+        shortName(props.gradebook.name(id)),
     ),
 );
-const current = computed(() => semesters.value.at(-1) ?? null);
-const previous = computed(() => semesters.value.at(-2) ?? null);
+
+/** Dernier semestre noté (null sans note), comparé au semestre noté précédent. */
+const current = computed(() =>
+    props.grades.length > 0 ? props.gradebook.currentSemester : null,
+);
+const previous = computed(() => props.gradebook.previousSemester);
 
 const semesterValue = (semester: number | null) =>
-    semester === null
-        ? null
-        : props.gradebook.nodeValue(
-              props.gradebook.root,
-              props.gradebook.inSemester(semester),
-          );
+    semester === null ? null : props.gradebook.semesterValue(semester);
 
 const currentValue = computed(() => semesterValue(current.value));
 const delta = computed(() => {
@@ -53,9 +45,9 @@ const inCurrent = computed(() =>
         ? 0
         : props.gradebook.inSemester(current.value).length,
 );
-const failed = computed(
-    () => props.grades.filter((grade) => grade.value < PASS).length,
-);
+const failed = computed(() => props.gradebook.failedCount);
+
+const { pass } = grading();
 </script>
 
 <template>
@@ -153,7 +145,7 @@ const failed = computed(
             </span>
             <span class="stat__value">{{ failed }}</span>
             <span class="stat__foot"
-                >sur {{ grades.length }} notes, seuil 4.0</span
+                >sur {{ grades.length }} notes, seuil {{ fmt(pass) }}</span
             >
         </div>
     </section>

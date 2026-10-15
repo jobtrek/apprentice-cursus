@@ -3,8 +3,8 @@ import { computed } from 'vue';
 import {
     fmt,
     fmtWeight,
+    grading,
     type Gradebook,
-    PASS,
     plural,
     shortName,
 } from '@/lib/gradebook';
@@ -23,7 +23,8 @@ const fill = computed(() =>
         ? 0
         : ARC * Math.max(0, Math.min(1, (final.value - 1) / 5)),
 );
-const tickAngle = ((135 + (270 * (PASS - 1)) / 5) * Math.PI) / 180;
+const { pass } = grading();
+const tickAngle = ((135 + (270 * (pass - 1)) / 5) * Math.PI) / 180;
 
 const domains = computed(() =>
     props.gradebook.domains.map((id, i) => ({
@@ -32,12 +33,14 @@ const domains = computed(() =>
         name: props.gradebook.name(id),
         weight: props.gradebook.weightOf(props.gradebook.root, id),
         value: props.gradebook.nodeValue(id),
-        count: props.gradebook.gradesUnder(id).length,
+        count: props.gradebook.count(id),
     })),
 );
 
 const missing = computed(() =>
-    domains.value.filter((domain) => domain.value === null),
+    domains.value.filter((domain) =>
+        props.gradebook.missingDomains.includes(domain.id),
+    ),
 );
 </script>
 
@@ -129,7 +132,7 @@ const missing = computed(() =>
                     >
                         <span
                             :class="
-                                domain.value < PASS
+                                domain.value < pass
                                     ? 'gb-meter__bar is-fail'
                                     : 'gb-meter__bar'
                             "

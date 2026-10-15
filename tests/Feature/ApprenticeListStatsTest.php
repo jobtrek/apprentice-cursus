@@ -5,6 +5,7 @@ use App\Models\User;
 use Inertia\Testing\AssertableInertia as Assert;
 
 test('the apprentice list carries grade stats for each followed apprentice', function () {
+    $this->travelTo('2026-04-01');
     $coach = User::factory()->coach()->create();
     $apprentice = makeApprentice(coach: $coach);
     $apprentice->forceFill(['name' => 'A'])->save();
@@ -26,16 +27,21 @@ test('the apprentice list carries grade stats for each followed apprentice', fun
                 'grades_count' => 2,
                 'average' => 4.3,
                 'last_grade_date' => '02.03.2026',
+                'stale' => false,
+                'situation' => 'on-track',
             ])
             ->where('apprentices.1.id', $withoutGrades->id)
             ->where('apprentices.1.stats', [
                 'grades_count' => 0,
                 'average' => null,
                 'last_grade_date' => null,
+                'stale' => true,
+                'situation' => 'no-grades',
             ]));
 });
 
 test('the supervisor home carries the same grade stats as the apprentice list', function () {
+    $this->travelTo('2026-04-01');
     $coach = User::factory()->coach()->create();
     $apprentice = makeApprentice(coach: $coach);
     $apprentice->forceFill(['name' => 'A'])->save();
@@ -51,9 +57,29 @@ test('the supervisor home carries the same grade stats as the apprentice list', 
                 'grades_count' => 1,
                 'average' => 3.5,
                 'last_grade_date' => '02.03.2026',
+                'stale' => false,
+                'situation' => 'insufficient',
             ])
             // The apprentice without a coach is one the coach could take on.
             ->where('assignableCount', 1));
+});
+
+test('an apprentice without a grade for more than 90 days is stale', function () {
+    $coach = User::factory()->coach()->create();
+    $apprentice = makeApprentice(coach: $coach);
+    makeGrade($apprentice)->forceFill(['test_date' => '2026-01-01'])->save();
+
+    $this->travelTo('2026-04-01');
+    $this->actingAs($coach)->get(route('apprentisdashboard'))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('apprentices.0.stats.stale', false)
+            ->where('apprentices.0.stats.situation', 'on-track'));
+
+    $this->travelTo('2026-04-02');
+    $this->actingAs($coach)->get(route('apprentisdashboard'))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('apprentices.0.stats.stale', true)
+            ->where('apprentices.0.stats.situation', 'stale'));
 });
 
 test('the list derives the apprenticeship year from the grade dates and flags MP apprentices', function () {
