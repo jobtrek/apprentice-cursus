@@ -48,6 +48,23 @@ test('a scan is read by Gemini and classified by Jev', function () {
         ->assertJsonStructure(['duration_ms']);
 });
 
+test('scans are rate limited per user', function () {
+    GeminiService::fake(array_fill(0, 10, ['text' => 'English Test', 'subject' => 'subjects/Anglais', 'grade' => 5.0, 'grade_box' => null]))->preventStrayPrompts();
+    Classification::fake(array_fill(0, 10, ['subject' => new ChoiceAnswer('subjects/Anglais', ['subjects/Anglais' => 0.9], 0.9)]));
+
+    foreach (range(1, 10) as $i) {
+        $this->actingAs($this->apprentice)
+            ->postJson(route('grades.read-scan'), ['consent' => true, 'file' => blankPdf()])
+            ->assertOk();
+    }
+
+    $this->actingAs($this->apprentice)
+        ->postJson(route('grades.read-scan'), ['consent' => true, 'file' => blankPdf()])
+        ->assertJsonValidationErrors('file');
+
+    expect(OcrScan::query()->count())->toBe(10);
+});
+
 test('a scan is not read while the OCR is disabled', function () {
     config(['ocr.enabled' => false]);
     GeminiService::fake()->preventStrayPrompts();

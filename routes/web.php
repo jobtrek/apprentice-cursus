@@ -32,7 +32,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         // GradePolicy::create / update are checked by GradeRequest.
         Route::post('/', [GradeController::class, 'store'])->name('store');
         Route::post('/read-scan', [GradeController::class, 'readScan'])
-            ->middleware('can:create,'.Grade::class)
+            ->middleware(['can:create,'.Grade::class, 'throttle:ocr'])
             ->name('read-scan');
         Route::put('/{grade}', [GradeController::class, 'update'])
             ->whereNumber('grade')

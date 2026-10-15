@@ -4,11 +4,14 @@ namespace App\Providers;
 
 use App\Models\User;
 use Carbon\CarbonImmutable;
+use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Eloquent\Relations\Relation;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
 use SocialiteProviders\Azure\Provider;
@@ -30,6 +33,17 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->configureDefaults();
+
+        // Each scan costs Gemini + Jev calls, so cap it per user. A 422 on `file`
+        // shows up in the dialog like any other upload error.
+        RateLimiter::for('ocr', function (Request $request) {
+            $key = $request->user()?->id ?: $request->ip();
+            $tooMany = fn () => response()->json(['errors' => [
+                'file' => ['Limite de 10 analyses automatiques par jour atteinte, réessayez demain ou saisissez la note à la main.'],
+            ]], 422);
+
+            return Limit::perDay(10)->by($key)->response($tooMany);
+        });
 
         // Spatie's documented super-admin pattern. The environment is checked at
         // call time inside isLocalAdmin(), so outside local the callback always
