@@ -57,6 +57,7 @@ class HandleInertiaRequests extends Middleware
                     'viewSupervisedGrades' => $user?->can(Permission::GradesViewSupervised->value) ?? false,
                     'managePortfolio' => $user?->can(Permission::PortfolioManageOwn->value) ?? false,
                     'viewApprentices' => $user?->can(Permission::ApprenticesViewList->value) ?? false,
+                    'viewOcrStats' => $user?->can(Permission::OcrViewStats->value) ?? false,
                 ],
             ],
         ];

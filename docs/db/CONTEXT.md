@@ -9,8 +9,9 @@ DATABASE STRUCTURE CHOICES DOCS : db.md
 check this one when you need to understand the "WHY" and "HOW THINGS WORKS" in the schema (their purpose, etc.)
 
 DATABASE MODEL : mcd_current.d2
-the PLANNED redesign (proposal, not built). For the schema that exists today, read
-`docs/adr/ADR.md` (2026-09-09) and `database/migrations/`.
+check this one when you need to see how things are organized, which tables are linked,
+what are their attributes... It describes the built schema; where it disagrees with
+`database/migrations/`, the migrations win.
 
 Others files are optional and are more of an history of decision that we've taken as a team,
 you can check them if we ask you to check on older database version, else ignore.
@@ -19,7 +20,7 @@ db/ [//]: # (Root)
 ├── CONTEXT.md [//]: # (Your context and documentation, this file)
 ├── db.md [//]: # (Structural choices and how they work documentation)
 └── schemas/ [//]: # (database modelling folder)
-├── mcd_current.d2 [//]: # (PLANNED REDESIGN, not built)
+├── mcd_current.d2 [//]: # (LATEST VERSION)
 └── history/ [//]: # (OLDER VERSIONS)
 ├── V1/ [//]: # (FIRST VERSION THAT EMERGED OF THE DB)
 │ ├── mcd.drawio [//]: # (drawio, you can ignore it)

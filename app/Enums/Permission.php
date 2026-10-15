@@ -14,6 +14,8 @@ enum Permission: string
     case CoachingAssignSelf = 'coaching.assign-self';
     /** Assign any coach to any apprentice. No production role has it: only the local admin (Gate::before). */
     case SupervisionManage = 'supervision.manage';
+    /** OCR cost and accuracy dashboard. Same as above: only the local admin has it. */
+    case OcrViewStats = 'ocr.view-stats';
 
     /** @return array<string, list<self>> */
     public static function byRole(): array

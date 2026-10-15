@@ -19,6 +19,8 @@ export type Can = {
     viewSupervisedGrades: boolean;
     managePortfolio: boolean;
     viewApprentices: boolean;
+    /** Admin local : tableau de bord OCR. */
+    viewOcrStats: boolean;
 };
 
 export type Auth = {

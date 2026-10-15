@@ -36,6 +36,7 @@ const gradeForm = ref<InstanceType<typeof GradeForm> | null>(null);
 const useOcr = ref(false);
 
 type ScanReading = {
+    scan_id: number;
     subject: string;
     confidence: number | null;
     grade: number | null;
@@ -49,6 +50,8 @@ const ocr = useHttp<{ consent: boolean; file: File | null }, ScanReading>({
 });
 const reading = ref<ScanReading | null>(null);
 
+// Le choix du fichier est bloqué pendant l'analyse : le résultat reçu
+// correspond toujours à `ocr.file`, le PDF joint à la note.
 function onOcrFileChange(event: Event): void {
     ocr.file = (event.target as HTMLInputElement).files?.[0] ?? null;
     reading.value = null;
@@ -86,6 +89,9 @@ function fillForm(): void {
     if (!form || !ocr.file) return;
 
     form.file = ocr.file;
+    // Pour le tableau de bord OCR : la note enregistrée est comparée au scan.
+    form.ocr_scan_id = reading.value?.scan_id ?? null;
+    form.ocr_node_id = readingBranch.value?.id ?? null;
     form.average_node_id = readingBranch.value?.id ?? form.average_node_id;
     if (reading.value?.grade != null) {
         form.value = reading.value.grade;
@@ -168,7 +174,7 @@ const subjectLabel = (subject: string): string =>
                     <label
                         class="flex flex-col items-center justify-center gap-1 rounded-md border border-dashed p-8 text-center transition-colors"
                         :class="
-                            ocr.consent
+                            ocr.consent && !ocr.processing
                                 ? 'hover:bg-muted/50 cursor-pointer'
                                 : 'cursor-not-allowed opacity-50'
                         "
@@ -185,7 +191,7 @@ const subjectLabel = (subject: string): string =>
                             type="file"
                             accept="application/pdf"
                             class="hidden"
-                            :disabled="!ocr.consent"
+                            :disabled="!ocr.consent || ocr.processing"
                             @change="onOcrFileChange"
                         />
                     </label>

@@ -7,6 +7,7 @@ use App\Http\Controllers\DossierController;
 use App\Http\Controllers\GradeController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\OcrScanController;
 use App\Http\Controllers\SupervisionController;
 use App\Models\Grade;
 use Illuminate\Foundation\Http\Middleware\HandlePrecognitiveRequests;
@@ -15,6 +16,9 @@ use Illuminate\Support\Facades\Route;
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/', HomeController::class)->name('home');
     Route::get('/notifications', NotificationController::class)->name('notifications.index');
+    Route::get('/ocr-scans', OcrScanController::class)
+        ->middleware('can:'.Permission::OcrViewStats->value)
+        ->name('ocr-scans.index');
 
     Route::prefix('grades')->name('grades.')->group(function () {
         Route::get('/dashboard', [GradeController::class, 'dashboard'])

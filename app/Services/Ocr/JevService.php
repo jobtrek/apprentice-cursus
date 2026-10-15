@@ -6,11 +6,12 @@ use App\Enums\OcrSubject;
 use Laravel\Ai\Classification;
 use Laravel\Ai\Classification\Choice;
 use Laravel\Ai\Responses\Data\ChoiceAnswer;
+use Laravel\Ai\Responses\Data\TextUsage;
 
 class JevService
 {
     /**
-     * @return array{subject: OcrSubject, confidence: float|null}
+     * @return array{subject: OcrSubject, confidence: float|null, usage: TextUsage}
      */
     public function classify(mixed $data): array
     {
@@ -25,6 +26,10 @@ class JevService
         $answer = $response->answer('subject');
 
         // Confidence drives the flag rule (docs/ocr_specs/stack.md, "Flag rule").
-        return ['subject' => OcrSubject::from($answer->choice), 'confidence' => $answer->confidence];
+        return [
+            'subject' => OcrSubject::from($answer->choice),
+            'confidence' => $answer->confidence,
+            'usage' => $response->usage,
+        ];
     }
 }

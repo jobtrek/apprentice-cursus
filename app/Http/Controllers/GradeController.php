@@ -7,6 +7,7 @@ use App\Http\Requests\ReadScanRequest;
 use App\Http\Resources\CommentResource;
 use App\Http\Resources\GradeResource;
 use App\Models\Grade;
+use App\Models\OcrScan;
 use App\Services\Ocr\GeminiService;
 use App\Services\Ocr\JevService;
 use App\Support\Gradebook\GradebookTree;
@@ -64,6 +65,9 @@ class GradeController extends Controller
         $pages = $pdf->getNumberImages();
         $firstText = null;
         $grade = null;
+        $geminiCost = 0.0;
+        $pagesRead = 0;
+        $prices = config('ocr.prices');
 
         for ($n = 0; $n < min(3, $pages); $n++) {
             $page = new Imagick;
@@ -76,6 +80,9 @@ class GradeController extends Controller
             $reading = $gemini->read($page->getImageBlob());
             $firstText ??= $reading['text'];
             $grade = $reading['grade'];
+            $pagesRead = $n + 1;
+            $geminiCost += ($reading['usage']->inputTokens * $prices['gemini']['input']
+                + $reading['usage']->outputTokens * $prices['gemini']['output']) / 1e6;
 
             if ($grade !== null && ! $reading['truncated']) {
                 break;
@@ -89,12 +96,25 @@ class GradeController extends Controller
             $grade = null;
         }
 
-        return response()->json([
+        $scan = OcrScan::query()->create([
+            'user_id' => $request->user()->id,
             'subject' => $classification['subject']->value,
-            'confidence' => $classification['confidence'],
             'grade' => $grade,
+            'confidence' => $classification['confidence'],
             'flagged' => $grade === null || ($classification['confidence'] ?? 0) < 0.5,
+            'pages_read' => $pagesRead,
+            'gemini_cost' => $geminiCost,
+            'jev_cost' => $classification['usage']->inputTokens * $prices['jev']['input'] / 1e6,
             'duration_ms' => (int) round((hrtime(true) - $start) / 1e6),
+        ]);
+
+        return response()->json([
+            'scan_id' => $scan->id,
+            'subject' => $scan->subject,
+            'confidence' => $scan->confidence,
+            'grade' => $grade,
+            'flagged' => $scan->flagged,
+            'duration_ms' => $scan->duration_ms,
         ]);
     }
 
@@ -173,6 +193,15 @@ class GradeController extends Controller
                 }
 
                 $grade->save();
+
+                // Links the OCR reading to the grade it produced, for the dashboard's accuracy.
+                if (isset($data['ocr_scan_id'])) {
+                    OcrScan::query()
+                        ->whereKey($data['ocr_scan_id'])
+                        ->where('user_id', $grade->user_id)
+                        ->whereNull('grade_id')
+                        ->update(['grade_id' => $grade->id, 'suggested_node_id' => $data['ocr_node_id'] ?? null]);
+                }
 
                 if ($file === null) {
                     return;
