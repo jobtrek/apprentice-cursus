@@ -1,19 +1,14 @@
-import MONTHS from '@/data/months.json';
 import { useForm } from '@inertiajs/vue3';
 import { Temporal } from 'temporal-polyfill';
 import { computed, ref } from 'vue';
 import {
     ALLOWED_FILE_MIME_TYPE,
-    GRADE_MAX,
-    GRADE_MIN,
-    GRADE_STEP,
     MAX_FILE_SIZE_BYTES,
 } from '@/constants/constants';
+import { GRADE_MAX, GRADE_MIN, GRADE_STEP } from '@/lib/grade-scale';
 import type { GradeTree } from '@/lib/gradebook';
 import grades from '@/routes/grades';
 import type { Grade } from '@/types/grade';
-
-export { MONTHS };
 
 /** Feuille de l'arbre : la seule sorte de nœud qui porte des notes. */
 export type Branch = { id: number; name: string };
@@ -29,9 +24,8 @@ type GradeFormData = {
     test_date: string;
     is_oral: boolean;
     file: File | null;
-    /** Scan OCR d'où vient la note, et la branche qu'il proposait. */
+    /** Scan OCR d'où vient la note. */
     ocr_scan_id: number | null;
-    ocr_node_id: number | null;
 };
 
 /**
@@ -65,14 +59,14 @@ const branchGroups = (tree: GradeTree | null): BranchGroup[] => {
 
 /**
  * Pré-remplie avec la date du jour : une note se saisit souvent le jour du test.
- * En modification, part de la date de la note (`dd.mm.yyyy`).
+ * En modification, part de la date de la note (ISO).
  */
 const useDateParts = (initial?: string) => {
     const today = Temporal.Now.plainDateISO();
-    const [day, month, year] = initial
-        ? initial.split('.').map(Number)
-        : [today.day, today.month, today.year];
-    // Mêmes formats que les champs : mois sans zéro, comme dans months.json.
+    const { day, month, year } = initial
+        ? Temporal.PlainDate.from(initial)
+        : today;
+    // Mêmes formats que les champs : mois sans zéro, comme dans MONTHS.
     const dateDay = ref(String(day));
     const dateMonth = ref(String(month));
     const dateYear = ref(String(year));
@@ -118,7 +112,6 @@ export const useGradeForm = (
         is_oral: edited ? !edited.hasFile : false,
         file: null,
         ocr_scan_id: null,
-        ocr_node_id: null,
     });
 
     /** En modification, le scan déjà déposé est gardé si aucun autre ne le remplace. */
@@ -149,7 +142,7 @@ export const useGradeForm = (
         form.file = target.files?.[0] ?? null;
     };
 
-    // complicated shit since js can't do basic math.
+    // Arrondi au dixième : 4.5 + 0.5 en flottants peut donner 4.999….
     const clampGrade = (value: number) =>
         Math.min(GRADE_MAX, Math.max(GRADE_MIN, Math.round(value * 10) / 10));
 

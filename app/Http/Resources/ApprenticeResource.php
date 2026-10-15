@@ -35,7 +35,6 @@ class ApprenticeResource extends JsonResource
             'trainer' => $this->formationPlan?->trainers->pluck('name')->sort()->implode(', ') ?: null,
             // Lets the local admin's select show the current coach.
             'coachId' => $this->coach_id,
-            'canView' => $request->user()?->can('view', $this->resource) ?? false,
         ];
     }
 }

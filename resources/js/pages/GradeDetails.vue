@@ -13,7 +13,8 @@ import {
     StatItem,
 } from '@/components/page';
 import { getInitials } from '@/composables/useInitials';
-import { PASSING_GRADE } from '@/data/dashboard';
+import { PASSING_GRADE } from '@/lib/grade-scale';
+import { formatDate } from '@/lib/date';
 import type { GradeTree } from '@/lib/gradebook';
 import { cn } from '@/lib/utils';
 import { apprentisdashboard } from '@/routes';
@@ -163,7 +164,9 @@ const submitEdit = (comment: Comment) => {
                     </div>
                 </StatItem>
                 <StatItem label="Date du test">
-                    <span class="tabular-nums">{{ grade.date }}</span>
+                    <span class="tabular-nums">{{
+                        formatDate(grade.date)
+                    }}</span>
                 </StatItem>
                 <StatItem label="Semestre">
                     Semestre {{ grade.semester }}
@@ -274,7 +277,7 @@ const submitEdit = (comment: Comment) => {
                                 <time
                                     class="text-muted-foreground tabular-nums"
                                 >
-                                    {{ comment.date }}
+                                    {{ formatDate(comment.date) }}
                                 </time>
                             </p>
 

@@ -32,6 +32,19 @@ enum OcrSubject: string
     }
 
     /**
+     * Name of the grade-tree leaf this subject is graded on, null when no leaf
+     * matches. ponytail: only these subjects are mapped; add one when a plan has it.
+     */
+    public function branchName(): ?string
+    {
+        return match ($this) {
+            self::Anglais => 'Anglais',
+            self::Maths => 'Mathématiques',
+            default => null,
+        };
+    }
+
+    /**
      * Options for a laravel/ai Choice question: value => description.
      *
      * @return array<string, string>

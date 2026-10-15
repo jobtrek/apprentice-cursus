@@ -44,7 +44,7 @@ class GradeRequest extends FormRequest
                 Rule::exists('average_node_formation_plan', 'average_node_id')
                     ->where('formation_plan_id', $this->user()?->formation_plan_id),
             ],
-            'value' => ['required', 'numeric', 'between:1,6', 'multiple_of:0.5'],
+            'value' => ['required', ...Grade::VALUE_RULES],
             'test_date' => ['required', 'date', 'before_or_equal:today'],
             'is_oral' => ['boolean'],
             // An oral exam has nothing to scan: a file sent with it is dropped. On update,
@@ -59,7 +59,6 @@ class GradeRequest extends FormRequest
             ],
             // Set when the grade comes from the OCR dialog; only feeds the OCR dashboard.
             'ocr_scan_id' => ['nullable', 'integer'],
-            'ocr_node_id' => ['nullable', 'integer', Rule::exists('average_nodes', 'id')],
         ];
     }
 

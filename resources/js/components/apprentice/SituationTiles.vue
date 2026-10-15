@@ -11,7 +11,7 @@ import {
     matchesSituation,
     type SituationFilter,
 } from '@/composables/useApprenticeFilters';
-import { PASSING_GRADE } from '@/data/dashboard';
+import { PASSING_GRADE } from '@/lib/grade-scale';
 import { STALE_AFTER_DAYS, TONES, type Tone } from '@/lib/apprentice';
 import { cn } from '@/lib/utils';
 import type { ApprenticeListItem } from '@/types/apprentice';

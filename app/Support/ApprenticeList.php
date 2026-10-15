@@ -97,7 +97,7 @@ class ApprenticeList
                 'title' => $grade->averageNode->name,
                 // The decimal cast yields a string; the front formats a number.
                 'value' => (float) $grade->value,
-                'date' => $grade->test_date->format('d.m.Y'),
+                'date' => $grade->test_date->toDateString(),
                 'comments_count' => (int) $grade->comments_count,
             ])
             ->all();
@@ -164,7 +164,7 @@ class ApprenticeList
                 'grades_count' => (int) ($row->grades_count ?? 0),
                 'average' => isset($row->average) ? round((float) $row->average, 1) : null,
                 'last_grade_date' => isset($row->last_grade_date)
-                    ? CarbonImmutable::parse($row->last_grade_date)->format('d.m.Y')
+                    ? CarbonImmutable::parse($row->last_grade_date)->toDateString()
                     : null,
                 // No start date is stored yet: the school year of the latest grade,
                 // counted from the first one, stands in for the year of apprenticeship.

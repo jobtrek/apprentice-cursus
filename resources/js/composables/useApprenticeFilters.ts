@@ -1,7 +1,7 @@
 import { useRemember } from '@inertiajs/vue3';
 import { computed, reactive, type Ref } from 'vue';
-import { PASSING_GRADE } from '@/data/dashboard';
-import { hasNoRecentGrade, sortableDate } from '@/lib/apprentice';
+import { PASSING_GRADE } from '@/lib/grade-scale';
+import { hasNoRecentGrade } from '@/lib/apprentice';
 import type { ApprenticeListItem } from '@/types/apprentice';
 
 export type TrackFilter = 'All' | 'IT' | 'EC';
@@ -75,8 +75,8 @@ const compare: Record<
     average: (a, b) =>
         (a.stats.average ?? Infinity) - (b.stats.average ?? Infinity),
     recent: (a, b) =>
-        sortableDate(b.stats.last_grade_date ?? '').localeCompare(
-            sortableDate(a.stats.last_grade_date ?? ''),
+        (b.stats.last_grade_date ?? '').localeCompare(
+            a.stats.last_grade_date ?? '',
         ),
 };
 

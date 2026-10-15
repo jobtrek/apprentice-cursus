@@ -39,6 +39,8 @@ const useOcr = ref(false);
 type ScanReading = {
     scan_id: number;
     subject: string;
+    /** Feuille du plan correspondant à la matière, null si aucune. */
+    node_id: number | null;
     confidence: number | null;
     grade: number | null;
     flagged: boolean;
@@ -66,17 +68,11 @@ function analyse(): void {
     });
 }
 
-// ponytail: seules les branches qui portent le nom d'une matière sont
-// reconnues ; ajouter une entrée ici quand l'arbre en a d'autres.
-const SUBJECT_BRANCHES: Record<string, string> = {
-    'subjects/Anglais': 'Anglais',
-    'subjects/Maths': 'Mathématiques',
-};
-
-const readingBranch = computed(() => {
-    const name = reading.value && SUBJECT_BRANCHES[reading.value.subject];
-    return gradeForm.value?.branches.find((branch) => branch.name === name);
-});
+const readingBranch = computed(() =>
+    gradeForm.value?.branches.find(
+        (branch) => branch.id === reading.value?.node_id,
+    ),
+);
 
 // Approuver demande une note et une branche reconnue ; sinon il faut compléter.
 const canApprove = computed(
@@ -92,7 +88,6 @@ function fillForm(): void {
     form.file = ocr.file;
     // Pour le tableau de bord OCR : la note enregistrée est comparée au scan.
     form.ocr_scan_id = reading.value?.scan_id ?? null;
-    form.ocr_node_id = readingBranch.value?.id ?? null;
     form.average_node_id = readingBranch.value?.id ?? form.average_node_id;
     if (reading.value?.grade != null) {
         form.value = reading.value.grade;

@@ -4,13 +4,8 @@ import { computed } from 'vue';
 import IconTile from '@/components/IconTile.vue';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
-import {
-    fmt,
-    type Gradebook,
-    semestersFor,
-    type Status,
-    status,
-} from '@/lib/gradebook';
+import { fmt, type Gradebook, semestersFor } from '@/lib/gradebook';
+import { averageStatus } from '@/lib/apprentice';
 import { cn } from '@/lib/utils';
 
 /**
@@ -28,12 +23,6 @@ const props = defineProps<{
      */
     derived?: boolean;
 }>();
-
-const STATUS_TEXT: Record<Status, string> = {
-    good: 'text-success',
-    warn: 'text-warning',
-    bad: 'text-destructive',
-};
 
 type Step = {
     semester: number;
@@ -184,7 +173,7 @@ const year = computed(() => Math.ceil(props.currentSemester / 2));
                         <span
                             v-if="step.average !== null"
                             class="text-sm font-semibold tabular-nums"
-                            :class="STATUS_TEXT[status(step.average)[0]]"
+                            :class="averageStatus(step.average).class"
                             :title="`Moyenne du semestre ${step.semester}`"
                         >
                             {{ fmt(step.average) }}

@@ -3,14 +3,10 @@ import { Link } from '@inertiajs/vue3';
 import { computed } from 'vue';
 import { StatItem } from '@/components/page';
 import { Badge } from '@/components/ui/badge';
-import {
-    hasNoRecentGrade,
-    relativeDate,
-    situationOf,
-    yearLabel,
-} from '@/lib/apprentice';
+import { hasNoRecentGrade, situationOf, yearLabel } from '@/lib/apprentice';
+import { formatDate, relativeDate } from '@/lib/date';
 import apprentices from '@/routes/apprentices';
-import type { ApprenticeListItem, AssignSelfAs } from '@/types/apprentice';
+import type { ApprenticeListItem } from '@/types/apprentice';
 import ApprenticeAvatar from './ApprenticeAvatar.vue';
 import AssignmentBadge from './AssignmentBadge.vue';
 import AverageMeter from './AverageMeter.vue';
@@ -19,8 +15,8 @@ import TrackBadges from './TrackBadges.vue';
 
 const props = defineProps<{
     apprentice: ApprenticeListItem;
-    /** Rôle de l'utilisateur : ce superviseur-là est toujours lui-même. */
-    ownRole?: AssignSelfAs | null;
+    /** L'utilisateur est le coach : ce superviseur-là est toujours lui-même. */
+    hideCoach?: boolean;
 }>();
 
 const stale = computed(
@@ -86,7 +82,9 @@ const situation = computed(() => situationOf(props.apprentice));
                         ·
                         <span
                             :class="{ 'text-warning': stale }"
-                            :title="apprentice.stats.last_grade_date"
+                            :title="
+                                formatDate(apprentice.stats.last_grade_date)
+                            "
                         >
                             {{ relativeDate(apprentice.stats.last_grade_date) }}
                         </span>
@@ -97,7 +95,7 @@ const situation = computed(() => situationOf(props.apprentice));
         </div>
 
         <div class="grid grid-cols-2 gap-x-4 gap-y-3">
-            <StatItem v-if="ownRole !== 'coach'" label="Coach">
+            <StatItem v-if="!hideCoach" label="Coach">
                 <AssignmentBadge :value="apprentice.coach ?? undefined" />
             </StatItem>
             <StatItem label="Formateur">

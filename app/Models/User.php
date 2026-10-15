@@ -160,14 +160,14 @@ class User extends Authenticatable
     }
 
     /**
-     * Active apprentices this user follows: a coach its coachees, a trainer the
+     * The supervision rule, active or not: a coach its coachees, a trainer the
      * apprentices of the plans it trains, the local admin everyone.
      *
      * @return Builder<self>
      */
-    public function listedApprentices(): Builder
+    public function supervisedApprentices(): Builder
     {
-        $query = self::role(UserRole::Apprentice->value)->where('is_active', true);
+        $query = self::role(UserRole::Apprentice->value);
 
         if ($this->isLocalAdmin()) {
             return $query;
@@ -184,50 +184,37 @@ class User extends Authenticatable
     }
 
     /**
-     * Column this user fills when taking an apprentice on: `coach_id` for a
-     * coach, null for anyone else. A trainer follows whole plans, not single
-     * apprentices; the local admin assigns from the list's selects instead.
+     * @return Builder<self>
      */
-    public function selfAssignmentColumn(): ?string
+    public function listedApprentices(): Builder
     {
-        return match (true) {
-            $this->hasPermissionTo(Permission::CoachingAssignSelf->value) => 'coach_id',
-            default => null,
-        };
+        return $this->supervisedApprentices()->where('is_active', true);
+    }
+
+    public function supervises(self $apprentice): bool
+    {
+        return $this->supervisedApprentices()->whereKey($apprentice->id)->exists();
     }
 
     /**
-     * Active apprentices this user can take on (see UserPolicy::assignSelf()):
-     * the ones with no coach yet, for a coach.
+     * Only a coach takes single apprentices on. A trainer follows whole plans;
+     * the local admin assigns from the list's selects instead.
+     */
+    public function canSelfAssign(): bool
+    {
+        return $this->hasPermissionTo(Permission::CoachingAssignSelf->value);
+    }
+
+    /**
+     * Active apprentices with no coach yet, for a coach (see UserPolicy::assignSelf()).
      *
      * @return Builder<self>
      */
     public function assignableApprentices(): Builder
     {
-        $query = self::role(UserRole::Apprentice->value)->where('is_active', true);
+        $query = self::role(UserRole::Apprentice->value)->where('is_active', true)->whereNull('coach_id');
 
-        return match ($this->selfAssignmentColumn()) {
-            'coach_id' => $query->whereNull('coach_id'),
-            default => $query->whereRaw('false'),
-        };
-    }
-
-    public function supervises(self $apprentice): bool
-    {
-        if ($apprentice->id === $this->id || ! $apprentice->hasRole(UserRole::Apprentice->value)) {
-            return false;
-        }
-
-        if ($this->isLocalAdmin()) {
-            return true;
-        }
-
-        return match ($this->role) {
-            UserRole::Coach => $apprentice->coach_id === $this->id,
-            UserRole::Trainer => $apprentice->formation_plan_id !== null
-                && $this->trainedFormationPlans()->whereKey($apprentice->formation_plan_id)->exists(),
-            default => false,
-        };
+        return $this->canSelfAssign() ? $query : $query->whereRaw('false');
     }
 
     /**

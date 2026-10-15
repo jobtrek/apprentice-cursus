@@ -29,8 +29,9 @@ import {
     EmptyMedia,
     EmptyTitle,
 } from '@/components/ui/empty';
-import { PASSING_GRADE } from '@/data/dashboard';
+import { PASSING_GRADE } from '@/lib/grade-scale';
 import { hasNoRecentGrade, STALE_AFTER_DAYS } from '@/lib/apprentice';
+import { formatDate } from '@/lib/date';
 import { apprentisdashboard } from '@/routes';
 import apprenticesRoutes from '@/routes/apprentices';
 import type {
@@ -76,7 +77,9 @@ const describe = ({ track, stats }: ApprenticeListItem): string =>
     [
         track,
         `${stats.grades_count} note${stats.grades_count > 1 ? 's' : ''}`,
-        stats.last_grade_date ? `dernière le ${stats.last_grade_date}` : null,
+        stats.last_grade_date
+            ? `dernière le ${formatDate(stats.last_grade_date)}`
+            : null,
     ]
         .filter(Boolean)
         .join(' · ');
@@ -202,8 +205,11 @@ const describe = ({ track, stats }: ApprenticeListItem): string =>
                                         class="text-muted-foreground text-xs tabular-nums"
                                     >
                                         {{
-                                            row.stats.last_grade_date ??
-                                            'Aucune note'
+                                            row.stats.last_grade_date
+                                                ? formatDate(
+                                                      row.stats.last_grade_date,
+                                                  )
+                                                : 'Aucune note'
                                         }}
                                     </span>
                                 </Link>

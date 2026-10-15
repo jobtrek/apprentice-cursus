@@ -7,7 +7,8 @@ import {
 } from '@lucide/vue';
 import { computed } from 'vue';
 import IconTile from '@/components/IconTile.vue';
-import { fmt, type Gradebook, PASS, shortName } from '@/lib/gradebook';
+import { fmt, type Gradebook, shortName } from '@/lib/gradebook';
+import { PASSING_GRADE } from '@/lib/grade-scale';
 import type { Grade } from '@/types/grade';
 import StatusChip from './StatusChip.vue';
 
@@ -54,7 +55,7 @@ const inCurrent = computed(() =>
         : props.gradebook.inSemester(current.value).length,
 );
 const failed = computed(
-    () => props.grades.filter((grade) => grade.value < PASS).length,
+    () => props.grades.filter((grade) => grade.value < PASSING_GRADE).length,
 );
 </script>
 

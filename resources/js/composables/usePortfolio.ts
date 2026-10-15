@@ -1,31 +1,5 @@
+import { formatMonthYear } from '@/lib/date';
 import type { PortfolioProject, Skill } from '@/types/portfolio';
-
-const MONTHS = [
-    'Janvier',
-    'Février',
-    'Mars',
-    'Avril',
-    'Mai',
-    'Juin',
-    'Juillet',
-    'Août',
-    'Septembre',
-    'Octobre',
-    'Novembre',
-    'Décembre',
-];
-
-/** `2025-03-01` -> `Mars 2025`. */
-export function formatMonthYear(date: string | null): string {
-    if (!date) {
-        return '';
-    }
-
-    const [year, month] = date.split('-');
-    const monthName = MONTHS[Number(month) - 1];
-
-    return monthName ? `${monthName} ${year}` : year;
-}
 
 /** `Mars 2025 – Juin 2025`, ou `Janvier 2026 – en cours` si pas de fin. */
 export function formatPeriod(start: string, end: string | null): string {

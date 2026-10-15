@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
- * A PDF read by GradeController::readScan. Costs are in USD.
+ * A PDF read by ScanReader. Costs are in USD.
  *
  * @property int $id
  * @property int $user_id
@@ -24,7 +24,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $duration_ms
  * @property CarbonImmutable $created_at
  */
-#[Fillable(['user_id', 'subject', 'grade', 'confidence', 'flagged', 'pages_read', 'gemini_cost', 'jev_cost', 'duration_ms'])]
+#[Fillable(['user_id', 'suggested_node_id', 'subject', 'grade', 'confidence', 'flagged', 'pages_read', 'gemini_cost', 'jev_cost', 'duration_ms'])]
 class OcrScan extends Model
 {
     protected function casts(): array

@@ -40,6 +40,10 @@ const props = defineProps<{
     latestGrades: SupervisedGrade[];
     /** Coach, formateur, admin : notes par mois sur 12 mois. */
     activity: MonthlyActivity[];
+    can: {
+        /** Coach : s'ajoute des apprentis, dont il devient le coach. */
+        assignSelf: boolean;
+    };
 }>();
 
 const page = usePage();
@@ -52,11 +56,6 @@ const firstName = computed(
 
 /** Coachs et formateurs suivent des apprentis ; les autres rôles voient leur propre parcours. */
 const isApprentice = computed(() => role.value === 'apprentice');
-
-/** Seuls coachs et formateurs s'ajoutent des apprentis, pas l'admin. */
-const canAssign = computed(
-    () => role.value === 'coach' || role.value === 'trainer',
-);
 
 const gradebook = computed(() =>
     props.tree ? createGradebook(props.tree, props.grades) : null,
@@ -124,7 +123,7 @@ const currentSemester = computed(() => lastGradedSemester(props.grades));
                 description="Voici où en sont les apprentis que vous suivez."
             >
                 <!-- L'ajout se fait depuis la liste, qui a la fenêtre de choix. -->
-                <template v-if="canAssign && apprentices.length > 0" #actions>
+                <template v-if="can.assignSelf && apprentices.length > 0" #actions>
                     <Button as-child variant="outline">
                         <Link :href="apprentisdashboard()">
                             <UserPlusIcon aria-hidden="true" />

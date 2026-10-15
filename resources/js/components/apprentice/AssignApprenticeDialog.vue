@@ -15,22 +15,12 @@ import {
 } from '@/components/ui/dialog';
 import { getInitials } from '@/composables/useInitials';
 import apprentices from '@/routes/apprentices';
-import type { AssignableApprentice, AssignSelfAs } from '@/types/apprentice';
+import type { AssignableApprentice } from '@/types/apprentice';
 
 const props = defineProps<{
     /** Apprentis sans coach. */
     assignable: AssignableApprentice[];
-    /** Rôle que l'utilisateur prend auprès de l'apprenti·e ajouté·e. */
-    as: AssignSelfAs;
 }>();
-
-const TEXTS = {
-    coach: {
-        description:
-            "Apprentis qui n'ont pas encore de coach. En l'ajoutant, vous devenez son coach.",
-        empty: 'Tous les apprentis ont déjà un coach.',
-    },
-} as const;
 
 const open = defineModel<boolean>('open', { required: true });
 
@@ -66,7 +56,8 @@ function assign(apprentice: AssignableApprentice): void {
             <DialogHeader>
                 <DialogTitle>Ajouter un apprenti</DialogTitle>
                 <DialogDescription>
-                    {{ TEXTS[as].description }}
+                    Apprentis qui n'ont pas encore de coach. En l'ajoutant, vous
+                    devenez son coach.
                 </DialogDescription>
             </DialogHeader>
 
@@ -110,7 +101,7 @@ function assign(apprentice: AssignableApprentice): void {
             <p v-else class="text-muted-foreground py-6 text-center text-sm">
                 {{
                     assignable.length === 0
-                        ? TEXTS[as].empty
+                        ? 'Tous les apprentis ont déjà un coach.'
                         : 'Aucun apprenti ne correspond à la recherche.'
                 }}
             </p>

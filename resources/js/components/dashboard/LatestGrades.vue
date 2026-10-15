@@ -11,6 +11,7 @@ import {
     CardTitle,
 } from '@/components/ui/card';
 import { averageStatus, TONES } from '@/lib/apprentice';
+import { formatDate } from '@/lib/date';
 import apprentices from '@/routes/apprentices';
 import type { SupervisedGrade } from '@/types/apprentice';
 
@@ -51,7 +52,7 @@ defineProps<{ grades: SupervisedGrade[] }>();
                                 {{ grade.apprentice }}
                             </p>
                             <p class="text-muted-foreground truncate text-xs">
-                                {{ grade.title }} · {{ grade.date }}
+                                {{ grade.title }} · {{ formatDate(grade.date) }}
                             </p>
                         </div>
                         <Badge

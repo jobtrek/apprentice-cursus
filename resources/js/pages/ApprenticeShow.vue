@@ -22,12 +22,8 @@ import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useNavigation } from '@/composables/useNavigation';
-import {
-    averageStatus,
-    relativeDate,
-    situationOf,
-    yearLabel,
-} from '@/lib/apprentice';
+import { averageStatus, situationOf, yearLabel } from '@/lib/apprentice';
+import { formatDate, relativeDate } from '@/lib/date';
 import { apprentisdashboard } from '@/routes';
 import apprentices from '@/routes/apprentices';
 import type { Apprentice, ApprenticeStats } from '@/types/apprentice';
@@ -180,7 +176,11 @@ function selectTab(tab: string | number): void {
                     </dt>
                     <dd
                         class="text-sm font-medium first-letter:uppercase"
-                        :title="stats.last_grade_date ?? undefined"
+                        :title="
+                            stats.last_grade_date
+                                ? formatDate(stats.last_grade_date)
+                                : undefined
+                        "
                     >
                         {{
                             stats.last_grade_date

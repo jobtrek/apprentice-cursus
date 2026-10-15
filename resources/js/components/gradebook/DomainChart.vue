@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue';
-import { fmt, fmtWeight, type Gradebook, PASS, plural } from '@/lib/gradebook';
+import { fmt, fmtWeight, type Gradebook, plural } from '@/lib/gradebook';
+import { PASSING_GRADE } from '@/lib/grade-scale';
 import ChartBody from './ChartBody.vue';
 import ChartCard from './ChartCard.vue';
 
@@ -79,7 +80,7 @@ function rows(width: number) {
                         height="10"
                         rx="4"
                         :class="
-                            d.value < PASS
+                            d.value < PASSING_GRADE
                                 ? 'c-bar c-bar--fail c-grow-x'
                                 : 'c-bar c-grow-x'
                         "
@@ -126,8 +127,8 @@ function rows(width: number) {
                     />
                 </g>
                 <line
-                    :x1="g.x(PASS)"
-                    :x2="g.x(PASS)"
+                    :x1="g.x(PASSING_GRADE)"
+                    :x2="g.x(PASSING_GRADE)"
                     y1="18"
                     :y2="g.height - 18"
                     class="c-threshold"

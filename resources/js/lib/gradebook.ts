@@ -1,3 +1,4 @@
+import { type GradeLevel, gradeLevel } from '@/lib/grade-scale';
 import type { Grade } from '@/types/grade';
 
 /**
@@ -22,9 +23,6 @@ export interface GradeTree {
     nodes: Record<number, TreeNode>;
 }
 
-/** Note minimale de réussite. */
-export const PASS = 4;
-export const GRADE_MAX = 6;
 /** Semestres de la formation la plus longue (semestre 1–8 déduit de la date, voir `App\Support\Gradebook\Semester`). */
 export const SEMESTERS = 8;
 
@@ -51,9 +49,6 @@ export const fmtWeight = (weight: number): string => {
 export const shortName = (name: string): string =>
     /\(([^)]+)\)\s*$/.exec(name)?.[1] ?? name;
 
-/** `d.m.Y` → valeur triable `Ymd`. */
-const sortKey = (date: string): string => date.split('.').reverse().join('');
-
 /**
  * Semestre courant, faute de date de début d'apprentissage en base : le
  * dernier semestre noté (1 sans note).
@@ -62,31 +57,17 @@ export const lastGradedSemester = (grades: Grade[]): number =>
     Math.min(SEMESTERS, Math.max(1, ...grades.map((grade) => grade.semester)));
 
 export const byDateDesc = (a: Grade, b: Grade): number =>
-    sortKey(b.date).localeCompare(sortKey(a.date)) || b.id - a.id;
+    b.date.localeCompare(a.date) || b.id - a.id;
 
-export type Status = 'good' | 'warn' | 'bad';
+/** Libellé de `StatusChip` : Validé (≥ 4.5), Suffisant (≥ 4), À risque. */
+export const STATUS_LABELS: Record<GradeLevel, string> = {
+    good: 'Validé',
+    warn: 'Suffisant',
+    bad: 'À risque',
+};
 
-/** Validé (≥ 4.5), Suffisant (≥ 4), À risque. */
-export function status(value: number): [Status, string] {
-    const ratio = value / GRADE_MAX;
-
-    if (ratio >= 0.75) {
-        return ['good', 'Validé'];
-    }
-
-    if (ratio >= PASS / GRADE_MAX) {
-        return ['warn', 'Suffisant'];
-    }
-
-    return ['bad', 'À risque'];
-}
-
-/**
- * Classe de couleur d'une note (`is-good`, `is-warn`, `is-bad`) : mêmes seuils
- * que `status()` et que les teintes du profil, pour qu'une note ait la même
- * couleur sur toutes les pages.
- */
-export const gradeTone = (value: number): string => `is-${status(value)[0]}`;
+/** Classe de couleur d'une note (`is-good`, `is-warn`, `is-bad`). */
+export const gradeTone = (value: number): string => `is-${gradeLevel(value)}`;
 
 const roundTo = (value: number, step: number | null): number =>
     step ? Math.round(value / step) * step : value;
