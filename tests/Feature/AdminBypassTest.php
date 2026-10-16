@@ -5,6 +5,7 @@ use App\Enums\Permission;
 use App\Enums\UserRole;
 use App\Models\Grade;
 use App\Models\User;
+use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Inertia\Testing\AssertableInertia as Assert;
 use Spatie\Permission\Models\Role;
 
@@ -36,26 +37,43 @@ describe('in local', function () {
         $apprentice = makeApprentice();
         $grade = makeGrade($apprentice);
 
-        foreach (adminRoutes() as [$name, $params]) {
+        foreach (array_diff_key(adminRoutes(), array_flip(['grades.dashboard', 'portfolio.index'])) as [$name, $params]) {
             $this->actingAs($admin)->get(route($name, $params($apprentice, $grade)))
                 ->assertOk();
         }
     });
 
-    test('an admin can do everything and sees every Inertia flag', function () {
+    test('an admin can do everything but own grades or a portfolio, and sees the matching Inertia flags', function () {
         $admin = User::factory()->admin()->create();
+        $ownerOnly = [Permission::GradesCreate, Permission::GradesViewOwn, Permission::PortfolioManageOwn];
 
         foreach (Permission::cases() as $permission) {
-            expect($admin->can($permission->value))->toBeTrue();
+            expect($admin->can($permission->value))->toBe(! in_array($permission, $ownerOnly, true));
         }
 
         $this->actingAs($admin)->get(route('apprentisdashboard'))
             ->assertInertia(fn (Assert $page) => $page
-                ->where('auth.can.createGrade', true)
-                ->where('auth.can.viewOwnGrades', true)
+                ->where('auth.can.createGrade', false)
+                ->where('auth.can.viewOwnGrades', false)
                 ->where('auth.can.viewSupervisedGrades', true)
-                ->where('auth.can.managePortfolio', true)
+                ->where('auth.can.managePortfolio', false)
                 ->where('auth.can.viewApprentices', true));
+    });
+
+    test('an admin is blocked from the gradebook, the portfolio and editing apprentice data', function () {
+        $admin = User::factory()->admin()->create();
+        $grade = makeGrade(makeApprentice());
+        // CSRF is enforced once the environment is local.
+        $this->withoutMiddleware(PreventRequestForgery::class);
+
+        $this->actingAs($admin)->get(route('grades.dashboard'))->assertForbidden();
+        $this->actingAs($admin)->get(route('portfolio.index'))->assertForbidden();
+        $this->actingAs($admin)->post(route('grades.store'))->assertForbidden();
+        $this->actingAs($admin)->delete(route('grades.destroy', $grade))->assertForbidden();
+        $this->actingAs($admin)->post(route('portfolio.projects.store'))->assertForbidden();
+
+        expect($admin->can('update', $grade))->toBeFalse()
+            ->and($admin->can('create', Grade::class))->toBeFalse();
     });
 
     test('an admin supervises every apprentice but not itself or non-apprentices', function () {

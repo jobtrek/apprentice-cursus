@@ -2,6 +2,9 @@
 
 namespace App\Providers;
 
+use App\Enums\Permission;
+use App\Models\Grade;
+use App\Models\Project;
 use App\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Cache\RateLimiting\Limit;
@@ -49,8 +52,23 @@ class AppServiceProvider extends ServiceProvider
         // call time inside isLocalAdmin(), so outside local the callback always
         // returns null and the admin role grants nothing. Registered unconditionally
         // so tests can switch the environment after boot. Typed as User so the Gate
-        // skips it for guests.
-        Gate::before(fn (User $user): ?bool => $user->isLocalAdmin() ? true : null);
+        // skips it for guests. The admin has no grades or portfolio of its own, so the
+        // owner-only abilities stay denied: no gradebook, no portfolio, no editing an
+        // apprentice's grades or projects.
+        Gate::before(function (User $user, string $ability, array $arguments): ?bool {
+            if (! $user->isLocalAdmin()) {
+                return null;
+            }
+
+            $ownerOnly = in_array($ability, [
+                Permission::GradesCreate->value,
+                Permission::GradesViewOwn->value,
+                Permission::PortfolioManageOwn->value,
+            ], true) || (in_array($ability, ['create', 'update', 'delete'], true)
+                && (is_a($arguments[0] ?? null, Grade::class, true) || is_a($arguments[0] ?? null, Project::class, true)));
+
+            return ! $ownerOnly;
+        });
 
         Event::listen(function (SocialiteWasCalled $event) {
             $event->extendSocialite(
