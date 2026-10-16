@@ -242,15 +242,16 @@ defineExpose({ form, groups, branches, submit: onSubmit });
             </div>
 
             <Field :data-invalid="Boolean(form.errors.file)">
-                <FieldLabel>Justificatif</FieldLabel>
-                <SwitchButtonLayout
-                    v-if="!withoutFile"
-                    id="is-oral"
-                    class="mb-2"
-                    label="Épreuve orale"
-                    :model-value="form.is_oral"
-                    @update:model-value="switchToOral"
-                />
+                <div class="flex h-5 items-center justify-between">
+                    <FieldLabel>Justificatif</FieldLabel>
+                    <SwitchButtonLayout
+                        v-if="!withoutFile"
+                        id="is-oral"
+                        label="Épreuve orale"
+                        :model-value="form.is_oral"
+                        @update:model-value="switchToOral"
+                    />
+                </div>
 
                 <UploadZoneLayout
                     v-if="withoutFile || form.is_oral"
