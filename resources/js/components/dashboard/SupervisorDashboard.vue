@@ -72,6 +72,9 @@ const stale = computed(() =>
     ),
 );
 
+/** Le reste est sur la page Apprentis, pour garder la carte courte. */
+const STALE_SHOWN = 5;
+
 const describe = ({ track, stats }: ApprenticeListItem): string =>
     [
         track,
@@ -185,10 +188,21 @@ const describe = ({ track, stats }: ApprenticeListItem): string =>
                             Aucune note depuis {{ STALE_AFTER_DAYS }} jours, ou
                             aucune note saisie : pensez à leur rappeler.
                         </CardDescription>
+                        <CardAction v-if="stale.length > STALE_SHOWN">
+                            <Button as-child variant="ghost" size="sm">
+                                <Link :href="apprentisdashboard()">
+                                    Tous
+                                    <ChevronRightIcon aria-hidden="true" />
+                                </Link>
+                            </Button>
+                        </CardAction>
                     </CardHeader>
                     <CardContent>
                         <ul v-if="stale.length" class="divide-y">
-                            <li v-for="row in stale" :key="row.id">
+                            <li
+                                v-for="row in stale.slice(0, STALE_SHOWN)"
+                                :key="row.id"
+                            >
                                 <Link
                                     :href="apprenticesRoutes.show(row.id)"
                                     class="hover:bg-muted/50 focus-visible:ring-ring -mx-2 flex items-center gap-3 rounded-md px-2 py-2.5 transition-colors focus-visible:ring-[3px] focus-visible:outline-none"
@@ -209,7 +223,17 @@ const describe = ({ track, stats }: ApprenticeListItem): string =>
                                 </Link>
                             </li>
                         </ul>
-                        <p v-else class="text-muted-foreground text-sm">
+                        <p
+                            v-if="stale.length > STALE_SHOWN"
+                            class="text-muted-foreground pt-3 text-xs"
+                        >
+                            Et {{ stale.length - STALE_SHOWN }} autres sur la
+                            page Apprentis.
+                        </p>
+                        <p
+                            v-else-if="!stale.length"
+                            class="text-muted-foreground text-sm"
+                        >
                             Tous vos apprentis ont une note récente.
                         </p>
                     </CardContent>

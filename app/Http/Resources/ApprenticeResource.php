@@ -22,6 +22,14 @@ class ApprenticeResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
+        // Trainers follow the whole plan; its main trainers, if configured, stand for it.
+        $trainers = $this->formationPlan === null ? collect() : $this->formationPlan->trainers;
+        $main = $trainers->filter(fn (User $trainer) => in_array(
+            strtolower($trainer->email),
+            (array) config('services.azure.main_trainers'),
+            true,
+        ));
+
         return [
             'id' => $this->id,
             'name' => $this->name,
@@ -31,8 +39,7 @@ class ApprenticeResource extends JsonResource
             'isActive' => $this->is_active,
             'isMp' => $this->formationPlan?->isMp() ?? false,
             'coach' => $this->coach?->name,
-            // Trainers follow the whole plan: every trainer of the apprentice's plan.
-            'trainer' => $this->formationPlan?->trainers->pluck('name')->sort()->implode(', ') ?: null,
+            'trainer' => ($main->isEmpty() ? $trainers : $main)->pluck('name')->sort()->implode(', ') ?: null,
             // Lets the local admin's select show the current coach.
             'coachId' => $this->coach_id,
             'canView' => $request->user()?->can('view', $this->resource) ?? false,
