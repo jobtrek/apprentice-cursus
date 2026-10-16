@@ -2,7 +2,11 @@
 # The same image runs the web app, the queue worker and the scheduler (compose.prod.yaml).
 FROM dunglas/frankenphp:1.13-php8.5 AS base
 
-RUN install-php-extensions pdo_pgsql intl zip pcntl opcache \
+# imagick + ghostscript: OCR renders uploaded PDF pages (GradeController::readScan).
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends ghostscript \
+    && rm -rf /var/lib/apt/lists/* \
+    && install-php-extensions pdo_pgsql intl zip pcntl opcache imagick \
     && mv "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini"
 
 WORKDIR /app
@@ -32,7 +36,8 @@ FROM base
 ENV SERVER_NAME=:8080 \
     APP_ENV=production \
     APP_DEBUG=false \
-    LOG_CHANNEL=stderr
+    LOG_CHANNEL=stderr \
+    XDG_CACHE_HOME=/tmp/cache
 
 COPY --from=build --chown=www-data:www-data /app /app
 

@@ -12,12 +12,7 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        $this->call([
-            FormationPlanSeeder::class,
-            RolesAndPermissionsSeeder::class,
-            SkillSeeder::class,
-            AverageNodeSeeder::class,
-        ]);
+        $this->call(ReferenceDataSeeder::class);
 
         if (! app()->environment('local')) {
             return;

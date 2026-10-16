@@ -14,7 +14,7 @@ x-app: &app
 services:
     app:
         <<: *app
-        command: sh -c "php artisan migrate --force && php artisan optimize && exec frankenphp run --config /etc/frankenphp/Caddyfile"
+        command: sh -c "php artisan migrate --force && php artisan db:seed --class=ReferenceDataSeeder --force && php artisan optimize && exec frankenphp run --config /etc/frankenphp/Caddyfile"
         ports:
             - '${APP_PORT:-8080}:8080'
 

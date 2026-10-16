@@ -16,9 +16,6 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        // Prod runs behind a TLS reverse proxy; the app port is never exposed directly.
-        $middleware->trustProxies(at: '*');
-
         $middleware->encryptCookies(except: ['appearance']);
 
         $middleware->web(append: [
