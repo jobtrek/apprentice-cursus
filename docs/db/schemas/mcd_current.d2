@@ -1,113 +1,14 @@
+direction: right
 vars: {
   d2-config: {
-    layout-engine: elk
-  }
-}
-
-direction: right
-
-Grades: {
-  average_nodes: {
-    shape: sql_table
-    id: bigint {constraint: primary_key}
-    parent_id: bigint {constraint: foreign_key}
-    name: varchar
-    rounding_step: "decimal(2,1)"
-    weight: "decimal(3, 2)"
-    child_id
-  }
-
-  grades: {
-    shape: sql_table
-    id: bigint {constraint: primary_key}
-    user_id: bigint {constraint: foreign_key}
-    domain_id: bigint {constraint: foreign_key}
-    value: "decimal(2,1)"
-    test_date: date
-    file_path: varchar
-    notified_at: timestamp
-    created_at: timestamp
-    updated_at: timestamp
-  }
-
-  average_nodes -> average_nodes: parent_node {
-    source-arrowhead: {shape: cf-one-required}
-    target-arrowhead: {shape: cf-one-required}
-  }
-
-  average_nodes -> average_nodes: child_node {
-    source-arrowhead: {shape: cf-one-required}
-    target-arrowhead: {shape: cf-one-required}
-  }
-
-  average_nodes -> grades: belong to {
-    source-arrowhead: {shape: cf-one-required}
-    target-arrowhead: {shape: cf-one-required}
-  }
-}
-
-Projects: {
-  projects: {
-    shape: sql_table
-    id: bigint {constraint: primary_key}
-    user_id: bigint {constraint: foreign_key}
-    title: varchar
-    organization: varchar
-    description: text
-    responsibilities: varchar
-    technologies: varchar
-    repository_url: varchar
-    demo_url: varchar
-    date_start: date
-    date_end: date
-  }
-
-  project_screenshots: {
-    shape: sql_table
-    id: bigint {constraint: primary_key}
-    project_id: bigint {constraint: foreign_key}
-    path: varchar
-  }
-
-  skills: {
-    shape: sql_table
-    id: bigint {constraint: primary_key}
-    name: varchar {constraint: unique}
-  }
-
-  project_skill: {
-    shape: sql_table
-    project_id: bigint {constraint: [primary_key; foreign_key]}
-    skill_id: bigint {constraint: [primary_key; foreign_key]}
-  }
-
-  projects -> project_screenshots: screenshots {
-    source-arrowhead: {shape: cf-one-required}
-    target-arrowhead: {shape: cf-many}
-  }
-
-  projects -> project_skill: projects {
-    source-arrowhead: {shape: cf-one-required}
-    target-arrowhead: {shape: cf-many}
-  }
-
-  skills -> project_skill: skills {
-    source-arrowhead: {shape: cf-one-required}
-    target-arrowhead: {shape: cf-many}
+    layout-engine: tala
   }
 }
 
 formation_plans: {
   shape: sql_table
   id: bigint {constraint: primary_key}
-  root_domain_id: bigint {constraint: [foreign_key; unique]}
   name: varchar
-}
-
-users_formation_plans: {
-  shape: sql_table
-  user_id: bigint {constraint: foreign_key}
-  formation_plan_id: bigint {constraint: foreign_key}
 }
 
 users: {
@@ -115,7 +16,7 @@ users: {
   id: bigint {constraint: primary_key}
   azure_id: varchar {constraint: unique}
   tenant_id: varchar
-  formation_plan_id: bigint {constraint: "FK, nullable"}
+  formation_plan_id: bigint {constraint: [foreign_key; nullable]}
   name: varchar
   email: varchar {constraint: unique}
   email_verified_at: timestamp
@@ -125,90 +26,65 @@ users: {
   coach_id: bigint {constraint: foreign_key}
 }
 
-comments: {
+formation_plans -> users: a plan that is trained {
+  source-arrowhead: {shape: cf-one}
+  target-arrowhead: {shape: cf-many}
+}
+
+average_node_formation_plan: {
+  shape: sql_table
+  formation_plan_id: bigint {constraint: [primary_key; foreign_key]} # Reference the formation plan that uses the node.
+  average_node_id: bigint {constraint: [primary_key; foreign_key]} # Reference an average node that is part of that plan. Composite primary key: the same pair can only exist once.
+}
+
+formation_plans -> average_node_formation_plan: a plan that uses nodes {
+  source-arrowhead: {shape: cf-one-required}
+  target-arrowhead: {shape: cf-many}
+}
+
+grades.average_nodes -> average_node_formation_plan: plan root nodes {
+  source-arrowhead: {shape: cf-one-required}
+  target-arrowhead: {shape: cf-many}
+}
+
+ comments: {
   shape: sql_table
   id: bigint {constraint: primary_key}
   author_id: bigint {constraint: foreign_key}
-  project_id: bigint {constraint: "FK, nullable"}
-  grade_id: bigint {constraint: "FK, nullable"}
+  project_id: bigint {constraint: [foreign_key; nullable]}
+  grade_id: bigint {constraint: [foreign_key; nullable]}
   body: text
   created_at: timestamp
   updated_at: timestamp
 }
 
-# Spatie laravel-permission tables: not drawn in the SoT SVG, kept here because they exist in the DB.
-permissions: {
-  label: "permissions (Spatie)"
-  shape: sql_table
-  id: bigint {constraint: primary_key}
-  name: varchar
-  guard_name: varchar
-  created_at: timestamp
-  updated_at: timestamp
-  # UNIQUE (name, guard_name)
-}
 
-roles: {
-  label: "roles (Spatie)"
-  shape: sql_table
-  id: bigint {constraint: primary_key}
-  name: varchar
-  guard_name: varchar
-  created_at: timestamp
-  updated_at: timestamp
-  # UNIQUE (name, guard_name)
-}
 
-model_has_permissions: {
-  label: "model_has_permissions (Spatie)"
-  shape: sql_table
-  permission_id: bigint {constraint: [primary_key; foreign_key]}
-  model_type: varchar {constraint: primary_key}
-  model_id: bigint {constraint: primary_key}
-  # INDEX (model_id, model_type), cascadeOnDelete sur permission_id
-}
-
-model_has_roles: {
-  label: "model_has_roles (Spatie)"
-  shape: sql_table
-  role_id: bigint {constraint: [primary_key; foreign_key]}
-  model_type: varchar {constraint: primary_key}
-  model_id: bigint {constraint: primary_key}
-  # INDEX (model_id, model_type), cascadeOnDelete sur role_id
-}
-
-role_has_permissions: {
-  label: "role_has_permissions (Spatie)"
-  shape: sql_table
-  permission_id: bigint {constraint: [primary_key; foreign_key]}
-  role_id: bigint {constraint: [primary_key; foreign_key]}
-  # cascadeOnDelete sur les deux FK
-}
-
-# ── Relations ─────────────────────────────────
-formation_plans -> Grades.average_nodes: root {
+users -> grades.grades: user-grade {
   source-arrowhead: {shape: cf-one-required}
+  target-arrowhead: {shape: cf-many}
+}
+
+users.coach_id -> users.id: coach {
+  source-arrowhead: {shape: cf-many}
   target-arrowhead: {shape: cf-one}
 }
 
-formation_plans -> users_formation_plans: a plan that is trained {
+projects: {
+  label: Projects
+
+  ...@mcd_projects
+}
+
+users -> projects.projects: apprentice {
   source-arrowhead: {shape: cf-one-required}
   target-arrowhead: {shape: cf-many}
 }
 
-users -> users_formation_plans: a trainer that train a plan {
-  source-arrowhead: {shape: cf-one-required}
-  target-arrowhead: {shape: cf-many}
-}
+grades: {
+  label: Grades
 
-users -> users: coach {
-  source-arrowhead: {shape: cf-one}
-  target-arrowhead: {shape: cf-many}
-}
-
-users -> Grades.grades: user-grade {
-  source-arrowhead: {shape: cf-one-required}
-  target-arrowhead: {shape: cf-many}
+  ...@mcd_grades
 }
 
 users -> comments: author {
@@ -216,51 +92,32 @@ users -> comments: author {
   target-arrowhead: {shape: cf-many}
 }
 
-users -> Projects.projects: apprentice {
+grades.grades -> comments: commentable {
   source-arrowhead: {shape: cf-one-required}
   target-arrowhead: {shape: cf-many}
 }
 
-Grades.grades -> comments: commentable {
+projects.projects -> comments: commentable {
   source-arrowhead: {shape: cf-one-required}
   target-arrowhead: {shape: cf-many}
 }
 
-Projects.projects -> comments: commentable {
-  source-arrowhead: {shape: cf-one-required}
-  target-arrowhead: {shape: cf-many}
+"""
+spatie: {
+  label: Spatie
+
+  ...@mcd_roles
 }
 
-permissions -> model_has_permissions: permission {
-  source-arrowhead: {shape: cf-one-required}
-  target-arrowhead: {shape: cf-many}
-}
-
-roles -> model_has_roles: role {
-  source-arrowhead: {shape: cf-one-required}
-  target-arrowhead: {shape: cf-many}
-}
-
-permissions -> role_has_permissions: permission {
-  source-arrowhead: {shape: cf-one-required}
-  target-arrowhead: {shape: cf-many}
-}
-
-roles -> role_has_permissions: role {
-  source-arrowhead: {shape: cf-one-required}
-  target-arrowhead: {shape: cf-many}
-}
-
-# Relation polymorphe : model_type = App\Models\User, model_id = users.id
-# Aucune FK en base, donc ligne en pointillés
-users -> model_has_roles: model {
+users -> spatie.model_has_roles: model {
   style.stroke-dash: 3
   source-arrowhead: {shape: cf-one-required}
   target-arrowhead: {shape: cf-many}
 }
 
-users -> model_has_permissions: model {
+users -> spatie.model_has_permissions: model {
   style.stroke-dash: 3
   source-arrowhead: {shape: cf-one-required}
   target-arrowhead: {shape: cf-many}
 }
+"""
