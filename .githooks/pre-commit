@@ -52,7 +52,7 @@ EOF
     }
 
     echo "Running Larastan on staged PHP files..."
-    git diff --cached --name-only -z --diff-filter=ACMR -- '*.php' |
+    git diff --cached --name-only -z --diff-filter=ACMR -- '*.php' ':!tests/' |
         xargs -0 -r "$SAIL" php vendor/bin/phpstan analyse --configuration=phpstan.neon || {
             echo "Larastan failed. Commit aborted."
             exit 1

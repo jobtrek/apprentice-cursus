@@ -7,20 +7,20 @@ import {
 } from '@lucide/vue';
 import { computed } from 'vue';
 import IconTile from '@/components/IconTile.vue';
-import { fmt, type Gradebook, shortName } from '@/lib/gradebook';
+import { fmt, type Averages, shortName } from '@/lib/gradebook';
 import { PASSING_GRADE } from '@/lib/grade-scale';
 import type { Grade } from '@/types/grade';
 import StatusChip from './StatusChip.vue';
 
-const props = defineProps<{ gradebook: Gradebook; grades: Grade[] }>();
+const props = defineProps<{ averages: Averages; grades: Grade[] }>();
 
-const final = computed(() => props.gradebook.nodeValue(props.gradebook.root));
+const final = computed(() => props.averages.final);
 
 /** Domaines pas encore notés : la note finale est provisoire sans eux. */
 const missing = computed(() =>
-    props.gradebook.domains
-        .filter((id) => props.gradebook.nodeValue(id) === null)
-        .map((id) => shortName(props.gradebook.name(id))),
+    props.averages.domains
+        .filter((domain) => domain.average === null)
+        .map((domain) => shortName(domain.name)),
 );
 
 /** Dernier semestre noté, comparé au semestre noté précédent. */
@@ -32,13 +32,10 @@ const semesters = computed(() =>
 const current = computed(() => semesters.value.at(-1) ?? null);
 const previous = computed(() => semesters.value.at(-2) ?? null);
 
+const semesterOf = (semester: number | null) =>
+    props.averages.semesters.find((entry) => entry.semester === semester);
 const semesterValue = (semester: number | null) =>
-    semester === null
-        ? null
-        : props.gradebook.nodeValue(
-              props.gradebook.root,
-              props.gradebook.inSemester(semester),
-          );
+    semesterOf(semester)?.average ?? null;
 
 const currentValue = computed(() => semesterValue(current.value));
 const delta = computed(() => {
@@ -49,11 +46,7 @@ const delta = computed(() => {
         : currentValue.value - prev;
 });
 
-const inCurrent = computed(() =>
-    current.value === null
-        ? 0
-        : props.gradebook.inSemester(current.value).length,
-);
+const inCurrent = computed(() => semesterOf(current.value)?.count ?? 0);
 const failed = computed(
     () => props.grades.filter((grade) => grade.value < PASSING_GRADE).length,
 );
@@ -78,7 +71,7 @@ const failed = computed(
                 <template v-if="final !== null">
                     <StatusChip :value="final" />
                     <!-- Provisoire tant qu'une évaluation comptée n'a pas de note. -->
-                    <template v-if="!gradebook.isComplete()">
+                    <template v-if="!averages.complete">
                         provisoire{{
                             missing.length ? `, sans ${missing.join(', ')}` : ''
                         }}

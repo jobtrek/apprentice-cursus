@@ -3,9 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Enums\Permission;
-use App\Http\Resources\GradeResource;
 use App\Support\ApprenticeList;
-use App\Support\Gradebook\GradebookTree;
+use App\Support\Gradebook\Gradebook;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -21,19 +20,8 @@ class HomeController extends Controller
         $assignSelf = $user->canSelfAssign();
 
         return Inertia::render('Home', [
-            // Every grade: the apprentice dashboard derives its statistics and charts from them.
-            'grades' => $ownGrades
-                ? GradeResource::collection(
-                    $user->grades()
-                        ->withSemester()
-                        ->with(GradeResource::RELATIONS)
-                        ->withCount('comments')
-                        ->orderBy('test_date')
-                        ->orderBy('id')
-                        ->get(),
-                )->resolve()
-                : [],
-            'tree' => $ownGrades ? GradebookTree::for($user) : null,
+            // Every grade: the apprentice dashboard lists them and charts the averages.
+            ...($ownGrades ? Gradebook::for($user) : Gradebook::EMPTY),
             'profile' => $ownGrades ? [
                 'track' => $user->formationPlan?->shortName(),
                 'variant' => $user->formationPlan?->isMp() ? 'mp' : 'standard',

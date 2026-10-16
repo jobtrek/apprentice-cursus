@@ -31,3 +31,5 @@ yarn-error.log
 /.zed
 .vite-hooks/_
 docs/ocr_specs/pdf_data
+# Office lock files
+~$*

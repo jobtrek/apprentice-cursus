@@ -40,7 +40,7 @@ defineProps<{ grades: SupervisedGrade[] }>();
                                 grade: grade.id,
                             })
                         "
-                        class="group/grade hover:bg-muted/50 focus-visible:ring-ring/50 -mx-2 flex items-center gap-3 rounded-md px-2 py-2.5 transition-colors focus-visible:ring-[3px] focus-visible:outline-none"
+                        class="group/grade hover:bg-muted/50 focus-visible:ring-ring -mx-2 flex items-center gap-3 rounded-md px-2 py-2.5 transition-colors focus-visible:ring-[3px] focus-visible:outline-none"
                     >
                         <ApprenticeAvatar
                             :name="grade.apprentice"

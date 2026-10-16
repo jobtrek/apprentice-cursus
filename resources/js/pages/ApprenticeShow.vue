@@ -27,7 +27,7 @@ import { formatDate, relativeDate } from '@/lib/date';
 import { apprentisdashboard } from '@/routes';
 import apprentices from '@/routes/apprentices';
 import type { Apprentice, ApprenticeStats } from '@/types/apprentice';
-import { createGradebook, fmt, type GradeTree } from '@/lib/gradebook';
+import { fmt, type Averages } from '@/lib/gradebook';
 import type { Grade } from '@/types/grade';
 import type { SupervisedPortfolio } from '@/types/portfolio';
 
@@ -39,18 +39,13 @@ const props = defineProps<{
     grades: Grade[];
     /** Null quand l'utilisateur n'a pas le droit de voir le portfolio. */
     portfolio: SupervisedPortfolio | null;
-    /** Arbre de notes de l'apprenti·e ; null sans filière attribuée. */
-    tree: GradeTree | null;
+    /** Moyennes pondérées du CFC, comme sur le carnet de l'apprenti·e ; null sans filière attribuée. */
+    averages: Averages | null;
 }>();
-
-/** Moyennes pondérées du CFC, comme sur le carnet de l'apprenti·e. */
-const gradebook = computed(() =>
-    props.tree ? createGradebook(props.tree, props.grades) : null,
-);
 
 /** Note finale CFC (racine de l'arbre). */
 const finalAverage = computed(() => {
-    const value = gradebook.value?.nodeValue(gradebook.value.root) ?? null;
+    const value = props.averages?.final ?? null;
 
     return value === null
         ? null
@@ -253,14 +248,13 @@ function selectTab(tab: string | number): void {
 
             <!-- Parcours et domaines, puis la liste filtrable des notes. -->
             <TabsContent value="grades" class="flex flex-col gap-6">
-                <template v-if="gradebook">
+                <template v-if="averages">
                     <ApprenticeOverview
                         :apprentice="apprentice"
-                        :gradebook="gradebook"
-                        :grades="grades"
+                        :averages="averages"
                     />
                     <GradeList
-                        :gradebook="gradebook"
+                        :averages="averages"
                         :grades="grades"
                         :grade-href="gradeHref"
                     />

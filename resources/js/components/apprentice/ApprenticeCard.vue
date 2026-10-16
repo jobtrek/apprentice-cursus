@@ -34,7 +34,7 @@ const situation = computed(() => situationOf(props.apprentice));
         (lien étiré) : toute la carte ouvre le profil.
     -->
     <article
-        class="bg-card focus-within:ring-ring/50 relative flex min-w-0 flex-col gap-4 rounded-xl border p-4 shadow-xs transition-all focus-within:ring-[3px] hover:-translate-y-0.5 hover:shadow-md"
+        class="bg-card focus-within:ring-ring relative flex min-w-0 flex-col gap-4 rounded-xl border p-4 shadow-xs transition-all focus-within:ring-[3px] hover:-translate-y-0.5 hover:shadow-md motion-reduce:transition-none motion-reduce:hover:translate-y-0"
         :data-test="`apprentice-card-${apprentice.id}`"
     >
         <div class="flex items-start gap-3">

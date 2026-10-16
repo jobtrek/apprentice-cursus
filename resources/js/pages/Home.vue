@@ -14,11 +14,7 @@ import { PageContainer, PageHeader } from '@/components/page';
 import { Button } from '@/components/ui/button';
 import { useAddGradeDialog } from '@/composables/useAddGradeDialog';
 import { useNavigation } from '@/composables/useNavigation';
-import {
-    createGradebook,
-    type GradeTree,
-    lastGradedSemester,
-} from '@/lib/gradebook';
+import type { Averages, GradeTree } from '@/lib/gradebook';
 import { apprentisdashboard } from '@/routes';
 import gradeRoutes from '@/routes/grades';
 import type {
@@ -31,6 +27,7 @@ import type { Grade } from '@/types/grade';
 const props = defineProps<{
     grades: Grade[];
     tree: GradeTree | null;
+    averages: Averages | null;
     profile: { track: string | null; variant: 'standard' | 'mp' } | null;
     /** Coach, formateur, admin : lignes de la liste des apprentis. */
     apprentices: ApprenticeListItem[];
@@ -56,12 +53,6 @@ const firstName = computed(
 
 /** Coachs et formateurs suivent des apprentis ; les autres rôles voient leur propre parcours. */
 const isApprentice = computed(() => role.value === 'apprentice');
-
-const gradebook = computed(() =>
-    props.tree ? createGradebook(props.tree, props.grades) : null,
-);
-
-const currentSemester = computed(() => lastGradedSemester(props.grades));
 </script>
 
 <template>
@@ -81,19 +72,14 @@ const currentSemester = computed(() => lastGradedSemester(props.grades));
                 </template>
             </PageHeader>
 
-            <template v-if="gradebook">
-                <TrainingPath
-                    :gradebook="gradebook"
-                    :current-semester="currentSemester"
-                    :profile="profile"
-                    derived
-                />
+            <template v-if="averages">
+                <TrainingPath :averages="averages" :profile="profile" derived />
 
-                <StatTiles :gradebook="gradebook" :grades="grades" />
+                <StatTiles :averages="averages" :grades="grades" />
 
                 <!-- Les moyennes par semestre sont dans le parcours. -->
                 <div class="chart-grid">
-                    <DomainChart :gradebook="gradebook">
+                    <DomainChart :averages="averages">
                         <template #link>
                             <Link
                                 :href="gradeRoutes.dashboard()"

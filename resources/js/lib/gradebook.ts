@@ -1,13 +1,6 @@
 import { type GradeLevel, gradeLevel } from '@/lib/grade-scale';
 import type { Grade } from '@/types/grade';
 
-/**
- * Calcul des moyennes du carnet, comme pour le CFC : les notes sont sur les
- * feuilles de l'arbre d'évaluation, chaque nœud parent fait la moyenne pondérée
- * de ses enfants notés (poids `average_nodes.weight`), puis le
- * `rounding_step` du nœud est appliqué. Reprend la maquette apprentice-cursus-design.
- */
-
 export interface TreeNode {
     id: number;
     name: string;
@@ -17,21 +10,42 @@ export interface TreeNode {
     children: { id: number; weight: number }[];
 }
 
-/** Envoyé par `App\Support\Gradebook\GradebookTree`. */
+/** Envoyé par `App\Support\Gradebook\GradebookTree` (formulaire de note). */
 export interface GradeTree {
     root: number;
     nodes: Record<number, TreeNode>;
 }
 
-/** Semestres de la formation la plus longue (semestre 1–8 déduit de la date, voir `App\Support\Gradebook\Semester`). */
-export const SEMESTERS = 8;
+/** Domaine ou sous-groupe du carnet, avec sa moyenne pondérée CFC. */
+export interface AverageGroup {
+    id: number;
+    name: string;
+    weight: number;
+    rounding_step: number | null;
+    /** Null si rien n'est noté dessous. */
+    average: number | null;
+    /** Notes posées sur les feuilles sous ce nœud. */
+    grade_ids: number[];
+}
 
-/** L'apprentissage IT dure 4 ans, l'apprentissage EC 3 ans. */
-const SEMESTERS_BY_TRACK: Record<string, number> = { IT: 8, EC: 6 };
-
-/** Nombre de semestres de la filière ; 8 si elle est inconnue. */
-export const semestersFor = (track: string | null | undefined): number =>
-    (track && SEMESTERS_BY_TRACK[track]) || SEMESTERS;
+/**
+ * Moyennes du carnet, calculées comme pour le CFC par
+ * `App\Support\Gradebook\Averages::of()`.
+ */
+export interface Averages {
+    /** Note finale (racine) ; null sans note. */
+    final: number | null;
+    /** Toutes les évaluations comptées ont une note ; sinon la note finale est provisoire. */
+    complete: boolean;
+    /** Dernier semestre noté (1 sans note), faute de date de début en base. */
+    current_semester: number;
+    /** 8 semestres en IT, 6 en EC. */
+    semester_count: number;
+    /** Semestres 1–8 : moyenne et nombre de notes. */
+    semesters: { semester: number; average: number | null; count: number }[];
+    /** Enfants de la racine (TPI, Culture générale…) et leurs sous-groupes composites. */
+    domains: (AverageGroup & { subs: AverageGroup[] })[];
+}
 
 export const fmt = (n: number): string => n.toFixed(1);
 
@@ -49,13 +63,6 @@ export const fmtWeight = (weight: number): string => {
 export const shortName = (name: string): string =>
     /\(([^)]+)\)\s*$/.exec(name)?.[1] ?? name;
 
-/**
- * Semestre courant, faute de date de début d'apprentissage en base : le
- * dernier semestre noté (1 sans note).
- */
-export const lastGradedSemester = (grades: Grade[]): number =>
-    Math.min(SEMESTERS, Math.max(1, ...grades.map((grade) => grade.semester)));
-
 export const byDateDesc = (a: Grade, b: Grade): number =>
     b.date.localeCompare(a.date) || b.id - a.id;
 
@@ -68,131 +75,6 @@ export const STATUS_LABELS: Record<GradeLevel, string> = {
 
 /** Classe de couleur d'une note (`is-good`, `is-warn`, `is-bad`). */
 export const gradeTone = (value: number): string => `is-${gradeLevel(value)}`;
-
-const roundTo = (value: number, step: number | null): number =>
-    step ? Math.round(value / step) * step : value;
-
-export function createGradebook(tree: GradeTree, allGrades: Grade[]) {
-    const node = (id: number): TreeNode | undefined => tree.nodes[id];
-
-    /** Moyenne pondérée d'un nœud sur `grades` ; null si rien n'est noté dessous. */
-    function nodeValue(
-        id: number,
-        grades: Grade[] = allGrades,
-        round = true,
-    ): number | null {
-        const current = node(id);
-
-        if (!current) {
-            return null;
-        }
-
-        let value: number;
-
-        if (!current.aggregated) {
-            const own = grades.filter((grade) => grade.node_id === id);
-
-            if (own.length === 0) {
-                return null;
-            }
-
-            value =
-                own.reduce((sum, grade) => sum + grade.value, 0) / own.length;
-        } else {
-            let sum = 0;
-            let weights = 0;
-
-            for (const child of current.children) {
-                const childValue = nodeValue(child.id, grades, false);
-
-                if (childValue !== null) {
-                    sum += childValue * child.weight;
-                    weights += child.weight;
-                }
-            }
-
-            if (weights === 0) {
-                return null;
-            }
-
-            value = sum / weights;
-        }
-
-        return round ? roundTo(value, current.rounding_step) : value;
-    }
-
-    const leafCache = new Map<number, Set<number>>();
-
-    function leavesOf(id: number): Set<number> {
-        const cached = leafCache.get(id);
-
-        if (cached) {
-            return cached;
-        }
-
-        const current = node(id);
-        const leaves = new Set<number>(
-            !current || !current.aggregated
-                ? [id]
-                : current.children.flatMap((child) => [...leavesOf(child.id)]),
-        );
-        leafCache.set(id, leaves);
-
-        return leaves;
-    }
-
-    const gradesUnder = (id: number, grades: Grade[] = allGrades): Grade[] => {
-        const leaves = leavesOf(id);
-
-        return grades.filter((grade) => leaves.has(grade.node_id));
-    };
-
-    const weightOf = (parent: number, child: number): number =>
-        node(parent)?.children.find((entry) => entry.id === child)?.weight ?? 0;
-
-    const inSemester = (semester: number): Grade[] =>
-        allGrades.filter((grade) => grade.semester === semester);
-
-    /**
-     * Toutes les évaluations comptées sous ce nœud ont une note : chaque
-     * feuille notée, et chaque enfant de poids non nul complet. `nodeValue`
-     * ignore les enfants sans note et répartit leur poids sur les autres :
-     * tant que ce n'est pas le cas, la moyenne reste provisoire.
-     */
-    function isComplete(id: number = tree.root): boolean {
-        const current = node(id);
-
-        if (!current) {
-            return false;
-        }
-
-        if (!current.aggregated) {
-            return allGrades.some((grade) => grade.node_id === id);
-        }
-
-        return current.children
-            .filter((child) => child.weight > 0)
-            .every((child) => isComplete(child.id));
-    }
-
-    /** Domaines = enfants de la racine (TPI, Culture générale…). */
-    const domains = node(tree.root)?.children.map((child) => child.id) ?? [];
-
-    return {
-        root: tree.root,
-        domains,
-        name: (id: number) => node(id)?.name ?? '',
-        node,
-        nodeValue,
-        isComplete,
-        leavesOf,
-        gradesUnder,
-        weightOf,
-        inSemester,
-    };
-}
-
-export type Gradebook = ReturnType<typeof createGradebook>;
 
 /** Barre aux coins arrondis côté valeur (4 px) et base carrée. */
 export function barPath(

@@ -728,9 +728,13 @@
     .gb-table tbody tr:hover {
         background: color-mix(in oklab, var(--accent) 55%, transparent);
     }
-    .gb-table tbody tr:focus-visible {
+    /* Le focus est sur le lien du titre ; c'est la ligne qui l'affiche. */
+    .gb-table tbody tr:has(a:focus-visible) {
         outline: 2px solid var(--ring);
         outline-offset: -2px;
+    }
+    .gb-table tbody tr a:focus-visible {
+        outline: none;
     }
     .gb-subject {
         font-weight: 500;

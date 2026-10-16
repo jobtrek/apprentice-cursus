@@ -145,7 +145,7 @@ const describe = ({ track, stats }: ApprenticeListItem): string =>
                             <li v-for="row in atRisk" :key="row.id">
                                 <Link
                                     :href="apprenticesRoutes.show(row.id)"
-                                    class="hover:bg-muted/50 focus-visible:ring-ring/50 -mx-2 flex items-center gap-3 rounded-md px-2 py-3 transition-colors focus-visible:ring-[3px] focus-visible:outline-none"
+                                    class="hover:bg-muted/50 focus-visible:ring-ring -mx-2 flex items-center gap-3 rounded-md px-2 py-3 transition-colors focus-visible:ring-[3px] focus-visible:outline-none"
                                 >
                                     <div class="min-w-0 flex-1">
                                         <p class="truncate text-sm font-medium">
@@ -194,7 +194,7 @@ const describe = ({ track, stats }: ApprenticeListItem): string =>
                             <li v-for="row in stale" :key="row.id">
                                 <Link
                                     :href="apprenticesRoutes.show(row.id)"
-                                    class="hover:bg-muted/50 focus-visible:ring-ring/50 -mx-2 flex items-center gap-3 rounded-md px-2 py-2.5 transition-colors focus-visible:ring-[3px] focus-visible:outline-none"
+                                    class="hover:bg-muted/50 focus-visible:ring-ring -mx-2 flex items-center gap-3 rounded-md px-2 py-2.5 transition-colors focus-visible:ring-[3px] focus-visible:outline-none"
                                 >
                                     <span
                                         class="min-w-0 flex-1 truncate text-sm"

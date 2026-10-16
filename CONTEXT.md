@@ -59,3 +59,17 @@ _Avoid_: Validation, approval
 **Processing consent**:
 The checkbox an apprentice ticks to accept that their scan is sent to Google and TypeSafe. Required before every Automatic reading.
 _Avoid_: Opt-in, data collection consent
+
+## Grades
+
+**Grade tree**:
+The weighted structure of a formation plan: domains, sub-groups and the evaluations they are made of, each with its weight and rounding. The same for every apprentice on that plan; it holds no grades.
+_Avoid_: Gradebook (when meaning the structure), evaluation tree
+
+**Averages**:
+What one apprentice's grades produce when run through their Grade tree: the final average, each domain's, each semester's, and whether every evaluation is graded yet.
+_Avoid_: Gradebook (when meaning the numbers), summary
+
+**Gradebook**:
+The view of one apprentice's grades, Grade tree and Averages together. A gradebook uses a Grade tree; it is not one.
+_Avoid_: Grade tree, report card

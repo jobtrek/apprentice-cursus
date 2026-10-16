@@ -102,7 +102,7 @@ const select = (value: SituationFilter): void => {
             :aria-pressed="tile.value !== 'all' && situation === tile.value"
             :class="
                 cn(
-                    'bg-card group/tile focus-visible:ring-ring/50 flex flex-col gap-4 rounded-xl border p-4 text-left shadow-xs transition-all hover:-translate-y-0.5 hover:shadow-md focus-visible:ring-[3px] focus-visible:outline-none',
+                    'bg-card group/tile focus-visible:ring-ring flex flex-col gap-4 rounded-xl border p-4 text-left shadow-xs transition-all hover:-translate-y-0.5 hover:shadow-md focus-visible:ring-[3px] focus-visible:outline-none motion-reduce:transition-none motion-reduce:hover:translate-y-0',
                     tile.value !== 'all' &&
                         situation === tile.value &&
                         'border-primary ring-primary/15 ring-2',

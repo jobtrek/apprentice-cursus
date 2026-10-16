@@ -11,6 +11,7 @@ use App\Models\OcrScan;
 use App\Notifications\GradeAddedNotification;
 use App\Notifications\GradeDeletedNotification;
 use App\Services\Ocr\ScanReader;
+use App\Support\Gradebook\Gradebook;
 use App\Support\Gradebook\GradebookTree;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -31,20 +32,7 @@ class GradeController extends Controller
      */
     public function dashboard(Request $request): Response
     {
-        $user = $request->user()->load('formationPlan');
-
-        return Inertia::render('GradesDashboard', [
-            'grades' => GradeResource::collection(
-                $user->grades()
-                    ->withSemester()
-                    ->with(GradeResource::RELATIONS)
-                    ->withCount('comments')
-                    ->orderBy('test_date')
-                    ->orderBy('id')
-                    ->get(),
-            )->resolve(),
-            'tree' => GradebookTree::for($user),
-        ]);
+        return Inertia::render('GradesDashboard', Gradebook::for($request->user()));
     }
 
     public function store(GradeRequest $request): RedirectResponse

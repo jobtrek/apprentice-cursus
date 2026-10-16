@@ -4,14 +4,14 @@ import { ChevronDownIcon, CircleDashedIcon } from '@lucide/vue';
 import { computed, reactive } from 'vue';
 import SearchInput from '@/components/SearchInput.vue';
 import { PASSING_GRADE } from '@/lib/grade-scale';
-import { fmt, fmtWeight, type Gradebook, plural } from '@/lib/gradebook';
+import { fmt, fmtWeight, type Averages, plural } from '@/lib/gradebook';
 import type { Grade } from '@/types/grade';
 import type { RouteDefinition } from '@/wayfinder';
 import GradeTable from './GradeTable.vue';
 import Segmented from './Segmented.vue';
 
 const props = defineProps<{
-    gradebook: Gradebook;
+    averages: Averages;
     grades: Grade[];
     /** Page d'une note ; par défaut celle de l'apprenti·e connecté·e. */
     gradeHref?: (grade: Grade) => RouteDefinition<'get'>;
@@ -70,24 +70,24 @@ const matches = (grade: Grade): boolean =>
     (!query.value ||
         `${grade.title} ${grade.subject}`.toLowerCase().includes(query.value));
 
+const gradesIn = (ids: number[]): Grade[] => {
+    const set = new Set(ids);
+
+    return props.grades.filter((grade) => set.has(grade.id));
+};
+
 // Domaines sans note (souvent le TPI) en dernier.
 const groups = computed(() =>
-    props.gradebook.domains
-        .map((id) => {
-            const all = props.gradebook.gradesUnder(id);
-            const subs = (props.gradebook.node(id)?.children ?? [])
-                .filter((child) => props.gradebook.node(child.id)?.aggregated)
-                .map((child) => {
-                    const subAll = props.gradebook.gradesUnder(child.id);
-
-                    return {
-                        id: child.id,
-                        weight: child.weight,
-                        name: props.gradebook.name(child.id),
-                        average: props.gradebook.nodeValue(child.id, subAll),
-                        visible: subAll.filter(matches),
-                    };
-                });
+    props.averages.domains
+        .map((domain) => {
+            const all = gradesIn(domain.grade_ids);
+            const subs = domain.subs.map((sub) => ({
+                id: sub.id,
+                weight: sub.weight,
+                name: sub.name,
+                average: sub.average,
+                visible: gradesIn(sub.grade_ids).filter(matches),
+            }));
 
             const visible = all.filter(matches);
             const inSubs = new Set(
@@ -95,11 +95,11 @@ const groups = computed(() =>
             );
 
             return {
-                id,
-                name: props.gradebook.name(id),
+                id: domain.id,
+                name: domain.name,
                 all,
                 visible,
-                average: props.gradebook.nodeValue(id, all),
+                average: domain.average,
                 subs,
                 // Notes posées directement sur une feuille du domaine, hors sous-groupe.
                 rest: visible.filter((grade) => !inSubs.has(grade.id)),
