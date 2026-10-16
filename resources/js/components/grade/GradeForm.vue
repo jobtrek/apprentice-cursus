@@ -4,7 +4,6 @@ import {
     ChevronsUpDownIcon,
     MinusIcon,
     PlusIcon,
-    UploadIcon,
 } from '@lucide/vue';
 import { Button } from '@/components/ui/button';
 import {
@@ -41,7 +40,8 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { Switch } from '@/components/ui/switch';
+import SwitchButtonLayout from '@/components/SwitchButtonLayout.vue';
+import UploadZoneLayout from '@/components/UploadZoneLayout.vue';
 import {
     type EditedGrade,
     MONTHS,
@@ -49,6 +49,7 @@ import {
 } from '@/composables/useGradeForm';
 import { GRADE_MAX, GRADE_MIN, GRADE_STEP } from '@/constants/constants';
 import type { GradeTree } from '@/lib/gradebook';
+import { computed } from 'vue';
 
 const props = defineProps<{
     /**
@@ -58,6 +59,8 @@ const props = defineProps<{
     id: string;
     /** Arbre de la filière : ses feuilles sont les branches proposées. */
     tree: GradeTree | null;
+    /** Aucune copie de test à joindre (module professionnel). */
+    withoutFile?: boolean;
     /** Note à modifier ; absente pour un ajout. */
     edited?: EditedGrade;
 }>();
@@ -84,6 +87,12 @@ const {
     onFileChange,
     submit,
 } = useGradeForm(() => props.tree, props.edited);
+
+const noFileHint = computed(() =>
+    !props.withoutFile && props.edited?.hasFile
+        ? 'Le scan déjà déposé sera supprimé.'
+        : 'Aucun justificatif à joindre',
+);
 
 function onSubmit(): void {
     submit(() => emit('saved'));
@@ -233,61 +242,59 @@ defineExpose({ form, groups, branches, submit: onSubmit });
             </div>
 
             <Field :data-invalid="Boolean(form.errors.file)">
-                <FieldLabel>Justificatif</FieldLabel>
-                <div class="mb-2 flex items-center gap-2">
-                    <Switch
+                <div class="flex h-5 items-center justify-between">
+                    <FieldLabel>Justificatif</FieldLabel>
+                    <SwitchButtonLayout
+                        v-if="!withoutFile"
                         id="is-oral"
+                        label="Épreuve orale"
                         :model-value="form.is_oral"
                         @update:model-value="switchToOral"
                     />
-                    <FieldLabel for="is-oral" class="font-normal"
-                        >Épreuve orale</FieldLabel
-                    >
                 </div>
 
-                <FieldDescription v-if="form.is_oral">
-                    Aucun document n'est requis pour une épreuve orale.
-                    <template v-if="edited?.hasFile">
-                        Le scan déjà déposé sera supprimé.
-                    </template>
-                </FieldDescription>
+                <UploadZoneLayout
+                    v-if="withoutFile || form.is_oral"
+                    disabled
+                    :hint="noFileHint"
+                >
+                    {{
+                        withoutFile
+                            ? 'Module professionnel, pas de copie de test'
+                            : 'Épreuve orale, pas de copie de test'
+                    }}
+                </UploadZoneLayout>
 
-                <div
+                <UploadZoneLayout
                     v-else
-                    class="hover:bg-muted/50 flex flex-col items-center justify-center gap-1 rounded-md border border-dashed p-8 text-center transition-colors"
-                    :class="form.errors.file && 'border-destructive'"
+                    :invalid="Boolean(form.errors.file)"
+                    hint="PDF uniquement, 10 Mo maximum"
+                    :file-name="form.file?.name"
                     @dragover.prevent
                     @drop="handleDrop"
                 >
-                    <UploadIcon class="text-muted-foreground size-5" />
-                    <p class="text-sm">
-                        Glisser le scan du test ici, ou
-                        <button
-                            type="button"
-                            class="text-primary underline underline-offset-2"
-                            @click="fileInput?.click()"
-                        >
-                            parcourir
-                        </button>
-                    </p>
-                    <p class="text-muted-foreground text-xs">
-                        PDF uniquement, 10 Mo maximum
-                    </p>
-                    <p v-if="form.file" class="text-foreground text-xs">
-                        {{ form.file.name }}
-                    </p>
-                    <p v-else-if="keepsFile" class="text-foreground text-xs">
-                        Le scan actuel est conservé, sauf si vous en déposez un
-                        autre.
-                    </p>
-                    <input
-                        ref="fileInput"
-                        type="file"
-                        accept="application/pdf"
-                        class="hidden"
-                        @change="onFileChange"
-                    />
-                </div>
+                    Glisser le scan du test ici, ou
+                    <button
+                        type="button"
+                        class="text-primary underline underline-offset-2"
+                        @click="fileInput?.click()"
+                    >
+                        parcourir
+                    </button>
+                    <template #extra>
+                        <span v-if="keepsFile" class="text-foreground text-xs">
+                            Le scan actuel est conservé, sauf si vous en déposez
+                            un autre.
+                        </span>
+                        <input
+                            ref="fileInput"
+                            type="file"
+                            accept="application/pdf"
+                            class="hidden"
+                            @change="onFileChange"
+                        />
+                    </template>
+                </UploadZoneLayout>
                 <FieldError :errors="[form.errors.file]" />
             </Field>
         </FieldGroup>

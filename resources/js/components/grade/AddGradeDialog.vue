@@ -1,36 +1,27 @@
 <script setup lang="ts">
-import { TriangleAlertIcon, UploadIcon } from '@lucide/vue';
-import { useHttp, usePage } from '@inertiajs/vue3';
+import { usePage } from '@inertiajs/vue3';
+import GradeCategoryTabs from '@/components/grade/GradeCategoryTabs.vue';
 import GradeForm from '@/components/grade/GradeForm.vue';
+import OcrGradeForm from '@/components/grade/OcrGradeForm.vue';
+import DialogCancelButton from '@/components/DialogCancelButton.vue';
+import SwitchButtonLayout from '@/components/SwitchButtonLayout.vue';
 import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
 import {
     Dialog,
-    DialogClose,
     DialogContent,
     DialogDescription,
     DialogFooter,
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
-import { Field, FieldLabel } from '@/components/ui/field';
-import {
-    Select,
-    SelectContent,
-    SelectGroup,
-    SelectItem,
-    SelectLabel,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
-import { Switch } from '@/components/ui/switch';
+import { TabsTrigger } from '@/components/ui/tabs';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { useAddGradeDialog } from '@/composables/useAddGradeDialog';
 import type { GradeTree } from '@/lib/gradebook';
-import grades from '@/routes/grades';
-import { computed, ref, watch } from 'vue';
+import { ref, watch } from 'vue';
+import OcrFooterButtons from '@/components/grade/OcrFooterButtons.vue';
 
 defineProps<{
-    /** Arbre de la filière de l'apprenti·e, envoyé par la page. */
     tree: GradeTree | null;
 }>();
 
@@ -40,89 +31,34 @@ const { isOpen, close } = useAddGradeDialog();
 const page = usePage();
 
 const gradeForm = ref<InstanceType<typeof GradeForm> | null>(null);
+const ocrPanel = ref<InstanceType<typeof OcrGradeForm> | null>(null);
 
-// Lecture automatique (OCR) : facultative, et bloquée tant que l'apprenti·e
-// n'a pas accepté la collecte de ses données.
 const useOcr = ref(false);
 
-type ScanReading = {
-    scan_id: number;
-    subject: string;
-    confidence: number | null;
-    grade: number | null;
-    flagged: boolean;
-    duration_ms: number;
-};
+type CategoryTab = 'general' | 'it';
 
-const ocr = useHttp<{ consent: boolean; file: File | null }, ScanReading>({
-    consent: false,
-    file: null,
-});
-const reading = ref<ScanReading | null>(null);
+const tab = ref<CategoryTab>('general');
+const kind = ref<'school' | 'cie'>('school');
 
-// Le choix du fichier est bloqué pendant l'analyse : le résultat reçu
-// correspond toujours à `ocr.file`, le PDF joint à la note.
-function onOcrFileChange(event: Event): void {
-    ocr.file = (event.target as HTMLInputElement).files?.[0] ?? null;
-    reading.value = null;
+function selectKind(value: unknown): void {
+    if (value === 'school' || value === 'cie') kind.value = value;
 }
 
-function analyse(): void {
-    ocr.post(grades.readScan().url, {
-        onSuccess: (data) => {
-            reading.value = data;
-        },
-    });
-}
-
-// ponytail: seules les branches qui portent le nom d'une matière sont
-// reconnues ; ajouter une entrée ici quand l'arbre en a d'autres.
-const SUBJECT_BRANCHES: Record<string, string> = {
-    'subjects/Anglais': 'Anglais',
-    'subjects/Maths': 'Mathématiques',
-};
-
-/** La branche proposée par l'OCR ; comparée à la branche enregistrée sur le tableau de bord OCR. */
-const suggestedBranch = computed(() => {
-    const name = reading.value && SUBJECT_BRANCHES[reading.value.subject];
-    return gradeForm.value?.branches.find((branch) => branch.name === name);
+watch(tab, (value) => {
+    if (value === 'it') useOcr.value = false;
 });
 
-// Branche non reconnue (matière absente de l'arbre, ou sans correspondance) :
-// l'apprenti·e la choisit sans quitter la lecture automatique.
-const pickedBranchId = ref<number | null>(null);
-
-// Une nouvelle lecture (ou un nouveau fichier) repart sans choix.
-watch(reading, () => {
-    pickedBranchId.value = null;
-});
-
-const readingBranch = computed(
-    () =>
-        suggestedBranch.value ??
-        gradeForm.value?.branches.find(
-            (branch) => branch.id === pickedBranchId.value,
-        ),
-);
-
-// Approuver demande une note et une branche, reconnue ou choisie.
-const canApprove = computed(
-    () => reading.value?.grade != null && readingBranch.value !== undefined,
-);
-
-// Le résultat pré-remplit le formulaire (date du test : aujourd'hui) ; le PDF
-// sert de justificatif.
 function fillForm(): void {
     const form = gradeForm.value?.form;
-    if (!form || !ocr.file) return;
+    const result = ocrPanel.value?.result;
+    if (!form || !result) return;
 
-    form.file = ocr.file;
-    // Pour le tableau de bord OCR : la note enregistrée est comparée au scan.
-    form.ocr_scan_id = reading.value?.scan_id ?? null;
-    form.ocr_node_id = suggestedBranch.value?.id ?? null;
-    form.average_node_id = readingBranch.value?.id ?? form.average_node_id;
-    if (reading.value?.grade != null) {
-        form.value = reading.value.grade;
+    form.file = result.file;
+    form.ocr_scan_id = result.scanId;
+    form.ocr_node_id = result.branchId;
+    form.average_node_id = result.branchId ?? form.average_node_id;
+    if (result.grade != null) {
+        form.value = result.grade;
     }
 }
 
@@ -136,29 +72,20 @@ function deny(): void {
     useOcr.value = false;
 }
 
-// Une erreur (client ou serveur) après « Approuver » : le formulaire est
-// affiché pour que l'apprenti·e la corrige.
 watch(
     () => gradeForm.value?.form.hasErrors,
     (hasErrors) => {
         if (hasErrors) useOcr.value = false;
     },
 );
-
-const subjectLabel = (subject: string): string =>
-    subject === 'OTHER' ? 'Autre' : subject.replace('subjects/', '');
 </script>
 
 <template>
-    <!--
-        Le contenu est démonté à la fermeture : le formulaire repart vide à
-        chaque ouverture, sans remise à zéro manuelle.
-    -->
     <Dialog v-model:open="isOpen">
         <DialogContent
-            class="flex max-h-[90svh] flex-col gap-0 p-0 sm:max-w-xl"
+            class="flex h-[min(90svh,40rem)] flex-col gap-0 p-0 sm:max-w-xl"
         >
-            <DialogHeader class="border-b p-6">
+            <DialogHeader class="p-6">
                 <DialogTitle>Ajouter une note</DialogTitle>
                 <DialogDescription>
                     {{
@@ -169,176 +96,86 @@ const subjectLabel = (subject: string): string =>
                 </DialogDescription>
             </DialogHeader>
 
-            <div class="flex flex-col gap-6 overflow-y-auto p-6">
-                <div
-                    v-if="page.props.auth.can.useOcr"
-                    class="flex items-center gap-2"
+            <GradeCategoryTabs v-model="tab">
+                <TabsTrigger
+                    value="general"
+                    class="data-[state=inactive]:text-muted-foreground data-[state=active]:border-primary dark:data-[state=active]:border-primary -mb-px h-auto flex-none rounded-none border-0 border-b-2 px-1 py-3 whitespace-normal transition-colors data-[state=active]:bg-transparent data-[state=active]:shadow-none dark:data-[state=active]:bg-transparent"
                 >
-                    <Switch id="use-ocr" v-model="useOcr" />
-                    <FieldLabel for="use-ocr" class="font-normal">
-                        Détecter la note automatiquement (OCR)
-                    </FieldLabel>
+                    Culture générale et compétences de base élargies
+                </TabsTrigger>
+                <TabsTrigger
+                    value="it"
+                    class="data-[state=inactive]:text-muted-foreground data-[state=active]:border-primary dark:data-[state=active]:border-primary -mb-px h-auto flex-none rounded-none border-0 border-b-2 px-1 py-3 whitespace-normal transition-colors data-[state=active]:bg-transparent data-[state=active]:shadow-none dark:data-[state=active]:bg-transparent"
+                >
+                    Compétences informatiques
+                </TabsTrigger>
+            </GradeCategoryTabs>
+
+            <main
+                class="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto p-6"
+            >
+                <div class="flex h-8 shrink-0 items-center">
+                    <ToggleGroup
+                        v-if="tab === 'it'"
+                        type="single"
+                        variant="outline"
+                        size="sm"
+                        :spacing="2"
+                        :model-value="kind"
+                        aria-label="Type de module"
+                        @update:model-value="selectKind"
+                    >
+                        <ToggleGroupItem
+                            value="school"
+                            @pointerdown.left="kind = 'school'"
+                            class="data-[state=on]:bg-primary data-[state=on]:text-primary-foreground rounded-full px-4 transition-none"
+                        >
+                            École professionnelle
+                        </ToggleGroupItem>
+                        <ToggleGroupItem
+                            value="cie"
+                            @pointerdown.left="kind = 'cie'"
+                            class="data-[state=on]:bg-primary data-[state=on]:text-primary-foreground rounded-full px-4 transition-none"
+                        >
+                            Cours interentreprises (CIE)
+                        </ToggleGroupItem>
+                    </ToggleGroup>
+                    <SwitchButtonLayout
+                        v-else-if="page.props.auth.can.useOcr"
+                        id="use-ocr"
+                        v-model="useOcr"
+                        label="Détecter la note automatiquement (OCR)"
+                    />
                 </div>
 
-                <div v-if="useOcr" class="flex flex-col gap-4">
-                    <div
-                        role="alert"
-                        class="flex gap-3 rounded-md border border-amber-500/50 bg-amber-500/10 p-4 text-sm"
-                    >
-                        <TriangleAlertIcon
-                            class="size-5 shrink-0 text-amber-600"
-                        />
-                        <p>
-                            Le document que vous déposez est envoyé à un service
-                            externe pour être analysé : vos données sont
-                            collectées.
-                        </p>
-                    </div>
+                <OcrGradeForm
+                    v-show="useOcr"
+                    ref="ocrPanel"
+                    :branches="gradeForm?.branches ?? []"
+                />
 
-                    <Field orientation="horizontal">
-                        <Checkbox id="ocr-consent" v-model="ocr.consent" />
-                        <FieldLabel for="ocr-consent" class="font-normal">
-                            J'accepte que mes données soient collectées
-                        </FieldLabel>
-                    </Field>
-
-                    <label
-                        class="flex flex-col items-center justify-center gap-1 rounded-md border border-dashed p-8 text-center transition-colors"
-                        :class="
-                            ocr.consent && !ocr.processing
-                                ? 'hover:bg-muted/50 cursor-pointer'
-                                : 'cursor-not-allowed opacity-50'
-                        "
-                    >
-                        <UploadIcon class="text-muted-foreground size-5" />
-                        <span class="text-sm">Déposer le PDF du test</span>
-                        <span class="text-muted-foreground text-xs">
-                            PDF uniquement, 10 Mo maximum
-                        </span>
-                        <span v-if="ocr.file" class="text-foreground text-xs">
-                            {{ ocr.file.name }}
-                        </span>
-                        <input
-                            type="file"
-                            accept="application/pdf"
-                            class="hidden"
-                            :disabled="!ocr.consent || ocr.processing"
-                            @change="onOcrFileChange"
-                        />
-                    </label>
-                    <p
-                        v-if="ocr.errors.file || ocr.errors.consent"
-                        class="text-destructive text-sm"
-                    >
-                        {{ ocr.errors.file ?? ocr.errors.consent }}
-                    </p>
-
-                    <div
-                        v-if="reading"
-                        role="status"
-                        class="flex flex-col gap-1 rounded-md border p-4 text-sm"
-                    >
-                        <p>
-                            Matière :
-                            <strong>{{ subjectLabel(reading.subject) }}</strong>
-                            <span
-                                v-if="reading.confidence !== null"
-                                class="text-muted-foreground"
-                            >
-                                (confiance
-                                {{ Math.round(reading.confidence * 100) }} %)
-                            </span>
-                        </p>
-                        <p v-if="suggestedBranch">
-                            Branche :
-                            <strong>{{ suggestedBranch.name }}</strong>
-                        </p>
-                        <Field v-else class="gap-1.5">
-                            <FieldLabel for="ocr-branch" class="font-normal">
-                                Branche : <strong>non reconnue</strong>,
-                                choisissez-la
-                            </FieldLabel>
-                            <Select v-model="pickedBranchId">
-                                <SelectTrigger id="ocr-branch" class="w-full">
-                                    <SelectValue
-                                        placeholder="Sélectionner une branche"
-                                    />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectGroup
-                                        v-for="group in gradeForm?.groups"
-                                        :key="group.name"
-                                    >
-                                        <SelectLabel>{{
-                                            group.name
-                                        }}</SelectLabel>
-                                        <SelectItem
-                                            v-for="branch in group.branches"
-                                            :key="branch.id"
-                                            :value="branch.id"
-                                        >
-                                            {{ branch.name }}
-                                        </SelectItem>
-                                    </SelectGroup>
-                                </SelectContent>
-                            </Select>
-                        </Field>
-                        <p>
-                            Note :
-                            <strong>{{
-                                reading.grade?.toFixed(1) ?? 'non trouvée'
-                            }}</strong>
-                        </p>
-                        <p class="text-muted-foreground text-xs">
-                            Analysé en
-                            {{ (reading.duration_ms / 1000).toFixed(1) }} s
-                        </p>
-                        <p v-if="reading.flagged" class="text-amber-600">
-                            Résultat incertain : vérifiez-le avant
-                            d'enregistrer.
-                        </p>
-                    </div>
-                </div>
-
-                <!-- v-show : la saisie manuelle est conservée si on rebascule. -->
                 <GradeForm
                     v-show="!useOcr"
                     :id="FORM_ID"
                     ref="gradeForm"
                     :tree="tree"
+                    :without-file="tab === 'it'"
                     @saved="close"
                 />
-            </div>
+            </main>
 
             <DialogFooter class="border-t p-6">
-                <DialogClose as-child>
-                    <Button type="button" variant="outline">Annuler</Button>
-                </DialogClose>
-                <template v-if="useOcr && reading">
-                    <Button type="button" variant="outline" @click="deny">
-                        Refuser et modifier
-                    </Button>
-                    <Button
-                        v-if="canApprove"
-                        type="button"
-                        :disabled="gradeForm?.form.processing"
-                        @click="approve"
-                    >
-                        Approuver
-                    </Button>
-                </template>
+                <DialogCancelButton />
+                <OcrFooterButtons
+                    v-if="useOcr"
+                    :scan-status="ocrPanel?.scanStatus ?? 'incomplete'"
+                    :saving="!!gradeForm?.form.processing"
+                    @analyse="ocrPanel?.analyse()"
+                    @approve="approve"
+                    @deny="deny"
+                />
                 <Button
-                    v-else-if="useOcr"
-                    type="button"
-                    :disabled="!ocr.consent || !ocr.file || ocr.processing"
-                    @click="analyse"
-                >
-                    {{
-                        ocr.processing ? 'Analyse en cours…' : 'Analyser le PDF'
-                    }}
-                </Button>
-                <Button
-                    v-if="!useOcr"
+                    v-else
                     type="submit"
                     :form="FORM_ID"
                     :disabled="gradeForm?.form.processing"
