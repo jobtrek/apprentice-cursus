@@ -6,7 +6,7 @@ use Illuminate\Database\Seeder;
 
 /**
  * Rows the app cannot run without (plans, roles, skills, grade trees).
- * Idempotent: production runs it on every boot (compose.prod.yaml).
+ * Idempotent: the image runs it on every boot (Dockerfile entrypoint, via DatabaseSeeder).
  */
 class ReferenceDataSeeder extends Seeder
 {

@@ -43,6 +43,15 @@ COPY --from=build --chown=www-data:www-data /app /app
 
 RUN chown -R www-data:www-data /config/caddy /data/caddy
 
+# Boot steps from the README's "Start from zero", run on every container start.
+# The web container (default CMD) migrates and seeds; worker/scheduler (any other command) only cache config.
+# Every seeder is idempotent, and DatabaseSeeder adds the demo accounts and grades only when APP_ENV=local.
+COPY docker/entrypoint.sh /usr/local/bin/app-entrypoint
+
+ENTRYPOINT ["app-entrypoint"]
+# ENTRYPOINT resets the base image CMD, so restate it.
+CMD ["frankenphp", "run", "--config", "/etc/frankenphp/Caddyfile", "--adapter", "caddyfile"]
+
 USER www-data
 
 EXPOSE 8080

@@ -16,13 +16,12 @@ x-app: &app
 services:
     app:
         <<: *app
-        command: sh -c "php artisan migrate --force && php artisan db:seed --class=ReferenceDataSeeder --force && php artisan optimize && exec frankenphp run --config /etc/frankenphp/Caddyfile"
         ports:
             - '${APP_PORT:-8080}:8080'
 
     worker:
         <<: *app
-        command: sh -c "php artisan optimize && exec php artisan queue:work --tries=3 --max-time=3600"
+        command: php artisan queue:work --tries=3 --max-time=3600
         healthcheck:
             disable: true
         depends_on:
@@ -31,7 +30,7 @@ services:
 
     scheduler:
         <<: *app
-        command: sh -c "php artisan optimize && exec php artisan schedule:work"
+        command: php artisan schedule:work
         healthcheck:
             disable: true
         depends_on:
