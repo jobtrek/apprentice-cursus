@@ -29,6 +29,20 @@ test('averages are weighted, rounded per node, and skip ungraded children', func
         ->and($book['semesters'][1])->toMatchArray(['semester' => 2, 'count' => 2, 'average' => 4.0]);
 });
 
+test('the root weighs its domains by their weight', function () use ($tree) {
+    $book = Gradebook::summary($tree, [
+        ['id' => 10, 'node_id' => 3, 'value' => 5.0, 'semester' => 1],
+        ['id' => 11, 'node_id' => 4, 'value' => 5.0, 'semester' => 1],
+        ['id' => 12, 'node_id' => 5, 'value' => 3.0, 'semester' => 1],
+    ], 'EC');
+
+    // A = 5, B = 3 -> 0.6 * 5 + 0.4 * 3 = 4.2 (a plain average would give 4.0).
+    expect($book['domains'][0]['average'])->toEqual(5.0)
+        ->and($book['domains'][1]['average'])->toEqual(3.0)
+        ->and($book['final'])->toEqualWithDelta(4.2, 1e-9)
+        ->and($book['complete'])->toBeTrue();
+});
+
 test('no tree, no gradebook', function () {
     expect(Gradebook::summary(null, [], 'IT'))->toBeNull();
 });
