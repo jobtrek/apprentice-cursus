@@ -76,8 +76,8 @@ defineExpose({
 </script>
 
 <template>
-    <div class="flex flex-col gap-4">
-        <div
+    <main class="flex flex-col gap-4">
+        <section
             role="alert"
             class="flex gap-3 rounded-md border border-amber-500/50 bg-amber-500/10 p-4 text-sm"
         >
@@ -86,7 +86,7 @@ defineExpose({
                 Le document que vous déposez est envoyé à un service externe
                 pour être analysé : vos données sont collectées.
             </p>
-        </div>
+        </section>
 
         <Field orientation="horizontal">
             <Checkbox id="ocr-consent" v-model="ocr.consent" />
@@ -126,7 +126,7 @@ defineExpose({
             {{ ocr.errors.file ?? ocr.errors.consent }}
         </p>
 
-        <div
+        <section
             v-if="reading"
             role="status"
             class="flex flex-col gap-1 rounded-md border p-4 text-sm"
@@ -159,6 +159,6 @@ defineExpose({
             <p v-if="reading.flagged" class="text-amber-600">
                 Résultat incertain : vérifiez-le avant d'enregistrer.
             </p>
-        </div>
-    </div>
+        </section>
+    </main>
 </template>
