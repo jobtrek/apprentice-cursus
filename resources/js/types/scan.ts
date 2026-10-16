@@ -6,3 +6,10 @@ export type ScanReading = {
     flagged: boolean;
     duration_ms: number;
 };
+
+export type ScanResult = {
+    file: File;
+    scanId: number;
+    branchId: number | null;
+    grade: number | null;
+};
