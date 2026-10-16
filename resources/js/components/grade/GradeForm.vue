@@ -91,7 +91,7 @@ function onSubmit(): void {
 
 // Le parent désactive son bouton d'envoi pendant l'enregistrement, et la
 // lecture automatique pré-remplit puis envoie le formulaire.
-defineExpose({ form, branches, submit: onSubmit });
+defineExpose({ form, groups, branches, submit: onSubmit });
 </script>
 
 <template>

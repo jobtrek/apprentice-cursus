@@ -35,5 +35,7 @@ class DatabaseSeeder extends Seeder
             ->update(['coach_id' => User::query()->where('email', 'coach@example.com')->value('id')]);
 
         $this->call(DemoGradeSeeder::class);
+
+        $this->call(DemoOcrScanSeeder::class);
     }
 }

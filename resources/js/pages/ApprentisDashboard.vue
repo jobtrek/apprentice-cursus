@@ -8,10 +8,11 @@ import {
     UsersIcon,
     XIcon,
 } from '@lucide/vue';
-import { computed, ref, toRef } from 'vue';
+import { computed, ref, toRef, watch } from 'vue';
 import ApprenticeCard from '@/components/apprentice/ApprenticeCard.vue';
 import ApprenticeRow from '@/components/apprentice/ApprenticeRow.vue';
 import AssignApprenticeDialog from '@/components/apprentice/AssignApprenticeDialog.vue';
+import PaginationNav from '@/components/PaginationNav.vue';
 import SituationTiles from '@/components/apprentice/SituationTiles.vue';
 import DataTable from '@/components/DataTable.vue';
 import FilterSelect from '@/components/FilterSelect.vue';
@@ -39,6 +40,7 @@ import {
     VARIANT_OPTIONS,
     YEAR_OPTIONS,
 } from '@/composables/useApprenticeFilters';
+import { usePagination } from '@/composables/usePagination';
 import { TRACK_FILTER_OPTIONS } from '@/constants/constants';
 import { PASSING_GRADE } from '@/data/dashboard';
 import type {
@@ -67,6 +69,17 @@ const props = defineProps<{
 
 const { filters, results, hasTrackFilter, isFiltered, reset } =
     useApprenticeFilters(toRef(props, 'apprentices'));
+
+const {
+    currentPage,
+    pageCount,
+    pageItems: pageResults,
+} = usePagination(results);
+
+// Un nouveau filtre ou tri repart de la première page.
+watch(filters, () => {
+    currentPage.value = 1;
+});
 
 const plural = (count: number, word: string): string =>
     `${count} ${word}${count > 1 ? 's' : ''}`;
@@ -301,7 +314,7 @@ const columns = computed(() =>
                         class="bg-muted/30 grid gap-3 p-4 sm:grid-cols-2 lg:hidden"
                     >
                         <ApprenticeCard
-                            v-for="apprentice in results"
+                            v-for="apprentice in pageResults"
                             :key="apprentice.id"
                             :apprentice="apprentice"
                             :own-role="can.assignSelfAs"
@@ -310,7 +323,7 @@ const columns = computed(() =>
 
                     <DataTable
                         :columns="columns"
-                        :data="results"
+                        :data="pageResults"
                         class="hidden rounded-none border-0 lg:block"
                     >
                         <template #row="{ item }">
@@ -323,6 +336,12 @@ const columns = computed(() =>
                             />
                         </template>
                     </DataTable>
+
+                    <PaginationNav
+                        v-model="currentPage"
+                        :page-count="pageCount"
+                        class="border-t px-4 py-3"
+                    />
 
                     <p class="text-muted-foreground border-t px-4 py-3 text-xs">
                         Moyennes simples des notes saisies, seuil de réussite à
