@@ -47,6 +47,16 @@ composer ci:check
 composer test             # config:clear + lint:check + types:check + artisan test
 ```
 
+**After every code change, before reporting done**, format and run the CI lint/type checks (`.github/workflows/ci.yml`) and fix anything they flag:
+
+```bash
+./vendor/bin/sail composer lint && ./vendor/bin/sail pnpm check:fix
+./vendor/bin/sail composer lint:check && ./vendor/bin/sail pnpm check && ./vendor/bin/sail pnpm types:check
+./vendor/bin/sail php vendor/bin/phpstan analyse --memory-limit=1G   # default 128M crashes locally
+```
+
+`pnpm check:fix` also formats YAML/JSON/Markdown (e.g. `compose*.yaml`), so run it even when only config files changed.
+
 No test runner is configured on the JS side yet (intended: `vp test` with imports from `vite-plus/test`, not yet wired up).
 
 ## Architecture notes

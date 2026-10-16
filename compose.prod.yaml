@@ -47,7 +47,16 @@ services:
         volumes:
             - 'pgsql-data:/var/lib/postgresql'
         healthcheck:
-            test: ['CMD', 'pg_isready', '-q', '-d', '${DB_DATABASE:?DB_DATABASE is required}', '-U', '${DB_USERNAME:?DB_USERNAME is required}']
+            test:
+                [
+                    'CMD',
+                    'pg_isready',
+                    '-q',
+                    '-d',
+                    '${DB_DATABASE:?DB_DATABASE is required}',
+                    '-U',
+                    '${DB_USERNAME:?DB_USERNAME is required}',
+                ]
             interval: 5s
             retries: 10
             timeout: 5s
