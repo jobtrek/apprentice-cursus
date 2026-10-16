@@ -41,7 +41,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { Switch } from '@/components/ui/switch';
+import SwitchButtonLayout from '@/components/SwitchButtonLayout.vue';
 import {
     type EditedGrade,
     MONTHS,
@@ -234,16 +234,13 @@ defineExpose({ form, branches, submit: onSubmit });
 
             <Field :data-invalid="Boolean(form.errors.file)">
                 <FieldLabel>Justificatif</FieldLabel>
-                <div class="mb-2 flex items-center gap-2">
-                    <Switch
-                        id="is-oral"
-                        :model-value="form.is_oral"
-                        @update:model-value="switchToOral"
-                    />
-                    <FieldLabel for="is-oral" class="font-normal"
-                        >Épreuve orale</FieldLabel
-                    >
-                </div>
+                <SwitchButtonLayout
+                    id="is-oral"
+                    class="mb-2"
+                    label="Épreuve orale"
+                    :model-value="form.is_oral"
+                    @update:model-value="switchToOral"
+                />
 
                 <FieldDescription v-if="form.is_oral">
                     Aucun document n'est requis pour une épreuve orale.

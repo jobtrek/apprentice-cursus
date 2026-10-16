@@ -2,6 +2,7 @@
 import { usePage } from '@inertiajs/vue3';
 import GradeForm from '@/components/grade/GradeForm.vue';
 import OcrGradeForm from '@/components/grade/OcrGradeForm.vue';
+import SwitchButtonLayout from '@/components/SwitchButtonLayout.vue';
 import { Button } from '@/components/ui/button';
 import {
     Dialog,
@@ -12,8 +13,6 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
-import { FieldLabel } from '@/components/ui/field';
-import { Switch } from '@/components/ui/switch';
 import { useAddGradeDialog } from '@/composables/useAddGradeDialog';
 import type { GradeTree } from '@/lib/gradebook';
 import { ref, watch } from 'vue';
@@ -81,15 +80,12 @@ watch(
             </DialogHeader>
 
             <div class="flex flex-col gap-6 overflow-y-auto p-6">
-                <div
+                <SwitchButtonLayout
                     v-if="page.props.auth.can.useOcr"
-                    class="flex items-center gap-2"
-                >
-                    <Switch id="use-ocr" v-model="useOcr" />
-                    <FieldLabel for="use-ocr" class="font-normal">
-                        Détecter la note automatiquement (OCR)
-                    </FieldLabel>
-                </div>
+                    id="use-ocr"
+                    v-model="useOcr"
+                    label="Détecter la note automatiquement (OCR)"
+                />
 
                 <OcrGradeForm
                     v-show="useOcr"
@@ -110,7 +106,7 @@ watch(
                 <DialogClose as-child>
                     <Button type="button" variant="outline">Annuler</Button>
                 </DialogClose>
-                <template v-if="useOcr && ocrPanel?.reading">
+                <div v-if="useOcr && ocrPanel?.reading">
                     <Button type="button" variant="outline" @click="deny">
                         Refuser et modifier
                     </Button>
@@ -122,7 +118,7 @@ watch(
                     >
                         Approuver
                     </Button>
-                </template>
+                </div>
                 <Button
                     v-else-if="useOcr"
                     type="button"
