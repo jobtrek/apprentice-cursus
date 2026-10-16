@@ -154,3 +154,23 @@ test('each apprentice carries the trainers of its plan', function () {
                 ->and($rows[$untrained->id]['trainer'])->toBeNull();
         });
 });
+
+test('a configured main trainer stands alone for its plan', function () {
+    config(['services.azure.main_trainers' => ['bastien.nicoud@jobtrek.ch']]);
+    $coach = User::factory()->coach()->create();
+    makeTrainer($this->it)->forceFill(['name' => 'Bastien Nicoud', 'email' => 'Bastien.Nicoud@jobtrek.ch'])->save();
+    makeTrainer($this->it)->forceFill(['name' => 'Alice Martin'])->save();
+    makeTrainer($this->ec)->forceFill(['name' => 'Chloé Roy'])->save();
+    makeTrainer($this->ec)->forceFill(['name' => 'Denis Blanc'])->save();
+    $it = makeApprentice($this->it, $coach);
+    $ec = makeApprentice($this->ec, $coach);
+
+    $this->actingAs($coach)
+        ->get(route('apprentisdashboard'))
+        ->assertInertia(function (Assert $page) use ($it, $ec) {
+            $rows = collect($page->toArray()['props']['apprentices'])->keyBy('id');
+
+            expect($rows[$it->id]['trainer'])->toBe('Bastien Nicoud')
+                ->and($rows[$ec->id]['trainer'])->toBe('Chloé Roy, Denis Blanc');
+        });
+});

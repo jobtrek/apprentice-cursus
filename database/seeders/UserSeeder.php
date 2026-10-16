@@ -16,7 +16,7 @@ class UserSeeder extends Seeder
      * local environment. All accounts use the password "password":
      * - admin@example.com (local admin: bypasses every check in the local environment)
      * - coach@example.com (coach of the local apprentices)
-     * - trainer@example.com (IT trainer, Bastien Nicoud, trains the IT plan)
+     * - trainer@example.com (IT trainer, trains the IT plan)
      * - trainer-ec@example.com (EC trainer, trains the EC and EC MP plans)
      * - apprentice-it@example.com (IT apprentice)
      * - apprentice-ec@example.com (EC apprentice)
@@ -31,7 +31,7 @@ class UserSeeder extends Seeder
 
         $this->seed('admin@example.com', 'Local Admin', UserRole::Admin);
         $coach = $this->seed('coach@example.com', 'Local Coach', UserRole::Coach);
-        $this->seed('trainer@example.com', 'Bastien Nicoud', UserRole::Trainer, trainedPlanIds: [
+        $this->seed('trainer@example.com', 'Local Trainer IT', UserRole::Trainer, trainedPlanIds: [
             (int) $plans[FormationPlan::IT],
         ]);
         $this->seed('trainer-ec@example.com', 'Local Trainer EC', UserRole::Trainer, trainedPlanIds: [

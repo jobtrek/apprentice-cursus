@@ -40,7 +40,7 @@ All passwords are `password` (password login is local only).
 | --------------------------- | --------------------------------------- |
 | `admin@example.com`         | admin (bypasses everything, local only) |
 | `coach@example.com`         | coach                                   |
-| `trainer@example.com`       | trainer, IT (Bastien Nicoud)            |
+| `trainer@example.com`       | trainer, IT (Local Trainer IT)          |
 | `trainer-ec@example.com`    | trainer, EC                             |
 | `apprentice-it@example.com` | apprentice, IT                          |
 | `apprentice-ec@example.com` | apprentice, EC                          |

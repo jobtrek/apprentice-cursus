@@ -139,8 +139,12 @@ const current = (
         </template>
 
         <!-- Les formateurs suivent le plan entier : pas de choix par apprenti·e. -->
-        <TableCell>
-            <AssignmentBadge :value="apprentice.trainer ?? undefined" />
+        <!-- Largeur bornée : une longue liste de formateurs ferait défiler le tableau. -->
+        <TableCell class="max-w-56" :title="apprentice.trainer ?? undefined">
+            <AssignmentBadge
+                :value="apprentice.trainer ?? undefined"
+                class="max-w-full"
+            />
         </TableCell>
     </TableRow>
 </template>

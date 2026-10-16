@@ -40,6 +40,13 @@ return [
             AzureGroup::TrainerEc->value => env('MICROSOFT_GROUP_TRAINER_EC'),
             AzureGroup::Coach->value => env('MICROSOFT_GROUP_COACH'),
         ],
+
+        // Comma-separated trainer emails shown as the plan's "Formateur" instead
+        // of every trainer of the plan's group. Display only: rights are unchanged.
+        'main_trainers' => array_values(array_filter(array_map(
+            fn (string $email) => strtolower(trim($email)),
+            explode(',', (string) env('MICROSOFT_MAIN_TRAINERS', '')),
+        ))),
     ],
 
     'ses' => [
