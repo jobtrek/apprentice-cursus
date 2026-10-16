@@ -123,7 +123,10 @@ const currentSemester = computed(() => lastGradedSemester(props.grades));
                 description="Voici où en sont les apprentis que vous suivez."
             >
                 <!-- L'ajout se fait depuis la liste, qui a la fenêtre de choix. -->
-                <template v-if="can.assignSelf && apprentices.length > 0" #actions>
+                <template
+                    v-if="can.assignSelf && apprentices.length > 0"
+                    #actions
+                >
                     <Button as-child variant="outline">
                         <Link :href="apprentisdashboard()">
                             <UserPlusIcon aria-hidden="true" />
