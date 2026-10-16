@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { usePage } from '@inertiajs/vue3';
 import GradeForm from '@/components/grade/GradeForm.vue';
-import OCRDialog from '@/components/grade/Dialogs/OCRDialog.vue';
+import OcrGradeForm from '@/components/grade/OcrGradeForm.vue';
 import { Button } from '@/components/ui/button';
 import {
     Dialog,
@@ -28,7 +28,7 @@ const { isOpen, close } = useAddGradeDialog();
 const page = usePage();
 
 const gradeForm = ref<InstanceType<typeof GradeForm> | null>(null);
-const ocrPanel = ref<InstanceType<typeof OCRDialog> | null>(null);
+const ocrPanel = ref<InstanceType<typeof OcrGradeForm> | null>(null);
 
 const useOcr = ref(false);
 
@@ -91,7 +91,7 @@ watch(
                     </FieldLabel>
                 </div>
 
-                <OCRDialog
+                <OcrGradeForm
                     v-show="useOcr"
                     ref="ocrPanel"
                     :branches="gradeForm?.branches ?? []"
