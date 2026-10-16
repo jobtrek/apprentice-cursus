@@ -49,6 +49,7 @@ import {
 } from '@/composables/useGradeForm';
 import { GRADE_MAX, GRADE_MIN, GRADE_STEP } from '@/constants/constants';
 import type { GradeTree } from '@/lib/gradebook';
+import { computed } from 'vue';
 
 const props = defineProps<{
     /**
@@ -58,6 +59,8 @@ const props = defineProps<{
     id: string;
     /** Arbre de la filière : ses feuilles sont les branches proposées. */
     tree: GradeTree | null;
+    /** Aucune copie de test à joindre (module professionnel). */
+    withoutFile?: boolean;
     /** Note à modifier ; absente pour un ajout. */
     edited?: EditedGrade;
 }>();
@@ -84,6 +87,12 @@ const {
     onFileChange,
     submit,
 } = useGradeForm(() => props.tree, props.edited);
+
+const noFileHint = computed(() =>
+    !props.withoutFile && props.edited?.hasFile
+        ? 'Le scan déjà déposé sera supprimé.'
+        : 'Aucun justificatif à joindre',
+);
 
 function onSubmit(): void {
     submit(() => emit('saved'));
@@ -235,6 +244,7 @@ defineExpose({ form, groups, branches, submit: onSubmit });
             <Field :data-invalid="Boolean(form.errors.file)">
                 <FieldLabel>Justificatif</FieldLabel>
                 <SwitchButtonLayout
+                    v-if="!withoutFile"
                     id="is-oral"
                     class="mb-2"
                     label="Épreuve orale"
@@ -242,12 +252,17 @@ defineExpose({ form, groups, branches, submit: onSubmit });
                     @update:model-value="switchToOral"
                 />
 
-                <FieldDescription v-if="form.is_oral">
-                    Aucun document n'est requis pour une épreuve orale.
-                    <template v-if="edited?.hasFile">
-                        Le scan déjà déposé sera supprimé.
-                    </template>
-                </FieldDescription>
+                <UploadZoneLayout
+                    v-if="withoutFile || form.is_oral"
+                    disabled
+                    :hint="noFileHint"
+                >
+                    {{
+                        withoutFile
+                            ? 'Module professionnel, pas de copie de test'
+                            : 'Épreuve orale, pas de copie de test'
+                    }}
+                </UploadZoneLayout>
 
                 <UploadZoneLayout
                     v-else
