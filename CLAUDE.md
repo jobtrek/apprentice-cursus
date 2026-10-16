@@ -59,6 +59,10 @@ composer test             # config:clear + lint:check + types:check + artisan te
 
 No test runner is configured on the JS side yet (intended: `vp test` with imports from `vite-plus/test`, not yet wired up).
 
+## GitHub issues
+
+When creating a GitHub issue, follow `ISSUES.md` exactly: it mirrors the forms in `.github/ISSUE_TEMPLATE/` (same headings, issue type and labels) and gives the `gh api` command to use, since `gh issue create` can't set the issue type.
+
 ## Architecture notes
 
 - **Inertia, not a JSON API.** Controllers return `Inertia::render(...)`; pages live in `resources/js/pages/*.vue` and map 1:1 to server routes. There is no separate SPA router — Inertia + `routes/web.php` (plus feature route files like `routes/auth.php`) own navigation.
