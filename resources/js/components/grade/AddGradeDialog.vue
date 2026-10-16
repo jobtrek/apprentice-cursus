@@ -2,11 +2,11 @@
 import { usePage } from '@inertiajs/vue3';
 import GradeForm from '@/components/grade/GradeForm.vue';
 import OcrGradeForm from '@/components/grade/OcrGradeForm.vue';
+import DialogCancelButton from '@/components/DialogCancelButton.vue';
 import SwitchButtonLayout from '@/components/SwitchButtonLayout.vue';
 import { Button } from '@/components/ui/button';
 import {
     Dialog,
-    DialogClose,
     DialogContent,
     DialogDescription,
     DialogFooter,
@@ -104,9 +104,7 @@ watch(
             </main>
 
             <DialogFooter class="border-t p-6">
-                <DialogClose as-child>
-                    <Button type="button" variant="outline">Annuler</Button>
-                </DialogClose>
+                <DialogCancelButton />
                 <OcrFooterButtons
                     v-if="useOcr"
                     :scan-status="ocrPanel?.scanStatus ?? 'incomplete'"
