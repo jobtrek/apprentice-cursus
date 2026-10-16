@@ -2,6 +2,7 @@ import {
     BookOpenIcon,
     FolderKanbanIcon,
     HomeIcon,
+    LibraryIcon,
     ScanTextIcon,
     UsersIcon,
 } from '@lucide/vue';
@@ -10,6 +11,7 @@ import { apprentisdashboard, home } from '@/routes';
 import grades from '@/routes/grades';
 import ocrScans from '@/routes/ocr-scans';
 import portfolio from '@/routes/portfolio';
+import subjects from '@/routes/subjects';
 import type { Can, UserRole } from '@/types';
 import type { RouteDefinition } from '@/wayfinder';
 
@@ -81,6 +83,13 @@ export const NAV_ITEMS: NavItem[] = [
         href: ocrScans.index(),
         icon: ScanTextIcon,
         can: 'viewOcrStats',
+    },
+    {
+        label: 'Matières',
+        description: 'Gérez les matières des arbres de notes.',
+        href: subjects.index(),
+        icon: LibraryIcon,
+        can: 'manageSubjects',
     },
 ];
 

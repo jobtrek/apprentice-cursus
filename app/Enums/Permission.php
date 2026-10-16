@@ -16,6 +16,8 @@ enum Permission: string
     case SupervisionManage = 'supervision.manage';
     /** OCR cost and accuracy dashboard. Same as above: only the local admin has it. */
     case OcrViewStats = 'ocr.view-stats';
+    /** Subject (grade tree leaf) administration. Same as above: only the local admin has it. */
+    case SubjectsManage = 'subjects.manage';
 
     /** @return array<string, list<self>> */
     public static function byRole(): array
