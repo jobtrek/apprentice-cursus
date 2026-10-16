@@ -36,7 +36,7 @@ type Step = {
 
 const currentSemester = computed(() => props.gradebook.current_semester);
 
-/** 8 semestres en IT, 6 en EC. */
+/** Durée de la formation, calculée par le backend. */
 const semesters = computed(() => props.gradebook.semester_count);
 
 const steps = computed<Step[]>(() =>

@@ -70,13 +70,13 @@ const matches = (grade: Grade): boolean =>
     (!query.value ||
         `${grade.title} ${grade.subject}`.toLowerCase().includes(query.value));
 
-// Domaines sans note (souvent le TPI) en dernier.
 const gradesIn = (ids: number[]): Grade[] => {
     const set = new Set(ids);
 
     return props.grades.filter((grade) => set.has(grade.id));
 };
 
+// Domaines sans note (souvent le TPI) en dernier.
 const groups = computed(() =>
     props.gradebook.domains
         .map((domain) => {

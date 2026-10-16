@@ -3,10 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Enums\Permission;
-use App\Http\Resources\GradeResource;
 use App\Support\ApprenticeList;
 use App\Support\Gradebook\Gradebook;
-use App\Support\Gradebook\GradebookTree;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -20,24 +18,9 @@ class HomeController extends Controller
 
         $supervises = $user->can(Permission::ApprenticesViewList->value);
 
-        // Every grade: the apprentice dashboard lists them and charts the averages.
-        $grades = $ownGrades
-            ? GradeResource::collection(
-                $user->grades()
-                    ->withSemester()
-                    ->with(GradeResource::RELATIONS)
-                    ->withCount('comments')
-                    ->orderBy('test_date')
-                    ->orderBy('id')
-                    ->get(),
-            )->resolve()
-            : [];
-        $tree = $ownGrades ? GradebookTree::for($user) : null;
-
         return Inertia::render('Home', [
-            'grades' => $grades,
-            'tree' => $tree,
-            'gradebook' => Gradebook::summary($tree, $grades, $user->formationPlan?->shortName()),
+            // Every grade: the apprentice dashboard lists them and charts the averages.
+            ...($ownGrades ? Gradebook::for($user) : ['grades' => [], 'tree' => null, 'gradebook' => null]),
             'profile' => $ownGrades ? [
                 'track' => $user->formationPlan?->shortName(),
                 'variant' => $user->formationPlan?->isMp() ? 'mp' : 'standard',

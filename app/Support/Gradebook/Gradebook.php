@@ -2,6 +2,9 @@
 
 namespace App\Support\Gradebook;
 
+use App\Http\Resources\GradeResource;
+use App\Models\User;
+
 /**
  * The gradebook averages, computed as for the CFC: grades sit on the leaves of the
  * evaluation tree, every parent node takes the weighted average of its graded
@@ -12,6 +15,7 @@ namespace App\Support\Gradebook;
  * @phpstan-type GradeRow array{id: int, node_id: int, value: float, semester: int}
  * @phpstan-type Group array{id: int, name: string, weight: float, rounding_step: float|null, average: float|null, grade_ids: list<int>}
  * @phpstan-type Domain array{id: int, name: string, weight: float, rounding_step: float|null, average: float|null, grade_ids: list<int>, subs: list<Group>}
+ * @phpstan-type Summary array{final: float|null, complete: bool, current_semester: int, semester_count: int, semesters: list<array{semester: int, average: float|null, count: int}>, domains: list<Domain>}
  */
 final class Gradebook
 {
@@ -28,9 +32,37 @@ final class Gradebook
     private function __construct(private readonly array $tree, private readonly array $grades) {}
 
     /**
+     * The user's grades, grade tree and averages, as the gradebook pages render them.
+     *
+     * @return array{grades: array<int, array<string, mixed>>, tree: Tree|null, gradebook: Summary|null}
+     */
+    public static function for(User $user): array
+    {
+        $user->loadMissing('formationPlan');
+
+        $grades = GradeResource::collection(
+            $user->grades()
+                ->withSemester()
+                ->with(GradeResource::RELATIONS)
+                // Lets the gradebook filter the commented grades.
+                ->withCount('comments')
+                ->orderBy('test_date')
+                ->orderBy('id')
+                ->get(),
+        )->resolve();
+        $tree = GradebookTree::for($user);
+
+        return [
+            'grades' => $grades,
+            'tree' => $tree,
+            'gradebook' => self::summary($tree, $grades, $user->formationPlan?->shortName()),
+        ];
+    }
+
+    /**
      * @param  Tree|null  $tree
      * @param  array<int, array<string, mixed>>  $grades  resolved GradeResource rows
-     * @return array{final: float|null, complete: bool, current_semester: int, semester_count: int, semesters: list<array{semester: int, average: float|null, count: int}>, domains: list<Domain>}|null
+     * @return Summary|null
      */
     public static function summary(?array $tree, array $grades, ?string $track): ?array
     {

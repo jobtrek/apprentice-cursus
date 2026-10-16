@@ -34,23 +34,7 @@ class GradeController extends Controller
      */
     public function dashboard(Request $request): Response
     {
-        $user = $request->user()->load('formationPlan');
-        $grades = GradeResource::collection(
-            $user->grades()
-                ->withSemester()
-                ->with(GradeResource::RELATIONS)
-                ->withCount('comments')
-                ->orderBy('test_date')
-                ->orderBy('id')
-                ->get(),
-        )->resolve();
-        $tree = GradebookTree::for($user);
-
-        return Inertia::render('GradesDashboard', [
-            'grades' => $grades,
-            'tree' => $tree,
-            'gradebook' => Gradebook::summary($tree, $grades, $user->formationPlan?->shortName()),
-        ]);
+        return Inertia::render('GradesDashboard', Gradebook::for($request->user()));
     }
 
     public function store(GradeRequest $request): RedirectResponse
