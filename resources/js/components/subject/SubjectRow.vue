@@ -104,8 +104,17 @@ function destroy(): void {
                         </AlertDialogFooter>
                     </AlertDialogContent>
                 </AlertDialog>
-                <!-- Emplacement réservé : « Modifier » ne se décale pas. -->
-                <span v-else class="size-8 shrink-0" aria-hidden="true" />
+                <Button
+                    v-else
+                    variant="ghost"
+                    size="icon-sm"
+                    class="text-muted-foreground"
+                    disabled
+                    :aria-label="`Suppression impossible : ${subject.delete_blocked}`"
+                    :title="subject.delete_blocked ?? undefined"
+                >
+                    <Trash2Icon aria-hidden="true" />
+                </Button>
             </div>
         </TableCell>
     </TableRow>

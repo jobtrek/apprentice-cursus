@@ -13,6 +13,10 @@ use Inertia\Response;
 
 class SubjectController extends Controller
 {
+    private const string USED_BY_GRADES = 'Cette matière est utilisée par au moins une note : elle ne peut pas être supprimée.';
+
+    private const string LAST_OF_DOMAIN = 'C\'est la dernière matière de son domaine : elle ne peut pas être supprimée.';
+
     public function index(Request $request): Response
     {
         $nodes = AverageNode::query()
@@ -21,7 +25,7 @@ class SubjectController extends Controller
             ->orderBy('name')
             ->get();
 
-        $names = $nodes->pluck('name', 'id');
+        $nodes = $nodes->keyBy('id');
 
         $track = fn (AverageNode $node): array => $node->formationPlans
             ->map(fn (FormationPlan $plan): string => $plan->shortName())
@@ -29,17 +33,24 @@ class SubjectController extends Controller
             ->values()
             ->all();
 
+        $blocked = fn (AverageNode $node): ?string => match (true) {
+            $node->grades_count > 0 => self::USED_BY_GRADES,
+            $nodes[$node->parent_id]->children_count < 2 => self::LAST_OF_DOMAIN,
+            default => null,
+        };
+
         $subjects = $nodes
             ->filter(fn (AverageNode $node): bool => $node->children_count === 0 && $node->parent_id !== null)
             ->map(fn (AverageNode $node): array => [
                 'id' => $node->id,
                 'name' => $node->name,
                 'parent_id' => $node->parent_id,
-                'parent' => $names[$node->parent_id],
+                'parent' => $nodes[$node->parent_id]->name,
                 'weight' => (int) round((float) $node->weight * 100),
                 'tracks' => $track($node),
                 'grades_count' => $node->grades_count,
-                'can_delete' => $node->grades_count === 0,
+                'delete_blocked' => $blocked($node),
+                'can_delete' => $blocked($node) === null,
             ])
             ->values();
 
@@ -98,22 +109,24 @@ class SubjectController extends Controller
 
         $data = $request->validated();
         $parent = AverageNode::query()->whereKey($data['parent_id'])->firstOrFail();
-        $moved = $parent->id !== $subject->parent_id;
 
-        if ($moved) {
-            if (! $subject->parent->children()->whereKeyNot($subject->id)->exists()) {
-                return back()->withErrors(['parent_id' => 'Le domaine actuel n\'aurait plus aucune matière : ajoutez-en une autre avant de déplacer celle-ci.']);
+        $error = DB::transaction(function () use ($subject, $parent, $data): ?string {
+            $subject = $this->lockWithParent($subject);
+            $moved = $parent->id !== $subject->parent_id;
+
+            if ($moved) {
+                if (! $this->hasSiblings($subject)) {
+                    return 'Le domaine actuel n\'aurait plus aucune matière : ajoutez-en une autre avant de déplacer celle-ci.';
+                }
+
+                // Grades stay on the subject: they must still belong to a plan that uses it.
+                $plans = fn (AverageNode $node): array => $node->formationPlans()->pluck('formation_plans.id')->sort()->values()->all();
+
+                if ($subject->grades()->exists() && $plans($parent) !== $plans($subject)) {
+                    return 'Cette matière a des notes : elle ne peut aller que dans un domaine des mêmes filières.';
+                }
             }
 
-            // Grades stay on the subject: they must still belong to a plan that uses it.
-            $plans = fn (AverageNode $node): array => $node->formationPlans()->pluck('formation_plans.id')->sort()->values()->all();
-
-            if ($subject->grades()->exists() && $plans($parent) !== $plans($subject)) {
-                return back()->withErrors(['parent_id' => 'Cette matière a des notes : elle ne peut aller que dans un domaine des mêmes filières.']);
-            }
-        }
-
-        DB::transaction(function () use ($subject, $parent, $data, $moved): void {
             $subject->update([
                 'name' => $data['name'],
                 'parent_id' => $parent->id,
@@ -123,27 +136,59 @@ class SubjectController extends Controller
             if ($moved) {
                 $subject->formationPlans()->sync($parent->formationPlans()->pluck('formation_plans.id'));
             }
+
+            return null;
         });
 
-        return redirect()->route('subjects.index');
+        return $error === null
+            ? redirect()->route('subjects.index')
+            : back()->withErrors(['parent_id' => $error]);
     }
 
     public function destroy(AverageNode $subject): RedirectResponse
     {
         abort_unless($this->isSubject($subject), 404);
 
-        if ($subject->grades()->exists()) {
-            return back()->withErrors(['subject' => 'Cette matière est utilisée par au moins une note : elle ne peut pas être supprimée.']);
-        }
+        $error = DB::transaction(function () use ($subject): ?string {
+            $subject = $this->lockWithParent($subject);
 
-        // The domain would become a leaf: a subject nobody asked for.
-        if (! $subject->parent->children()->whereKeyNot($subject->id)->exists()) {
-            return back()->withErrors(['subject' => 'C\'est la dernière matière de son domaine : elle ne peut pas être supprimée.']);
-        }
+            if ($subject->grades()->exists()) {
+                return self::USED_BY_GRADES;
+            }
 
-        $subject->delete();
+            // The domain would become a leaf: a subject nobody asked for.
+            if (! $this->hasSiblings($subject)) {
+                return self::LAST_OF_DOMAIN;
+            }
 
-        return redirect()->route('subjects.index');
+            $subject->delete();
+
+            return null;
+        });
+
+        return $error === null
+            ? redirect()->route('subjects.index')
+            : back()->withErrors(['subject' => $error]);
+    }
+
+    /**
+     * Locks the subject, then its current parent, so concurrent removals from the
+     * same domain run one after the other and each sees the other's result.
+     */
+    private function lockWithParent(AverageNode $subject): AverageNode
+    {
+        $subject = AverageNode::query()->lockForUpdate()->findOrFail($subject->id);
+        AverageNode::query()->lockForUpdate()->findOrFail($subject->parent_id);
+
+        return $subject;
+    }
+
+    private function hasSiblings(AverageNode $subject): bool
+    {
+        return AverageNode::query()
+            ->where('parent_id', $subject->parent_id)
+            ->whereKeyNot($subject->id)
+            ->exists();
     }
 
     private function isSubject(AverageNode $node): bool

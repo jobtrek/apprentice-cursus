@@ -46,7 +46,8 @@ test('the admin sees the leaves with their tracks and grade count', function () 
             ->where('subjects.0.grades_count', 1)
             ->has('parents', 1)
             ->where('parents.0.label', 'Domaine test (IT)')
-            ->where('subjects.0.can_delete', false));
+            ->where('subjects.0.can_delete', false)
+            ->where('subjects.0.delete_blocked', fn (string $reason) => str_contains($reason, 'note')));
 });
 
 test('a subject is created under a domain and joins its plans', function () {
@@ -150,10 +151,11 @@ test('a subject without grades is deleted, one with grades is kept', function ()
 });
 
 test('the server searches and filters the subjects', function () {
-    [, , $plan] = makeDomain();
+    [$domain, , $plan] = makeDomain();
+    AverageNode::query()->create(['name' => 'Autre', 'parent_id' => $domain->id, 'weight' => 1])->formationPlans()->attach($plan);
 
     $this->actingAs($this->admin)->get(route('subjects.index', ['search' => 'zzz']))
-        ->assertInertia(fn (Assert $page) => $page->has('subjects', 0)->where('total', 1));
+        ->assertInertia(fn (Assert $page) => $page->has('subjects', 0)->where('total', 2));
 
     $this->actingAs($this->admin)->get(route('subjects.index', ['track' => 'EC', 'domain' => 'Domaine test']))
         ->assertInertia(fn (Assert $page) => $page
@@ -162,4 +164,26 @@ test('the server searches and filters the subjects', function () {
 
     $this->actingAs($this->admin)->get(route('subjects.index', ['track' => 'IT', 'search' => 'matière', 'domain' => 'Domaine test']))
         ->assertInertia(fn (Assert $page) => $page->has('subjects', 1)->where('subjects.0.can_delete', true));
+});
+
+test('a grade cannot be saved on a subject that was moved out of the learner plan', function () {
+    [, $subject] = makeDomain();
+    $apprentice = makeApprentice();
+    $ec = FormationPlan::query()->firstOrCreate(['name' => FormationPlan::EC]);
+    $subject->formationPlans()->sync([$ec->id]);
+
+    $this->actingAs($apprentice)
+        ->post(route('grades.store'), ['average_node_id' => $subject->id, 'value' => 5, 'test_date' => today()->toDateString(), 'is_oral' => true])
+        ->assertSessionHasErrors('average_node_id');
+
+    expect($subject->grades()->count())->toBe(0);
+});
+
+test('the only subject of a domain cannot be deleted and says why', function () {
+    makeDomain();
+
+    $this->actingAs($this->admin)->get(route('subjects.index'))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('subjects.0.can_delete', false)
+            ->where('subjects.0.delete_blocked', fn (string $reason) => str_contains($reason, 'dernière')));
 });

@@ -8,6 +8,8 @@ export interface Subject {
     tracks: string[];
     grades_count: number;
     can_delete: boolean;
+    /** Raison pour laquelle la suppression est impossible. */
+    delete_blocked: string | null;
 }
 
 export interface SubjectParent {
