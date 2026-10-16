@@ -3,9 +3,8 @@
 # to APP_PORT; firewall that port so only the proxy can reach it (TRUSTED_PROXIES trusts its IP).
 x-app: &app
     image: '${APP_IMAGE:-apprentice-cursus:latest}'
-    build: 
-        dockerfile: Dockerfile
-        context: .
+    build: .
+    pull_policy: build
     restart: unless-stopped
     env_file: .env
     volumes:
