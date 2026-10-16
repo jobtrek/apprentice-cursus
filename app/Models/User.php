@@ -191,9 +191,23 @@ class User extends Authenticatable
         return $this->supervisedApprentices()->where('is_active', true);
     }
 
+    /** Same rule as `supervisedApprentices()`, checked in memory: only a trainer costs a query. */
     public function supervises(self $apprentice): bool
     {
-        return $this->supervisedApprentices()->whereKey($apprentice->id)->exists();
+        if ($apprentice->id === $this->id || ! $apprentice->hasRole(UserRole::Apprentice->value)) {
+            return false;
+        }
+
+        if ($this->isLocalAdmin()) {
+            return true;
+        }
+
+        return match ($this->role) {
+            UserRole::Coach => $apprentice->coach_id === $this->id,
+            UserRole::Trainer => $apprentice->formation_plan_id !== null
+                && $this->trainedFormationPlans()->whereKey($apprentice->formation_plan_id)->exists(),
+            default => false,
+        };
     }
 
     /**

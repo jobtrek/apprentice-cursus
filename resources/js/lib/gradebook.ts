@@ -76,18 +76,6 @@ export const STATUS_LABELS: Record<GradeLevel, string> = {
 /** Classe de couleur d'une note (`is-good`, `is-warn`, `is-bad`). */
 export const gradeTone = (value: number): string => `is-${gradeLevel(value)}`;
 
-/** Barre aux coins arrondis côté valeur (4 px) et base carrée. */
-export function barPath(
-    x0: number,
-    x1: number,
-    top: number,
-    base: number,
-): string {
-    const r = Math.min(4, base - top, (x1 - x0) / 2);
-
-    return `M${x0} ${base} V${top + r} Q${x0} ${top} ${x0 + r} ${top} H${x1 - r} Q${x1} ${top} ${x1} ${top + r} V${base} Z`;
-}
-
 /** Libellé court d'un domaine : « Compétences en informatique » → « Informatique ». */
 export function domainLabel(name: string): string {
     const short = shortName(name).replace(/^Compétences (en|de) /, '');

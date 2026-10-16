@@ -10,7 +10,7 @@ export const GRADE_STEP = 0.5;
 export const PASSING_GRADE = 4;
 
 /** À partir de là, une note ou une moyenne est bonne. */
-export const GOOD_GRADE = 4.5;
+const GOOD_GRADE = 4.5;
 
 export type GradeLevel = 'good' | 'warn' | 'bad';
 
