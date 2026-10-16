@@ -76,7 +76,7 @@ const sorted = computed(() =>
                             <button
                                 v-else
                                 type="button"
-                                class="focus-visible:ring-ring/50 rounded-sm text-left font-medium hover:underline focus-visible:ring-[3px] focus-visible:outline-none"
+                                class="focus-visible:ring-ring rounded-sm text-left font-medium hover:underline focus-visible:ring-[3px] focus-visible:outline-none"
                                 @click="$emit('edit', project)"
                             >
                                 {{ project.title }}

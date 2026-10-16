@@ -334,7 +334,7 @@ const submitEdit = (comment: Comment) => {
                                     <button
                                         v-if="comment.can.update"
                                         type="button"
-                                        class="hover:text-foreground focus-visible:ring-ring/50 flex items-center gap-1 rounded-sm font-medium transition-colors focus-visible:ring-[3px] focus-visible:outline-none"
+                                        class="hover:text-foreground focus-visible:ring-ring flex items-center gap-1 rounded-sm font-medium transition-colors focus-visible:ring-[3px] focus-visible:outline-none"
                                         @click="startEdit(comment)"
                                     >
                                         <PencilIcon
@@ -363,7 +363,7 @@ const submitEdit = (comment: Comment) => {
                 <!-- Zone de saisie : un seul cadre, la barre d'actions en pied. -->
                 <div
                     v-if="can.comment"
-                    class="bg-card focus-within:border-ring focus-within:ring-ring/50 flex flex-col rounded-xl border shadow-xs transition-shadow focus-within:ring-[3px]"
+                    class="bg-card focus-within:border-ring focus-within:ring-ring flex flex-col rounded-xl border shadow-xs transition-shadow focus-within:ring-[3px]"
                 >
                     <div class="flex items-start gap-3 p-3">
                         <Avatar class="size-8">

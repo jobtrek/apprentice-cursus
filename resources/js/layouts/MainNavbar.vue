@@ -83,7 +83,7 @@ const mobileMenuOpen = ref(false);
 
             <Link
                 :href="home()"
-                class="focus-visible:ring-ring/50 shrink-0 rounded-md focus-visible:ring-[3px] focus-visible:outline-none"
+                class="focus-visible:ring-ring shrink-0 rounded-md focus-visible:ring-[3px] focus-visible:outline-none"
             >
                 <AppLogo class="h-7 w-auto" />
             </Link>
