@@ -4,13 +4,7 @@ import { computed } from 'vue';
 import IconTile from '@/components/IconTile.vue';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
-import {
-    fmt,
-    type Gradebook,
-    semestersFor,
-    type Status,
-    status,
-} from '@/lib/gradebook';
+import { fmt, type Averages, type Status, status } from '@/lib/gradebook';
 import { cn } from '@/lib/utils';
 
 /**
@@ -19,8 +13,7 @@ import { cn } from '@/lib/utils';
  * semestre courant est mis en avant, chaque étape notée affiche sa moyenne.
  */
 const props = defineProps<{
-    gradebook: Gradebook;
-    currentSemester: number;
+    averages: Averages;
     profile: { track: string | null; variant: 'standard' | 'mp' } | null;
     /**
      * Le semestre courant est déduit du dernier semestre noté (vue coach),
@@ -41,31 +34,28 @@ type Step = {
     average: number | null;
 };
 
-/** 8 semestres en IT, 6 en EC. */
-const semesters = computed(() => semestersFor(props.profile?.track));
+const currentSemester = computed(() => props.averages.current_semester);
+
+/** Durée de la formation, calculée par le backend. */
+const semesters = computed(() => props.averages.semester_count);
 
 const steps = computed<Step[]>(() =>
-    Array.from({ length: semesters.value }, (_, i) => {
-        const semester = i + 1;
-
-        return {
+    props.averages.semesters
+        .slice(0, semesters.value)
+        .map(({ semester, average }) => ({
             semester,
             state:
-                semester < props.currentSemester
+                semester < currentSemester.value
                     ? 'done'
-                    : semester === props.currentSemester
+                    : semester === currentSemester.value
                       ? 'current'
                       : 'upcoming',
-            average: props.gradebook.nodeValue(
-                props.gradebook.root,
-                props.gradebook.inSemester(semester),
-            ),
-        };
-    }),
+            average,
+        })),
 );
 
 /** Année d'apprentissage en cours, à partir de 1. */
-const year = computed(() => Math.ceil(props.currentSemester / 2));
+const year = computed(() => Math.ceil(currentSemester.value / 2));
 </script>
 
 <template>

@@ -224,8 +224,13 @@
 }
 
 @layer base {
+    /* Ancre et focus clavier passent sous la navbar sticky (h-14 + bordure 1px). */
+    html {
+        scroll-padding-top: calc(3.5rem + 1px);
+    }
+
     * {
-        @apply border-border outline-ring/50;
+        @apply border-border outline-ring;
     }
     body {
         @apply bg-background text-foreground font-sans;
@@ -266,4 +271,16 @@
  */
 [data-slot='button'].bg-primary:not(:disabled):hover {
     background-color: var(--primary-hover);
+}
+
+/*
+ * Les primitives shadcn (ui/*) dessinent l'anneau de focus en `ring-ring/50`
+ * (≈ 2.8:1 sur fond clair, sous le 3:1 du WCAG 1.4.11) : anneau plein sans
+ * toucher au code vendored. L'état invalide garde son anneau rouge.
+ */
+[class*='focus-visible:ring-ring/50']:focus-visible:not([aria-invalid='true']),
+[data-slot='input-group']:has(
+        [data-slot='input-group-control']:focus-visible
+    ):not(:has([aria-invalid='true'])) {
+    --tw-ring-color: var(--ring);
 }

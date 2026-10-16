@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { router } from '@inertiajs/vue3';
+import { Link, router } from '@inertiajs/vue3';
 import { computed } from 'vue';
 import { Badge } from '@/components/ui/badge';
 import { TableCell, TableRow } from '@/components/ui/table';
@@ -52,12 +52,9 @@ const current = (
 <template>
     <!-- Toute la ligne ouvre le profil. -->
     <TableRow
-        class="group focus-visible:bg-muted/50 cursor-pointer focus-visible:outline-none"
-        tabindex="0"
+        class="group has-[a:focus-visible]:bg-muted/50 cursor-pointer"
         :data-test="`apprentice-row-${apprentice.id}`"
         @click="openProfile"
-        @keydown.enter.self.prevent="openProfile"
-        @keydown.space.self.prevent="openProfile"
     >
         <TableCell>
             <div class="flex items-center gap-3">
@@ -65,11 +62,15 @@ const current = (
                     :name="apprentice.name"
                     :tone="situation.tone"
                 />
-                <div class="flex min-w-0 flex-col">
-                    <span
-                        class="flex items-center gap-2 font-medium group-hover:underline"
-                    >
-                        {{ apprentice.name }}
+                <div class="relative flex min-w-0 flex-col">
+                    <span class="flex items-center gap-2 font-medium">
+                        <Link
+                            :href="apprentices.show(apprentice.id)"
+                            class="group-hover:underline after:absolute after:inset-0"
+                            @click.stop
+                        >
+                            {{ apprentice.name }}
+                        </Link>
                         <Badge v-if="!apprentice.isActive" variant="outline">
                             Inactif
                         </Badge>

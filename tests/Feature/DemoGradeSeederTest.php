@@ -54,9 +54,9 @@ describe('in the local environment', function () {
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
                 ->component('ApprenticeShow')
-                // The profile computes the real CFC averages from the apprentice's tree.
-                ->where('tree.root', $demo->formationPlan->rootNode()?->id)
-                ->has('tree.nodes')
+                // The profile gets the real CFC averages, computed from the apprentice's tree.
+                ->whereType('averages.final', 'double')
+                ->has('averages.domains')
                 // Same statistics as the apprentice's row in the list.
                 ->where('stats.grades_count', 3)
                 ->has('grades', 3)
