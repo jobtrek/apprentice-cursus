@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { router } from '@inertiajs/vue3';
+import { Link, router } from '@inertiajs/vue3';
 import { ChevronRightIcon } from '@lucide/vue';
 import { computed } from 'vue';
 import { byDateDesc, fmt, gradeTone } from '@/lib/gradebook';
@@ -23,8 +23,10 @@ const showCategory = computed(() =>
 
 const sorted = computed(() => [...props.grades].sort(byDateDesc));
 
-const open = (grade: Grade) =>
-    router.visit(props.gradeHref?.(grade) ?? gradeRoutes.show(grade.id));
+const hrefOf = (grade: Grade) =>
+    props.gradeHref?.(grade) ?? gradeRoutes.show(grade.id);
+
+const open = (grade: Grade) => router.visit(hrefOf(grade));
 </script>
 
 <template>
@@ -46,13 +48,16 @@ const open = (grade: Grade) =>
                 <tr
                     v-for="grade in sorted"
                     :key="grade.id"
-                    tabindex="0"
                     @click="open(grade)"
-                    @keydown.enter.prevent="open(grade)"
-                    @keydown.space.prevent="open(grade)"
                 >
-                    <td :colspan="showCategory ? 1 : 2">
-                        <span class="gb-subject">{{ grade.title }}</span>
+                    <td :colspan="showCategory ? 1 : 2" class="relative">
+                        <Link
+                            :href="hrefOf(grade)"
+                            class="gb-subject after:absolute after:inset-0"
+                            @click.stop
+                        >
+                            {{ grade.title }}
+                        </Link>
                         <CommentCount
                             :count="grade.comments_count"
                             class="gb-comments"

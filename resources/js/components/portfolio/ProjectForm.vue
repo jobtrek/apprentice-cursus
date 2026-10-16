@@ -176,7 +176,7 @@ function onSubmit(): void {
                         Technologies
                     </FieldLabel>
                     <div
-                        class="border-input focus-within:border-ring focus-within:ring-ring/50 dark:bg-input/30 flex min-h-9 flex-wrap items-center gap-1.5 rounded-md border px-2 py-1.5 shadow-xs focus-within:ring-[3px]"
+                        class="border-input focus-within:border-ring focus-within:ring-ring dark:bg-input/30 flex min-h-9 flex-wrap items-center gap-1.5 rounded-md border px-2 py-1.5 shadow-xs focus-within:ring-[3px]"
                     >
                         <Badge
                             v-for="technology in form.technologies"

@@ -159,7 +159,7 @@ function toggleRead(): void {
                     >
                         <button
                             type="button"
-                            class="hover:bg-accent/60 focus-visible:ring-ring/50 flex w-full items-start gap-3 px-4 py-3 text-left transition-colors focus-visible:ring-[3px] focus-visible:outline-none focus-visible:ring-inset"
+                            class="hover:bg-accent/60 focus-visible:ring-ring flex w-full items-start gap-3 px-4 py-3 text-left transition-colors focus-visible:ring-[3px] focus-visible:outline-none focus-visible:ring-inset"
                             :class="
                                 cn(
                                     !notification.read && 'bg-accent/40',

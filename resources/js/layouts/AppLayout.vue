@@ -7,7 +7,7 @@ import MainNavbar from '@/layouts/MainNavbar.vue';
         <!-- Permet aux utilisateurs du clavier de passer la navigation. -->
         <a
             href="#main-content"
-            class="bg-background focus-visible:ring-ring/50 sr-only z-50 rounded-md px-4 py-2 text-sm font-medium focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus-visible:ring-[3px] focus-visible:outline-none"
+            class="bg-background focus-visible:ring-ring sr-only z-50 rounded-md px-4 py-2 text-sm font-medium focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus-visible:ring-[3px] focus-visible:outline-none"
         >
             Aller au contenu
         </a>
