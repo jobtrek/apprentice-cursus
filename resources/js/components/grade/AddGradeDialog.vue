@@ -109,10 +109,7 @@ watch(
                 </DialogClose>
                 <OcrFooterButtons
                     v-if="useOcr"
-                    :has-reading="!!ocrPanel?.reading"
-                    :can-approve="!!ocrPanel?.canApprove"
-                    :can-analyse="!!ocrPanel?.canAnalyse"
-                    :analysing="!!ocrPanel?.processing"
+                    :scan-status="ocrPanel?.scanStatus ?? 'incomplete'"
                     :saving="!!gradeForm?.form.processing"
                     @analyse="ocrPanel?.analyse()"
                     @approve="approve"

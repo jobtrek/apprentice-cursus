@@ -5,7 +5,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Field, FieldLabel } from '@/components/ui/field';
 import type { Branch } from '@/composables/useGradeForm';
 import grades from '@/routes/grades';
-import type { ScanReading, ScanResult } from '@/types/scan';
+import type { ScanReading, ScanResult, ScanStatus } from '@/types/scan';
 import { computed, ref } from 'vue';
 
 const props = defineProps<{
@@ -41,15 +41,15 @@ const readingBranch = computed(() => {
     return props.branches.find((branch) => branch.name === name);
 });
 
-const canApprove = computed(
-    () => reading.value?.grade != null && readingBranch.value !== undefined,
-);
-
-const canAnalyse = computed(
-    () => ocr.consent && ocr.file !== null && !ocr.processing,
-);
-
-const processing = computed(() => ocr.processing);
+const scanStatus = computed<ScanStatus>(() => {
+    if (reading.value) {
+        return reading.value.grade != null && readingBranch.value !== undefined
+            ? 'approvable'
+            : 'needsEdit';
+    }
+    if (ocr.processing) return 'analysing';
+    return ocr.consent && ocr.file !== null ? 'ready' : 'incomplete';
+});
 
 const result = computed<ScanResult | null>(() =>
     reading.value && ocr.file
@@ -65,14 +65,7 @@ const result = computed<ScanResult | null>(() =>
 const subjectLabel = (subject: string): string =>
     subject === 'OTHER' ? 'Autre' : subject.replace('subjects/', '');
 
-defineExpose({
-    reading,
-    result,
-    canApprove,
-    canAnalyse,
-    processing,
-    analyse,
-});
+defineExpose({ scanStatus, result, analyse });
 </script>
 
 <template>

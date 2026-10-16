@@ -1,11 +1,9 @@
 <script setup lang="ts">
 import { Button } from '@/components/ui/button';
+import type { ScanStatus } from '@/types/scan';
 
 defineProps<{
-    hasReading: boolean;
-    canApprove: boolean;
-    canAnalyse: boolean;
-    analysing: boolean;
+    scanStatus: ScanStatus;
     saving: boolean;
 }>();
 
@@ -17,12 +15,12 @@ defineEmits<{
 </script>
 
 <template>
-    <template v-if="hasReading">
+    <template v-if="scanStatus === 'needsEdit' || scanStatus === 'approvable'">
         <Button type="button" variant="outline" @click="$emit('deny')">
             Refuser et modifier
         </Button>
         <Button
-            v-if="canApprove"
+            v-if="scanStatus === 'approvable'"
             type="button"
             :disabled="saving"
             @click="$emit('approve')"
@@ -33,9 +31,11 @@ defineEmits<{
     <Button
         v-else
         type="button"
-        :disabled="!canAnalyse"
+        :disabled="scanStatus !== 'ready'"
         @click="$emit('analyse')"
     >
-        {{ analysing ? 'Analyse en cours…' : 'Analyser le PDF' }}
+        {{
+            scanStatus === 'analysing' ? 'Analyse en cours…' : 'Analyser le PDF'
+        }}
     </Button>
 </template>

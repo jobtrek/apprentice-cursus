@@ -13,3 +13,10 @@ export type ScanResult = {
     branchId: number | null;
     grade: number | null;
 };
+
+export type ScanStatus =
+    | 'incomplete'
+    | 'ready'
+    | 'analysing'
+    | 'needsEdit'
+    | 'approvable';
