@@ -8,6 +8,7 @@ use App\Http\Controllers\GradeController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\OcrScanController;
+use App\Http\Controllers\SubjectController;
 use App\Http\Controllers\SupervisionController;
 use App\Models\Grade;
 use Illuminate\Foundation\Http\Middleware\HandlePrecognitiveRequests;
@@ -18,6 +19,16 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/ocr-scans', OcrScanController::class)
         ->middleware('can:'.Permission::OcrViewStats->value)
         ->name('ocr-scans.index');
+    Route::middleware('can:'.Permission::SubjectsManage->value)
+        ->prefix('subjects')
+        ->name('subjects.')
+        ->controller(SubjectController::class)
+        ->group(function () {
+            Route::get('/', 'index')->name('index');
+            Route::post('/', 'store')->name('store');
+            Route::put('/{subject}', 'update')->whereNumber('subject')->name('update');
+            Route::delete('/{subject}', 'destroy')->whereNumber('subject')->name('destroy');
+        });
     Route::prefix('notifications')->name('notifications.')->controller(NotificationController::class)->group(function () {
         Route::get('/', 'index')->name('index');
         Route::put('/read', 'markAllAsRead')->name('read-all');

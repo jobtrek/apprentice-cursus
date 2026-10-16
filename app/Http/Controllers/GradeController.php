@@ -6,6 +6,7 @@ use App\Http\Requests\GradeRequest;
 use App\Http\Requests\ReadScanRequest;
 use App\Http\Resources\CommentResource;
 use App\Http\Resources\GradeResource;
+use App\Models\AverageNode;
 use App\Models\Grade;
 use App\Models\OcrScan;
 use App\Notifications\GradeAddedNotification;
@@ -20,6 +21,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
 use Imagick;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -178,7 +180,9 @@ class GradeController extends Controller
         $newPath = null;
 
         try {
-            DB::transaction(function () use ($grade, $data, $file, &$oldPath, &$newPath): void {
+            DB::transaction(function () use ($request, $grade, $data, $file, &$oldPath, &$newPath): void {
+                $this->lockSubject($request, (int) $data['average_node_id']);
+
                 // Locked and re-read: a concurrent edit may have replaced the scan since the
                 // request loaded the grade, and that newer scan is the one to clean up.
                 if ($grade->exists) {
@@ -229,6 +233,24 @@ class GradeController extends Controller
 
         if ($oldPath !== null && $oldPath !== $grade->file_path) {
             Storage::delete($oldPath);
+        }
+    }
+
+    /**
+     * Shared lock on the subject: an admin moving it between plans (SubjectController) takes the
+     * exclusive lock, so the two never interleave. The plan and leaf checks are repeated under
+     * the lock, since the validated request may predate a move.
+     */
+    private function lockSubject(GradeRequest $request, int $nodeId): void
+    {
+        $node = AverageNode::query()->sharedLock()->find($nodeId);
+
+        $valid = $node !== null
+            && $node->children()->doesntExist()
+            && $node->formationPlans()->whereKey($request->user()->formation_plan_id)->exists();
+
+        if (! $valid) {
+            throw ValidationException::withMessages(['average_node_id' => 'Cette branche ne fait pas partie de votre formation.']);
         }
     }
 
