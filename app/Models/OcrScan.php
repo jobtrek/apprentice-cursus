@@ -27,6 +27,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 #[Fillable(['user_id', 'subject', 'grade', 'confidence', 'flagged', 'pages_read', 'gemini_cost', 'jev_cost', 'duration_ms'])]
 class OcrScan extends Model
 {
+    /** A reading below this Jev confidence is flagged for a closer look. */
+    public const float FLAG_BELOW = 0.5;
+
     protected function casts(): array
     {
         return [

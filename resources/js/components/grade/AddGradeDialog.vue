@@ -14,6 +14,15 @@ import {
     DialogTitle,
 } from '@/components/ui/dialog';
 import { Field, FieldLabel } from '@/components/ui/field';
+import {
+    Select,
+    SelectContent,
+    SelectGroup,
+    SelectItem,
+    SelectLabel,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { useAddGradeDialog } from '@/composables/useAddGradeDialog';
 import type { GradeTree } from '@/lib/gradebook';
@@ -73,12 +82,30 @@ const SUBJECT_BRANCHES: Record<string, string> = {
     'subjects/Maths': 'Mathématiques',
 };
 
-const readingBranch = computed(() => {
+/** La branche proposée par l'OCR ; comparée à la branche enregistrée sur le tableau de bord OCR. */
+const suggestedBranch = computed(() => {
     const name = reading.value && SUBJECT_BRANCHES[reading.value.subject];
     return gradeForm.value?.branches.find((branch) => branch.name === name);
 });
 
-// Approuver demande une note et une branche reconnue ; sinon il faut compléter.
+// Branche non reconnue (matière absente de l'arbre, ou sans correspondance) :
+// l'apprenti·e la choisit sans quitter la lecture automatique.
+const pickedBranchId = ref<number | null>(null);
+
+// Une nouvelle lecture (ou un nouveau fichier) repart sans choix.
+watch(reading, () => {
+    pickedBranchId.value = null;
+});
+
+const readingBranch = computed(
+    () =>
+        suggestedBranch.value ??
+        gradeForm.value?.branches.find(
+            (branch) => branch.id === pickedBranchId.value,
+        ),
+);
+
+// Approuver demande une note et une branche, reconnue ou choisie.
 const canApprove = computed(
     () => reading.value?.grade != null && readingBranch.value !== undefined,
 );
@@ -92,7 +119,7 @@ function fillForm(): void {
     form.file = ocr.file;
     // Pour le tableau de bord OCR : la note enregistrée est comparée au scan.
     form.ocr_scan_id = reading.value?.scan_id ?? null;
-    form.ocr_node_id = readingBranch.value?.id ?? null;
+    form.ocr_node_id = suggestedBranch.value?.id ?? null;
     form.average_node_id = readingBranch.value?.id ?? form.average_node_id;
     if (reading.value?.grade != null) {
         form.value = reading.value.grade;
@@ -222,12 +249,40 @@ const subjectLabel = (subject: string): string =>
                                 {{ Math.round(reading.confidence * 100) }} %)
                             </span>
                         </p>
-                        <p>
+                        <p v-if="suggestedBranch">
                             Branche :
-                            <strong>{{
-                                readingBranch?.name ?? 'non reconnue'
-                            }}</strong>
+                            <strong>{{ suggestedBranch.name }}</strong>
                         </p>
+                        <Field v-else class="gap-1.5">
+                            <FieldLabel for="ocr-branch" class="font-normal">
+                                Branche : <strong>non reconnue</strong>,
+                                choisissez-la
+                            </FieldLabel>
+                            <Select v-model="pickedBranchId">
+                                <SelectTrigger id="ocr-branch" class="w-full">
+                                    <SelectValue
+                                        placeholder="Sélectionner une branche"
+                                    />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectGroup
+                                        v-for="group in gradeForm?.groups"
+                                        :key="group.name"
+                                    >
+                                        <SelectLabel>{{
+                                            group.name
+                                        }}</SelectLabel>
+                                        <SelectItem
+                                            v-for="branch in group.branches"
+                                            :key="branch.id"
+                                            :value="branch.id"
+                                        >
+                                            {{ branch.name }}
+                                        </SelectItem>
+                                    </SelectGroup>
+                                </SelectContent>
+                            </Select>
+                        </Field>
                         <p>
                             Note :
                             <strong>{{

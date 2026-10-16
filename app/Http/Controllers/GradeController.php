@@ -98,7 +98,7 @@ class GradeController extends Controller
             'subject' => $classification['subject']->value,
             'grade' => $grade,
             'confidence' => $classification['confidence'],
-            'flagged' => $grade === null || ($classification['confidence'] ?? 0) < 0.5,
+            'flagged' => $grade === null || ($classification['confidence'] ?? 0) < OcrScan::FLAG_BELOW,
             'pages_read' => $pagesRead,
             'gemini_cost' => $geminiCost,
             'jev_cost' => $classification['usage']->inputTokens * $prices['jev']['input'] / 1e6,

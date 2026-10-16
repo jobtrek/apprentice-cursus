@@ -2,6 +2,7 @@
 
 use App\Models\AverageNode;
 use App\Models\FormationPlan;
+use App\Models\Grade;
 use App\Models\OcrScan;
 use App\Models\User;
 use App\Services\Ocr\GeminiService;
@@ -135,4 +136,70 @@ test('only the local admin sees the OCR dashboard', function () {
         ->get(route('ocr-scans.index'))
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page->component('OcrScans')->where('stats.scans', 0));
+});
+
+test('the OCR dashboard bins scans for the charts', function () {
+    app()->detectEnvironment(fn () => 'local');
+    $base = ['user_id' => $this->apprentice->id, 'flagged' => false, 'pages_read' => 1, 'gemini_cost' => 0.01, 'jev_cost' => 0.002];
+    OcrScan::query()->create([...$base, 'subject' => 'OTHER', 'confidence' => 1.0, 'duration_ms' => 45_000]);
+    OcrScan::query()->create([...$base, 'subject' => 'OTHER', 'confidence' => 0.42, 'duration_ms' => 3_500]);
+    // A confidence on a bin edge lands in the bin above.
+    OcrScan::query()->create([...$base, 'subject' => 'OTHER', 'confidence' => 0.3, 'duration_ms' => 1_000]);
+
+    $this->actingAs(User::factory()->admin()->create())
+        ->get(route('ocr-scans.index'))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('charts.confidence.3', ['label' => '30–40 %', 'count' => 1, 'warn' => true])
+            ->where('charts.confidence.4.count', 1)
+            ->where('charts.confidence.9', ['label' => '90–100 %', 'count' => 1, 'warn' => false])
+            ->where('charts.duration.1.count', 1)
+            ->where('charts.duration.15', ['label' => '30 s+', 'count' => 1, 'warn' => true])
+            ->has('charts.spend', 30)
+            ->where('charts.spend.29.gemini', 0.03)
+            ->etc());
+});
+
+test('the OCR dashboard splits saved scans by what the apprentice corrected', function () {
+    app()->detectEnvironment(fn () => 'local');
+    $node = leafOf($this->apprentice);
+    $saved = fn (string $value): int => Grade::query()->create([
+        'user_id' => $this->apprentice->id, 'average_node_id' => $node->id, 'value' => $value, 'test_date' => '2026-01-15',
+    ])->id;
+    $scan = fn (array $attributes) => (new OcrScan)->forceFill([
+        'user_id' => $this->apprentice->id, 'subject' => 'subjects/Anglais', 'flagged' => false,
+        'pages_read' => 1, 'gemini_cost' => 0.01, 'jev_cost' => 0.002, 'duration_ms' => 4_000, ...$attributes,
+    ])->save();
+
+    $scan(['grade' => '5.0', 'grade_id' => $saved('5.0'), 'suggested_node_id' => $node->id]);
+    $scan(['grade' => '4.0', 'grade_id' => $saved('4.5'), 'suggested_node_id' => $node->id]);
+    // Branch not recognised, picked by the apprentice: no suggestion stored.
+    $scan(['grade' => '5.0', 'grade_id' => $saved('5.0'), 'flagged' => true]);
+    $scan(['grade' => '5.0']);
+
+    $this->actingAs(User::factory()->admin()->create())
+        ->get(route('ocr-scans.index'))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('charts.accuracy', ['correct' => 1, 'wrongGrade' => 1, 'wrongBranch' => 1])
+            ->where('stats.saved', 3)
+            ->where('stats.flaggedRate', 0.25)
+            ->where('stats.unflaggedAccuracy', 0.5)
+            ->where('stats.averageCost', 0.012)
+            ->where('stats.averageDurationMs', 4000)
+            ->etc());
+});
+
+test('a grade saved on a picked branch stores no OCR suggestion', function () {
+    $scan = OcrScan::query()->create([
+        'user_id' => $this->apprentice->id, 'subject' => 'OTHER', 'flagged' => true,
+        'pages_read' => 1, 'gemini_cost' => 0, 'jev_cost' => 0, 'duration_ms' => 1,
+    ]);
+    $node = leafOf($this->apprentice);
+
+    $this->actingAs($this->apprentice)->post(route('grades.store'), [
+        'average_node_id' => $node->id, 'value' => 4.5, 'test_date' => '2026-01-15',
+        'file' => blankPdf(), 'ocr_scan_id' => $scan->id, 'ocr_node_id' => null,
+    ])->assertSessionHasNoErrors();
+
+    expect($scan->refresh()->grade_id)->not->toBeNull()
+        ->and($scan->suggested_node_id)->toBeNull();
 });
