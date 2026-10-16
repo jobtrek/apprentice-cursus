@@ -3,7 +3,7 @@ import { useRemember } from '@inertiajs/vue3';
 import { ChevronDownIcon, CircleDashedIcon } from '@lucide/vue';
 import { computed, reactive } from 'vue';
 import SearchInput from '@/components/SearchInput.vue';
-import { PASSING_GRADE } from '@/data/dashboard';
+import { PASSING_GRADE } from '@/lib/grade-scale';
 import { fmt, fmtWeight, type Averages, plural } from '@/lib/gradebook';
 import type { Grade } from '@/types/grade';
 import type { RouteDefinition } from '@/wayfinder';

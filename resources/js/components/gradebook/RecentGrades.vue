@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Link } from '@inertiajs/vue3';
 import { computed } from 'vue';
+import { formatDate } from '@/lib/date';
 import { byDateDesc, fmt, gradeTone } from '@/lib/gradebook';
 import gradeRoutes from '@/routes/grades';
 import type { Grade } from '@/types/grade';
@@ -24,7 +25,7 @@ const recent = computed(() => [...props.grades].sort(byDateDesc).slice(0, 5));
                 <span class="recent__title">{{ grade.title }}</span>
                 <span class="recent__meta">
                     {{ grade.subject }} · S{{ grade.semester }} ·
-                    {{ grade.date }}
+                    {{ formatDate(grade.date) }}
                 </span>
             </Link>
             <CommentCount

@@ -7,7 +7,8 @@ import {
 } from '@lucide/vue';
 import { computed } from 'vue';
 import IconTile from '@/components/IconTile.vue';
-import { fmt, type Averages, PASS, shortName } from '@/lib/gradebook';
+import { fmt, type Averages, shortName } from '@/lib/gradebook';
+import { PASSING_GRADE } from '@/lib/grade-scale';
 import type { Grade } from '@/types/grade';
 import StatusChip from './StatusChip.vue';
 
@@ -47,7 +48,7 @@ const delta = computed(() => {
 
 const inCurrent = computed(() => semesterOf(current.value)?.count ?? 0);
 const failed = computed(
-    () => props.grades.filter((grade) => grade.value < PASS).length,
+    () => props.grades.filter((grade) => grade.value < PASSING_GRADE).length,
 );
 </script>
 

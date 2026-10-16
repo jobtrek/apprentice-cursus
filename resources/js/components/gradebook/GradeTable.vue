@@ -2,6 +2,7 @@
 import { Link, router } from '@inertiajs/vue3';
 import { ChevronRightIcon } from '@lucide/vue';
 import { computed } from 'vue';
+import { formatDate } from '@/lib/date';
 import { byDateDesc, fmt, gradeTone } from '@/lib/gradebook';
 import gradeRoutes from '@/routes/grades';
 import type { Grade } from '@/types/grade';
@@ -67,7 +68,7 @@ const open = (grade: Grade) => router.visit(hrefOf(grade));
                         {{ grade.subject }}
                     </td>
                     <td class="gb-col-sem">S{{ grade.semester }}</td>
-                    <td class="gb-col-date">{{ grade.date }}</td>
+                    <td class="gb-col-date">{{ formatDate(grade.date) }}</td>
                     <td class="gb-col-grade">
                         <span :class="['gb-grade', gradeTone(grade.value)]">
                             {{ fmt(grade.value) }}

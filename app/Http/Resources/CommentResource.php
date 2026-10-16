@@ -41,8 +41,7 @@ class CommentResource extends JsonResource
             'id' => $this->id,
             'author' => $this->author->name,
             'role' => $this->roleLabel(),
-            // Same format as GradeResource.
-            'date' => $this->created_at->format('d.m.Y'),
+            'date' => $this->created_at->toDateString(),
             'text' => $this->body,
             'edited' => $this->updated_at->gt($this->created_at),
             // The viewer's own comments sit on the other side of the thread.

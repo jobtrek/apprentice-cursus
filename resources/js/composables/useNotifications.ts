@@ -1,25 +1,21 @@
 import { router, usePage } from '@inertiajs/vue3';
 import { Temporal } from 'temporal-polyfill';
 import { computed } from 'vue';
+import { formatDate } from '@/lib/date';
 import notificationsRoutes from '@/routes/notifications';
 
-const pad = (value: number): string => String(value).padStart(2, '0');
-
-const HAS_TIME_ZONE = /(?:[Zz]|[+-]\d{2}:?\d{2})$/;
-
 /**
- * `created_at` arrive sans fuseau dans le JSON de démo, mais Eloquent
- * sérialise en UTC (`2026-09-16T08:15:00.000000Z`). `PlainDateTime.from`
- * refuse le `Z` : on passe alors par un `Instant` qu'on ramène dans le fuseau
- * du navigateur, seule façon de comparer « aujourd'hui » et « hier » du point
- * de vue de la personne qui lit.
+ * `created_at` est un instant ISO 8601 avec fuseau : ramené dans le fuseau du
+ * navigateur, seule façon de comparer « aujourd'hui » et « hier » du point de
+ * vue de la personne qui lit.
  */
 const toLocalDateTime = (date: string): Temporal.PlainDateTime =>
-    HAS_TIME_ZONE.test(date)
-        ? Temporal.Instant.from(date)
-              .toZonedDateTimeISO(Temporal.Now.timeZoneId())
-              .toPlainDateTime()
-        : Temporal.PlainDateTime.from(date);
+    Temporal.Instant.from(date)
+        .toZonedDateTimeISO(Temporal.Now.timeZoneId())
+        .toPlainDateTime();
+
+const time = (date: Temporal.PlainDateTime): string =>
+    date.toPlainTime().toString({ smallestUnit: 'minute' });
 
 /**
  * Libellé relatif façon maquette : « Il y a 2 heures » le jour même,
@@ -49,17 +45,17 @@ export const formatNotificationDate = (date: string): string => {
     }
 
     if (createdDay.equals(today.subtract({ days: 1 }))) {
-        return `Hier à ${created.toPlainTime().toString({ smallestUnit: 'minute' })}`;
+        return `Hier à ${time(created)}`;
     }
 
-    return `${pad(createdDay.day)}.${pad(createdDay.month)}.${createdDay.year}`;
+    return formatDate(createdDay.toString());
 };
 
 /** Date complète pour le détail d'une notification : « 16.09.2026 à 08:15 ». */
 export const formatNotificationFullDate = (date: string): string => {
     const created = toLocalDateTime(date);
 
-    return `${pad(created.day)}.${pad(created.month)}.${created.year} à ${created.toPlainTime().toString({ smallestUnit: 'minute' })}`;
+    return `${formatDate(created.toPlainDate().toString())} à ${time(created)}`;
 };
 
 /**

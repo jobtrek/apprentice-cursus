@@ -27,7 +27,6 @@ class ApprenticeController extends Controller
         $user = $request->user();
 
         $canManage = $user->can(Permission::SupervisionManage->value);
-        $assignSelfAs = $user->selfAssignmentColumn() === 'coach_id' ? 'coach' : null;
 
         return Inertia::render('ApprentisDashboard', [
             'apprentices' => ApprenticeList::for($user),
@@ -37,7 +36,7 @@ class ApprenticeController extends Controller
                 ? User::role(UserRole::Coach->value)->orderBy('name')->get(['id', 'name'])
                 : [],
             'can' => [
-                'assignSelfAs' => $assignSelfAs,
+                'assignSelf' => $user->canSelfAssign(),
                 'manageSupervision' => $canManage,
             ],
         ]);
@@ -81,15 +80,14 @@ class ApprenticeController extends Controller
     public function assign(Request $request, User $apprentice): RedirectResponse
     {
         $user = $request->user();
-        // The local admin passes every Gate but has no column: it uses the selects.
-        $column = $user->selfAssignmentColumn();
-        abort_if($column === null, 403);
+        // The local admin passes every Gate but is no coach: it uses the selects.
+        abort_unless($user->canSelfAssign(), 403);
         Gate::authorize('assignSelf', $apprentice);
 
         $assigned = User::query()
             ->whereKey($apprentice->id)
-            ->whereNull($column)
-            ->update([$column => $user->id]);
+            ->whereNull('coach_id')
+            ->update(['coach_id' => $user->id]);
 
         abort_if($assigned === 0, 409);
 

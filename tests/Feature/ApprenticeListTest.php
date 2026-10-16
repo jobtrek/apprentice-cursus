@@ -34,7 +34,7 @@ test('a coach lists only the active apprentices it coaches, in both sections', f
         });
 });
 
-test('each listed apprentice carries its coach and can be opened', function () {
+test('each listed apprentice carries its coach', function () {
     $coach = User::factory()->coach()->create(['name' => 'My coach']);
     $mine = makeApprentice($this->it, $coach);
 
@@ -43,7 +43,7 @@ test('each listed apprentice carries its coach and can be opened', function () {
         ->assertInertia(function (Assert $page) use ($mine) {
             $rows = collect($page->toArray()['props']['apprentices'])->keyBy('id');
 
-            expect($rows[$mine->id])->toMatchArray(['track' => 'IT', 'year' => null, 'coach' => 'My coach', 'canView' => true]);
+            expect($rows[$mine->id])->toMatchArray(['track' => 'IT', 'year' => null, 'coach' => 'My coach']);
         });
 });
 
@@ -57,8 +57,7 @@ test('a trainer lists every active apprentice of the plans it trains', function 
 
     $this->actingAs($trainer)
         ->get(route('apprentisdashboard'))
-        ->assertInertia(fn (Assert $page) => expect(listedNames($page))->toBe(['EC', 'EC MP']))
-        ->assertInertia(fn (Assert $page) => $page->where('apprentices.0.canView', true));
+        ->assertInertia(fn (Assert $page) => expect(listedNames($page))->toBe(['EC', 'EC MP']));
 });
 
 test('a trainer without a plan lists nobody', function () {

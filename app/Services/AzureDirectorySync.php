@@ -71,9 +71,13 @@ class AzureDirectorySync
                 // Same field as the Socialite Azure provider uses for the login email.
                 $email = $member['userPrincipalName'] ?? $member['mail'] ?? null;
 
-                $members[$azureId]['groups'][] = $group;
-                $members[$azureId]['email'] = is_string($email) && $email !== '' ? $email : null;
-                $members[$azureId]['name'] = ($member['displayName'] ?? '') !== '' ? $member['displayName'] : (string) $email;
+                $displayName = $member['displayName'] ?? '';
+
+                $members[$azureId] = [
+                    'groups' => [...($members[$azureId]['groups'] ?? []), $group],
+                    'email' => is_string($email) && $email !== '' ? $email : null,
+                    'name' => $displayName !== '' ? $displayName : (string) $email,
+                ];
             }
         }
 

@@ -10,8 +10,7 @@ use App\Models\Grade;
 use App\Models\OcrScan;
 use App\Notifications\GradeAddedNotification;
 use App\Notifications\GradeDeletedNotification;
-use App\Services\Ocr\GeminiService;
-use App\Services\Ocr\JevService;
+use App\Services\Ocr\ScanReader;
 use App\Support\Gradebook\Gradebook;
 use App\Support\Gradebook\GradebookTree;
 use Illuminate\Http\JsonResponse;
@@ -20,7 +19,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
-use Imagick;
 use Inertia\Inertia;
 use Inertia\Response;
 use RuntimeException;
@@ -48,68 +46,19 @@ class GradeController extends Controller
         return back();
     }
 
-    public function readScan(ReadScanRequest $request, GeminiService $gemini, JevService $jev): JsonResponse
+    public function readScan(ReadScanRequest $request, ScanReader $reader): JsonResponse
     {
         abort_unless(config('ocr.enabled'), 404);
 
-        $start = hrtime(true);
-
-        // Pages 2–3 are read only when the page before has no grade or was cut off.
-        // ponytail: synchronous; the cache and queue are in docs/ocr_specs/tasks.md.
-        $path = $request->file('file')->getRealPath();
-        $pdf = new Imagick;
-        $pdf->pingImage($path);
-        $pages = $pdf->getNumberImages();
-        $firstText = null;
-        $grade = null;
-        $geminiCost = 0.0;
-        $pagesRead = 0;
-        $prices = config('ocr.prices');
-
-        for ($n = 0; $n < min(3, $pages); $n++) {
-            $page = new Imagick;
-            $page->setResolution(200, 200);
-            $page->readImage("{$path}[{$n}]");
-            $page->setImageBackgroundColor('white');
-            $page = $page->mergeImageLayers(Imagick::LAYERMETHOD_FLATTEN);
-            $page->setImageFormat('png');
-
-            $reading = $gemini->read($page->getImageBlob());
-            $firstText ??= $reading['text'];
-            $grade = $reading['grade'];
-            $pagesRead = $n + 1;
-            $geminiCost += ($reading['usage']->inputTokens * $prices['gemini']['input']
-                + $reading['usage']->outputTokens * $prices['gemini']['output']) / 1e6;
-
-            if ($grade !== null && ! $reading['truncated']) {
-                break;
-            }
-        }
-
-        $classification = $jev->classify(['first_page_text' => (string) $firstText]);
-
-        // Only 1.0–6.0 in steps of 0.5 is a valid grade.
-        if ($grade !== null && ($grade < 1 || $grade > 6 || fmod($grade * 2, 1) !== 0.0)) {
-            $grade = null;
-        }
-
-        $scan = OcrScan::query()->create([
-            'user_id' => $request->user()->id,
-            'subject' => $classification['subject']->value,
-            'grade' => $grade,
-            'confidence' => $classification['confidence'],
-            'flagged' => $grade === null || ($classification['confidence'] ?? 0) < 0.5,
-            'pages_read' => $pagesRead,
-            'gemini_cost' => $geminiCost,
-            'jev_cost' => $classification['usage']->inputTokens * $prices['jev']['input'] / 1e6,
-            'duration_ms' => (int) round((hrtime(true) - $start) / 1e6),
-        ]);
+        $scan = $reader->read($request->file('file'), $request->user());
 
         return response()->json([
             'scan_id' => $scan->id,
             'subject' => $scan->subject,
+            // The leaf of the apprentice's plan the subject matches, null when none does.
+            'node_id' => $scan->suggested_node_id,
             'confidence' => $scan->confidence,
-            'grade' => $grade,
+            'grade' => $scan->grade === null ? null : (float) $scan->grade,
             'flagged' => $scan->flagged,
             'duration_ms' => $scan->duration_ms,
         ]);
@@ -204,7 +153,7 @@ class GradeController extends Controller
                         ->whereKey($data['ocr_scan_id'])
                         ->where('user_id', $grade->user_id)
                         ->whereNull('grade_id')
-                        ->update(['grade_id' => $grade->id, 'suggested_node_id' => $data['ocr_node_id'] ?? null]);
+                        ->update(['grade_id' => $grade->id]);
                 }
 
                 if ($file === null) {

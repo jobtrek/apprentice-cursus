@@ -34,7 +34,7 @@ describe('local admin', function () {
                 ->where('coaches', [['id' => $coach->id, 'name' => $coach->name]])
                 ->where('can.manageSupervision', true)
                 // The local admin uses the selects, not the "Ajouter" dialog.
-                ->where('can.assignSelfAs', null));
+                ->where('can.assignSelf', false));
     });
 
     test('assigns, changes and removes the coach of an apprentice', function () {

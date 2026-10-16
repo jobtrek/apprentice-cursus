@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import { GRADE_MAX } from '@/constants/constants';
-import { PASSING_GRADE } from '@/data/dashboard';
+import { GRADE_MAX, PASSING_GRADE } from '@/lib/grade-scale';
 import { averageStatus, TONES } from '@/lib/apprentice';
 import { cn } from '@/lib/utils';
 

@@ -4,10 +4,10 @@ import {
     fmt,
     fmtWeight,
     type Averages,
-    PASS,
     plural,
     shortName,
 } from '@/lib/gradebook';
+import { PASSING_GRADE } from '@/lib/grade-scale';
 import StatusChip from './StatusChip.vue';
 
 const props = defineProps<{ averages: Averages }>();
@@ -23,7 +23,7 @@ const fill = computed(() =>
         ? 0
         : ARC * Math.max(0, Math.min(1, (final.value - 1) / 5)),
 );
-const tickAngle = ((135 + (270 * (PASS - 1)) / 5) * Math.PI) / 180;
+const tickAngle = ((135 + (270 * (PASSING_GRADE - 1)) / 5) * Math.PI) / 180;
 
 const domains = computed(() =>
     props.averages.domains.map((domain, i) => ({
@@ -129,7 +129,7 @@ const missing = computed(() =>
                     >
                         <span
                             :class="
-                                domain.value < PASS
+                                domain.value < PASSING_GRADE
                                     ? 'gb-meter__bar is-fail'
                                     : 'gb-meter__bar'
                             "

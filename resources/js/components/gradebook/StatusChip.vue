@@ -1,19 +1,20 @@
 <script setup lang="ts">
 import { CheckIcon, TriangleAlertIcon, XIcon } from '@lucide/vue';
 import { computed } from 'vue';
-import { status } from '@/lib/gradebook';
+import { STATUS_LABELS } from '@/lib/gradebook';
+import { gradeLevel } from '@/lib/grade-scale';
 
 const props = defineProps<{ value: number }>();
 
 const GLYPHS = { good: CheckIcon, warn: TriangleAlertIcon, bad: XIcon };
 
-const state = computed(() => status(props.value));
+const level = computed(() => gradeLevel(props.value));
 </script>
 
 <template>
     <!-- Validé / Suffisant / À risque : l'icône double la couleur. -->
-    <span :class="`status status--${state[0]}`">
-        <component :is="GLYPHS[state[0]]" aria-hidden="true" />
-        {{ state[1] }}
+    <span :class="`status status--${level}`">
+        <component :is="GLYPHS[level]" aria-hidden="true" />
+        {{ STATUS_LABELS[level] }}
     </span>
 </template>

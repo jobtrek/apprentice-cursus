@@ -27,6 +27,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 #[Fillable(['user_id', 'average_node_id', 'value', 'test_date', 'file_path'])]
 class Grade extends Model
 {
+    /** 1.0–6.0 in steps of 0.5, shared by GradeRequest and the OCR reading. */
+    public const VALUE_RULES = ['numeric', 'between:1,6', 'multiple_of:0.5'];
+
     protected function casts(): array
     {
         return [

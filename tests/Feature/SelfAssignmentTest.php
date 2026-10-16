@@ -53,7 +53,7 @@ describe('coach', function () {
         $this->actingAs($coach)
             ->get(route('apprentisdashboard'))
             ->assertInertia(fn (Assert $page) => $page
-                ->where('can.assignSelfAs', 'coach')
+                ->where('can.assignSelf', true)
                 ->where('assignable', [['id' => $free->id, 'name' => 'Free', 'track' => 'EC']]));
     });
 });
@@ -76,8 +76,18 @@ describe('trainer', function () {
         $this->actingAs(makeTrainer($this->it))
             ->get(route('apprentisdashboard'))
             ->assertInertia(fn (Assert $page) => $page
-                ->where('can.assignSelfAs', null)
+                ->where('can.assignSelf', false)
                 ->where('assignable', []));
+    });
+
+    test('is not offered the add button on the home page', function () {
+        makeApprentice($this->it);
+
+        $this->actingAs(makeTrainer($this->it))
+            ->get(route('home'))
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('can.assignSelf', false)
+                ->where('assignableCount', 0));
     });
 });
 

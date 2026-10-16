@@ -17,6 +17,7 @@ class HomeController extends Controller
         $ownGrades = $user->can(Permission::GradesViewOwn->value);
 
         $supervises = $user->can(Permission::ApprenticesViewList->value);
+        $assignSelf = $user->canSelfAssign();
 
         return Inertia::render('Home', [
             // Every grade: the apprentice dashboard lists them and charts the averages.
@@ -30,7 +31,10 @@ class HomeController extends Controller
             'latestGrades' => $supervises ? ApprenticeList::latestGrades($user) : [],
             'activity' => $supervises ? ApprenticeList::monthlyActivity($user) : [],
             // Apprentices the coach could still take on.
-            'assignableCount' => $user->assignableApprentices()->count(),
+            'assignableCount' => $assignSelf ? $user->assignableApprentices()->count() : 0,
+            'can' => [
+                'assignSelf' => $assignSelf,
+            ],
         ]);
     }
 }

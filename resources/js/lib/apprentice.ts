@@ -1,5 +1,5 @@
 import { Temporal } from 'temporal-polyfill';
-import { PASSING_GRADE } from '@/data/dashboard';
+import { type GradeLevel, gradeLevel, PASSING_GRADE } from '@/lib/grade-scale';
 import type { ApprenticeListItem } from '@/types/apprentice';
 
 /** Couleur sémantique partagée par les badges, jauges et tuiles. */
@@ -54,40 +54,30 @@ export type AverageStatus = {
     color: string;
 };
 
-/** Seuil à partir duquel une moyenne est considérée comme bonne. */
-const GOOD_AVERAGE = 4.5;
-
-/** Appréciation d'une moyenne sur l'échelle suisse de 1 à 6. */
-export const averageStatus = (average: number): AverageStatus => {
-    if (average >= GOOD_AVERAGE) {
-        return {
-            label: 'Bonne',
-            tone: 'success',
-            class: 'text-success',
-            color: 'var(--success)',
-        };
-    }
-
-    if (average >= PASSING_GRADE) {
-        return {
-            label: 'Suffisante',
-            tone: 'warning',
-            class: 'text-warning',
-            color: 'var(--warning)',
-        };
-    }
-
-    return {
+const AVERAGE_STATUS: Record<GradeLevel, AverageStatus> = {
+    good: {
+        label: 'Bonne',
+        tone: 'success',
+        class: 'text-success',
+        color: 'var(--success)',
+    },
+    warn: {
+        label: 'Suffisante',
+        tone: 'warning',
+        class: 'text-warning',
+        color: 'var(--warning)',
+    },
+    bad: {
         label: 'Insuffisante',
         tone: 'destructive',
         class: 'text-destructive',
         color: 'var(--destructive)',
-    };
+    },
 };
 
-/** `02.03.2026` → `2026-03-02`, comparable comme une chaîne. */
-export const sortableDate = (date: string): string =>
-    date.split('.').reverse().join('-');
+/** Appréciation d'une moyenne sur l'échelle suisse de 1 à 6. */
+export const averageStatus = (average: number): AverageStatus =>
+    AVERAGE_STATUS[gradeLevel(average)];
 
 /** Au-delà, un·e apprenti·e sans nouvelle note est signalé·e. */
 export const STALE_AFTER_DAYS = 90;
@@ -95,7 +85,7 @@ export const STALE_AFTER_DAYS = 90;
 /** Aucune note, ou la dernière date de plus de STALE_AFTER_DAYS jours. */
 export const hasNoRecentGrade = (lastGradeDate: string | null): boolean =>
     lastGradeDate === null ||
-    sortableDate(lastGradeDate) <
+    lastGradeDate <
         Temporal.Now.plainDateISO()
             .subtract({ days: STALE_AFTER_DAYS })
             .toString();
@@ -131,23 +121,4 @@ export const situationOf = ({
     }
 
     return { key: 'on-track', label: 'À jour', tone: 'success' };
-};
-
-const relativeFormat = new Intl.RelativeTimeFormat('fr', { numeric: 'auto' });
-
-/** `02.03.2026` → « il y a 3 jours », « hier », « il y a 2 mois »… */
-export const relativeDate = (date: string): string => {
-    const days = Temporal.PlainDate.from(sortableDate(date)).until(
-        Temporal.Now.plainDateISO(),
-    ).days;
-
-    if (days < 30) {
-        return relativeFormat.format(-days, 'day');
-    }
-
-    if (days < 365) {
-        return relativeFormat.format(-Math.round(days / 30), 'month');
-    }
-
-    return relativeFormat.format(-Math.round(days / 365), 'year');
 };

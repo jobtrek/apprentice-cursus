@@ -24,7 +24,7 @@ class UserPolicy
             return false;
         }
 
-        return $user->selfAssignmentColumn() === 'coach_id' && $apprentice->coach_id === null;
+        return $user->canSelfAssign() && $apprentice->coach_id === null;
     }
 
     /** Assign or remove the coach of any apprentice (local admin only). */

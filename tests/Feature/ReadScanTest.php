@@ -82,33 +82,40 @@ test('a scan is not read without consent', function () {
         ->assertJsonValidationErrors('consent');
 });
 
-test('a scan is recorded and linked to the grade saved from it', function () {
+test('a scan suggests the leaf of its subject and is linked to the grade saved from it', function () {
     GeminiService::fake([['text' => 'English Test', 'subject' => 'subjects/Anglais', 'grade' => 5.0, 'grade_box' => null]]);
     Classification::fake([['subject' => new ChoiceAnswer('subjects/Anglais', ['subjects/Anglais' => 0.9], 0.9)]]);
+    $node = leafOf($this->apprentice);
 
-    $scanId = $this->actingAs($this->apprentice)
+    $response = $this->actingAs($this->apprentice)
         ->postJson(route('grades.read-scan'), ['consent' => true, 'file' => blankPdf()])
-        ->json('scan_id');
+        ->assertJson(['node_id' => $node->id]);
 
-    $scan = OcrScan::query()->findOrFail($scanId);
+    $scan = OcrScan::query()->findOrFail($response->json('scan_id'));
     expect($scan->user_id)->toBe($this->apprentice->id)
         ->and($scan->pages_read)->toBe(1)
         ->and($scan->grade)->toBe('5.0')
+        ->and($scan->suggested_node_id)->toBe($node->id)
         ->and($scan->grade_id)->toBeNull();
-
-    $node = leafOf($this->apprentice);
 
     $this->post(route('grades.store'), [
         'average_node_id' => $node->id,
         'value' => 4.5,
         'test_date' => '2026-01-15',
         'file' => blankPdf(),
-        'ocr_scan_id' => $scanId,
-        'ocr_node_id' => $node->id,
+        'ocr_scan_id' => $scan->id,
     ])->assertSessionHasNoErrors();
 
-    expect($scan->refresh()->grade_id)->not->toBeNull()
-        ->and($scan->suggested_node_id)->toBe($node->id);
+    expect($scan->refresh()->grade_id)->not->toBeNull();
+});
+
+test('an out-of-range grade read by the OCR is dropped', function () {
+    GeminiService::fake([['text' => 'Test', 'subject' => 'OTHER', 'grade' => 5.3, 'grade_box' => null]]);
+    Classification::fake([['subject' => new ChoiceAnswer('OTHER', ['OTHER' => 0.9], 0.9)]]);
+
+    $this->actingAs($this->apprentice)
+        ->postJson(route('grades.read-scan'), ['consent' => true, 'file' => blankPdf()])
+        ->assertJson(['grade' => null, 'node_id' => null, 'flagged' => true]);
 });
 
 test('another apprentice cannot claim a scan', function () {

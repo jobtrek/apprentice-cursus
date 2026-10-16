@@ -42,6 +42,6 @@ class MappingRolesService
             ]);
         }
 
-        return count($matched) === 1 ? reset($matched) : null;
+        return count($matched) === 1 ? array_values($matched)[0] : null;
     }
 }

@@ -17,7 +17,6 @@ export interface Apprentice {
     coachId: number | null;
     /** Formateurs du plan de l'apprenti·e (« A, B »), null sans formateur. */
     trainer: string | null;
-    canView: boolean;
 }
 
 /** Statistiques de notes calculées par le serveur. */
@@ -25,7 +24,7 @@ export interface ApprenticeStats {
     grades_count: number;
     /** Moyenne arrondie au dixième, null sans note. */
     average: number | null;
-    /** Format `d.m.Y`, null sans note. */
+    /** Date ISO, null sans note. */
     last_grade_date: string | null;
 }
 
@@ -33,12 +32,6 @@ export interface ApprenticeStats {
 export interface ApprenticeListItem extends Apprentice {
     stats: ApprenticeStats;
 }
-
-/**
- * Rôle sous lequel l'utilisateur s'ajoute un·e apprenti·e. Seul un coach le
- * fait : un formateur suit tous les apprentis des plans qu'il forme.
- */
-export type AssignSelfAs = 'coach';
 
 /** Apprenti·e proposé·e par « Ajouter un apprenti » : sans coach. */
 export interface AssignableApprentice {
@@ -60,7 +53,7 @@ export interface SupervisedGrade {
     apprentice: string;
     title: string;
     value: number;
-    /** Format `d.m.Y`. */
+    /** Date ISO. */
     date: string;
     comments_count: number;
 }

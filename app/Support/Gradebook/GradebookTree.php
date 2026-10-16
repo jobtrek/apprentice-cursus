@@ -32,13 +32,18 @@ final class GradebookTree
             return null;
         }
 
-        $childrenOf = $planNodes->whereNotNull('parent_id')->groupBy('parent_id');
+        $childrenOf = [];
+
+        foreach ($planNodes as $child) {
+            if ($child->parent_id !== null) {
+                $childrenOf[$child->parent_id][] = ['id' => $child->id, 'weight' => (float) $child->weight];
+            }
+        }
+
         $nodes = [];
 
         foreach ($planNodes as $node) {
-            $children = array_values($childrenOf->get($node->id, collect())
-                ->map(fn (AverageNode $child): array => ['id' => $child->id, 'weight' => (float) $child->weight])
-                ->all());
+            $children = $childrenOf[$node->id] ?? [];
 
             $nodes[$node->id] = [
                 'id' => $node->id,

@@ -45,7 +45,7 @@ class GradeResource extends JsonResource
             // The decimal cast yields a string; the front formats a number.
             'value' => (float) $this->value,
             'semester' => $this->semester,
-            'date' => $this->test_date->format('d.m.Y'),
+            'date' => $this->test_date->toDateString(),
             // Only when the query used withCount('comments').
             'comments_count' => $this->whenCounted('comments'),
         ];

@@ -42,12 +42,9 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import {
-    type EditedGrade,
-    MONTHS,
-    useGradeForm,
-} from '@/composables/useGradeForm';
-import { GRADE_MAX, GRADE_MIN, GRADE_STEP } from '@/constants/constants';
+import { type EditedGrade, useGradeForm } from '@/composables/useGradeForm';
+import { MONTHS } from '@/lib/date';
+import { GRADE_MAX, GRADE_MIN, GRADE_STEP } from '@/lib/grade-scale';
 import type { GradeTree } from '@/lib/gradebook';
 
 const props = defineProps<{

@@ -40,11 +40,10 @@ import {
     YEAR_OPTIONS,
 } from '@/composables/useApprenticeFilters';
 import { TRACK_FILTER_OPTIONS } from '@/constants/constants';
-import { PASSING_GRADE } from '@/data/dashboard';
+import { PASSING_GRADE } from '@/lib/grade-scale';
 import type {
     ApprenticeListItem,
     AssignableApprentice,
-    AssignSelfAs,
     SupervisorOption,
 } from '@/types/apprentice';
 
@@ -58,8 +57,8 @@ const props = defineProps<{
     assignable: AssignableApprentice[];
     coaches: SupervisorOption[];
     can: {
-        /** Coach : rôle pris en ajoutant un apprenti. */
-        assignSelfAs: AssignSelfAs | null;
+        /** Coach : s'ajoute des apprentis, dont il devient le coach. */
+        assignSelf: boolean;
         /** Admin local : choix du coach de chaque apprenti·e. */
         manageSupervision: boolean;
     };
@@ -75,7 +74,7 @@ const plural = (count: number, word: string): string =>
 const description = computed(() => {
     const available = props.assignable.length;
 
-    return props.can.assignSelfAs && available > 0
+    return props.can.assignSelf && available > 0
         ? `${plural(available, 'apprenti')} sans coach à ajouter`
         : undefined;
 });
@@ -104,7 +103,7 @@ const columns = computed(() =>
         { key: 'activity', label: 'Activité' },
         { key: 'coach', label: 'Coach' },
         { key: 'trainer', label: 'Formateur' },
-    ].filter(({ key }) => key !== props.can.assignSelfAs),
+    ].filter(({ key }) => key !== 'coach' || !props.can.assignSelf),
 );
 </script>
 
@@ -113,10 +112,10 @@ const columns = computed(() =>
 
     <PageContainer size="lg">
         <PageHeader
-            :title="can.assignSelfAs ? 'Mes apprentis' : 'Apprentis'"
+            :title="can.assignSelf ? 'Mes apprentis' : 'Apprentis'"
             :description="description"
         >
-            <template v-if="can.assignSelfAs" #actions>
+            <template v-if="can.assignSelf" #actions>
                 <Button
                     data-test="assign-apprentice-button"
                     @click="assignOpen = true"
@@ -134,20 +133,20 @@ const columns = computed(() =>
                 </EmptyMedia>
                 <EmptyTitle>
                     {{
-                        can.assignSelfAs
+                        can.assignSelf
                             ? 'Vous ne suivez encore aucun apprenti'
                             : 'Aucun apprenti pour le moment'
                     }}
                 </EmptyTitle>
                 <EmptyDescription>
                     {{
-                        can.assignSelfAs
+                        can.assignSelf
                             ? 'Ajoutez les apprentis que vous suivez pour voir leurs notes et leur portfolio.'
                             : 'Les apprentis actifs apparaîtront ici dès leur synchronisation depuis Entra.'
                     }}
                 </EmptyDescription>
             </EmptyHeader>
-            <EmptyContent v-if="can.assignSelfAs">
+            <EmptyContent v-if="can.assignSelf">
                 <Button @click="assignOpen = true">
                     <UserPlusIcon aria-hidden="true" />
                     Ajouter un apprenti
@@ -160,7 +159,7 @@ const columns = computed(() =>
                 v-model="filters.situation"
                 :apprentices="apprentices"
                 :total-label="
-                    can.assignSelfAs ? 'Apprentis suivis' : 'Apprentis actifs'
+                    can.assignSelf ? 'Apprentis suivis' : 'Apprentis actifs'
                 "
             />
 
@@ -304,7 +303,7 @@ const columns = computed(() =>
                             v-for="apprentice in results"
                             :key="apprentice.id"
                             :apprentice="apprentice"
-                            :own-role="can.assignSelfAs"
+                            :hide-coach="can.assignSelf"
                         />
                     </div>
 
@@ -316,7 +315,7 @@ const columns = computed(() =>
                         <template #row="{ item }">
                             <ApprenticeRow
                                 :apprentice="item"
-                                :own-role="can.assignSelfAs"
+                                :hide-coach="can.assignSelf"
                                 :coaches="
                                     can.manageSupervision ? coaches : null
                                 "
@@ -333,9 +332,8 @@ const columns = computed(() =>
         </template>
 
         <AssignApprenticeDialog
-            v-if="can.assignSelfAs"
+            v-if="can.assignSelf"
             v-model:open="assignOpen"
-            :as="can.assignSelfAs"
             :assignable="assignable"
         />
     </PageContainer>

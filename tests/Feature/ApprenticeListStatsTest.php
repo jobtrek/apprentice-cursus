@@ -25,7 +25,7 @@ test('the apprentice list carries grade stats for each followed apprentice', fun
             ->where('apprentices.0.stats', [
                 'grades_count' => 2,
                 'average' => 4.3,
-                'last_grade_date' => '02.03.2026',
+                'last_grade_date' => '2026-03-02',
             ])
             ->where('apprentices.1.id', $withoutGrades->id)
             ->where('apprentices.1.stats', [
@@ -50,7 +50,7 @@ test('the supervisor home carries the same grade stats as the apprentice list', 
             ->where('apprentices.0.stats', [
                 'grades_count' => 1,
                 'average' => 3.5,
-                'last_grade_date' => '02.03.2026',
+                'last_grade_date' => '2026-03-02',
             ])
             // The apprentice without a coach is one the coach could take on.
             ->where('assignableCount', 1));
@@ -94,7 +94,7 @@ test('the supervisor home lists the latest grades of followed apprentices, newes
                 'apprentice' => $apprentice->name,
                 'title' => 'Test node',
                 'value' => 3.5,
-                'date' => '02.03.2026',
+                'date' => '2026-03-02',
                 'comments_count' => 1,
             ])
             ->where('latestGrades.1.id', $older->id)
