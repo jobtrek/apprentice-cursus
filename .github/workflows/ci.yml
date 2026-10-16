@@ -108,6 +108,12 @@ jobs:
 
             - run: cp .env.example .env && php artisan key:generate
 
+            # laravel:fonts downloads Bunny/Fontsource fonts at build time; cache them so a CDN timeout can't fail the build.
+            - uses: actions/cache@v4
+              with:
+                  path: node_modules/.cache/laravel-vite-plugin/fonts
+                  key: fonts-${{ hashFiles('vite.config.ts') }}
+
             # Pages render @vite, so tests need the manifest.
             - run: pnpm build
 
@@ -120,3 +126,11 @@ jobs:
             - name: Pest
               run: php artisan test
 
+    docker:
+        name: Docker build
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+
+            # Same image Komodo builds from compose.prod.yaml; catches a broken Dockerfile before deploy.
+            - run: docker build .

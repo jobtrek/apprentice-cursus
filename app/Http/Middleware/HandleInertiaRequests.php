@@ -61,6 +61,7 @@ class HandleInertiaRequests extends Middleware
                     'managePortfolio' => $user?->can(Permission::PortfolioManageOwn->value) ?? false,
                     'viewApprentices' => $user?->can(Permission::ApprenticesViewList->value) ?? false,
                     'viewOcrStats' => $user?->can(Permission::OcrViewStats->value) ?? false,
+                    'manageSubjects' => $user?->can(Permission::SubjectsManage->value) ?? false,
                     // Off until the OCR is validated (config/ocr.php).
                     'useOcr' => config('ocr.enabled') && ($user?->can(Permission::GradesCreate->value) ?? false),
                 ],

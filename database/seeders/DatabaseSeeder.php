@@ -12,12 +12,7 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        $this->call([
-            FormationPlanSeeder::class,
-            RolesAndPermissionsSeeder::class,
-            SkillSeeder::class,
-            AverageNodeSeeder::class,
-        ]);
+        $this->call(ReferenceDataSeeder::class);
 
         if (! app()->environment('local')) {
             return;
@@ -35,5 +30,7 @@ class DatabaseSeeder extends Seeder
             ->update(['coach_id' => User::query()->where('email', 'coach@example.com')->value('id')]);
 
         $this->call(DemoGradeSeeder::class);
+
+        $this->call(DemoOcrScanSeeder::class);
     }
 }
