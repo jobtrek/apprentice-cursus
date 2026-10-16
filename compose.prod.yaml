@@ -1,5 +1,6 @@
-# Production stack for Komodo. Env comes from the stack's .env (see .env.production.example).
-# Put a TLS reverse proxy (Caddy/Traefik) in front of APP_PORT; don't expose it publicly.
+# Production stack for Komodo (Stack from the git repo, "Run Build" on). Env comes from the
+# stack's .env (see .env.production.example). Komodo's reverse proxy terminates TLS and forwards
+# to APP_PORT; firewall that port so only the proxy can reach it (TRUSTED_PROXIES trusts its IP).
 x-app: &app
     image: '${APP_IMAGE:-apprentice-cursus:latest}'
     build: .
@@ -40,13 +41,13 @@ services:
         image: 'postgres:18-alpine'
         restart: unless-stopped
         environment:
-            POSTGRES_DB: '${DB_DATABASE}'
-            POSTGRES_USER: '${DB_USERNAME}'
+            POSTGRES_DB: '${DB_DATABASE:?DB_DATABASE is required}'
+            POSTGRES_USER: '${DB_USERNAME:?DB_USERNAME is required}'
             POSTGRES_PASSWORD: '${DB_PASSWORD:?DB_PASSWORD is required}'
         volumes:
             - 'pgsql-data:/var/lib/postgresql'
         healthcheck:
-            test: ['CMD', 'pg_isready', '-q', '-d', '${DB_DATABASE}', '-U', '${DB_USERNAME}']
+            test: ['CMD', 'pg_isready', '-q', '-d', '${DB_DATABASE:?DB_DATABASE is required}', '-U', '${DB_USERNAME:?DB_USERNAME is required}']
             interval: 5s
             retries: 10
             timeout: 5s
