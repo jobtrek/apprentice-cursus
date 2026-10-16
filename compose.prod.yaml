@@ -1,0 +1,57 @@
+# Production stack for Komodo (Stack from the git repo, "Run Build" on). Env comes from the
+# stack's .env (see .env.production.example). Komodo's reverse proxy terminates TLS and forwards
+# to APP_PORT; firewall that port so only the proxy can reach it (TRUSTED_PROXIES trusts its IP).
+x-app: &app
+    image: '${APP_IMAGE:-apprentice-cursus:latest}'
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    volumes:
+        - 'app-storage:/app/storage/app'
+    depends_on:
+        pgsql:
+            condition: service_healthy
+
+services:
+    app:
+        <<: *app
+        command: sh -c "php artisan migrate --force && php artisan db:seed --class=ReferenceDataSeeder --force && php artisan optimize && exec frankenphp run --config /etc/frankenphp/Caddyfile"
+        ports:
+            - '${APP_PORT:-8080}:8080'
+
+    worker:
+        <<: *app
+        command: sh -c "php artisan optimize && exec php artisan queue:work --tries=3 --max-time=3600"
+        healthcheck:
+            disable: true
+        depends_on:
+            app:
+                condition: service_healthy
+
+    scheduler:
+        <<: *app
+        command: sh -c "php artisan optimize && exec php artisan schedule:work"
+        healthcheck:
+            disable: true
+        depends_on:
+            app:
+                condition: service_healthy
+
+    pgsql:
+        image: 'postgres:18-alpine'
+        restart: unless-stopped
+        environment:
+            POSTGRES_DB: '${DB_DATABASE:?DB_DATABASE is required}'
+            POSTGRES_USER: '${DB_USERNAME:?DB_USERNAME is required}'
+            POSTGRES_PASSWORD: '${DB_PASSWORD:?DB_PASSWORD is required}'
+        volumes:
+            - 'pgsql-data:/var/lib/postgresql'
+        healthcheck:
+            test: ['CMD', 'pg_isready', '-q', '-d', '${DB_DATABASE:?DB_DATABASE is required}', '-U', '${DB_USERNAME:?DB_USERNAME is required}']
+            interval: 5s
+            retries: 10
+            timeout: 5s
+
+volumes:
+    app-storage:
+    pgsql-data:
