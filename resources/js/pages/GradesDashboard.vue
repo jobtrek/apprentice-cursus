@@ -7,14 +7,14 @@ import GradeList from '@/components/gradebook/GradeList.vue';
 import { PageContainer, PageHeader } from '@/components/page';
 import { Button } from '@/components/ui/button';
 import { useAddGradeDialog } from '@/composables/useAddGradeDialog';
-import type { Gradebook, GradeTree } from '@/lib/gradebook';
+import type { Averages, GradeTree } from '@/lib/gradebook';
 import type { Grade } from '@/types/grade';
 
 defineProps<{
     grades: Grade[];
     /** Null si l'apprenti·e n'a pas encore de filière. */
     tree: GradeTree | null;
-    gradebook: Gradebook | null;
+    averages: Averages | null;
 }>();
 
 const { open: openAddGrade } = useAddGradeDialog();
@@ -36,9 +36,9 @@ const { open: openAddGrade } = useAddGradeDialog();
             </template>
         </PageHeader>
 
-        <template v-if="gradebook">
-            <GradebookSummary :gradebook="gradebook" />
-            <GradeList :gradebook="gradebook" :grades="grades" />
+        <template v-if="averages">
+            <GradebookSummary :averages="averages" />
+            <GradeList :averages="averages" :grades="grades" />
         </template>
         <p v-else class="text-muted-foreground text-sm">
             Aucune filière n'est encore attribuée à votre compte : le carnet

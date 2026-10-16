@@ -7,17 +7,17 @@ import {
 } from '@lucide/vue';
 import { computed } from 'vue';
 import IconTile from '@/components/IconTile.vue';
-import { fmt, type Gradebook, PASS, shortName } from '@/lib/gradebook';
+import { fmt, type Averages, PASS, shortName } from '@/lib/gradebook';
 import type { Grade } from '@/types/grade';
 import StatusChip from './StatusChip.vue';
 
-const props = defineProps<{ gradebook: Gradebook; grades: Grade[] }>();
+const props = defineProps<{ averages: Averages; grades: Grade[] }>();
 
-const final = computed(() => props.gradebook.final);
+const final = computed(() => props.averages.final);
 
 /** Domaines pas encore notés : la note finale est provisoire sans eux. */
 const missing = computed(() =>
-    props.gradebook.domains
+    props.averages.domains
         .filter((domain) => domain.average === null)
         .map((domain) => shortName(domain.name)),
 );
@@ -32,7 +32,7 @@ const current = computed(() => semesters.value.at(-1) ?? null);
 const previous = computed(() => semesters.value.at(-2) ?? null);
 
 const semesterOf = (semester: number | null) =>
-    props.gradebook.semesters.find((entry) => entry.semester === semester);
+    props.averages.semesters.find((entry) => entry.semester === semester);
 const semesterValue = (semester: number | null) =>
     semesterOf(semester)?.average ?? null;
 
@@ -70,7 +70,7 @@ const failed = computed(
                 <template v-if="final !== null">
                     <StatusChip :value="final" />
                     <!-- Provisoire tant qu'une évaluation comptée n'a pas de note. -->
-                    <template v-if="!gradebook.complete">
+                    <template v-if="!averages.complete">
                         provisoire{{
                             missing.length ? `, sans ${missing.join(', ')}` : ''
                         }}

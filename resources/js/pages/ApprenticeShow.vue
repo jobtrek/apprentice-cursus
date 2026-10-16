@@ -31,7 +31,7 @@ import {
 import { apprentisdashboard } from '@/routes';
 import apprentices from '@/routes/apprentices';
 import type { Apprentice, ApprenticeStats } from '@/types/apprentice';
-import { fmt, type Gradebook } from '@/lib/gradebook';
+import { fmt, type Averages } from '@/lib/gradebook';
 import type { Grade } from '@/types/grade';
 import type { SupervisedPortfolio } from '@/types/portfolio';
 
@@ -44,12 +44,12 @@ const props = defineProps<{
     /** Null quand l'utilisateur n'a pas le droit de voir le portfolio. */
     portfolio: SupervisedPortfolio | null;
     /** Moyennes pondérées du CFC, comme sur le carnet de l'apprenti·e ; null sans filière attribuée. */
-    gradebook: Gradebook | null;
+    averages: Averages | null;
 }>();
 
 /** Note finale CFC (racine de l'arbre). */
 const finalAverage = computed(() => {
-    const value = props.gradebook?.final ?? null;
+    const value = props.averages?.final ?? null;
 
     return value === null
         ? null
@@ -248,13 +248,13 @@ function selectTab(tab: string | number): void {
 
             <!-- Parcours et domaines, puis la liste filtrable des notes. -->
             <TabsContent value="grades" class="flex flex-col gap-6">
-                <template v-if="gradebook">
+                <template v-if="averages">
                     <ApprenticeOverview
                         :apprentice="apprentice"
-                        :gradebook="gradebook"
+                        :averages="averages"
                     />
                     <GradeList
-                        :gradebook="gradebook"
+                        :averages="averages"
                         :grades="grades"
                         :grade-href="gradeHref"
                     />

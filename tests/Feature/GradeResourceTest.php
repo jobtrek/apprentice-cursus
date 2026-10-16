@@ -106,13 +106,13 @@ test('the coach profile gets the same averages as the apprentice gradebook', fun
     $own = null;
     $this->actingAs($this->apprentice)->get(route('grades.dashboard'))
         ->assertInertia(function (Assert $page) use (&$own) {
-            $own = $page->toArray()['props']['gradebook'];
+            $own = $page->toArray()['props']['averages'];
         });
 
     $this->actingAs($coach)->get(route('apprentices.show', $this->apprentice))
         ->assertInertia(fn (Assert $page) => $page
-            ->has('gradebook.domains')
-            ->where('gradebook', $own));
+            ->has('averages.domains')
+            ->where('averages', $own));
 });
 
 test('the semester is derived from the test date, from the first grade on', function () {

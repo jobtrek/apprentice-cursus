@@ -16,7 +16,7 @@ export interface GradeTree {
 }
 
 /** Domaine ou sous-groupe du carnet, avec sa moyenne pondérée CFC. */
-export interface GradebookGroup {
+export interface AverageGroup {
     id: number;
     name: string;
     weight: number;
@@ -29,9 +29,9 @@ export interface GradebookGroup {
 
 /**
  * Moyennes du carnet, calculées comme pour le CFC par
- * `App\Support\Gradebook\Gradebook::summary()`.
+ * `App\Support\Gradebook\Averages::of()`.
  */
-export interface Gradebook {
+export interface Averages {
     /** Note finale (racine) ; null sans note. */
     final: number | null;
     /** Toutes les évaluations comptées ont une note ; sinon la note finale est provisoire. */
@@ -43,7 +43,7 @@ export interface Gradebook {
     /** Semestres 1–8 : moyenne et nombre de notes. */
     semesters: { semester: number; average: number | null; count: number }[];
     /** Enfants de la racine (TPI, Culture générale…) et leurs sous-groupes composites. */
-    domains: (GradebookGroup & { subs: GradebookGroup[] })[];
+    domains: (AverageGroup & { subs: AverageGroup[] })[];
 }
 
 /** Note minimale de réussite. */

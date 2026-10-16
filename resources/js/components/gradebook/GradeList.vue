@@ -4,14 +4,14 @@ import { ChevronDownIcon, CircleDashedIcon } from '@lucide/vue';
 import { computed, reactive } from 'vue';
 import SearchInput from '@/components/SearchInput.vue';
 import { PASSING_GRADE } from '@/data/dashboard';
-import { fmt, fmtWeight, type Gradebook, plural } from '@/lib/gradebook';
+import { fmt, fmtWeight, type Averages, plural } from '@/lib/gradebook';
 import type { Grade } from '@/types/grade';
 import type { RouteDefinition } from '@/wayfinder';
 import GradeTable from './GradeTable.vue';
 import Segmented from './Segmented.vue';
 
 const props = defineProps<{
-    gradebook: Gradebook;
+    averages: Averages;
     grades: Grade[];
     /** Page d'une note ; par défaut celle de l'apprenti·e connecté·e. */
     gradeHref?: (grade: Grade) => RouteDefinition<'get'>;
@@ -78,7 +78,7 @@ const gradesIn = (ids: number[]): Grade[] => {
 
 // Domaines sans note (souvent le TPI) en dernier.
 const groups = computed(() =>
-    props.gradebook.domains
+    props.averages.domains
         .map((domain) => {
             const all = gradesIn(domain.grade_ids);
             const subs = domain.subs.map((sub) => ({

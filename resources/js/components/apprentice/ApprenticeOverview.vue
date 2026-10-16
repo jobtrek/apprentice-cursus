@@ -3,7 +3,7 @@ import { computed } from 'vue';
 import DomainChart from '@/components/gradebook/DomainChart.vue';
 import HatchPattern from '@/components/gradebook/HatchPattern.vue';
 import TrainingPath from '@/components/gradebook/TrainingPath.vue';
-import type { Gradebook } from '@/lib/gradebook';
+import type { Averages } from '@/lib/gradebook';
 import type { Apprentice } from '@/types/apprentice';
 
 /**
@@ -12,7 +12,7 @@ import type { Apprentice } from '@/types/apprentice';
  */
 const props = defineProps<{
     apprentice: Apprentice;
-    gradebook: Gradebook;
+    averages: Averages;
 }>();
 
 const profile = computed(() => ({
@@ -22,9 +22,9 @@ const profile = computed(() => ({
 </script>
 
 <template>
-    <TrainingPath :gradebook="gradebook" :profile="profile" derived />
+    <TrainingPath :averages="averages" :profile="profile" derived />
 
-    <DomainChart :gradebook="gradebook" />
+    <DomainChart :averages="averages" />
 
     <HatchPattern />
 </template>

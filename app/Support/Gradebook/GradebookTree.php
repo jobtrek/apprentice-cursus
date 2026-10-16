@@ -6,7 +6,7 @@ use App\Models\AverageNode;
 use App\Models\User;
 
 /**
- * The apprentice's grade tree, as Gradebook needs it to compute the CFC averages
+ * The apprentice's grade tree, as Averages needs it to compute the CFC averages
  * and the grade form to offer its leaves: every node of the apprentice's formation
  * plan, with its rounding step and its weighted children. Nodes of another plan
  * (e.g. the other MP variant branch) are left out. Matches `GradeTree` in resources/js/lib/gradebook.ts.

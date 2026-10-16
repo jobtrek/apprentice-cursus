@@ -1,6 +1,6 @@
 <?php
 
-use App\Support\Gradebook\Gradebook;
+use App\Support\Gradebook\Averages;
 
 // Root -> Domain A (0.6, rounded to 0.5) -> leaves 3, 4 ; Root -> Domain B (0.4) -> leaf 5 (never graded).
 $tree = ['root' => 1, 'nodes' => [
@@ -13,7 +13,7 @@ $tree = ['root' => 1, 'nodes' => [
 ]];
 
 test('averages are weighted, rounded per node, and skip ungraded children', function () use ($tree) {
-    $book = Gradebook::summary($tree, [
+    $book = Averages::of($tree, [
         ['id' => 10, 'node_id' => 3, 'value' => 5.0, 'semester' => 1],
         ['id' => 11, 'node_id' => 3, 'value' => 4.0, 'semester' => 2],
         ['id' => 12, 'node_id' => 4, 'value' => 4.0, 'semester' => 2],
@@ -30,7 +30,7 @@ test('averages are weighted, rounded per node, and skip ungraded children', func
 });
 
 test('the root weighs its domains by their weight', function () use ($tree) {
-    $book = Gradebook::summary($tree, [
+    $book = Averages::of($tree, [
         ['id' => 10, 'node_id' => 3, 'value' => 5.0, 'semester' => 1],
         ['id' => 11, 'node_id' => 4, 'value' => 5.0, 'semester' => 1],
         ['id' => 12, 'node_id' => 5, 'value' => 3.0, 'semester' => 1],
@@ -43,6 +43,6 @@ test('the root weighs its domains by their weight', function () use ($tree) {
         ->and($book['complete'])->toBeTrue();
 });
 
-test('no tree, no gradebook', function () {
-    expect(Gradebook::summary(null, [], 'IT'))->toBeNull();
+test('no tree, no averages', function () {
+    expect(Averages::of(null, [], 'IT'))->toBeNull();
 });

@@ -14,7 +14,7 @@ import { PageContainer, PageHeader } from '@/components/page';
 import { Button } from '@/components/ui/button';
 import { useAddGradeDialog } from '@/composables/useAddGradeDialog';
 import { useNavigation } from '@/composables/useNavigation';
-import type { Gradebook, GradeTree } from '@/lib/gradebook';
+import type { Averages, GradeTree } from '@/lib/gradebook';
 import { apprentisdashboard } from '@/routes';
 import gradeRoutes from '@/routes/grades';
 import type {
@@ -27,7 +27,7 @@ import type { Grade } from '@/types/grade';
 const props = defineProps<{
     grades: Grade[];
     tree: GradeTree | null;
-    gradebook: Gradebook | null;
+    averages: Averages | null;
     profile: { track: string | null; variant: 'standard' | 'mp' } | null;
     /** Coach, formateur, admin : lignes de la liste des apprentis. */
     apprentices: ApprenticeListItem[];
@@ -73,18 +73,14 @@ const canAssign = computed(
                 </template>
             </PageHeader>
 
-            <template v-if="gradebook">
-                <TrainingPath
-                    :gradebook="gradebook"
-                    :profile="profile"
-                    derived
-                />
+            <template v-if="averages">
+                <TrainingPath :averages="averages" :profile="profile" derived />
 
-                <StatTiles :gradebook="gradebook" :grades="grades" />
+                <StatTiles :averages="averages" :grades="grades" />
 
                 <!-- Les moyennes par semestre sont dans le parcours. -->
                 <div class="chart-grid">
-                    <DomainChart :gradebook="gradebook">
+                    <DomainChart :averages="averages">
                         <template #link>
                             <Link
                                 :href="gradeRoutes.dashboard()"

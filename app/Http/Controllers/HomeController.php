@@ -20,7 +20,7 @@ class HomeController extends Controller
 
         return Inertia::render('Home', [
             // Every grade: the apprentice dashboard lists them and charts the averages.
-            ...($ownGrades ? Gradebook::for($user) : ['grades' => [], 'tree' => null, 'gradebook' => null]),
+            ...($ownGrades ? Gradebook::for($user) : Gradebook::EMPTY),
             'profile' => $ownGrades ? [
                 'track' => $user->formationPlan?->shortName(),
                 'variant' => $user->formationPlan?->isMp() ? 'mp' : 'standard',

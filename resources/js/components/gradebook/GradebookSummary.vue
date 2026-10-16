@@ -3,16 +3,16 @@ import { computed } from 'vue';
 import {
     fmt,
     fmtWeight,
-    type Gradebook,
+    type Averages,
     PASS,
     plural,
     shortName,
 } from '@/lib/gradebook';
 import StatusChip from './StatusChip.vue';
 
-const props = defineProps<{ gradebook: Gradebook }>();
+const props = defineProps<{ averages: Averages }>();
 
-const final = computed(() => props.gradebook.final);
+const final = computed(() => props.averages.final);
 
 /** Jauge à 270°, avec un trait au seuil de réussite. */
 const R = 52;
@@ -26,7 +26,7 @@ const fill = computed(() =>
 const tickAngle = ((135 + (270 * (PASS - 1)) / 5) * Math.PI) / 180;
 
 const domains = computed(() =>
-    props.gradebook.domains.map((domain, i) => ({
+    props.averages.domains.map((domain, i) => ({
         id: domain.id,
         i,
         name: domain.name,
@@ -93,7 +93,7 @@ const missing = computed(() =>
                         .join(', ')
                 }}.
             </p>
-            <p v-else-if="!gradebook.complete" class="gb-final__note">
+            <p v-else-if="!averages.complete" class="gb-final__note">
                 Provisoire : certaines évaluations ne sont pas encore notées.
             </p>
             <p v-else class="gb-final__note">

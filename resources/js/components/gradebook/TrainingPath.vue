@@ -4,7 +4,7 @@ import { computed } from 'vue';
 import IconTile from '@/components/IconTile.vue';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
-import { fmt, type Gradebook, type Status, status } from '@/lib/gradebook';
+import { fmt, type Averages, type Status, status } from '@/lib/gradebook';
 import { cn } from '@/lib/utils';
 
 /**
@@ -13,7 +13,7 @@ import { cn } from '@/lib/utils';
  * semestre courant est mis en avant, chaque étape notée affiche sa moyenne.
  */
 const props = defineProps<{
-    gradebook: Gradebook;
+    averages: Averages;
     profile: { track: string | null; variant: 'standard' | 'mp' } | null;
     /**
      * Le semestre courant est déduit du dernier semestre noté (vue coach),
@@ -34,13 +34,13 @@ type Step = {
     average: number | null;
 };
 
-const currentSemester = computed(() => props.gradebook.current_semester);
+const currentSemester = computed(() => props.averages.current_semester);
 
 /** Durée de la formation, calculée par le backend. */
-const semesters = computed(() => props.gradebook.semester_count);
+const semesters = computed(() => props.averages.semester_count);
 
 const steps = computed<Step[]>(() =>
-    props.gradebook.semesters
+    props.averages.semesters
         .slice(0, semesters.value)
         .map(({ semester, average }) => ({
             semester,

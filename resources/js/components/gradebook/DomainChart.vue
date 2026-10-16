@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { ref } from 'vue';
-import { fmt, fmtWeight, type Gradebook, PASS, plural } from '@/lib/gradebook';
+import { fmt, fmtWeight, type Averages, PASS, plural } from '@/lib/gradebook';
 import ChartBody from './ChartBody.vue';
 import ChartCard from './ChartCard.vue';
 
-const props = defineProps<{ gradebook: Gradebook }>();
+const props = defineProps<{ averages: Averages }>();
 
 const hover = ref<number | null>(null);
 const ROW = 62;
@@ -16,8 +16,8 @@ function rows(width: number) {
     return {
         iw,
         x,
-        height: props.gradebook.domains.length * ROW + 8,
-        domains: props.gradebook.domains.map((domain, i) => ({
+        height: props.averages.domains.length * ROW + 8,
+        domains: props.averages.domains.map((domain, i) => ({
             id: domain.id,
             i,
             top: i * ROW,

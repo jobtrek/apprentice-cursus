@@ -69,7 +69,7 @@ class ApprenticeController extends Controller
             'stats' => ApprenticeList::statsFor($apprentice),
             'grades' => $book['grades'],
             // Same averages as the apprentice's own gradebook: the profile shows the real CFC averages.
-            'gradebook' => $book['gradebook'],
+            'averages' => $book['averages'],
             'portfolio' => $portfolio,
         ]);
     }
