@@ -19,6 +19,7 @@ import { useAddGradeDialog } from '@/composables/useAddGradeDialog';
 import type { GradeTree } from '@/lib/gradebook';
 import grades from '@/routes/grades';
 import { computed, ref, watch } from 'vue';
+import type { ScanReading } from '@/types/scan';
 
 defineProps<{
     /** Arbre de la filière de l'apprenti·e, envoyé par la page. */
@@ -35,15 +36,6 @@ const gradeForm = ref<InstanceType<typeof GradeForm> | null>(null);
 // Lecture automatique (OCR) : facultative, et bloquée tant que l'apprenti·e
 // n'a pas accepté la collecte de ses données.
 const useOcr = ref(false);
-
-type ScanReading = {
-    scan_id: number;
-    subject: string;
-    confidence: number | null;
-    grade: number | null;
-    flagged: boolean;
-    duration_ms: number;
-};
 
 const ocr = useHttp<{ consent: boolean; file: File | null }, ScanReading>({
     consent: false,
