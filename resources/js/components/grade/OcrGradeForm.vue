@@ -76,7 +76,7 @@ defineExpose({
 </script>
 
 <template>
-    <main class="flex flex-col gap-4">
+    <form class="flex flex-col gap-4">
         <section
             role="alert"
             class="flex gap-3 rounded-md border border-amber-500/50 bg-amber-500/10 p-4 text-sm"
@@ -160,5 +160,5 @@ defineExpose({
                 Résultat incertain : vérifiez-le avant d'enregistrer.
             </p>
         </section>
-    </main>
+    </form>
 </template>

@@ -16,6 +16,7 @@ import {
 import { useAddGradeDialog } from '@/composables/useAddGradeDialog';
 import type { GradeTree } from '@/lib/gradebook';
 import { ref, watch } from 'vue';
+import OcrFooterButtons from '@/components/grade/OcrFooterButtons.vue';
 
 defineProps<{
     tree: GradeTree | null;
@@ -79,7 +80,7 @@ watch(
                 </DialogDescription>
             </DialogHeader>
 
-            <div class="flex flex-col gap-6 overflow-y-auto p-6">
+            <main class="flex flex-col gap-6 overflow-y-auto p-6">
                 <SwitchButtonLayout
                     v-if="page.props.auth.can.useOcr"
                     id="use-ocr"
@@ -100,39 +101,25 @@ watch(
                     :tree="tree"
                     @saved="close"
                 />
-            </div>
+            </main>
 
             <DialogFooter class="border-t p-6">
                 <DialogClose as-child>
                     <Button type="button" variant="outline">Annuler</Button>
                 </DialogClose>
-                <div v-if="useOcr && ocrPanel?.reading">
-                    <Button type="button" variant="outline" @click="deny">
-                        Refuser et modifier
-                    </Button>
-                    <Button
-                        v-if="ocrPanel.canApprove"
-                        type="button"
-                        :disabled="gradeForm?.form.processing"
-                        @click="approve"
-                    >
-                        Approuver
-                    </Button>
-                </div>
+                <OcrFooterButtons
+                    v-if="useOcr"
+                    :has-reading="!!ocrPanel?.reading"
+                    :can-approve="!!ocrPanel?.canApprove"
+                    :can-analyse="!!ocrPanel?.canAnalyse"
+                    :analysing="!!ocrPanel?.processing"
+                    :saving="!!gradeForm?.form.processing"
+                    @analyse="ocrPanel?.analyse()"
+                    @approve="approve"
+                    @deny="deny"
+                />
                 <Button
-                    v-else-if="useOcr"
-                    type="button"
-                    :disabled="!ocrPanel?.canAnalyse"
-                    @click="ocrPanel?.analyse()"
-                >
-                    {{
-                        ocrPanel?.processing
-                            ? 'Analyse en cours…'
-                            : 'Analyser le PDF'
-                    }}
-                </Button>
-                <Button
-                    v-if="!useOcr"
+                    v-else
                     type="submit"
                     :form="FORM_ID"
                     :disabled="gradeForm?.form.processing"
