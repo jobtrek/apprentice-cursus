@@ -4,7 +4,6 @@ import {
     ChevronsUpDownIcon,
     MinusIcon,
     PlusIcon,
-    UploadIcon,
 } from '@lucide/vue';
 import { Button } from '@/components/ui/button';
 import {
@@ -42,6 +41,7 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import SwitchButtonLayout from '@/components/SwitchButtonLayout.vue';
+import UploadZoneLayout from '@/components/UploadZoneLayout.vue';
 import {
     type EditedGrade,
     MONTHS,
@@ -249,42 +249,36 @@ defineExpose({ form, branches, submit: onSubmit });
                     </template>
                 </FieldDescription>
 
-                <div
+                <UploadZoneLayout
                     v-else
-                    class="hover:bg-muted/50 flex flex-col items-center justify-center gap-1 rounded-md border border-dashed p-8 text-center transition-colors"
-                    :class="form.errors.file && 'border-destructive'"
+                    :invalid="Boolean(form.errors.file)"
+                    hint="PDF uniquement, 10 Mo maximum"
+                    :file-name="form.file?.name"
                     @dragover.prevent
                     @drop="handleDrop"
                 >
-                    <UploadIcon class="text-muted-foreground size-5" />
-                    <p class="text-sm">
-                        Glisser le scan du test ici, ou
-                        <button
-                            type="button"
-                            class="text-primary underline underline-offset-2"
-                            @click="fileInput?.click()"
-                        >
-                            parcourir
-                        </button>
-                    </p>
-                    <p class="text-muted-foreground text-xs">
-                        PDF uniquement, 10 Mo maximum
-                    </p>
-                    <p v-if="form.file" class="text-foreground text-xs">
-                        {{ form.file.name }}
-                    </p>
-                    <p v-else-if="keepsFile" class="text-foreground text-xs">
-                        Le scan actuel est conservé, sauf si vous en déposez un
-                        autre.
-                    </p>
-                    <input
-                        ref="fileInput"
-                        type="file"
-                        accept="application/pdf"
-                        class="hidden"
-                        @change="onFileChange"
-                    />
-                </div>
+                    Glisser le scan du test ici, ou
+                    <button
+                        type="button"
+                        class="text-primary underline underline-offset-2"
+                        @click="fileInput?.click()"
+                    >
+                        parcourir
+                    </button>
+                    <template #extra>
+                        <span v-if="keepsFile" class="text-foreground text-xs">
+                            Le scan actuel est conservé, sauf si vous en déposez
+                            un autre.
+                        </span>
+                        <input
+                            ref="fileInput"
+                            type="file"
+                            accept="application/pdf"
+                            class="hidden"
+                            @change="onFileChange"
+                        />
+                    </template>
+                </UploadZoneLayout>
                 <FieldError :errors="[form.errors.file]" />
             </Field>
         </FieldGroup>

@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { TriangleAlertIcon, UploadIcon } from '@lucide/vue';
+import { TriangleAlertIcon } from '@lucide/vue';
 import { useHttp } from '@inertiajs/vue3';
+import UploadZoneLayout from '@/components/UploadZoneLayout.vue';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Field, FieldLabel } from '@/components/ui/field';
 import type { Branch } from '@/composables/useGradeForm';
@@ -40,6 +41,8 @@ const readingBranch = computed(() => {
     const name = reading.value && SUBJECT_BRANCHES[reading.value.subject];
     return props.branches.find((branch) => branch.name === name);
 });
+
+const canPickFile = computed(() => ocr.consent && !ocr.processing);
 
 const scanStatus = computed<ScanStatus>(() => {
     if (reading.value) {
@@ -88,30 +91,24 @@ defineExpose({ scanStatus, result, analyse });
             </FieldLabel>
         </Field>
 
-        <label
-            class="flex flex-col items-center justify-center gap-1 rounded-md border border-dashed p-8 text-center transition-colors"
-            :class="
-                ocr.consent && !ocr.processing
-                    ? 'hover:bg-muted/50 cursor-pointer'
-                    : 'cursor-not-allowed opacity-50'
-            "
+        <UploadZoneLayout
+            as="label"
+            :disabled="!canPickFile"
+            :class="canPickFile && 'cursor-pointer'"
+            hint="PDF uniquement, 10 Mo maximum"
+            :file-name="ocr.file?.name"
         >
-            <UploadIcon class="text-muted-foreground size-5" />
-            <span class="text-sm">Déposer le PDF du test</span>
-            <span class="text-muted-foreground text-xs">
-                PDF uniquement, 10 Mo maximum
-            </span>
-            <span v-if="ocr.file" class="text-foreground text-xs">
-                {{ ocr.file.name }}
-            </span>
-            <input
-                type="file"
-                accept="application/pdf"
-                class="hidden"
-                :disabled="!ocr.consent || ocr.processing"
-                @change="onOcrFileChange"
-            />
-        </label>
+            Déposer le PDF du test
+            <template #extra>
+                <input
+                    type="file"
+                    accept="application/pdf"
+                    class="hidden"
+                    :disabled="!canPickFile"
+                    @change="onOcrFileChange"
+                />
+            </template>
+        </UploadZoneLayout>
         <p
             v-if="ocr.errors.file || ocr.errors.consent"
             class="text-destructive text-sm"
