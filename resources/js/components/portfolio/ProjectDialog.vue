@@ -14,10 +14,10 @@ import {
     AlertDialogTitle,
     AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+import DialogCancelButton from '@/components/DialogCancelButton.vue';
 import { Button, buttonVariants } from '@/components/ui/button';
 import {
     Dialog,
-    DialogClose,
     DialogContent,
     DialogDescription,
     DialogFooter,
@@ -125,9 +125,7 @@ function onDelete(): void {
                     </AlertDialogContent>
                 </AlertDialog>
 
-                <DialogClose as-child>
-                    <Button type="button" variant="outline">Annuler</Button>
-                </DialogClose>
+                <DialogCancelButton />
                 <Button
                     type="submit"
                     :form="FORM_ID"
