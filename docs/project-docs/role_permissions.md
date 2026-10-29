@@ -4,7 +4,7 @@ The only document on who can do what, and how people get their role. Design deci
 
 ## In short
 
-- There are **3 roles**: Apprentice, Trainer, Coach. There is no admin in production. A local-only `admin` role exists for development (see `docs/permissions_guide.md`, section 6).
+- There are **3 roles**: Apprentice, Trainer, Coach. There is no admin in production. A local-only `admin` role exists for development (see `docs/permissions_guide.md`, section 6). It alone holds `ocr.view-stats` (the OCR dashboard) and `subjects.manage`: no production role has them.
 - Your role comes from the **Microsoft Entra group** you are in. Nobody sets roles inside the app.
 - Everyone logs in with **Microsoft**. Password login only exists on a developer's machine.
 - **Apprentices** manage their own grades and portfolio. **Trainers and coaches** read and comment on the apprentices they supervise. They never change an apprentice's data.
@@ -38,8 +38,10 @@ Y = yes, N = no, RO = read-only. Anything on a **deactivated** apprentice is rea
 | See a supervised apprentice's portfolio                        | N                 | RO                | RO                |
 | See the apprentices list                                       | N                 | Y                 | Y                 |
 | Assign self as coach of an apprentice with no coach            | N                 | N                 | Y                 |
-| Get an email when a supervised apprentice adds/deletes a grade | –                 | Y (not built yet) | Y (not built yet) |
-| Get an email when someone comments on own grade                | Y (not built yet) | –                 | –                 |
+| Un-assign self as coach of one of own coachees                 | N                 | N                 | Y (not built yet) |
+| In-app notification when a supervised apprentice adds/deletes a grade | –          | Y                 | Y                 |
+| In-app notification when someone comments on own grade         | Y                 | –                 | –                 |
+| The same notifications by email                                | Y (not built yet) | Y (not built yet) | Y (not built yet) |
 
 After login, apprentices land on their grades, trainers and coaches on the apprentices list.
 
@@ -77,7 +79,7 @@ Other rules:
 
 - Code checks **permissions, never role names**. The list of permissions per role is `App\Enums\Permission::byRole()`. To change what a role can do, edit it there and re-run `RolesAndPermissionsSeeder`.
 - "Supervised" means `User::supervises($apprentice)`: trainer = apprentice's formation plan is one the trainer trains, coach = apprentice's `coach_id` is theirs. The apprentices list and the supervisor home show exactly the supervised apprentices (`User::listedApprentices()`).
-- Assignment (`ApprenticeController::assign`, "Ajouter un apprenti" button): a coach takes an active apprentice with no coach (`coaching.assign-self`). Setting, changing or removing any apprentice's coach needs `supervision.manage`, which no production role has: only the local admin can do it, from the selects of the apprentices list (`SupervisionController`). Trainers are not assigned per apprentice: they train whole formation plans (`users_formation_plans`), synced from their Azure group (`trainer_IT` → IT, `trainer_EC` → EC and EC MP), and follow every apprentice of those plans.
+- Assignment (`ApprenticeController::assign`, "Ajouter un apprenti" button): a coach takes an active apprentice with no coach (`coaching.assign-self`). A coach will also be able to un-assign themselves so another coach can take over (not built yet). Setting, changing or removing any other coach needs `supervision.manage`, which no production role has: only the local admin can do it, from the selects of the apprentices list (`SupervisionController`). Trainers are not assigned per apprentice: they train whole formation plans (`users_formation_plans`), synced from their Azure group (`trainer_IT` → IT, `trainer_EC` → EC and EC MP), and follow every apprentice of those plans.
 - Policies (`GradePolicy`, `ProjectPolicy`, `CommentPolicy`, `UserPolicy`) add the per-record checks: supervision, author only, active apprentice only.
 - Routes use `can:` middleware. The frontend reads the `auth.can` flags shared by `HandleInertiaRequests` and never re-derives rules.
 - Local login (password `password`): `admin@example.com` (local-only admin, everything), `coach@example.com` (coach), `trainer@example.com` (IT trainer, Local Trainer IT, trains `apprentice-it` and demo apprentices 1–2), `trainer-ec@example.com` (EC trainer, trains `apprentice-ec` and demo apprentice 3), `apprentice-it@example.com` (IT apprentice), `apprentice-ec@example.com` (EC apprentice).

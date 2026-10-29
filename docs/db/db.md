@@ -1,6 +1,6 @@
 # Database — current model
 
-The schema built by `database/migrations/`. Why it looks this way: `docs/adr/ADR.md`, 2026-10-14 (grade tree and formation plans) and 2026-09-09 (conventions that still apply).
+The schema built by `database/migrations/`. Why it looks this way: `docs/adr/ADR.md`, 2026-10-14 (grade tree and formation plans) and 2026-09-09 (only the entries not marked superseded still apply).
 
 Diagram: `schemas/mcd_current.d2`. When the diagram and the migrations disagree, the migrations win (the d2 still shows `grades.domain_id` and `formation_plans.root_domain_id`).
 

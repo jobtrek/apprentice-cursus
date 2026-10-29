@@ -1,6 +1,6 @@
 # Technical details — Vue 3 + Inertia (current stack)
 
-**Status:** describes the current stack. User stories live in `docs/user_stories/user_story_final.md`.
+**Status:** describes the current stack.
 
 ---
 
@@ -8,7 +8,7 @@
 
 | Concern         | Choice                                                                  |
 | --------------- | ----------------------------------------------------------------------- |
-| Backend         | Laravel 13 (PHP 8.3+)                                                   |
+| Backend         | Laravel 13 (PHP 8.3+, runs on 8.5)                                      |
 | Frontend        | Vue 3                                                                   |
 | Server ↔ client | Inertia.js (`@inertiajs/vue3`)                                          |
 | Build           | Vite + `@vitejs/plugin-vue`                                             |

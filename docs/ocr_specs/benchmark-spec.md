@@ -1,3 +1,5 @@
+> **Superseded (2026-10-13):** the Python benchmark is dropped; the pipeline runs inside Laravel and is checked with `php artisan ocr:bench` (not built yet). See `docs/adr/ADR.md` ("Automatic reading runs inside Laravel"). Kept as the original prompt for the `OCR_recognition` repo, so its paths and its 68-entry answer key refer to that repo.
+
 Set up and organize this project for an OCR accuracy benchmark. Write the code only — do NOT run the app, call any API, or download any model.
 
 ## Context
