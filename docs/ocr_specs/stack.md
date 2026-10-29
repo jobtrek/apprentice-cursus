@@ -23,7 +23,7 @@ Copied from notar (private repo `ThomasLucking/Notar`) so the port needs nothing
 **Ported 1:1 from notar v2** (89.6% both fields right on 67 PDFs, $0.0014 per PDF). Every parameter stays as measured, or the number no longer applies:
 
 1. Render page 1 as PNG, 200 dpi, full page; pages 2–3 only when page 1 has no grade
-2. Call 1, Gemini `gemini-3.5-flash-lite`, temperature 0, `maxOutputTokens` 8192, notar's `CALL1_PROMPT` unchanged, image before prompt → `{text, subject, grade, grade_box}`
+2. Call 1, Gemini `gemini-3.5-flash-lite`, temperature 0, `maxOutputTokens` 8192, notar's `CALL1_PROMPT` unchanged → `{text, subject, grade, grade_box}`. notar sent the image before the prompt; `laravel/ai` sends the prompt first (see Layers → Gemini)
 3. Loop guard: `finishReason != STOP` → page is truncated, try the next page
 4. Module rule: regex on `text` → Test type = the printed code
 5. Otherwise Jev `jev-1.13.0` Choice on `text` (via `laravel/ai` Classification) → Test type = Jev's pick (Gemini's `subject` is not used)
@@ -48,63 +48,56 @@ The 0.5 threshold was picked on the same PDFs it was scored on. Re-check it once
 
 ## Flow
 
-1. The apprentice picks Manual entry or Automatic reading.
-2. Automatic reading needs **Processing consent**: a checkbox "I accept that my scan is sent to Google and TypeSafe". Unticked → Manual entry only. Not stored.
-3. Upload (`StoreTestUploadRequest`: PDF only, 10 MB) → the PDF is stored, a `test_readings` row is created (`pending`), the `ReadTest` job is queued.
-4. The page polls the reading every 2 s (Inertia `usePoll`).
-5. Job outcome:
-    - Not Flagged → confirm form, pre-filled. Confirmation is required.
-    - Flagged → the same confirm form, pre-filled, with a warning and every Reading shown. A missing grade is left empty for the apprentice to type.
-    - Job failed after retries → Manual entry, scan kept.
-6. Confirmation saves the grade through the same endpoint as Manual entry, and records `confirmed_type`, `confirmed_grade`, `edited` on the reading.
+As built (synchronous; the queue, polling and same-PDF cache are "later"):
+
+1. The apprentice picks Manual entry or Automatic reading (`AddGradeDialog.vue`; the switch is hidden when `OCR_ENABLED=false`).
+2. Automatic reading needs **Processing consent**: a checkbox "I accept that my scan is sent to Google and TypeSafe", validated as `accepted` by `ReadScanRequest`. Not stored.
+3. `POST /read-scan` (`ReadScanRequest`: PDF only, `GradeRequest::MAX_FILE_KB`; `can:create` grade, `throttle:ocr`) → `GradeController::readScan` reads the PDF in the request, creates an `ocr_scans` row and returns `{scan_id, subject, confidence, grade, flagged, duration_ms}`.
+4. Outcome:
+    - Not Flagged → the form is pre-filled. Confirmation is required.
+    - Flagged → the same pre-filled form, with a warning. A missing grade is left empty for the apprentice to type.
+5. Confirmation saves the grade through the same `grades.store` as Manual entry, with `ocr_scan_id` and `ocr_node_id`; the scan gets `grade_id` and `suggested_node_id`. Comparing the scan with its grade gives the edit rate (`OcrScanController`, local admin only).
 
 ## Layers
 
 | Concern                  | Choice                                                                                         | Notes                                                                                                                                                                                                                                                                                                                                          |
 | ------------------------ | ---------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Framework                | Laravel 13 (PHP 8.3+), Inertia + Vue 3, Tailwind 4, shadcn-vue                                 | Existing app stack                                                                                                                                                                                                                                                                                                                             |
-| Queue                    | Laravel queue, `database` driver                                                               | `ReadTest` job, `tries` + backoff, retries 5xx/429 only; `failed()` marks the reading failed                                                                                                                                                                                                                                                   |
-| Progress                 | Inertia `usePoll` (2 s) on the reading status                                                  | No websockets                                                                                                                                                                                                                                                                                                                                  |
-| State until Confirmation | `test_readings` table                                                                          | `pdf_sha256`, `config_hash`, `result` JSON, `confirmed_type`, `confirmed_grade`, `edited`. The edit rate is the production accuracy signal                                                                                                                                                                                                     |
-| Same-PDF cache           | Lookup on `test_readings` (`pdf_sha256`, `config_hash`)                                        | Config hash covers models, prompt, threshold, `subjects.json`. A hit makes no model calls                                                                                                                                                                                                                                                      |
+| Execution                | Synchronous, in `GradeController::readScan`                                                    | Later: a queued job with `tries` + backoff and polling, if requests get too slow                                                                                                                                                                                                                                                               |
+| Scan record              | `ocr_scans` table                                                                              | Uploader, subject, grade, Jev confidence, flag, pages read, Gemini and Jev cost, duration; `grade_id` + `suggested_node_id` once confirmed. Never stores the text. The edit rate is the production accuracy signal                                                                                                                             |
+| Same-PDF cache           | Not built (later)                                                                              | Planned: lookup on `sha256(pdf)` + a config hash, so a hit makes no model calls                                                                                                                                                                                                                                                                |
 | Gemini                   | `laravel/ai` agent (`GeminiService`), `gemini-3.5-flash-lite`, Gemini `interactions` endpoint  | Loop guard reads the last step's `finishReason`; cost from `usage` (thinking tokens included). Prompt is sent before the image, unlike notar: `ocr:bench` decides if that matters, else fall back to `Http::post` on `generateContent`                                                                                                         |
 | Jev                      | `laravel/ai` v1.0 Classification, `typesafe` provider                                          | `Classification::of($text)->questions(['subject' => new Choice($instructions, $criteria)])->classify(provider: 'typesafe', model: 'jev-1.13.0')`. Criteria = Test types from `subjects.json`, keyed by name. Answer gives `choice`, `probabilities`, `confidence` (nullable), plus `$result->usage`. Experimental API: pin the package version |
 | PDF → PNG                | Imagick + Ghostscript                                                                          | `setResolution(200, 200)`, `readImage("$path[$n]")`, flatten, PNG                                                                                                                                                                                                                                                                              |
-| Config                   | `config/ocr.php` + `resources/ocr/subjects.json` + `config/ai.php` + `.env`                    | `config/ocr.php`: pinned Gemini model, dpi, pages, token cap, prices, threshold 0.5. `config/ai.php`: the TypeSafe provider. `GEMINI_API_KEY`, `TYPESAFE_API_KEY`                                                                                                                                                                              |
-| Tests                    | Pest; `GeminiService::fake()` for Gemini, `Classification::fake()` with `ChoiceAnswer` for Jev | Offline only                                                                                                                                                                                                                                                                                                                                   |
+| Config                   | `config/ocr.php` + `OcrSubject` enum + `config/ai.php` + `.env`                                | `config/ocr.php`: `enabled`, token prices. Model, temperature 0 and the 8192 token cap are attributes on `GeminiService`; the 0.5 threshold is `OcrScan::FLAG_BELOW`; Test types are `App\Enums\OcrSubject`. `config/ai.php`: the TypeSafe provider. `GEMINI_API_KEY`, `TYPESAFE_API_KEY`                                                    |
+| Tests                    | Pest, `tests/Feature/ReadScanTest.php`; Gemini and Jev faked                                   | Offline only                                                                                                                                                                                                                                                                                                                                   |
 
 ## Packages and infra
 
-Already done: `laravel/ai` is pinned to `1.2.1` in `composer.json` (exact version: Classification is experimental), `config/ai.php` is published, and `GEMINI_API_KEY` / `TYPESAFE_API_KEY` are in `.env.example`.
-
-Not in the Sail image or `compose.yaml` yet:
-
-```bash
-./vendor/bin/sail artisan sail:publish   # then add php8.5-imagick + ghostscript to the runtime Dockerfile
-./vendor/bin/sail build --no-cache
-```
-
-- Add a queue worker (`php artisan queue:work`): `compose.yaml` runs no worker yet.
+- `laravel/ai` is pinned to `1.2.1` in `composer.json` (exact version: Classification is experimental), `config/ai.php` is published, and `GEMINI_API_KEY` / `TYPESAFE_API_KEY` are in `.env.example`.
+- Imagick + Ghostscript are in the Sail 8.5 runtime (`php8.5-imagick`) and the production `Dockerfile`.
 - `vendor:publish` also publishes the SDK's conversation-table migration. This feature does not use it, so it was deleted: do not re-publish it.
-- Check before coding: `php -m | grep imagick`, `gs --version`.
 - No change to the Postgres image (no vector column).
 
 ## Code layout
 
 ```
 app/
-  Http/Requests/StoreTestUploadRequest.php   # PDF only, size limit
-  Jobs/ReadTest.php                          # runs TestReader, writes the test_readings row
+  Http/Requests/ReadScanRequest.php          # consent + PDF only, size limit
+  Http/Controllers/GradeController.php       # readScan(): page loop (Imagick, 200 dpi), Jev call, grade check, flag, cost
+  Http/Controllers/OcrScanController.php     # local-admin dashboard: flagged share, cost, unflagged accuracy
   Services/Ocr/
-    TestReader.php                           # process() port: page loop, module rule, Jev Classification call, decisions, flags, cost
-    GeminiService.php                        # laravel/ai agent: text, grade, grade_box, truncated, usage
-    PdfPage.php                              # Imagick: page N → PNG at 200 dpi
-  Console/Commands/OcrBench.php              # php artisan ocr:bench
+    GeminiService.php                        # laravel/ai agent: text, subject, grade, grade_box, truncated, usage
+    JevService.php                           # laravel/ai Classification: OcrSubject + confidence + usage
+  Enums/OcrSubject.php                       # Test types
+  Models/OcrScan.php                         # FLAG_BELOW = 0.5
 config/ocr.php
-resources/ocr/subjects.json                  # Test types + Module codes
-database/migrations/…_create_test_readings_table.php
-tests/Feature/TestReaderTest.php
+resources/prompts/ocr.md
+database/migrations/2026_10_15_080000_create_ocr_scans_table.php
+tests/Feature/ReadScanTest.php
 ```
+
+Not built yet: the Module rule (the Test type is always Jev's pick today), the same-PDF cache, the queue, and `php artisan ocr:bench`.
 
 ## Checking the port
 
@@ -125,4 +118,11 @@ Before coding the pipeline:
 3. Whether Imagick's PNG matches pymupdf's at 200 dpi. Compare 1 page by eye.
 4. School rules on sending student work to cloud services (pipeline-spec open question 4): the checkbox may need to become recorded consent.
 
-Where the OCR side and this app disagree (to decide with the grade-store work): 5. **Test type → evaluation node.** No 1:1 map today. IT has three Culture générale nodes (`EvaluationTreeSeeder.php:150-152`), so `ECG` is ambiguous. IT has no MP variant, so the MP subjects of `mp.json` (Français, Allemand, Histoire, Eco&Droit) have no node. EC sends every school Subject to one node (`:205`) and has no Modules. Sciences and TIB have no node. Module leaves are named `"293 — …"` with no code column. The uncommitted `docs/db/schemas/mcd_current.d2` moves grades to `domain_id`. 6. **Ungraded tests.** A null grade is valid on the OCR side, but `grades.value` is NOT NULL with CHECK 1.0–6.0. Current plan: the apprentice types the grade or cancels. 7. **Module tests and scans.** The form hides the PDF field for Module tests (`GradeForm.vue:291`), so a Module test can't be read today. 8. **No grade store exists yet** (`GradeForm.vue` only emits `saved`, no `grades.store` route). Manual entry's store comes first; Confirmation posts to it. 9. **Retention.** The OCR spec deletes the scan after Confirmation; the user stories keep it as the grade's proof file, readable by supervisors. The app wins: the confirmed scan becomes `grades.file_path` on the private `local` disk. Unconfirmed uploads are deleted after 7 days (no prune job yet). 10. **Date and semester.** The pipeline reads neither. The confirm form keeps the date field (pre-filled with today); the semester is derived on the server. 11. **Module codes.** RECOMMENDATION.md says 40 codes; `resources/js/data/modules.json` has 41. Build `subjects.json`'s modules from `modules.json`.
+Where the OCR side meets the grade tree (as built):
+
+5. **Test type → grade node.** `AddGradeDialog.vue` maps only `Anglais` and `Maths` to a branch of the apprentice's plan (`SUBJECT_BRANCHES`). Any other Test type, or a branch missing from the plan, makes the apprentice pick the branch by hand. The mapping is recorded as `ocr_scans.suggested_node_id` to compare with the saved grade.
+6. **Ungraded tests.** A null grade is valid on the OCR side, but `grades.value` is NOT NULL with CHECK 1.0–6.0. Approving needs a grade, so the apprentice types it or cancels.
+7. **Grade store.** Confirmation posts to `grades.store`, the same route as Manual entry.
+8. **Retention.** `readScan` does not store the PDF. The confirmed upload becomes the grade's proof file (`grades.file_path`, private disk); an unconfirmed one is never stored, so no prune job is needed.
+9. **Date and semester.** The pipeline reads neither. The form keeps the date field (pre-filled with today); the semester is derived from `test_date` (`App\Support\Gradebook\Semester`).
+10. **Module codes.** Not built. RECOMMENDATION.md says 40 codes; `resources/js/data/modules.json` has 41. Build the Module rule from `modules.json`.

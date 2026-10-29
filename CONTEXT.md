@@ -19,15 +19,15 @@ _Avoid_: Track, department
 ## Supervision
 
 **Supervised apprentice**:
-An apprentice whose grades and portfolio a supervisor may open. For a trainer, apprentices assigned to them in their own section. For a coach, only their coachees.
+An apprentice whose grades and portfolio a supervisor may open. For a trainer, every apprentice of their section (the formation plans they train). For a coach, only their coachees.
 _Avoid_: Visible apprentice, my apprentices
 
 **Coachee**:
-An apprentice who has a given coach assigned to them. A coach becomes an apprentice's coach by assigning themselves. Trainers assign themselves the same way, within their own section.
+An apprentice who has a given coach assigned to them. A coach becomes an apprentice's coach by assigning themselves. Trainers are never assigned per apprentice: they follow their whole section.
 _Avoid_: Assigned apprentice, student
 
 **Apprentice list**:
-The supervisor's entry page. It lists exactly the Supervised apprentices. A separate list shows the active apprentices the supervisor can assign themselves to: for a coach, those with no coach (both sections); for a trainer, those of their section with no trainer.
+The supervisor's entry page. It lists exactly the Supervised apprentices. For a coach, a separate list shows the active apprentices with no coach (both sections), to assign themselves to. Trainers have no such list.
 _Avoid_: Apprentice dashboard (when meaning the supervisor's list)
 
 ## Grade entry

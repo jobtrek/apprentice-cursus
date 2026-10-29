@@ -68,7 +68,7 @@ All passwords are `password` (password login is local only).
 | ----------------------------- | -------------------------------------------------------- |
 | "No access" at login          | In no mapped group, or in two                            |
 | Logged out after a while      | Removed from group or disabled in Microsoft              |
-| Login fails, "apprenticeship" | `ApprenticeshipSeeder` not run                           |
+| Login fails, "formation plan" | `FormationPlanSeeder` not run (`migrate --seed`)         |
 | 403                           | Missing permission, or doesn't supervise that apprentice |
 | Role change not showing       | `sail artisan permission:cache-reset`                    |
 

@@ -8,15 +8,14 @@ Grade-tracking app for an apprenticeship program (Laravel + Inertia + Vue). Coac
 
 Domain source-of-truth docs (read before touching grading/tree logic):
 
-- `docs/adr/ADR.md` — architecture decisions (e.g. the MP/Matura grading variant is modeled as sibling nodes in one evaluation tree, not a separate tree)
+- `docs/adr/ADR.md` — architecture decisions (e.g. the MP/Matura variant is its own formation plan, EC MP, sharing every `average_nodes` node with EC except its "Note d'expérience" branch)
 - `docs/project-docs/grade_tree_IT.md`, `docs/project-docs/grade_tree_EC.md`, `docs/project-docs/IT-schema.mmd`, `docs/project-docs/EC-schema.mmd` — the grade tree structures per program
 - `docs/project-docs/role_permissions.md` — authoritative permission matrix by role (Apprentice, Coach, Trainer)
 - `docs/project-docs/DoD.md` — Definition of Done
-- `docs/user_stories/user_story_final.md`
 
 ## Stack
 
-Laravel 13 (PHP 8.3+) · Inertia.js · Vue 3 · Vite 8 · Tailwind 4 · shadcn-vue · PostgreSQL. Dev environment runs via Laravel Sail (Docker). Auth is Microsoft Entra SSO via Socialite (`socialiteproviders/microsoft-azure`); password login exists only in `local`. Roles come from Entra groups and are stored as Spatie roles.
+Laravel 13 (PHP 8.3+, Sail and CI run 8.5) · Inertia.js · Vue 3 · Vite 8 · Tailwind 4 · shadcn-vue · PostgreSQL. Dev environment runs via Laravel Sail (Docker). Auth is Microsoft Entra SSO via Socialite (`socialiteproviders/microsoft-azure`); password login exists only in `local`. Roles come from Entra groups and are stored as Spatie roles.
 
 ## Commands
 
@@ -61,7 +60,7 @@ No test runner is configured on the JS side yet (intended: `vp test` with import
 
 ## GitHub issues
 
-When creating a GitHub issue, follow `ISSUES.md` exactly: it mirrors the forms in `.github/ISSUE_TEMPLATE/` (same headings, issue type and labels) and gives the `gh api` command to use, since `gh issue create` can't set the issue type.
+When creating a GitHub issue, mirror the matching form in `.github/ISSUE_TEMPLATE/` exactly: each field as a `### <label>` heading, `_No response_` for an empty optional field, and the form's issue type and labels. Create it with `gh api` (`gh issue create` can't set the issue type).
 
 ## Architecture notes
 

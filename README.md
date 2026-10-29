@@ -105,14 +105,14 @@ OCR is on by default (`OCR_ENABLED=true`). It needs `GEMINI_API_KEY` and `TYPESA
 
 | Tool       | Version |
 | ---------- | ------- |
-| PHP        | 8.5     |
+| PHP        | 8.3+ (Sail and CI run 8.5) |
 | Vue        | 3.x     |
 | Laravel    | 13.x    |
 | Inertia    | latest  |
 | Vite       | 8.x     |
 | Tailwind   | 4.x     |
 | shadcn-vue | latest  |
-| PostgreSQL | latest  |
+| PostgreSQL | 18      |
 
 ## Features
 

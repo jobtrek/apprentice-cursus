@@ -2,7 +2,7 @@
 
 ## 2026-09-03 — Matura (MP) variant stays in one evaluation tree
 
-**Decision:** The Matura/MP grading variant is not a separate tree — it's modeled as sibling nodes (`B` vs `E`) inside the same `evaluation_nodes` tree, flagged per node, with the apprentice's MP status deciding which sibling counts.
+**Decision:** The Matura/MP grading variant is not a separate tree — it's modeled as sibling nodes (`B` vs `E`) inside the same `evaluation_nodes` tree, flagged per node, with the apprentice's MP status deciding which sibling counts. _(Superseded: MP is its own formation plan, EC MP, see 2026-10-14.)_
 
 **Why:** MP only changes one branch's weights (Note d'expérience), while the rest of the tree (Travail pratique, Connaissances professionnelles) is identical — duplicating a whole second tree would just copy those shared branches for no reason.
 
@@ -31,13 +31,13 @@ the table for the weight of each grade inside of EC's program. MP = Maturité
 
 **Decision:** `users.apprenticeship_id` points at a new `apprenticeships` table (`id`, `name`, timestamps). The MCD's `apprenticeship_name` enum column is not implemented, and the `ApprenticeshipName` PHP enum is removed.
 
-**Why:** The MCD carried both a `IT | EC` enum and an FK to a table it never defined — two representations of the same thing, free to disagree with no constraint able to catch it. The FK wins: adding a track becomes an insert rather than a migration.
+**Why:** The MCD carried both a `IT | EC` enum and an FK to a table it never defined — two representations of the same thing, free to disagree with no constraint able to catch it. The FK wins: adding a track becomes an insert rather than a migration. _(Superseded: `apprenticeships` became `formation_plans` and `users.formation_plan_id`, see 2026-10-14.)_
 
 ### Timestamps follow the MCD table by table
 
 **Decision:** Not normalized to Laravel's `timestamps()`. `created_at` only on `subjects`, `evaluation_nodes`, `evaluation_node_connections`, `skills`; none on `subject_category`, `project_skill`; both everywhere else. The `created_at`-only columns carry a `useCurrent()` DB default.
 
-**Why:** The MCD is deliberately inconsistent here. The DB default means a raw insert or a bare `attach()` still gets a timestamp, rather than relying on every call site remembering to set one.
+**Why:** The MCD is deliberately inconsistent here. The DB default means a raw insert or a bare `attach()` still gets a timestamp, rather than relying on every call site remembering to set one. _(Superseded in part: `subjects`, `subject_category`, `evaluation_nodes` and `evaluation_node_connections` no longer exist, see 2026-10-14.)_
 
 ### `project_skill` is a plain pivot, no model
 
@@ -49,55 +49,55 @@ the table for the weight of each grade inside of EC's program. MP = Maturité
 
 **Decision:** `commentable_type` / `commentable_id` map to Eloquent's `morphTo()` / `morphMany()`. `AppServiceProvider` registers a morph map in `enforce` mode, so the column stores `grade` / `project` rather than class paths.
 
-**Why:** Keeps the stored value stable if a model is renamed or moved. `enforce` mode means a morph relation added later fails loudly instead of silently writing a class path — the map has to be kept up to date.
+**Why:** Keeps the stored value stable if a model is renamed or moved. `enforce` mode means a morph relation added later fails loudly instead of silently writing a class path — the map has to be kept up to date. _(Superseded: comments use real `project_id` / `grade_id` foreign keys; the morph map only keeps `user`, see 2026-10-14.)_
 
 ### `evaluation_nodes` uses the Composite pattern
 
 **Decision:** One `EvaluationNode` model is both leaf (`aggregation = null`, carries grades) and composite (`aggregation` set, combines children). Children and parents are read through `evaluation_node_connections`, which has its own model because it carries an `id` and a `weight`. `isLeaf()` is exactly `aggregation === null`.
 
-**Why:** `addChild()` refuses to attach a child to a node with no aggregation strategy, so "has no aggregation" and "has no children" can never contradict each other — which is what lets `isLeaf()` answer without a query, and keeps tree walks free of N+1.
+**Why:** `addChild()` refuses to attach a child to a node with no aggregation strategy, so "has no aggregation" and "has no children" can never contradict each other — which is what lets `isLeaf()` answer without a query, and keeps tree walks free of N+1. _(Superseded: one `average_nodes` tree with `parent_id`; a node without children is a leaf, see 2026-10-14.)_
 
 ### Graph invariants live in `addChild()`, not the schema
 
 **Decision:** `EvaluationNode::addChild()` rejects a self-attachment and any edge that would close a cycle (it walks down from the prospective child looking for the parent). A `parent_id <> child_id` CHECK backs up the trivial case in the database.
 
-**Why:** The MCD calls the graph a DAG, but a relational schema cannot express "no cycles" — only the degenerate self-loop. A cycle would make any recursive aggregation walk loop forever, so the guard has to exist somewhere; `addChild()` is the single writing path.
+**Why:** The MCD calls the graph a DAG, but a relational schema cannot express "no cycles" — only the degenerate self-loop. A cycle would make any recursive aggregation walk loop forever, so the guard has to exist somewhere; `addChild()` is the single writing path. _(Superseded: `average_nodes` is a tree on `parent_id`, with `CHECK (parent_id <> id)`, see 2026-10-14.)_
 
 ### `aggregation` has one value: `weighted_average`
 
 **Decision:** The MCD describes the column but never lists its values. One mode for now.
 
-**Why:** Every parent→child edge already carries an explicit `weight`, which covers everything the current schema can express. More modes can be added later without a migration.
+**Why:** Every parent→child edge already carries an explicit `weight`, which covers everything the current schema can express. More modes can be added later without a migration. _(Superseded: there is no `aggregation` column; every parent is a weighted average, see 2026-10-14.)_
 
 ### Enum columns are `string` + PHP backed enum + CHECK
 
 **Decision:** _(The `role` column is superseded: `users.role` was dropped, see 2026-09-30 — Roles and permissions.)_ `role`, `aggregation`, `period_scope` and `variant` are `string` columns with a `CHECK (col IN (...))` constraint, a PHP enum in `app/Enums`, and an Eloquent cast.
 
-**Why:** `$table->enum()` does not produce a native `ENUM` on PostgreSQL — it produces exactly this varchar + CHECK, but hidden behind an API that suggests otherwise and that `->change()` cannot edit cleanly. Writing it out makes the constraint visible and editable, and adding a role becomes a one-line `ALTER`. The PHP enum and cast give the type safety in code.
+**Why:** `$table->enum()` does not produce a native `ENUM` on PostgreSQL — it produces exactly this varchar + CHECK, but hidden behind an API that suggests otherwise and that `->change()` cannot edit cleanly. Writing it out makes the constraint visible and editable, and adding a role becomes a one-line `ALTER`. The PHP enum and cast give the type safety in code. _(Superseded in part: `aggregation`, `period_scope` and `variant` were dropped on 2026-10-14; the convention still applies to new enum columns.)_
 
 ### `subjects` keeps no `name` and no `is_active`
 
 **Decision:** `id`, `subject_category_id`, `created_at` only, exactly as the MCD defines it.
 
-**Why:** `subjects` is a thin join row linking an `evaluation_node` to its `subject_category`; the displayed name is `subject_category.name`, reached through `subject->subjectCategory->name`. A second `name` would store it twice. Rows are seeded rather than managed through an admin UI, so there is no catalog flow needing `is_active`.
+**Why:** `subjects` is a thin join row linking an `evaluation_node` to its `subject_category`; the displayed name is `subject_category.name`, reached through `subject->subjectCategory->name`. A second `name` would store it twice. Rows are seeded rather than managed through an admin UI, so there is no catalog flow needing `is_active`. _(Superseded: `subjects` and `subject_category` are gone, see 2026-10-14.)_
 
 ### History-bearing foreign keys restrict instead of cascading
 
-**Decision:** `grades.user_id`, `grades.evaluation_node_id`, `evaluation_results.user_id`, `evaluation_results.evaluation_node_id`, `projects.user_id` and `comments.author_id` are `restrictOnDelete()`. `users` carries an `is_active` flag.
+**Decision:** `grades.user_id`, `grades.evaluation_node_id`, `evaluation_results.user_id`, `evaluation_results.evaluation_node_id`, `projects.user_id` and `comments.author_id` are `restrictOnDelete()`. `users` carries an `is_active` flag. _(Since 2026-10-14: `grades.average_node_id` replaces `grades.evaluation_node_id`, and `evaluation_results` is gone.)_
 
-**Why:** The user stories are explicit that apprentices, coaches, trainers and admins are _deactivated_, never deleted, and that grade history stays archived (`docs/user_stories/user_story_final.md`, `docs/project-docs/role_permissions.md`). A cascade would silently wipe someone's academic record. `is_active` is the deactivation mechanism; `restrictOnDelete()` is the schema-level backstop that makes an accidental hard delete impossible rather than merely discouraged.
+**Why:** Apprentices, coaches, trainers and admins are _deactivated_, never deleted, and grade history stays archived (`docs/project-docs/role_permissions.md`). A cascade would silently wipe someone's academic record. `is_active` is the deactivation mechanism; `restrictOnDelete()` is the schema-level backstop that makes an accidental hard delete impossible rather than merely discouraged.
 
 ### Comments are cleaned up in the application layer
 
 **Decision:** `Grade` and `Project` each register a `deleting` model event that removes their comments first, and override `delete()` to wrap the pair in a transaction.
 
-**Why:** A polymorphic reference cannot have a real foreign key — there is no single table it points at — so deleting a `Grade` row directly would orphan its comments with no constraint able to catch it. The transaction is what makes the two deletes atomic: without it, a failure on the parent's own DELETE leaves the comments already gone. The hook only fires on Eloquent deletes, so bulk deletes (`DB::table(...)->delete()`, `Grade::where(...)->delete()`) must clean up comments themselves.
+**Why:** A polymorphic reference cannot have a real foreign key — there is no single table it points at — so deleting a `Grade` row directly would orphan its comments with no constraint able to catch it. The transaction is what makes the two deletes atomic: without it, a failure on the parent's own DELETE leaves the comments already gone. The hook only fires on Eloquent deletes, so bulk deletes (`DB::table(...)->delete()`, `Grade::where(...)->delete()`) must clean up comments themselves. _(Superseded: comments now cascade through their `grade_id` / `project_id` foreign keys, see 2026-10-14.)_
 
 ### Value ranges are CHECK constraints where PostgreSQL allows it
 
 **Decision:** `grades.value` and `evaluation_results.rounded_value` are constrained to 1.0–6.0, `grades.semester` to 1–8, `evaluation_results.semester` to 0–8, `comments.body` to 2000 characters. `evaluation_results.semester` uses sentinel `0` for `cursus`-scoped rows.
 
-**Why:** The MCD specifies these ranges, and a CHECK holds even against a raw `DB::table()->insert()` that bypasses every FormRequest. The sentinel keeps the `(user_id, evaluation_node_id, semester)` unique index null-safe so recompute upserts update in place. The MCD's `test_date <= today` is _not_ implemented: `CURRENT_DATE` is `STABLE`, not `IMMUTABLE`, and PostgreSQL rejects it in a CHECK — that rule belongs to the FormRequest.
+**Why:** The MCD specifies these ranges, and a CHECK holds even against a raw `DB::table()->insert()` that bypasses every FormRequest. The sentinel keeps the `(user_id, evaluation_node_id, semester)` unique index null-safe so recompute upserts update in place. The MCD's `test_date <= today` is _not_ implemented: `CURRENT_DATE` is `STABLE`, not `IMMUTABLE`, and PostgreSQL rejects it in a CHECK — that rule belongs to the FormRequest. _(Superseded in part: `grades.semester` and `evaluation_results` are gone, see 2026-10-14; the `grades.value` and `comments.body` CHECKs remain.)_
 
 ### Foreign keys are indexed explicitly
 
@@ -129,7 +129,7 @@ What each role can do and how the sync behaves: `docs/project-docs/role_permissi
 
 **No group or several groups refuses access.** _Why:_ overlapping groups make the role ambiguous; the admin fixes it in Entra.
 
-**Role and track fields are not mass-assignable.** `is_active`, `is_mp`, `apprenticeship_id`, `coach_id`, `trainer_id` are set with `forceFill` by the flow that owns them. _Why:_ they decide what a user may do.
+**Role and track fields are not mass-assignable.** `is_active`, `is_mp`, `apprenticeship_id`, `coach_id`, `trainer_id` are set with `forceFill` by the flow that owns them. _Why:_ they decide what a user may do. _(Since 2026-10-14: `is_mp`, `apprenticeship_id` and `trainer_id` are replaced by `formation_plan_id` and `users_formation_plans`.)_
 
 **One sync, used by login and the re-check middleware** (`AzureAccountSync`, one Graph client `MicrosoftGraphService`). _Why:_ two copies of the mapping logic had already diverged.
 
@@ -137,11 +137,11 @@ What each role can do and how the sync behaves: `docs/project-docs/role_permissi
 
 **The re-check fails open, login fails closed.** If Graph is down, signed-in users keep working and the check retries after 60 s; a new login is refused. `is_active` itself is checked on every request, uncached. _Why:_ failing closed would log everyone out during a Microsoft outage; at login there is no known state to fall back on.
 
-**Trainers have one group per section** (`trainer_IT`, `trainer_EC`). _Why:_ `User::supervises()` needs a section, and IT and EC have their own trainers. _(Supersedes "trainers are mapped to the IT apprenticeship".)_
+**Trainers have one group per section** (`trainer_IT`, `trainer_EC`). _Why:_ `User::supervises()` needs a section, and IT and EC have their own trainers. _(Supersedes "trainers are mapped to the IT apprenticeship".)_ _(Superseded in part: trainers train formation plans, not a section, see 2026-10-14.)_
 
-**Groups map to apprenticeships by seeded name** (`ApprenticeshipSeeder::IT` / `::EC`), no `apprenticeships.code` column. _Why:_ a second identifier for two rows adds a migration and a value to keep in sync.
+**Groups map to formation plans by seeded name** (`FormationPlan::IT` / `::EC` / `::EC_MP`, seeded by `FormationPlanSeeder`), no code column. _Why:_ a second identifier for two rows adds a migration and a value to keep in sync.
 
-**Apprenticeship kept on an apprentice's section change**, with a logged warning. _Why:_ the user story requires the apprentice to confirm before grades move; that page does not exist yet. A trainer has no grades, so it follows its group's section.
+**Apprenticeship kept on an apprentice's section change**, with a logged warning. _Why:_ the apprentice must confirm before grades move (`docs/project-docs/role_permissions.md`); that page does not exist yet. A trainer has no grades, so it follows its group's section.
 
 **Supervision requires the target to be an apprentice and never oneself.** _Why:_ otherwise a supervisor could "supervise" another supervisor.
 
@@ -177,12 +177,12 @@ What each role can do and how the sync behaves: `docs/project-docs/role_permissi
 
 **Decision:** Accounts are created by a daily scheduled job, not at login. The job lists the members of every mapped `AzureGroup` through Graph and creates, updates or deactivates the matching local users through `AzureAccountSync::apply()` / `deactivate()`, then stamps `users.synced_at`. Login only matches an existing user on `azure_id`. An account not synced yet is refused with a message telling the admin to run the sync (`azure:sync`). This supersedes the "no scheduled job" part of 2026-09-30 — Roles and permissions.
 
-**Why:** The user story requires accounts to exist "even before my first login, so that coaches and trainers can see me on their dashboard right away" (`docs/user_stories/user_story_final.md`). Creating accounts at login cannot meet it: the apprentice list would miss everyone who has not signed in yet. Pre-loading users without a sync would drift from Entra.
+**Why:** Accounts must exist before the first login, so that coaches and trainers see a new apprentice on their list right away (`docs/project-docs/role_permissions.md`, "Other rules"). Creating accounts at login cannot meet it: the apprentice list would miss everyone who has not signed in yet. Pre-loading users without a sync would drift from Entra.
 
 **Considered options:**
 
 - _Create at login_ (previous behaviour): no job, but unsynced apprentices are invisible to their supervisors.
-- _Group mapping in an `azure_groups` table_: rejected. The four groups only change with a new section, which needs a deploy anyway. The `AzureGroup` enum stays.
+- _Group mapping in an `azure_groups` table_: rejected. The five groups only change with a new section, which needs a deploy anyway. The `AzureGroup` enum stays.
 - _Sync at login on a miss_: rejected. New apprentices get their Microsoft account and group before they arrive, so the daily run covers them. A manual `azure:sync` handles the exceptions.
 
 **Consequences:**
@@ -190,14 +190,14 @@ What each role can do and how the sync behaves: `docs/project-docs/role_permissi
 - **The 15-minute re-check stays.** `EnsureAzureAccountIsActive` still checks Graph per user, so removing access meets the 15-minute story. The daily job is not the only revocation path.
 - **All or nothing.** The job fetches all groups before writing anything. If any Graph call fails it throws and changes nothing, so a partial response can never deactivate a whole group. Retries use the job's `tries`/`backoff`.
 - **A coaches group is mapped** (`AzureGroup::Coach`, no section). `apprenticeship()` becomes nullable.
-- **Apprentice list vs. supervision.** _(Superseded: the list shows exactly the supervised apprentices, `User::listedApprentices()`; coaches and trainers assign themselves from a separate list of unassigned apprentices. See `docs/project-docs/role_permissions.md`.)_ Coaches list every active apprentice in both sections but open only their coachees (`User::supervises()` is unchanged). Trainers list and open only their own section.
+- **Apprentice list vs. supervision.** _(Superseded: the list shows exactly the supervised apprentices, `User::listedApprentices()`; coaches assign themselves from a separate list of apprentices with no coach; trainers follow every apprentice of their plans (2026-10-14). See `docs/project-docs/role_permissions.md`.)_ Coaches list every active apprentice in both sections but open only their coachees (`User::supervises()` is unchanged). Trainers list and open only their own section.
 - The no-group / several-groups rule, matching on `azure_id` only, and keeping the section on a section change all still apply, in the job as at login.
 
 ## 2026-10-13 — Automatic reading runs inside Laravel, not as a Python service
 
-**Decision:** notar v2 is ported 1:1 to PHP and runs in a Laravel queue job, following [`docs/ocr_specs/RECOMMENDATION.md`](../ocr_specs/RECOMMENDATION.md). Gemini is one `laravel/ai` agent call (`GeminiService`, structured output). Jev goes through `laravel/ai` v1.0's Classification API (`typesafe` provider, one `Choice` question). PDF pages are rendered with Imagick + Ghostscript at 200 dpi. The Test type is the Module rule's code, else Jev's pick. A reading is Flagged when the grade is missing, Jev's confidence is below 0.5, or no page could be read. Flagged readings still open the pre-filled confirm form, with a warning. The FastAPI service from [`docs/ocr_specs/service-spec.md`](../ocr_specs/service-spec.md), the Python benchmark, phase 2 (tie-break) and the embeddings vote are dropped.
+**Decision:** notar v2 is ported 1:1 to PHP and runs in a Laravel queue job, following [`docs/ocr_specs/RECOMMENDATION.md`](../ocr_specs/RECOMMENDATION.md). Gemini is one `laravel/ai` agent call (`GeminiService`, structured output). Jev goes through `laravel/ai` v1.0's Classification API (`typesafe` provider, one `Choice` question). PDF pages are rendered with Imagick + Ghostscript at 200 dpi. The Test type is the Module rule's code, else Jev's pick. A reading is Flagged when the grade is missing, Jev's confidence is below 0.5, or no page could be read. Flagged readings still open the pre-filled confirm form, with a warning. _(As built: v1 runs synchronously in `GradeController::readScan`, with no queue job, and has no Module rule yet. See `docs/ocr_specs/stack.md`.)_ The FastAPI service from [`docs/ocr_specs/service-spec.md`](../ocr_specs/service-spec.md), the Python benchmark, phase 2 (tie-break) and the embeddings vote are dropped.
 
-**Verdict:** Feasible. The proposed pipeline reads both the Test type and the Grade correctly on 89.6% of the 67 test PDFs, at $0.0014 per PDF. The apprentice confirms every result, so the cases it gets wrong are fixed before anything is saved. The feature is an extra (tagged `[OCR] [EXTRA]` in `docs/user_stories/user_story_final.md`) and is built only after the base features.
+**Verdict:** Feasible. The proposed pipeline reads both the Test type and the Grade correctly on 89.6% of the 67 test PDFs, at $0.0014 per PDF. The apprentice confirms every result, so the cases it gets wrong are fixed before anything is saved. The feature is an extra, built only after the base features.
 
 **Why:** One codebase and one deployment. A second container, a shared secret and a Python toolchain are too much to run and maintain for this app. The evaluation of all 27 saved runs (`RECOMMENDATION.md`) shows:
 

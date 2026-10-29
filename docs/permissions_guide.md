@@ -45,30 +45,10 @@ Example: `reports.export` for coaches.
 
 ### How it reaches a deployed database
 
-- Nothing in the repo deploys automatically (no CI or deploy script). A deployed database only changes when someone runs a command on it.
-- `composer setup` runs `migrate --force` and then `db:seed --class=RolesAndPermissionsSeeder --force`, but only when someone runs it. `migrate` alone does **not** run the seeder.
-- So the safe way is a **small migration** that calls `RolesAndPermissions::sync()`. It is idempotent (it only creates what is missing), so it can be run any number of times. The repo already does this: `database/migrations/2026_09_30_100000_move_user_roles_to_permission_tables.php` and `database/migrations/2026_09_30_110000_add_admin_role.php`.
-    ```php
-    <?php
-
-    use App\Support\RolesAndPermissions;
-    use Illuminate\Database\Migrations\Migration;
-
-    return new class extends Migration
-    {
-        public function up(): void
-        {
-            RolesAndPermissions::sync();
-        }
-
-        public function down(): void
-        {
-            //
-        }
-    };
-    ```
-    Create it with `./vendor/bin/sail artisan make:migration sync_reports_export_permission`, paste the body above, and commit it with the enum change.
-- Without the migration, the deployed app has the code but not the permission in the database: see mistake 2 in section 8.
+- CI (`.github/workflows/ci.yml`) only runs checks and tests; it deploys nothing.
+- The production container (`compose.prod.yaml`, built from the repo) runs `php artisan migrate --force --seed` every time it starts (`docker/entrypoint.sh`). The seed is `ReferenceDataSeeder`, which calls `RolesAndPermissionsSeeder`, so a new permission reaches production on the next deploy with no extra step.
+- `RolesAndPermissions::sync()` is idempotent (it only creates what is missing), so running it on every start is safe. A fresh database also gets it from `database/migrations/2026_09_30_082259_sync_roles_and_permissions.php`.
+- A database that is migrated by hand without `--seed` misses the new permission: see mistake 2 in section 8.
 
 ## 3. Remove a permission or take it away from a role
 
@@ -94,7 +74,7 @@ Example: `reports.export` for coaches.
     ./vendor/bin/sail artisan tinker
     >>> Spatie\Permission\Models\Permission::where('name', 'grades.comment')->delete();
     ```
-    Then `./vendor/bin/sail artisan permission:cache-reset`. For a deployed database put the same `delete()` line in a migration (with the `sync()` call before it).
+    Then `./vendor/bin/sail artisan permission:cache-reset`. For a deployed database put the same `delete()` line in a migration: the startup seed never deletes permissions.
 
 ## 4. Give or take a role from a person
 
@@ -162,7 +142,7 @@ Tests:
 ## 8. Common mistakes
 
 1. **`hasPermissionTo()` instead of `can()`.** The admin bypass is skipped (section 6). Also, `hasPermissionTo()` throws `Spatie\Permission\Exceptions\PermissionDoesNotExist` when the permission is not in the database, while `can()` simply answers `false`.
-2. **Forgot to sync.** The enum case exists, but the database row does not. Symptom: `PermissionDoesNotExist` from a policy or `homeRoute()`, or a role that quietly lacks the permission. Fix: sync (section 2, step 3), and ship a migration for deployed databases.
+2. **Forgot to sync.** The enum case exists, but the database row does not. Symptom: `PermissionDoesNotExist` from a policy or `homeRoute()`, or a role that quietly lacks the permission. Fix: sync (section 2, step 3); a deployed database syncs on its next container start.
 3. **Stale Spatie cache.** A change in the database is not visible. Run `./vendor/bin/sail artisan permission:cache-reset`. (`RolesAndPermissions::sync()` already clears it.)
 4. **Checking role names.** `$user->hasRole('coach')` in a policy, controller or Vue file. Check a permission instead. If two roles need the same thing, give both the permission.
 5. **`assignRole()` instead of `syncRoles()`.** The user ends up with two roles. Use `syncRoles()`.

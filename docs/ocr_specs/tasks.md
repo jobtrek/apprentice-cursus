@@ -1,29 +1,29 @@
 # OCR backend tasks
 
-Backend work for Automatic reading, in order. Details: [`stack.md`](stack.md), decision: `docs/adr/ADR.md` ("Automatic reading runs inside Laravel").
+Backend work for Automatic reading, in order. Details: [`stack.md`](stack.md), decision: `docs/adr/ADR.md` ("Automatic reading runs inside Laravel"). v1 runs synchronously in `GradeController::readScan`; the queue and cache items are deferred.
 
 ## Setup
 
-- [ ] **1. Config.** Done: `laravel/ai` 1.2.1 installed, `config/ai.php` published, `GEMINI_API_KEY` and `TYPESAFE_API_KEY` in `.env.example` (add them to your own `.env`). Left: create `config/ocr.php` for the pinned models, 200 dpi, the 8192 token cap, token prices and the 0.5 flag threshold.
-- [ ] **2. Imagick + Ghostscript.** Run `sail:publish`, add `php-imagick` and `ghostscript` to the Sail Dockerfile, then `sail build --no-cache`. Check with `sail php -m | grep imagick` and `gs --version` inside the container.
-- [ ] **3. Queue worker.** Add a `queue:work` process (the `database` driver) to `compose.yaml`, since nothing runs queued jobs today.
+- [x] **1. Config.** `laravel/ai` 1.2.1 installed, `config/ai.php` published, `GEMINI_API_KEY` and `TYPESAFE_API_KEY` in `.env.example`. `config/ocr.php` holds `enabled` and token prices; the model, temperature and 8192 token cap are attributes on `GeminiService`, the 0.5 threshold is `OcrScan::FLAG_BELOW`.
+- [x] **2. Imagick + Ghostscript.** In the Sail 8.5 runtime (`php8.5-imagick`) and the production `Dockerfile`.
+- [ ] **3. Queue worker.** Only needed once reading moves to a job. Production already runs `queue:work` (`compose.prod.yaml`); `compose.yaml` does not.
 
 ## Services (`app/Services/Ocr/`)
 
-- [ ] **4. `PdfPage`.** Turn page N of a PDF into PNG bytes at 200 dpi with Imagick (`setResolution`, `readImage("$path[$n]")`, flatten). Compare one page by eye against notar's pymupdf output.
-- [ ] **5. `GeminiService`.** A `laravel/ai` agent (`HasStructuredOutput`) on `gemini-3.5-flash-lite`, temperature 0, that sends the prompt from `resources/prompts/ocr.md` unchanged plus the page image and gets back `{text, subject, grade, grade_box}`. Mark the page truncated when the last step's `finishReason` is not `Stop`, and return the token `usage` for the cost.
-- [ ] **6. `JevService`.** Already classifies `text` into an `OcrSubject` with `jev-1.13.0`. Make it also return Jev's `confidence`, because the flag rule needs it.
-- [ ] **7. `TestReader`.** The pipeline: read page 1 (pages 2–3 only if page 1 has no grade or is truncated), take the Test type from the Module code regex or else Jev, keep the grade only if it is 1.0–6.0 in 0.5 steps, and set Flagged when the grade is missing, Jev's confidence is below 0.5, or no page could be read.
+- [x] **4. PDF → PNG.** Inline in `readScan`: Imagick at 200 dpi, flattened on white. Still to do: compare one page by eye against notar's pymupdf output.
+- [x] **5. `GeminiService`.** `laravel/ai` agent on `gemini-3.5-flash-lite`, temperature 0, prompt from `resources/prompts/ocr.md`, returns `{text, subject, grade, grade_box}`, `truncated` when the last `finishReason` is not `Stop`, and `usage`.
+- [x] **6. `JevService`.** Classifies the first page's text into an `OcrSubject` with its `confidence` and `usage`.
+- [ ] **7. Pipeline.** Done in `readScan`: page 1, pages 2–3 only if no grade or truncated; grade kept only if 1.0–6.0 in 0.5 steps; Flagged when the grade is missing or Jev's confidence is below 0.5 (null counts as 0). Left: the Module code rule (the Test type is always Jev's pick today).
 
 ## Storage and flow
 
-- [ ] **8. `test_readings` migration + model.** Columns: status (`pending`/`done`/`failed`), `pdf_sha256`, `config_hash`, `result` JSON, `confirmed_type`, `confirmed_grade`, `edited`. Index `(pdf_sha256, config_hash)`, which is the same-PDF cache lookup.
-- [ ] **9. `StoreTestUploadRequest` + upload route.** Accept a PDF only (max 10 MB), store it on the private `local` disk, create a `pending` reading and dispatch the job. Reuse a finished reading when the same `pdf_sha256` + `config_hash` already exists.
-- [ ] **10. `ReadTest` job.** Run `TestReader` and save the result on the reading, with `tries` + backoff that retry only 5xx/429. `failed()` marks the reading `failed` so the page falls back to Manual entry.
-- [ ] **11. Status endpoint.** Return the reading's status and result so the page can poll it every 2 s.
-- [ ] **12. Confirmation.** Save the grade through the same store endpoint as Manual entry and record `confirmed_type`, `confirmed_grade` and `edited` on the reading. Blocked until the grade store exists (stack.md open question 8).
+- [x] **8. `ocr_scans` migration + model.** One row per read PDF: uploader, subject, grade, confidence, flag, pages read, costs, duration, `grade_id`, `suggested_node_id`.
+- [x] **9. `ReadScanRequest` + `POST /read-scan`.** Consent required, PDF only, max 10 MB, `throttle:ocr`. The PDF is read in the request and not stored by this route.
+- [ ] **10. Same-PDF cache.** Reuse a scan when `sha256(pdf)` + config hash already exists, with no model calls.
+- [ ] **11. Queued job + polling.** Move `readScan` into a job with `tries` + backoff (retry 5xx/429 only), a status endpoint the page polls, and `failed()` falling back to Manual entry.
+- [x] **12. Confirmation.** `grades.store` takes `ocr_scan_id` + `ocr_node_id` and links the scan to the saved grade.
 
 ## Checking
 
-- [ ] **13. Pest tests.** Fake Gemini (`GeminiService::fake()`) and Jev (`Classification::fake()`). Cover the module rule, page fallback, truncated page, invalid grade, each flag condition, a cache hit making no calls, and a failed job.
+- [ ] **13. Pest tests.** `tests/Feature/ReadScanTest.php` covers a read, rate limit, OCR disabled, missing consent, linking to a grade, another apprentice's scan, and the dashboard. Left: page fallback, truncated page, invalid grade, each flag condition.
 - [ ] **14. `php artisan ocr:bench`.** Run the pipeline on the 67 PDFs in `pdf_data/` and score it against `data/ground_truth.json`. Pass = both fields right on ≥ 56/67; if it fails, switch `GeminiService` to `Http::post` on `generateContent` (image before prompt) and re-run.
