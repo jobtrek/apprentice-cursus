@@ -22,9 +22,11 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property CarbonImmutable $test_date
  * @property string|null $file_path
  * @property CarbonImmutable|null $notified_at
+ * @property string|null $source_mailbox Intake mailbox of a grade imported by emails:fetch
+ * @property int|null $source_uid IMAP UID of that mail
  * @property-read int $semester Derived from test_date, see Semester
  */
-#[Fillable(['user_id', 'average_node_id', 'value', 'test_date', 'file_path'])]
+#[Fillable(['user_id', 'average_node_id', 'value', 'test_date', 'file_path', 'source_mailbox', 'source_uid'])]
 class Grade extends Model
 {
     protected function casts(): array

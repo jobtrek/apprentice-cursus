@@ -11,6 +11,7 @@ use App\Models\Grade;
 use App\Models\OcrScan;
 use App\Notifications\GradeAddedNotification;
 use App\Notifications\GradeDeletedNotification;
+use App\Notifications\GradesReceivedNotification;
 use App\Services\Ocr\GeminiService;
 use App\Services\Ocr\JevService;
 use App\Support\Gradebook\Gradebook;
@@ -46,6 +47,14 @@ class GradeController extends Controller
         $this->saveGrade($request, $grade);
 
         Notification::send($request->user()->supervisors(), new GradeAddedNotification($grade));
+
+        // Same summary mail as emails:fetch, so the shared mailbox sees grades added in the UI too.
+        try {
+            Notification::route('mail', config('imap.accounts.default.username'))
+                ->notify(new GradesReceivedNotification($request->user(), collect([$grade])));
+        } catch (Throwable $e) {
+            report($e);
+        }
 
         return back();
     }
